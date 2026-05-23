@@ -58,15 +58,9 @@ npx wrangler d1 execute grow-calendar-db --local --command "CREATE TABLE IF NOT 
 ```
 Expected: prints a success summary (1 command executed, rows written 0).
 
-- [ ] **Step 3: Apply the table to the REMOTE (production) D1 database**
+> **Remote migration is deferred.** The production `day_notes` table is NOT created here. It is created in Task 8 immediately before deploy, per the user's instruction to hold all remote changes until then.
 
-Run:
-```
-npx wrangler d1 execute grow-calendar-db --remote --command "CREATE TABLE IF NOT EXISTS day_notes (user_id INTEGER NOT NULL, date TEXT NOT NULL, body TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (user_id, date), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);"
-```
-Expected: prints a success summary against the remote DB.
-
-- [ ] **Step 4: Verify the table exists locally**
+- [ ] **Step 3: Verify the table exists locally**
 
 Run:
 ```
@@ -74,7 +68,7 @@ npx wrangler d1 execute grow-calendar-db --local --command "SELECT name FROM sql
 ```
 Expected: the result list includes `day_notes` alongside `users`, `sessions`, `task_checkoffs`.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```
 git add schema.sql
@@ -937,13 +931,17 @@ git add DEV.md
 git commit -m "Update DEV.md for notes feature and DayView"
 ```
 
-- [ ] **Step 8: Deploy (only when the user approves shipping)**
+- [ ] **Step 8: Create the remote table, then deploy (only when the user approves shipping)**
 
-The remote `day_notes` table was already created in Task 1. To publish:
+Confirm with the user before making any remote change. Then create the production `day_notes` table (deferred from Task 1):
+```
+npx wrangler d1 execute grow-calendar-db --remote --command "CREATE TABLE IF NOT EXISTS day_notes (user_id INTEGER NOT NULL, date TEXT NOT NULL, body TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (user_id, date), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);"
+```
+Expected: a success summary against the remote DB. Then publish:
 ```
 npm run deploy
 ```
-Or just push to `main` (Cloudflare auto-deploys per `DEV.md`). Confirm with the user before deploying.
+Or push to `main` (Cloudflare auto-deploys per `DEV.md`). Note: pushing to `main` deploys the new code, which expects the `day_notes` table — so the remote `d1 execute` above MUST run before the code goes live, or notes requests will error in production.
 
 ---
 
