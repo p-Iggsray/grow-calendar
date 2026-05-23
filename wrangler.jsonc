@@ -12,7 +12,7 @@
     {
       "binding": "DB",
       "database_name": "grow-calendar-db",
-      "database_id": "REPLACE_WITH_DB_ID_FROM_WRANGLER_D1_CREATE"
+      "database_id": "f8a90390-8953-45ee-997d-bf5c17c62c1f"
     }
   ],
   "observability": {
