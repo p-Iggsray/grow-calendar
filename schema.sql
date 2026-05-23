@@ -29,3 +29,12 @@ CREATE TABLE IF NOT EXISTS task_checkoffs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_checkoffs_user_date ON task_checkoffs(user_id, date);
+
+CREATE TABLE IF NOT EXISTS day_notes (
+  user_id    INTEGER NOT NULL,
+  date       TEXT NOT NULL,
+  body       TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (user_id, date),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
