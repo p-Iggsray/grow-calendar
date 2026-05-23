@@ -191,6 +191,35 @@ npx wrangler d1 execute grow-calendar-db --remote --command "<same as above>"
 
 `schema.sql` is updated so fresh setups get the table automatically.
 
+## Naming consistency
+
+The app's display name is **"The Grow Calendar"**. The main screen header
+currently shows "The Summer Grow", which is wrong. The name must read
+"The Grow Calendar" on every user-facing surface.
+
+Display-name changes (user-facing):
+
+- `src/components/Header.jsx:14` — main screen title: "The Summer Grow" ->
+  "The Grow Calendar". This is the headline fix.
+- `index.html` — `<title>Grow Calendar</title>` -> `<title>The Grow Calendar</title>`.
+- `public/manifest.webmanifest` — `"name": "Grow Calendar"` ->
+  `"name": "The Grow Calendar"`.
+- `launch.bat` — dev window title "Grow Calendar - Dev Server" ->
+  "The Grow Calendar - Dev Server" (cosmetic, dev only).
+
+Deliberately left short (home-screen / PWA icon labels, where the full name is
+too long to fit): `manifest.webmanifest` `"short_name": "Grow"` and
+`index.html` `apple-mobile-web-app-title` `"Grow"`. Flag for the user; change
+only if they want the longer label there.
+
+Already correct, no change needed: `LoginGate.jsx`, `assets/banner.svg`,
+`README.md`, `DEV.md`.
+
+Technical identifiers — MUST NOT change (renaming breaks the deployment and the
+D1 binding): `wrangler.jsonc` worker `name` (`grow-calendar`) and
+`database_name` (`grow-calendar-db`), and `package.json` `name`
+(`grow-calendar`). These are infrastructure IDs, not display names.
+
 ## Out of scope
 
 - The conversational Claude agent / chat bar (separate future effort).
