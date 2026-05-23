@@ -1,6 +1,7 @@
 import { error } from "./util.js";
 import { getSignupStatus, signup, login, logout, getMe } from "./auth.js";
 import { getCheckoffs, putCheckoffs } from "./checkoffs.js";
+import { getNote, putNote } from "./notes.js";
 
 export default {
   async fetch(request, env, ctx) {
@@ -34,6 +35,13 @@ async function route(request, env, path) {
     const date = checkoffsMatch[1];
     if (method === "GET") return getCheckoffs(request, env, date);
     if (method === "PUT") return putCheckoffs(request, env, date);
+  }
+
+  const notesMatch = path.match(/^\/api\/notes\/(\d{4}-\d{2}-\d{2})$/);
+  if (notesMatch) {
+    const date = notesMatch[1];
+    if (method === "GET") return getNote(request, env, date);
+    if (method === "PUT") return putNote(request, env, date);
   }
 
   return error(404, "not found");
