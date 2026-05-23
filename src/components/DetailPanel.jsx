@@ -1,6 +1,8 @@
 import { fmtL } from "../lib/dates.js";
 
-export default function DetailPanel({ selected, detail, selStyle, threats, tab, setTab }) {
+export default function DetailPanel({ selected, detail, selStyle, threats, tab, setTab, checked, onToggle }) {
+  const checkedCount = checked?.length ?? 0;
+  const totalTasks = detail?.tasks?.length ?? 0;
   if (!detail) {
     return (
       <div style={{ padding: "12px 14px 0" }}>
@@ -35,8 +37,20 @@ export default function DetailPanel({ selected, detail, selStyle, threats, tab, 
           <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: selStyle?.color, textTransform: "uppercase", marginBottom: 5 }}>
             {selStyle?.label} · {fmtL(selected)}, 2026
           </div>
-          <div style={{ fontSize: 17, fontWeight: 800, color: "#e8f5e3", lineHeight: 1.2, letterSpacing: -0.3 }}>
-            {detail.title}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: "#e8f5e3", lineHeight: 1.2, letterSpacing: -0.3, flex: 1 }}>
+              {detail.title}
+            </div>
+            {totalTasks > 0 && (
+              <div style={{
+                fontSize: 10, fontFamily: "'Courier New', monospace",
+                color: checkedCount === totalTasks ? "#4ade80" : selStyle?.color,
+                background: "rgba(0,0,0,0.25)", padding: "4px 8px", borderRadius: 6,
+                whiteSpace: "nowrap", flexShrink: 0,
+              }}>
+                {checkedCount}/{totalTasks}
+              </div>
+            )}
           </div>
         </div>
 
@@ -71,24 +85,47 @@ export default function DetailPanel({ selected, detail, selStyle, threats, tab, 
                 {detail.summary}
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {detail.tasks.map((task, i) => (
-                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <div style={{
-                      width: 24, height: 24, borderRadius: 6,
-                      background: `${selStyle?.color}22`,
-                      color: selStyle?.color,
-                      fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 800,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      flexShrink: 0, border: `1px solid ${selStyle?.color}44`,
-                    }}>
-                      {i + 1}
-                    </div>
-                    <div style={{ fontSize: 13.5, lineHeight: 1.7, color: "#c8dcc8", paddingTop: 3 }}>
-                      {task}
-                    </div>
-                  </div>
-                ))}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {detail.tasks.map((task, i) => {
+                  const isChecked = checked?.includes(i);
+                  return (
+                    <button
+                      type="button"
+                      key={i}
+                      onClick={() => onToggle?.(i)}
+                      style={{
+                        display: "flex", gap: 10, alignItems: "flex-start",
+                        background: isChecked ? "rgba(34,197,94,0.05)" : "transparent",
+                        border: "none", borderRadius: 8,
+                        padding: "4px 6px", margin: "-4px -6px",
+                        textAlign: "left", width: "calc(100% + 12px)",
+                        cursor: onToggle ? "pointer" : "default",
+                        transition: "background 0.15s",
+                      }}>
+                      <div style={{
+                        width: 24, height: 24, borderRadius: 6,
+                        background: isChecked ? selStyle?.color : `${selStyle?.color}22`,
+                        color: isChecked ? "#0e1a12" : selStyle?.color,
+                        fontFamily: "'Courier New', monospace", fontSize: 12, fontWeight: 800,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        flexShrink: 0,
+                        border: `1px solid ${isChecked ? selStyle?.color : `${selStyle?.color}44`}`,
+                        transition: "background 0.15s, color 0.15s",
+                      }}>
+                        {isChecked ? "✓" : i + 1}
+                      </div>
+                      <div style={{
+                        fontSize: 13.5, lineHeight: 1.7,
+                        color: isChecked ? "#5a7a5a" : "#c8dcc8",
+                        paddingTop: 3,
+                        textDecoration: isChecked ? "line-through" : "none",
+                        transition: "color 0.15s",
+                      }}>
+                        {task}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
 
               {detail.notes && (

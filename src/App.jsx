@@ -8,6 +8,8 @@ import {
   getNextMilestone,
   getGrowProgress,
 } from "./lib/growData.js";
+import { useAuth } from "./lib/auth.jsx";
+import { useCheckoffs } from "./lib/useCheckoffs.js";
 
 import Header from "./components/Header.jsx";
 import MilestoneStrip from "./components/MilestoneStrip.jsx";
@@ -15,8 +17,10 @@ import Calendar from "./components/Calendar.jsx";
 import PhaseLegend from "./components/PhaseLegend.jsx";
 import DetailPanel from "./components/DetailPanel.jsx";
 import ThreatsReference from "./components/ThreatsReference.jsx";
+import AuthFooter from "./components/AuthFooter.jsx";
 
 export default function App() {
+  const { user } = useAuth();
   const [month,    setMonth]    = useState(TODAY.getMonth());
   const [selected, setSelected] = useState(null);
   const [tab,      setTab]      = useState("tasks");
@@ -31,6 +35,8 @@ export default function App() {
   const selStyle = selPhase ? PHASES[selPhase]    : null;
   const detail   = selected ? getDetail(selected) : null;
   const threats  = selPhase ? getThreatsForPhase(selPhase) : [];
+
+  const { checked, toggle } = useCheckoffs(selected, Boolean(user));
 
   function pickDay(date) {
     setSelected(date);
@@ -50,11 +56,11 @@ export default function App() {
   }
 
   return (
-    <div style={{
+    <div className="app-shell" style={{
       fontFamily: "'Georgia', 'Times New Roman', serif",
       background: "#0e1a12",
       minHeight: "100vh",
-      padding: "0 0 48px",
+      paddingBottom: 24,
       color: "#f0ebe0",
     }}>
       <Header
@@ -65,23 +71,32 @@ export default function App() {
         onJumpToday={jumpToday}
       />
       <MilestoneStrip onPick={pickMilestone} />
-      <Calendar
-        month={month}
-        setMonth={setMonth}
-        selected={selected}
-        onPickDay={pickDay}
-        onClearSelection={() => setSelected(null)}
-      />
-      <PhaseLegend />
-      <DetailPanel
-        selected={selected}
-        detail={detail}
-        selStyle={selStyle}
-        threats={threats}
-        tab={tab}
-        setTab={setTab}
-      />
-      <ThreatsReference />
+      <div className="app-main">
+        <div className="app-main-left">
+          <Calendar
+            month={month}
+            setMonth={setMonth}
+            selected={selected}
+            onPickDay={pickDay}
+            onClearSelection={() => setSelected(null)}
+          />
+          <PhaseLegend />
+          <ThreatsReference />
+        </div>
+        <div className="app-main-right">
+          <DetailPanel
+            selected={selected}
+            detail={detail}
+            selStyle={selStyle}
+            threats={threats}
+            tab={tab}
+            setTab={setTab}
+            checked={checked}
+            onToggle={toggle}
+          />
+        </div>
+      </div>
+      <AuthFooter />
     </div>
   );
 }

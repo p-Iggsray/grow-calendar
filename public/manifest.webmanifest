@@ -1,0 +1,19 @@
+{
+  "name": "Grow Calendar",
+  "short_name": "Grow",
+  "description": "Personal outdoor grow calendar for the 2026 season.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0e1a12",
+  "theme_color": "#0e1a12",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

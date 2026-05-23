@@ -1,12 +1,13 @@
 # Grow Calendar
 
-A personal grow calendar for the 2026 outdoor season (1× Grandaddy Purp, 2× Strawberry Haze, Athens OH). Single-page React app, deployed to Cloudflare Pages.
+A personal grow calendar for the 2026 outdoor season (1× Grandaddy Purp, 2× Strawberry Haze, Athens OH). Cross-device sync via Cloudflare Workers + D1.
 
 ## Stack
 
-- Vite + React 18 (static SPA, no router)
-- Cloudflare Pages (static hosting, GitHub-driven auto-deploy)
-- Planned: Cloudflare D1 (SQL) + R2 (photos) + Pages Functions backend behind a passcode
+- Vite + React 18 (frontend SPA)
+- Cloudflare Workers (backend, `worker/` directory)
+- Cloudflare D1 (SQL database)
+- Wrangler 4 (deploy tooling)
 
 ## Local dev
 
@@ -15,61 +16,126 @@ npm install
 npm run dev
 ```
 
-Open the URL Vite prints (usually http://localhost:5173).
+Frontend dev only (Vite). API calls will 404 locally unless you also run `npx wrangler dev` in a second terminal.
 
-## Production build
+Or double-click `launch.bat` from File Explorer.
+
+## First-time Cloudflare setup
+
+Follow these in order. You only do this once.
+
+### 1. Authenticate wrangler
 
 ```bash
-npm run build
-npm run preview
+npx wrangler login
 ```
 
-`npm run build` outputs to `dist/`. `npm run preview` serves that build locally for a final smoke test.
+This opens a browser to authorize your Cloudflare account.
 
-## Deploy to Cloudflare Pages
+### 2. Create the D1 database
 
-First-time setup:
+```bash
+npx wrangler d1 create grow-calendar-db
+```
 
-1. Push this repo to GitHub.
-2. In the Cloudflare dashboard, go to **Workers & Pages** > **Create application** > **Pages** > **Connect to Git**.
-3. Pick this repo.
-4. Build settings:
-   - Framework preset: `Vite`
-   - Build command: `npm run build`
-   - Build output directory: `dist`
-   - Root directory: leave blank
-5. Click **Save and Deploy**.
+Wrangler prints a `database_id` (a UUID). Copy it.
 
-After that, every push to `main` triggers a deploy. The dashboard shows build logs and the live URL (typically `grow-calendar.pages.dev`).
+### 3. Paste the database_id into wrangler.jsonc
+
+Open `wrangler.jsonc` and replace `REPLACE_WITH_DB_ID_FROM_WRANGLER_D1_CREATE` with the UUID from step 2.
+
+### 4. Create the database tables
+
+```bash
+npx wrangler d1 execute grow-calendar-db --remote --file=./schema.sql
+```
+
+This creates the `users`, `sessions`, and `task_checkoffs` tables on the production D1 database. Run it once.
+
+### 5. Deploy
+
+```bash
+npm run deploy
+```
+
+This runs `vite build` then `wrangler deploy`. Wrangler prints your live URL (something like `https://grow-calendar.<your-subdomain>.workers.dev`).
+
+### 6. Connect Cloudflare to GitHub for auto-deploy
+
+In the Cloudflare dashboard, find your `grow-calendar` Worker, go to **Settings > Builds > Build configuration**, and:
+
+- Repository: connect to `p-Iggsray/grow-calendar`
+- Build command: leave blank (or `npm install`)
+- Deploy command: `npm run deploy`
+- Root directory: leave blank
+
+Every push to `main` now redeploys automatically.
+
+## Account management
+
+- The **Create Account** button is visible only when zero users exist in the database.
+- After you create your account, signup auto-closes.
+- To reopen signup later (e.g., to add another user):
+  ```bash
+  npx wrangler d1 execute grow-calendar-db --remote --command="DELETE FROM users WHERE id = 999"
+  ```
+  (or any operation that drops the user count to 0). A cleaner option:
+  ```bash
+  # Add a temp account directly via SQL, or implement an admin endpoint later
+  ```
+- To wipe your own account and start over:
+  ```bash
+  npx wrangler d1 execute grow-calendar-db --remote --command="DELETE FROM users; DELETE FROM sessions; DELETE FROM task_checkoffs;"
+  ```
 
 ## Project layout
 
 ```
-src/
-  main.jsx              entry, mounts App to #root
-  App.jsx               shell, owns top-level state
+src/                       Frontend (React)
+  main.jsx                 Entry. AuthProvider + Root → LoginGate or App.
+  App.jsx                  Authenticated app shell.
   lib/
-    dates.js            TODAY, sameDay, daysBetween, formatters
-    growData.js         D dates, PHASES, THREATS, MILESTONES, getPhase, getDetail
+    dates.js               TODAY, sameDay, daysBetween, formatters.
+    growData.js            D dates, PHASES, THREATS, MILESTONES, getPhase, getDetail.
+    api.js                 fetch wrappers for /api/*.
+    auth.jsx               AuthProvider context + useAuth hook.
+    useCheckoffs.js        Per-day check-off state hook with focus refetch.
   components/
-    Header.jsx          gradient header + progress bar + status pills
-    MilestoneStrip.jsx  horizontal scrollable milestones
-    Calendar.jsx        month nav + day grid
-    PhaseLegend.jsx     phase color key
-    DetailPanel.jsx     selected-day card with Tasks/Threats tabs
-    ThreatsReference.jsx  all-season threat list
+    Header.jsx, MilestoneStrip.jsx, Calendar.jsx, PhaseLegend.jsx,
+    DetailPanel.jsx, ThreatsReference.jsx, LoginGate.jsx, AuthFooter.jsx
 
-index.html, vite.config.js, package.json   build setup
+worker/                    Backend (Cloudflare Worker)
+  index.js                 Router. /api/* hits worker, everything else serves assets.
+  auth.js                  Signup, login, logout, me, PBKDF2 hashing, session cookies.
+  checkoffs.js             GET/PUT /api/checkoffs/:date.
+  util.js                  JSON helpers, cookie helpers.
+
+schema.sql                 D1 schema. Apply with wrangler d1 execute.
+wrangler.jsonc             Worker + D1 + assets config.
+launch.bat                 Windows one-click dev launcher.
 ```
+
+## How sync works
+
+- Each device opens the app, sees the login screen, signs in. The session cookie is set HttpOnly + Secure on the device.
+- Check off a task → frontend PUTs `/api/checkoffs/2026-05-23` with the full list of checked indexes for that day → D1 row updated.
+- Open the app on another device or refocus the tab → `useCheckoffs` refetches → latest state appears.
+- "Sync on focus" not WebSockets, so if both devices are open simultaneously and you click on phone, the laptop sees it the next time the tab regains focus.
 
 ## Roadmap
 
-This is step 1 of a multi-step build. Pure frontend, no persistence. Next steps:
+Steps completed: scaffold, deploy pipeline, auth, task check-off sync.
 
-1. Passcode auth + Cloudflare D1 setup
-2. Task check-offs synced to D1
-3. Daily notes / journal
-4. Structured grow log (pH, water, feed, temp, humidity)
-5. Photo uploads via R2
+Next:
+- Daily notes / journal (per-day free text)
+- Structured grow log (pH, water, feed, temp, humidity)
+- Photo uploads via R2
 
-Each step lands as its own commit so the live site stays working between increments.
+## Production build (manual)
+
+```bash
+npm run build       # produces dist/
+npm run preview     # local preview of the built bundle (frontend only)
+```
+
+`npm run deploy` does the build + wrangler deploy together. CI / Cloudflare auto-deploy uses this command.

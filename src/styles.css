@@ -1,0 +1,110 @@
+:root {
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  background: #0e1a12;
+  min-height: 100vh;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+button {
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+textarea {
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.app-shell {
+  width: 100%;
+}
+
+.app-header,
+.app-strip {
+  width: 100%;
+}
+
+.app-main {
+  display: block;
+}
+
+.app-detail-wrap {
+  display: block;
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .app-shell {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-shell {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .app-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 460px);
+    align-items: start;
+    gap: 4px;
+  }
+  .app-main-left,
+  .app-main-right {
+    min-width: 0;
+  }
+  .app-main-right {
+    position: sticky;
+    top: 12px;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+  }
+}
+
+@media (min-width: 1400px) {
+  .app-main {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 520px);
+  }
+}
+
+@media (hover: hover) {
+  button:not(:disabled):hover {
+    filter: brightness(1.15);
+  }
+}

@@ -1,0 +1,154 @@
+import {
+  json, error, nowIso,
+  bytesToBase64, base64ToBytes, bytesToBase64Url,
+  parseCookies, sessionCookie, clearSessionCookie, isHttps,
+} from "./util.js";
+
+const PBKDF2_ITERATIONS = 100_000;
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
+const MIN_PASSWORD_LENGTH = 8;
+const MAX_USERNAME_LENGTH = 32;
+const USERNAME_RE = /^[a-zA-Z0-9_-]{2,32}$/;
+
+async function hashPassword(password, saltBytes) {
+  const salt = saltBytes || crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
+    keyMaterial,
+    256,
+  );
+  return { salt: bytesToBase64(salt), hash: bytesToBase64(new Uint8Array(bits)) };
+}
+
+function newSessionToken() {
+  return bytesToBase64Url(crypto.getRandomValues(new Uint8Array(32)));
+}
+
+function constantTimeEqual(a, b) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+export async function getSignupStatus(env) {
+  const row = await env.DB.prepare("SELECT COUNT(*) AS n FROM users").first();
+  return json({ open: (row?.n ?? 0) === 0 });
+}
+
+export async function getMe(request, env) {
+  const user = await currentUser(request, env);
+  if (!user) return error(401, "not authenticated");
+  return json({ user: { id: user.id, username: user.username } });
+}
+
+export async function signup(request, env) {
+  const body = await safeJson(request);
+  if (!body) return error(400, "invalid json");
+  const username = String(body.username || "").trim();
+  const password = String(body.password || "");
+
+  if (!USERNAME_RE.test(username)) {
+    return error(400, "username must be 2-32 chars, letters/numbers/underscore/hyphen only");
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return error(400, `password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+  }
+
+  const userCount = await env.DB.prepare("SELECT COUNT(*) AS n FROM users").first();
+  if ((userCount?.n ?? 0) > 0) {
+    return error(403, "signup is closed");
+  }
+
+  const existing = await env.DB.prepare("SELECT id FROM users WHERE username = ?").bind(username).first();
+  if (existing) return error(409, "username already taken");
+
+  const { salt, hash } = await hashPassword(password);
+  const createdAt = nowIso();
+  const result = await env.DB.prepare(
+    "INSERT INTO users (username, password_hash, password_salt, created_at) VALUES (?, ?, ?, ?)",
+  ).bind(username, hash, salt, createdAt).run();
+
+  const userId = result.meta.last_row_id;
+  return finishLogin(request, env, userId, username);
+}
+
+export async function login(request, env) {
+  const body = await safeJson(request);
+  if (!body) return error(400, "invalid json");
+  const username = String(body.username || "").trim();
+  const password = String(body.password || "");
+  if (!username || !password) return error(400, "username and password required");
+
+  const user = await env.DB.prepare(
+    "SELECT id, username, password_hash, password_salt FROM users WHERE username = ?",
+  ).bind(username).first();
+
+  if (!user) {
+    await hashPassword(password, base64ToBytes("AAAAAAAAAAAAAAAAAAAAAA=="));
+    return error(401, "invalid credentials");
+  }
+
+  const { hash } = await hashPassword(password, base64ToBytes(user.password_salt));
+  if (!constantTimeEqual(hash, user.password_hash)) {
+    return error(401, "invalid credentials");
+  }
+
+  return finishLogin(request, env, user.id, user.username);
+}
+
+export async function logout(request, env) {
+  const cookies = parseCookies(request.headers.get("cookie"));
+  const token = cookies.session;
+  if (token) {
+    await env.DB.prepare("DELETE FROM sessions WHERE token = ?").bind(token).run();
+  }
+  return json({ ok: true }, {
+    headers: { "set-cookie": clearSessionCookie(isHttps(request)) },
+  });
+}
+
+export async function currentUser(request, env) {
+  const cookies = parseCookies(request.headers.get("cookie"));
+  const token = cookies.session;
+  if (!token) return null;
+
+  const row = await env.DB.prepare(`
+    SELECT u.id, u.username, s.expires_at
+    FROM sessions s
+    JOIN users u ON u.id = s.user_id
+    WHERE s.token = ?
+  `).bind(token).first();
+
+  if (!row) return null;
+  if (new Date(row.expires_at) < new Date()) {
+    await env.DB.prepare("DELETE FROM sessions WHERE token = ?").bind(token).run();
+    return null;
+  }
+  return { id: row.id, username: row.username };
+}
+
+async function finishLogin(request, env, userId, username) {
+  const token = newSessionToken();
+  const createdAt = nowIso();
+  const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000).toISOString();
+  await env.DB.prepare(
+    "INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
+  ).bind(token, userId, createdAt, expiresAt).run();
+
+  return json({ user: { id: userId, username } }, {
+    headers: { "set-cookie": sessionCookie(token, SESSION_TTL_SECONDS, isHttps(request)) },
+  });
+}
+
+async function safeJson(request) {
+  try { return await request.json(); }
+  catch { return null; }
+}
