@@ -1,141 +1,92 @@
-# Grow Calendar
+<div align="center">
 
-A personal grow calendar for the 2026 outdoor season (1× Grandaddy Purp, 2× Strawberry Haze, Athens OH). Cross-device sync via Cloudflare Workers + D1.
+<img src="assets/banner.svg" alt="The Grow Calendar, Grow Log, Athens Ohio, 2026" width="100%" />
 
-## Stack
+<br />
 
-- Vite + React 18 (frontend SPA)
-- Cloudflare Workers (backend, `worker/` directory)
-- Cloudflare D1 (SQL database)
-- Wrangler 4 (deploy tooling)
+<img src="https://readme-typing-svg.demolab.com?font=Georgia&size=22&color=4ade80&center=true&vCenter=true&width=720&height=46&duration=4000&pause=1200&lines=Your+grow+plan%2C+anywhere+you+are.;One+GDP+and+two+Strawberry+Haze+in+Athens+Ohio;147+days+from+May+21+to+October+18" alt="rotating tagline" />
 
-## Local dev
+<br /><br />
 
-```bash
-npm install
-npm run dev
-```
+![Season](https://img.shields.io/badge/season-2026-22c55e?style=for-the-badge&labelColor=0e1a12)
+![Plants](https://img.shields.io/badge/plants-3-fde047?style=for-the-badge&labelColor=0e1a12)
+![Stack](https://img.shields.io/badge/react+vite+workers-ec4899?style=for-the-badge&logo=react&logoColor=fff&labelColor=0e1a12)
+![Hosting](https://img.shields.io/badge/cloudflare-fb923c?style=for-the-badge&logo=cloudflare&logoColor=fff&labelColor=0e1a12)
+![Vibe](https://img.shields.io/badge/vibe-hippie%20stoner-7c3aed?style=for-the-badge&labelColor=0e1a12)
 
-Frontend dev only (Vite). API calls will 404 locally unless you also run `npx wrangler dev` in a second terminal.
+</div>
 
-Or double-click `launch.bat` from File Explorer.
+<img src="assets/divider.svg" alt="" width="100%" />
 
-## First-time Cloudflare setup
+## What this is
 
-Follow these in order. You only do this once.
+A personal grow journal for the **2026 outdoor season** in Athens, Ohio. One Grandaddy Purp. Two Strawberry Haze. Twenty one weeks of sun, rain, heat, frost, and watching things slowly turn into other things.
 
-### 1. Authenticate wrangler
+The whole season lives inside this app. Every day from transplant to harvest has its own task list, its own dosing notes, its own warnings about whatever the Ohio weather is about to throw at you. Check things off on your phone in the garden. Open your laptop later. It's all there. That's the whole pitch.
 
-```bash
-npx wrangler login
-```
+> It's a planner, but it's also a moment of breath every morning. Open it, see what today wants, do the thing, close it.
 
-This opens a browser to authorize your Cloudflare account.
+<img src="assets/divider.svg" alt="" width="100%" />
 
-### 2. Create the D1 database
+## What it does
 
-```bash
-npx wrangler d1 create grow-calendar-db
-```
+|   |   |
+|---|---|
+| **A 147-day master plan** | Transplant day through final harvest. Every single day mapped. |
+| **Phase aware** | Pre-veg, veg, pre-flower, flower, flush, harvest. The app knows where you are and what that means today. |
+| **Threat warnings by phase** | Heat, cold, frost, rain, humidity, hail, wind, pests. Only the ones that actually matter for the stage you're in right now. |
+| **Live cross-device sync** | Check something off on your phone outside. Refocus your laptop tab. It's there. |
+| **Dark hippie-themed UI** | Serif headlines, monospace labels, soft amber notes. Built to look right under a porch light. |
+| **Installs on your home screen** | iOS Add to Home Screen, Android install banner, desktop PWA shortcut. No app store. |
+| **Responsive everywhere** | Phone, tablet, laptop, desktop, all dialed in. |
 
-Wrangler prints a `database_id` (a UUID). Copy it.
+<img src="assets/divider.svg" alt="" width="100%" />
 
-### 3. Paste the database_id into wrangler.jsonc
+## The plants
 
-Open `wrangler.jsonc` and replace `REPLACE_WITH_DB_ID_FROM_WRANGLER_D1_CREATE` with the UUID from step 2.
+<div align="center">
 
-### 4. Create the database tables
+| Strain | Profile | Pots | Flush starts | Harvest target |
+|:------:|:-------:|:----:|:------------:|:--------------:|
+| **Grandaddy Purp** | Indica, dense, purple-leaning | 1 (7-gal fabric) | Sept 20 | **Sept 27** |
+| **Strawberry Haze** | Sativa, tall, airy buds | 2 (7-gal fabric) | Oct 4 | **Oct 18** |
 
-```bash
-npx wrangler d1 execute grow-calendar-db --remote --file=./schema.sql
-```
+</div>
 
-This creates the `users`, `sessions`, and `task_checkoffs` tables on the production D1 database. Run it once.
+<img src="assets/divider.svg" alt="" width="100%" />
 
-### 5. Deploy
+## The vibe
 
-```bash
-npm run deploy
-```
+Dark mossy greens. Soft amber accents like late-evening lamplight. Courier-style monospace for labels, Georgia serif for headlines, like an old field journal. Sunset colors only show up where they belong, on the icon, on the login screen, on the homepage banner. The interior is calm.
 
-This runs `vite build` then `wrangler deploy`. Wrangler prints your live URL (something like `https://grow-calendar.<your-subdomain>.workers.dev`).
+The whole app is designed to feel less like a productivity tool and more like a journal you check while drinking your morning coffee or smoking on the back porch. No streaks. No achievements. No dopamine loops. Just the plan, the day, and the plant.
 
-### 6. Connect Cloudflare to GitHub for auto-deploy
+<img src="assets/divider.svg" alt="" width="100%" />
 
-In the Cloudflare dashboard, find your `grow-calendar` Worker, go to **Settings > Builds > Build configuration**, and:
+## Where it runs
 
-- Repository: connect to `p-Iggsray/grow-calendar`
-- Build command: leave blank (or `npm install`)
-- Deploy command: `npm run deploy`
-- Root directory: leave blank
+Hosted on Cloudflare Workers with D1 for storage. Lives at a free workers.dev subdomain. Auto-deploys on every push to main. Sessions persist 30 days. Passwords are PBKDF2 hashed with a per-user salt. Cookies are HttpOnly and Secure.
 
-Every push to `main` now redeploys automatically.
+It's a one-person app for a one-person grow. The login page has no create-account button because it doesn't need one.
 
-## Account management
+<img src="assets/divider.svg" alt="" width="100%" />
 
-- The **Create Account** button is visible only when zero users exist in the database.
-- After you create your account, signup auto-closes.
-- To reopen signup later (e.g., to add another user):
-  ```bash
-  npx wrangler d1 execute grow-calendar-db --remote --command="DELETE FROM users WHERE id = 999"
-  ```
-  (or any operation that drops the user count to 0). A cleaner option:
-  ```bash
-  # Add a temp account directly via SQL, or implement an admin endpoint later
-  ```
-- To wipe your own account and start over:
-  ```bash
-  npx wrangler d1 execute grow-calendar-db --remote --command="DELETE FROM users; DELETE FROM sessions; DELETE FROM task_checkoffs;"
-  ```
+## Self-hosting
 
-## Project layout
+If you want to clone this and run your own version with your own grow plan, all the technical setup, schema, wrangler steps, auth model, and project layout is in **[DEV.md](DEV.md)**.
 
-```
-src/                       Frontend (React)
-  main.jsx                 Entry. AuthProvider + Root → LoginGate or App.
-  App.jsx                  Authenticated app shell.
-  lib/
-    dates.js               TODAY, sameDay, daysBetween, formatters.
-    growData.js            D dates, PHASES, THREATS, MILESTONES, getPhase, getDetail.
-    api.js                 fetch wrappers for /api/*.
-    auth.jsx               AuthProvider context + useAuth hook.
-    useCheckoffs.js        Per-day check-off state hook with focus refetch.
-  components/
-    Header.jsx, MilestoneStrip.jsx, Calendar.jsx, PhaseLegend.jsx,
-    DetailPanel.jsx, ThreatsReference.jsx, LoginGate.jsx, AuthFooter.jsx
+<img src="assets/divider.svg" alt="" width="100%" />
 
-worker/                    Backend (Cloudflare Worker)
-  index.js                 Router. /api/* hits worker, everything else serves assets.
-  auth.js                  Signup, login, logout, me, PBKDF2 hashing, session cookies.
-  checkoffs.js             GET/PUT /api/checkoffs/:date.
-  util.js                  JSON helpers, cookie helpers.
+<div align="center">
 
-schema.sql                 D1 schema. Apply with wrangler d1 execute.
-wrangler.jsonc             Worker + D1 + assets config.
-launch.bat                 Windows one-click dev launcher.
-```
+<br />
 
-## How sync works
+<img src="public/icon.svg" width="56" alt="" />
 
-- Each device opens the app, sees the login screen, signs in. The session cookie is set HttpOnly + Secure on the device.
-- Check off a task → frontend PUTs `/api/checkoffs/2026-05-23` with the full list of checked indexes for that day → D1 row updated.
-- Open the app on another device or refocus the tab → `useCheckoffs` refetches → latest state appears.
-- "Sync on focus" not WebSockets, so if both devices are open simultaneously and you click on phone, the laptop sees it the next time the tab regains focus.
+<br /><br />
 
-## Roadmap
+<sub><em>Built solo. Deployed solo. Grown solo. Athens, Ohio, 2026.</em></sub>
 
-Steps completed: scaffold, deploy pipeline, auth, task check-off sync.
+<br /><br />
 
-Next:
-- Daily notes / journal (per-day free text)
-- Structured grow log (pH, water, feed, temp, humidity)
-- Photo uploads via R2
-
-## Production build (manual)
-
-```bash
-npm run build       # produces dist/
-npm run preview     # local preview of the built bundle (frontend only)
-```
-
-`npm run deploy` does the build + wrangler deploy together. CI / Cloudflare auto-deploy uses this command.
+</div>

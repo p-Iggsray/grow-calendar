@@ -2,23 +2,18 @@ import { useState } from "react";
 import { useAuth } from "../lib/auth.jsx";
 
 export default function LoginGate() {
-  const { signupOpen, login, signup } = useAuth();
-  const [mode, setMode] = useState("login");
+  const { login } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-
-  const canSignup = signupOpen;
-  const activeMode = mode === "signup" && !canSignup ? "login" : mode;
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     setBusy(true);
     try {
-      if (activeMode === "signup") await signup(username.trim(), password);
-      else await login(username.trim(), password);
+      await login(username.trim(), password);
     } catch (err) {
       setError(err.message || "something went wrong");
     } finally {
@@ -55,33 +50,9 @@ export default function LoginGate() {
             Grow Log · Athens, Ohio
           </div>
           <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: -1, color: "#e8f5e3" }}>
-            The Summer Grow
+            The Grow Calendar
           </div>
         </div>
-
-        {canSignup && (
-          <div style={{ display: "flex", marginBottom: 18, borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-            {[
-              { id: "login",  label: "Log In" },
-              { id: "signup", label: "Create Account" },
-            ].map(t => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => { setMode(t.id); setError(""); }}
-                style={{
-                  flex: 1, padding: "10px 0", background: "none", border: "none",
-                  borderBottom: activeMode === t.id ? "2px solid #4ade80" : "2px solid transparent",
-                  color: activeMode === t.id ? "#4ade80" : "#5a7a5a",
-                  fontSize: 12, fontFamily: "'Courier New', monospace",
-                  fontWeight: activeMode === t.id ? 700 : 400,
-                  cursor: "pointer", letterSpacing: 1,
-                }}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <Field
@@ -96,7 +67,7 @@ export default function LoginGate() {
             type="password"
             value={password}
             onChange={setPassword}
-            autoComplete={activeMode === "signup" ? "new-password" : "current-password"}
+            autoComplete="current-password"
           />
 
           {error && (
@@ -126,19 +97,9 @@ export default function LoginGate() {
               letterSpacing: 1,
               opacity: !username || !password ? 0.5 : 1,
             }}>
-            {busy ? "..." : activeMode === "signup" ? "CREATE ACCOUNT" : "LOG IN"}
+            {busy ? "..." : "LOG IN"}
           </button>
         </form>
-
-        {!canSignup && (
-          <div style={{
-            marginTop: 16, fontSize: 11, color: "#3a5a3a",
-            fontFamily: "'Courier New', monospace", textAlign: "center",
-            lineHeight: 1.7,
-          }}>
-            Signup is closed.
-          </div>
-        )}
       </div>
     </div>
   );

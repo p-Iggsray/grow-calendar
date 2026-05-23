@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 48" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <linearGradient id="divFade" x1="0" y1="0.5" x2="1" y2="0.5">
+      <stop offset="0%"   stop-color="#22c55e" stop-opacity="0"/>
+      <stop offset="20%"  stop-color="#22c55e" stop-opacity="0.6"/>
+      <stop offset="50%"  stop-color="#4ade80" stop-opacity="0.85"/>
+      <stop offset="80%"  stop-color="#22c55e" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <path fill="none" stroke="url(#divFade)" stroke-width="1.4" stroke-linecap="round"
+        d="M 0 24 Q 200 14, 400 26 Q 600 38, 800 22 Q 1000 8, 1200 24">
+    <animate attributeName="d"
+             dur="11s" repeatCount="indefinite"
+             values="M 0 24 Q 200 14, 400 26 Q 600 38, 800 22 Q 1000 8, 1200 24;
+                     M 0 24 Q 200 32, 400 18 Q 600 6, 800 28 Q 1000 40, 1200 24;
+                     M 0 24 Q 200 14, 400 26 Q 600 38, 800 22 Q 1000 8, 1200 24"/>
+  </path>
+
+  <path fill="none" stroke="url(#divFade)" stroke-width="0.9" stroke-linecap="round" opacity="0.55"
+        d="M 0 24 Q 250 30, 500 18 Q 750 8, 1000 30 Q 1100 36, 1200 24">
+    <animate attributeName="d"
+             dur="14s" repeatCount="indefinite"
+             values="M 0 24 Q 250 30, 500 18 Q 750 8, 1000 30 Q 1100 36, 1200 24;
+                     M 0 24 Q 250 16, 500 32 Q 750 42, 1000 16 Q 1100 10, 1200 24;
+                     M 0 24 Q 250 30, 500 18 Q 750 8, 1000 30 Q 1100 36, 1200 24"/>
+  </path>
+
+  <g transform="translate(600 24)">
+    <circle r="11" fill="none" stroke="#4ade80" stroke-width="1" opacity="0.5">
+      <animate attributeName="r" values="11;22;11" dur="3.4s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.5;0;0.5" dur="3.4s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="5" fill="#0e1a12" stroke="#4ade80" stroke-width="1.5"/>
+    <circle r="2" fill="#86efac">
+      <animate attributeName="opacity" values="0.6;1;0.6" dur="3.4s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+</svg>
