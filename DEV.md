@@ -34,6 +34,26 @@ First time only, create the local D1 tables:
 npx wrangler d1 execute grow-calendar-db --local --file=./schema.sql
 ```
 
+## AI grow assistant
+
+The floating "Ask" button opens a chat backed by the Anthropic API. The Worker holds the API key as a secret and never exposes it to the browser.
+
+**Local:** create a gitignored `.dev.vars` file in the project root:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+`wrangler dev` reads it automatically. Without it, `/api/chat` returns a friendly "chat is not configured yet" message.
+
+**Production:** set the secret once, then deploy:
+
+```bash
+npx wrangler secret put ANTHROPIC_API_KEY
+```
+
+Model: Claude Haiku 4.5 (`claude-haiku-4-5`), non-streaming. Conversations are ephemeral (in memory, cleared on reload). Context sent to the model: the grow plan, today's date, and your saved daily notes. The chat reads the `day_notes` table, so that table must exist in the target environment before deploying.
+
 ## First-time Cloudflare setup
 
 You only do this once per environment. All commands run from the project root.
@@ -119,6 +139,8 @@ worker/                           Backend (Cloudflare Worker)
   auth.js                         Signup, login, logout, me, PBKDF2 hashing, session cookies.
   checkoffs.js                    GET/PUT /api/checkoffs/:date.
   notes.js                        GET/PUT /api/notes/:date.
+  chat.js                         POST /api/chat - proxies to the Anthropic API.
+  growContext.js                  Static grow-plan text for the assistant system prompt.
   util.js                         JSON helpers, cookie helpers.
 
 public/
