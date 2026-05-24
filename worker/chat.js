@@ -51,13 +51,17 @@ export async function postChat(request, env) {
     ? noteRows.map(r => `${r.date}: ${r.body}`).join("\n")
     : "(none yet)";
 
-  const today = new Date().toISOString().slice(0, 10);
+  // Date in the grow's local timezone (Athens, Ohio), not the edge's UTC, so
+  // "today" matches the grower's day at phase boundaries. en-CA formats YYYY-MM-DD.
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
   const dynamic = `Today's date is ${today}.\n\nThe grower's saved daily notes:\n${notesText}`;
 
   const payload = {
     model: MODEL,
     max_tokens: MAX_TOKENS,
     // Static block first (cacheable prefix), volatile block second (never cached).
+    // Note: at the current ~1K-token static size this is below Haiku's ~4K cache
+    // floor, so cache_control is a harmless no-op until the static block grows.
     system: [
       { type: "text", text: `${PERSONA}\n\n${GROW_CONTEXT}`, cache_control: { type: "ephemeral" } },
       { type: "text", text: dynamic },
