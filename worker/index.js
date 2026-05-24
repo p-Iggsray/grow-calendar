@@ -2,6 +2,7 @@ import { error } from "./util.js";
 import { getSignupStatus, signup, login, logout, getMe } from "./auth.js";
 import { getCheckoffs, putCheckoffs } from "./checkoffs.js";
 import { getNote, putNote } from "./notes.js";
+import { postChat } from "./chat.js";
 
 export default {
   async fetch(request, env, ctx) {
@@ -29,6 +30,7 @@ async function route(request, env, path) {
   if (path === "/api/auth/login"         && method === "POST") return login(request, env);
   if (path === "/api/auth/logout"        && method === "POST") return logout(request, env);
   if (path === "/api/auth/me"            && method === "GET")  return getMe(request, env);
+  if (path === "/api/chat" && method === "POST") return postChat(request, env);
 
   const checkoffsMatch = path.match(/^\/api\/checkoffs\/(\d{4}-\d{2}-\d{2})$/);
   if (checkoffsMatch) {
