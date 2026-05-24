@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { TODAY, daysBetween } from "./lib/dates.js";
 import {
   PHASES,
@@ -10,20 +10,29 @@ import {
 } from "./lib/growData.js";
 import { useAuth } from "./lib/auth.jsx";
 import { useCheckoffs } from "./lib/useCheckoffs.js";
+import { useDayNote } from "./lib/useDayNote.js";
+import { ymd } from "./lib/api.js";
 
 import Header from "./components/Header.jsx";
 import MilestoneStrip from "./components/MilestoneStrip.jsx";
 import Calendar from "./components/Calendar.jsx";
 import PhaseLegend from "./components/PhaseLegend.jsx";
-import DetailPanel from "./components/DetailPanel.jsx";
+import DayView from "./components/DayView.jsx";
 import ThreatsReference from "./components/ThreatsReference.jsx";
 import AuthFooter from "./components/AuthFooter.jsx";
+
+const SHELL_STYLE = {
+  fontFamily: "'Georgia', 'Times New Roman', serif",
+  background: "#0e1a12",
+  minHeight: "100vh",
+  paddingBottom: 24,
+  color: "#f0ebe0",
+};
 
 export default function App() {
   const { user } = useAuth();
   const [month,    setMonth]    = useState(TODAY.getMonth());
   const [selected, setSelected] = useState(null);
-  const [tab,      setTab]      = useState("tasks");
 
   const todayPhase = getPhase(TODAY);
   const todayStyle = todayPhase ? PHASES[todayPhase] : null;
@@ -37,32 +46,55 @@ export default function App() {
   const threats  = selPhase ? getThreatsForPhase(selPhase) : [];
 
   const { checked, toggle } = useCheckoffs(selected, Boolean(user));
+  const { note, setNote, status: noteStatus, flush: flushNote } =
+    useDayNote(selected, Boolean(user));
 
-  function pickDay(date) {
+  // Opening a day pushes a history entry so the device/browser back button
+  // returns to the calendar instead of leaving the app.
+  const openDay = useCallback((date) => {
     setSelected(date);
-    setTab("tasks");
-  }
+    window.history.pushState({ growDay: ymd(date) }, "");
+  }, []);
 
-  function pickMilestone(date) {
-    setMonth(date.getMonth());
-    setSelected(date);
-    setTab("tasks");
-  }
+  useEffect(() => {
+    function onPop() { setSelected(null); }
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
-  function jumpToday() {
-    setMonth(TODAY.getMonth());
-    setSelected(TODAY);
-    setTab("tasks");
+  const goBack = useCallback(() => {
+    flushNote();
+    window.history.back();
+  }, [flushNote]);
+
+  function pickDay(date)       { openDay(date); }
+  function pickMilestone(date) { setMonth(date.getMonth()); openDay(date); }
+  function jumpToday()         { setMonth(TODAY.getMonth()); openDay(TODAY); }
+
+  if (selected) {
+    return (
+      <div className="app-shell" style={SHELL_STYLE}>
+        <div className="app-screen">
+          <DayView
+            selected={selected}
+            detail={detail}
+            selStyle={selStyle}
+            threats={threats}
+            checked={checked}
+            onToggle={toggle}
+            note={note}
+            onChangeNote={setNote}
+            onFlushNote={flushNote}
+            noteStatus={noteStatus}
+            onBack={goBack}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="app-shell" style={{
-      fontFamily: "'Georgia', 'Times New Roman', serif",
-      background: "#0e1a12",
-      minHeight: "100vh",
-      paddingBottom: 24,
-      color: "#f0ebe0",
-    }}>
+    <div className="app-shell" style={SHELL_STYLE}>
       <Header
         todayStyle={todayStyle}
         nextMs={nextMs}
@@ -71,30 +103,16 @@ export default function App() {
         onJumpToday={jumpToday}
       />
       <MilestoneStrip onPick={pickMilestone} />
-      <div className="app-main">
-        <div className="app-main-left">
-          <Calendar
-            month={month}
-            setMonth={setMonth}
-            selected={selected}
-            onPickDay={pickDay}
-            onClearSelection={() => setSelected(null)}
-          />
-          <PhaseLegend />
-          <ThreatsReference />
-        </div>
-        <div className="app-main-right">
-          <DetailPanel
-            selected={selected}
-            detail={detail}
-            selStyle={selStyle}
-            threats={threats}
-            tab={tab}
-            setTab={setTab}
-            checked={checked}
-            onToggle={toggle}
-          />
-        </div>
+      <div className="app-screen">
+        <Calendar
+          month={month}
+          setMonth={setMonth}
+          selected={selected}
+          onPickDay={pickDay}
+          onClearSelection={() => setSelected(null)}
+        />
+        <PhaseLegend />
+        <ThreatsReference />
       </div>
       <AuthFooter />
     </div>

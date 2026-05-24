@@ -54,52 +54,16 @@ textarea {
   width: 100%;
 }
 
-.app-header,
-.app-strip {
+.app-screen {
   width: 100%;
 }
 
-.app-main {
-  display: block;
-}
-
-.app-detail-wrap {
-  display: block;
-}
-
-@media (min-width: 640px) and (max-width: 1023px) {
+/* Single centered column on every device. The calendar and the day view are
+   the same readable width; the detail side panel no longer exists. */
+@media (min-width: 640px) {
   .app-shell {
-    max-width: 720px;
+    max-width: 760px;
     margin: 0 auto;
-  }
-}
-
-@media (min-width: 1024px) {
-  .app-shell {
-    max-width: 1400px;
-    margin: 0 auto;
-  }
-  .app-main {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 460px);
-    align-items: start;
-    gap: 4px;
-  }
-  .app-main-left,
-  .app-main-right {
-    min-width: 0;
-  }
-  .app-main-right {
-    position: sticky;
-    top: 12px;
-    max-height: calc(100vh - 24px);
-    overflow-y: auto;
-  }
-}
-
-@media (min-width: 1400px) {
-  .app-main {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 520px);
   }
 }
 
