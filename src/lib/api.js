@@ -34,6 +34,9 @@ export const api = {
   getNote: (date) => request(`/api/notes/${date}`),
   putNote: (date, body) =>
     request(`/api/notes/${date}`, { method: "PUT", body: JSON.stringify({ body }) }),
+
+  chat: (messages) =>
+    request("/api/chat", { method: "POST", body: JSON.stringify({ messages }) }),
 };
 
 export function ymd(date) {
