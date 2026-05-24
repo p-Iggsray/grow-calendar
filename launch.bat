@@ -15,12 +15,26 @@ if not exist node_modules (
 )
 
 echo.
-echo Starting Vite dev server. Your browser should open automatically.
-echo Stop the server with Ctrl+C.
+echo Ensuring the local database tables exist...
+call npx wrangler d1 execute grow-calendar-db --local --file=./schema.sql >nul 2>&1
+
+echo.
+echo Starting the Cloudflare Worker (API + local database) in a separate window.
+echo Wait for it to print "Ready on http://localhost:8787" before logging in.
+start "The Grow Calendar - Worker" cmd /k "npx wrangler dev"
+
+echo Giving the Worker a few seconds to start...
+timeout /t 6 /nobreak >nul
+
+echo.
+echo Starting the Vite dev server. Your browser should open automatically.
+echo The app runs at http://localhost:5173 and talks to the Worker on port 8787.
+echo To stop everything: press Ctrl+C here, then close the Worker window.
 echo.
 call npm run dev
 
 echo.
-echo Dev server stopped. Press any key to close.
+echo Vite stopped. The Worker window is still open. Close it to fully stop.
+echo Press any key to close this window.
 pause >nul
 endlocal
