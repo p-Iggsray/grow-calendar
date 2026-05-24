@@ -14,7 +14,7 @@ export default function DayView({
   const statusLabel =
     noteStatus === "saving" ? "Saving..." :
     noteStatus === "saved"  ? "Saved" :
-    noteStatus === "error"  ? "Save failed — keep typing to retry" : "";
+    noteStatus === "error"  ? "Save failed. Keep typing to retry." : "";
   const statusColor =
     noteStatus === "error" ? "#f87171" :
     noteStatus === "saved" ? "#4ade80" : "#5a7a5a";
@@ -166,7 +166,7 @@ export default function DayView({
                 value={note}
                 onChange={(e) => onChangeNote(e.target.value)}
                 onBlur={() => onFlushNote()}
-                placeholder="Write anything you observed or are worried about on this day — watering, leaf color, pests, weather, questions to look up later..."
+                placeholder="Write anything you observed or are worried about on this day: watering, leaf color, pests, weather, questions to look up later."
                 rows={12}
                 style={{
                   width: "100%", resize: "vertical",
