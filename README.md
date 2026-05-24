@@ -4,14 +4,14 @@
 
 <br />
 
-<img src="https://readme-typing-svg.demolab.com?font=Georgia&size=22&color=4ade80&center=true&vCenter=true&width=720&height=46&duration=4000&pause=1200&lines=Your+grow+plan%2C+anywhere+you+are.;One+GDP+and+two+Strawberry+Haze+in+Athens+Ohio;147+days+from+May+21+to+October+18" alt="rotating tagline" />
+<img src="https://readme-typing-svg.demolab.com?font=Georgia&size=22&color=16a34a&center=true&vCenter=true&width=720&height=46&duration=4000&pause=1200&lines=Your+grow+plan%2C+anywhere+you+are.;One+GDP+and+two+Strawberry+Haze+in+Athens+Ohio;147+days+from+May+21+to+October+18" alt="rotating tagline" />
 
 <br /><br />
 
-![Season](https://img.shields.io/badge/season-2026-22c55e?style=for-the-badge&labelColor=0e1a12)
-![Plants](https://img.shields.io/badge/plants-3-fde047?style=for-the-badge&labelColor=0e1a12)
-![Stack](https://img.shields.io/badge/react+vite+workers-ec4899?style=for-the-badge&logo=react&logoColor=fff&labelColor=0e1a12)
-![Hosting](https://img.shields.io/badge/cloudflare-fb923c?style=for-the-badge&logo=cloudflare&logoColor=fff&labelColor=0e1a12)
+![Season](https://img.shields.io/badge/season-2026-16a34a?style=for-the-badge&labelColor=0e1a12)
+![Plants](https://img.shields.io/badge/plants-3-d97706?style=for-the-badge&labelColor=0e1a12)
+![Stack](https://img.shields.io/badge/react+vite+workers-db2777?style=for-the-badge&logo=react&logoColor=fff&labelColor=0e1a12)
+![Hosting](https://img.shields.io/badge/cloudflare-ea580c?style=for-the-badge&logo=cloudflare&logoColor=fff&labelColor=0e1a12)
 ![Vibe](https://img.shields.io/badge/vibe-hippie%20stoner-7c3aed?style=for-the-badge&labelColor=0e1a12)
 
 </div>
