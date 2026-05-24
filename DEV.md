@@ -19,7 +19,20 @@ npm run dev
 
 Or double-click `launch.bat` from File Explorer on Windows.
 
-Frontend dev only (Vite). API calls (`/api/*`) will 404 locally unless you also run `npx wrangler dev` in a second terminal to bring up a local Worker + miniflare D1.
+`npm run dev` alone is frontend-only (Vite). For a full local stack (frontend + API + local D1), run two terminals:
+
+```bash
+npm run dev        # terminal 1: Vite on http://localhost:5173 (hot reload)
+npx wrangler dev   # terminal 2: Worker + miniflare D1 on http://localhost:8787
+```
+
+Open http://localhost:5173. Vite proxies `/api/*` to the Worker on port 8787 (see `vite.config.js`), so login and check-off/notes sync work against the local D1. Running `npm run dev` without the Worker makes every `/api/*` call return 404.
+
+First time only, create the local D1 tables:
+
+```bash
+npx wrangler d1 execute grow-calendar-db --local --file=./schema.sql
+```
 
 ## First-time Cloudflare setup
 
