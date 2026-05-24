@@ -6,7 +6,8 @@ Everything you need to run, modify, or self-host **The Grow Calendar**.
 
 - Vite + React 18 (frontend SPA)
 - Cloudflare Workers (backend `worker/` directory)
-- Cloudflare D1 (SQL database for users, sessions, check-offs)
+- Cloudflare D1 (SQL database for users, sessions, check-offs, daily notes)
+- Anthropic API (Claude Haiku 4.5) for the in-app grow assistant
 - Wrangler 4 (deploy tooling)
 - Pure CSS media queries for responsive layout (no UI framework)
 
@@ -17,7 +18,7 @@ npm install
 npm run dev
 ```
 
-Or double-click `launch.bat` from File Explorer on Windows.
+Or just double-click `launch.bat` on Windows. It installs dependencies if needed, ensures the local database tables exist, then opens two windows (the Cloudflare Worker on :8787 and the Vite dev server) and points your browser at http://localhost:5173. Easiest way to run the full stack locally.
 
 `npm run dev` alone is frontend-only (Vite). For a full local stack (frontend + API + local D1), run two terminals:
 
@@ -33,6 +34,23 @@ First time only, create the local D1 tables:
 ```bash
 npx wrangler d1 execute grow-calendar-db --local --file=./schema.sql
 ```
+
+### Logging in locally
+
+The local database is separate from production and has its own accounts. A test account already exists locally:
+
+- Username: `test`
+- Password: `testpass123`
+
+Sign in with those at http://localhost:5173 (launch.bat) or http://localhost:8787 (wrangler dev only).
+
+If your local database is fresh and has no accounts yet, create one once via the signup endpoint (it only works while no user exists):
+
+```bash
+curl.exe http://localhost:8787/api/auth/signup -X POST -H "content-type: application/json" -d "{\"username\":\"test\",\"password\":\"testpass123\"}"
+```
+
+Your real production login is different and lives in the remote database.
 
 ## AI grow assistant
 
@@ -111,7 +129,7 @@ The **Create Account** UI was removed after the initial user signed up. The back
 
 **Wipe and reset:**
 ```bash
-npx wrangler d1 execute grow-calendar-db --remote --command="DELETE FROM users; DELETE FROM sessions; DELETE FROM task_checkoffs;"
+npx wrangler d1 execute grow-calendar-db --remote --command="DELETE FROM users; DELETE FROM sessions; DELETE FROM task_checkoffs; DELETE FROM day_notes;"
 ```
 
 After running this, you'd need to temporarily re-add the signup UI to bootstrap a new account, then remove it again.
@@ -131,8 +149,8 @@ src/                              Frontend (React)
     useCheckoffs.js               Per-day check-off state hook with focus refetch.
     useDayNote.js                 Per-day note state hook with debounced autosave.
   components/
-    Header.jsx, MilestoneStrip.jsx, Calendar.jsx, PhaseLegend.jsx,
-    DayView.jsx, ThreatsReference.jsx, LoginGate.jsx, AuthFooter.jsx
+    Header.jsx, MilestoneStrip.jsx, Calendar.jsx, PhaseLegend.jsx, DayView.jsx,
+    ChatPanel.jsx, ThreatsReference.jsx, LoginGate.jsx, AuthFooter.jsx
 
 worker/                           Backend (Cloudflare Worker)
   index.js                        Router. /api/* hits worker, everything else serves assets.
@@ -178,6 +196,8 @@ launch.bat                        Windows one-click dev launcher.
 - [x] Responsive layout (phone / tablet / desktop)
 - [x] PWA manifest + custom icon
 - [x] Daily notes / journal
+- [x] Full-screen day view (tasks, notes, threats)
+- [x] In-app AI grow assistant (Claude Haiku 4.5)
 - [ ] Structured grow log (pH, water, feed, temp, humidity)
 - [ ] Photo uploads via R2
 - [ ] In-app SVG icon replacements for all emojis
