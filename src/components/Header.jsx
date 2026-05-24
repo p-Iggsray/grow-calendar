@@ -11,7 +11,7 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress, onJum
             Grow Log · Athens, Ohio
           </div>
           <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: -1, lineHeight: 1.1, color: "#e8f5e3" }}>
-            The Summer Grow
+            The Grow Calendar
           </div>
           <div style={{ fontSize: 12, color: "#6aaa6a", marginTop: 5, fontFamily: "'Courier New', monospace" }}>
             1× Grandaddy Purp · 2× Strawberry Haze

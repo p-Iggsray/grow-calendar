@@ -1,7 +1,7 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title Grow Calendar - Dev Server
+title The Grow Calendar - Dev Server
 
 if not exist node_modules (
   echo node_modules not found. Running npm install...
