@@ -30,6 +30,10 @@ export const api = {
   getCheckoffs: (date) => request(`/api/checkoffs/${date}`),
   putCheckoffs: (date, checked) =>
     request(`/api/checkoffs/${date}`, { method: "PUT", body: JSON.stringify({ checked }) }),
+
+  getNote: (date) => request(`/api/notes/${date}`),
+  putNote: (date, body) =>
+    request(`/api/notes/${date}`, { method: "PUT", body: JSON.stringify({ body }) }),
 };
 
 export function ymd(date) {
