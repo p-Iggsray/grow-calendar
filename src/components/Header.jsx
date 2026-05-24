@@ -2,7 +2,12 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress, onJum
   return (
     <div style={{
       background: "linear-gradient(160deg, #0a1a0d 0%, #1a3a1e 50%, #0d2410 100%)",
-      padding: "20px 16px 16px",
+      // Fill the notch / status-bar area with the header gradient and push the
+      // content below it on devices with safe-area insets (0 on desktop).
+      paddingTop: "calc(20px + env(safe-area-inset-top, 0px))",
+      paddingRight: "calc(16px + env(safe-area-inset-right, 0px))",
+      paddingBottom: 16,
+      paddingLeft: "calc(16px + env(safe-area-inset-left, 0px))",
       borderBottom: "1px solid rgba(255,255,255,0.07)",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>

@@ -20,7 +20,12 @@ export default function DayView({
     noteStatus === "saved" ? "#4ade80" : "#5a7a5a";
 
   return (
-    <div style={{ padding: "12px 14px 24px" }}>
+    <div style={{
+      paddingTop: "calc(12px + env(safe-area-inset-top, 0px))",
+      paddingRight: "calc(14px + env(safe-area-inset-right, 0px))",
+      paddingBottom: 24,
+      paddingLeft: "calc(14px + env(safe-area-inset-left, 0px))",
+    }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "4px 2px 14px" }}>
         <button
           type="button"
