@@ -96,14 +96,16 @@ src/                              Frontend (React)
     api.js                        fetch wrappers for /api/*.
     auth.jsx                      AuthProvider context + useAuth hook.
     useCheckoffs.js               Per-day check-off state hook with focus refetch.
+    useDayNote.js                 Per-day note state hook with debounced autosave.
   components/
     Header.jsx, MilestoneStrip.jsx, Calendar.jsx, PhaseLegend.jsx,
-    DetailPanel.jsx, ThreatsReference.jsx, LoginGate.jsx, AuthFooter.jsx
+    DayView.jsx, ThreatsReference.jsx, LoginGate.jsx, AuthFooter.jsx
 
 worker/                           Backend (Cloudflare Worker)
   index.js                        Router. /api/* hits worker, everything else serves assets.
   auth.js                         Signup, login, logout, me, PBKDF2 hashing, session cookies.
   checkoffs.js                    GET/PUT /api/checkoffs/:date.
+  notes.js                        GET/PUT /api/notes/:date.
   util.js                         JSON helpers, cookie helpers.
 
 public/
@@ -140,7 +142,7 @@ launch.bat                        Windows one-click dev launcher.
 - [x] Task check-off sync (D1)
 - [x] Responsive layout (phone / tablet / desktop)
 - [x] PWA manifest + custom icon
-- [ ] Daily notes / journal
+- [x] Daily notes / journal
 - [ ] Structured grow log (pH, water, feed, temp, humidity)
 - [ ] Photo uploads via R2
 - [ ] In-app SVG icon replacements for all emojis
