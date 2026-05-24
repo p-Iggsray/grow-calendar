@@ -21,12 +21,16 @@ export function useDayNote(date, enabled) {
   const doSave = useCallback(async () => {
     if (!dateKey || !enabled || !dirty.current) return;
     const text = latest.current;
+    // Optimistically mark clean BEFORE the request so a concurrent effect-cleanup
+    // flush (fires when navigating away clears the date) doesn't dispatch a
+    // duplicate save for the same text. Restored on failure so a retry can fire.
+    dirty.current = false;
     setStatus("saving");
     try {
       await api.putNote(dateKey, text);
-      if (latest.current === text) dirty.current = false;
-      setStatus(dirty.current ? "saving" : "saved");
+      setStatus(latest.current === text ? "saved" : "saving");
     } catch {
+      dirty.current = true;
       setStatus("error");
     }
   }, [dateKey, enabled]);
