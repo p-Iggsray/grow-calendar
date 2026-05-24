@@ -18,6 +18,7 @@ import MilestoneStrip from "./components/MilestoneStrip.jsx";
 import Calendar from "./components/Calendar.jsx";
 import PhaseLegend from "./components/PhaseLegend.jsx";
 import DayView from "./components/DayView.jsx";
+import ChatPanel from "./components/ChatPanel.jsx";
 import ThreatsReference from "./components/ThreatsReference.jsx";
 import AuthFooter from "./components/AuthFooter.jsx";
 
@@ -33,6 +34,7 @@ export default function App() {
   const { user } = useAuth();
   const [month,    setMonth]    = useState(TODAY.getMonth());
   const [selected, setSelected] = useState(null);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const todayPhase = getPhase(TODAY);
   const todayStyle = todayPhase ? PHASES[todayPhase] : null;
@@ -71,6 +73,30 @@ export default function App() {
   function pickMilestone(date) { setMonth(date.getMonth()); openDay(date); }
   function jumpToday()         { setMonth(TODAY.getMonth()); openDay(TODAY); }
 
+  const chatOverlay = (
+    <>
+      {!chatOpen && (
+        <button
+          type="button"
+          aria-label="Ask the grow assistant"
+          onClick={() => setChatOpen(true)}
+          style={{
+            position: "fixed", zIndex: 40,
+            right: "calc(16px + env(safe-area-inset-right, 0px))",
+            bottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
+            background: "linear-gradient(160deg, #166534, #22c55e)",
+            color: "#0e1a12", border: "1px solid rgba(255,255,255,0.25)",
+            borderRadius: 999, padding: "12px 18px", fontSize: 14, fontWeight: 800,
+            fontFamily: "'Courier New', monospace", letterSpacing: 0.5, cursor: "pointer",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.45)",
+          }}>
+          🌿 Ask
+        </button>
+      )}
+      {chatOpen && <ChatPanel onClose={() => setChatOpen(false)} />}
+    </>
+  );
+
   if (selected) {
     return (
       <div className="app-shell" style={SHELL_STYLE}>
@@ -89,6 +115,7 @@ export default function App() {
             onBack={goBack}
           />
         </div>
+        {chatOverlay}
       </div>
     );
   }
@@ -115,6 +142,7 @@ export default function App() {
         <ThreatsReference />
       </div>
       <AuthFooter />
+      {chatOverlay}
     </div>
   );
 }
