@@ -20,6 +20,14 @@ export default {
       return error(500, "internal server error");
     }
   },
+
+  async scheduled(event, env, ctx) {
+    const now = new Date().toISOString();
+    const { meta } = await env.DB.prepare(
+      "DELETE FROM sessions WHERE expires_at < ?"
+    ).bind(now).run();
+    console.log(`session cleanup: deleted ${meta.changes} expired row(s)`);
+  },
 };
 
 async function route(request, env, path) {
