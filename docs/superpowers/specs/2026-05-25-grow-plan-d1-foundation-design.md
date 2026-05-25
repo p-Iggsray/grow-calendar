@@ -23,6 +23,12 @@ Make the grow plan editable and D1-backed without changing any user-visible beha
 
 3. **Write endpoints are stubbed now, built in the MJ sub-project.** This sub-project ships only the read path (`GET /api/plan`). Config/override mutation endpoints are designed here but implemented when MJ needs them, to avoid shipping unused endpoints.
 
+4. **Scope refinement during planning (2026-05-25).** Three items below were moved to the MJ sub-project because they are only exercised once the plan can change (the write path, already deferred per decision 3). Doing them in the read-only foundation adds risk and AI-behavior changes for no current benefit:
+   - **Dosing extraction.** Foundation `config` holds dates only; dosing stays as inline literals in the generator. `plan_config.config` is a JSON blob, so dosing keys can be added later with no migration.
+   - **`buildPlanText` / D1-driven AI context.** `worker/chat.js` and `worker/growContext.js` are untouched in the foundation; the static context stays accurate because the seeded plan equals the hardcoded plan. The worker does not import the generator yet.
+   - **Splitting React out of `dates.js`.** Only needed when the worker imports the generator (MJ phase). Foundation keeps `dates.js` as-is.
+   See `docs/superpowers/plans/2026-05-25-grow-plan-d1-foundation.md` for the task breakdown.
+
 ## Current state (what exists today)
 
 - `src/lib/growData.js` (448 lines): exports `D` (16 driving dates), `PHASES` (colors/labels), `THREATS`, `MILESTONES`, and functions `dpt`, `getNextMilestone`, `getGrowProgress`, `getPhase`, `getThreatsForPhase`, `getDetail`. `getDetail(date)` generates `{title, summary, tasks[], notes}` procedurally from `D` and day-number math, interpolating dates into task text.
