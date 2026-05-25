@@ -9,6 +9,7 @@ export const D = {
   flush1:       new Date(2026, 5, 24),
   flush2:       new Date(2026, 6, 24),
   flush3:       new Date(2026, 7, 24),
+  backyardMove: new Date(2026, 6, 28), // target window July 27-29, using 28 as reference
   preFlower:    new Date(2026, 7,  1),
   flowerStart:  new Date(2026, 7, 15),
   gdpFlush:     new Date(2026, 8, 20),
@@ -62,7 +63,7 @@ export const THREATS = [
   },
   {
     id:"hail", icon:"⛈️", title:"Hail Forecast",
-    desc:"Move all pots under cover immediately. Even a brief hailstorm shreds leaves and snaps branches. No recovery from a direct hit during flower. Check the hourly forecast — you usually get 1 to 2 hours of warning.",
+    desc:"Through late July plants are on the covered front porch — hail cannot reach them. After the backyard move, take every hail warning seriously. Move pots back to the porch or into the garage immediately. Even a brief hailstorm shreds leaves and snaps branches. No recovery from a direct hit during flower. Check the hourly forecast — you usually get 1 to 2 hours of warning.",
     phases:["early_veg","veg_cm","veg_half","veg_full","pre_flower","flower","flush_gdp","flower_haze","flush_haze"],
   },
   {
@@ -78,13 +79,14 @@ export const THREATS = [
 ];
 
 export const MILESTONES = [
-  { label:"Transplant",      date:D.transplant,  icon:"🌱", color:"#7c3aed" },
-  { label:"Cal-Mag Starts",  date:D.calMag,      icon:"💊", color:"#16a34a" },
-  { label:"Feeding Starts",  date:D.feedStart,   icon:"🧪", color:"#15803d" },
-  { label:"Pre-Flower",      date:D.preFlower,   icon:"🌸", color:"#f59e0b" },
-  { label:"Flower",          date:D.flowerStart, icon:"🌺", color:"#f97316" },
-  { label:"GDP Harvest",     date:D.gdpHarvest,  icon:"✂️", color:"#d97706" },
-  { label:"Haze Harvest",    date:D.hazeHarvest, icon:"🏆", color:"#b45309" },
+  { label:"Transplant",      date:D.transplant,   icon:"🌱", color:"#7c3aed" },
+  { label:"Cal-Mag Starts",  date:D.calMag,       icon:"💊", color:"#16a34a" },
+  { label:"Feeding Starts",  date:D.feedStart,    icon:"🧪", color:"#15803d" },
+  { label:"Move to Backyard",date:D.backyardMove, icon:"🏡", color:"#22c55e" },
+  { label:"Pre-Flower",      date:D.preFlower,    icon:"🌸", color:"#f59e0b" },
+  { label:"Flower",          date:D.flowerStart,  icon:"🌺", color:"#f97316" },
+  { label:"GDP Harvest",     date:D.gdpHarvest,   icon:"✂️", color:"#d97706" },
+  { label:"Haze Harvest",    date:D.hazeHarvest,  icon:"🏆", color:"#b45309" },
 ];
 
 export const dpt = d => daysBetween(d, D.transplant);
@@ -139,8 +141,8 @@ export function getDetail(date) {
           "Check soil moisture. Only water if completely bone dry — no other watering today.",
           "No fertilizer or supplements of any kind.",
           "Confirm Amazon order is set for May 24 delivery.",
-          "Walk your yard and identify the sunniest outdoor spot — 8+ hours of direct sun, ideally southern or southwestern exposure. That is where the pots will live permanently.",
-          "Source bricks or pot risers to elevate fabric pots off the ground. Elevation improves drainage and keeps pests from entering through the bottom.",
+          "Confirm the front porch is ready: clear space for all 3 fabric pots with room between them and good airflow. The porch is their home through late July, then they move to the backyard around July 27-29.",
+          "Source bricks or pot risers to elevate the fabric pots off the porch floor — improves drainage and keeps pests from entering through the bottom.",
           "Gather all Lowe's supplies: perlite, bamboo stakes, velcro garden tape, watering can, trowel, and a large tarp or bin for mixing soil.",
         ],
         notes: "Minimal handling today. Plants have been moved and need to settle before hardening off begins tomorrow.",
@@ -150,11 +152,11 @@ export function getDetail(date) {
         summary: "Begin introducing plants to outdoor conditions. Short exposure only today.",
         tasks: [
           "Check outside temperature. Must be 60°F or above before bringing them out.",
-          "Place all 3 plants outside in morning sun only — no harsh afternoon sun yet.",
+          "Place all 3 plants on the front porch in morning sun only — no harsh afternoon sun yet.",
           "Leave outside for 2 to 3 hours, then bring back indoors.",
           "Going from indoor light directly to full outdoor sun causes light bleaching. Gradual exposure prevents this.",
           "Lightly water if soil is dry when you bring them in.",
-          "Confirm your permanent outdoor pot location. Know exactly where each pot will sit.",
+          "Confirm the exact front porch spots where each pot will sit. Make sure bricks or risers are in position.",
           "Find a large tarp or plastic storage bin for soil mixing on transplant day.",
         ],
         notes: "Morning sun only today. Afternoon sun in late May is intense. These plants have adapted to indoor light and need gradual adjustment over 2 to 3 days.",
@@ -166,7 +168,7 @@ export function getDetail(date) {
           "Place plants outside in the morning. 4 to 5 hours of sun today including some afternoon exposure is fine.",
           "Bring in before early evening.",
           "DO NOT water heavily today. Moist but not wet soil is ideal for transplanting — a moist root ball holds together when removed from the container.",
-          "Set up your outdoor pot area: position bricks or risers where each fabric pot will permanently sit.",
+          "Set up the front porch pot area: position bricks or risers where each of the 3 fabric pots will sit through late July.",
           "Run through your full supplies checklist: 3x VIVOSUN 7-gal fabric pots, 2x Happy Frog 2 cu ft, 24qt perlite, Cal-Mag Plus, Fox Farm Trio (Big Bloom + Grow Big + Tiger Bloom), gallon jugs of distilled water (for mixing nutrients), trowel, bamboo stakes, velcro tape.",
           "Supplies arrive tomorrow. Being fully prepared means the transplant goes quickly and cleanly.",
         ],
@@ -182,7 +184,7 @@ export function getDetail(date) {
       summary: "Supplies are here. Work through each step in order without skipping any.",
       tasks: [
         "MIX SOIL: On a tarp or in a large bin, combine both bags of Fox Farm Happy Frog with perlite at 80% Happy Frog / 20% perlite. Lightly mist with water while mixing to settle dust. Finished mix should be crumbly and slightly moist — not wet, not dusty.",
-        "POSITION POTS: Place all 3 VIVOSUN 7-gallon fabric pots on bricks or risers in their permanent outdoor location. Confirm 8+ hours of direct sun.",
+        "POSITION POTS: Place all 3 VIVOSUN 7-gallon fabric pots on their front porch spots on bricks or risers. This is their home through late July. Confirm they are getting good morning sun.",
         "PRE-WATER PLANTS: Water the GDP and both Haze plants in their current containers. Wait 45 to 60 minutes. This ensures the root ball holds together when pulled free.",
         "PARTIALLY FILL POTS: Add soil mix until each pot is roughly one-third full. Create a central hole sized to fit the root ball.",
         "TRANSPLANT GRANDADDY PURP: Tip the plant sideways, support the stem base with your palm, let the root ball slide free — do not pull the stem. Place in the center hole. Top of root ball should sit level with or just below surrounding soil. Fill in around the ball, gently firm to close air pockets. Do not compact.",
@@ -192,7 +194,7 @@ export function getDetail(date) {
         "FIRST WATERING — NO NUTRIENTS: Use plain tap water. Water each pot slowly until runoff flows freely from the bottom. Let drain completely. No nutrients, no supplements.",
         "LEAVE THEM ALONE: Drooping and slight wilting today and tomorrow is normal transplant shock. Do not add more water — they are redirecting energy to root growth. Check moisture again in 2 to 3 days.",
       ],
-      notes: "NO NUTRIENTS for 3 weeks until June 21. Happy Frog has a built-in nutrient charge that covers early establishment. Adding nutrients now will burn freshly disturbed roots.",
+      notes: "NO NUTRIENTS for 3 weeks until June 21. Happy Frog has a built-in nutrient charge that covers early establishment. Adding nutrients now will burn freshly disturbed roots. Plants live on the covered front porch through late July — backyard move target is July 27-29 when they get too big for the porch.",
     };
   }
 
@@ -231,7 +233,7 @@ export function getDetail(date) {
         "Confirm pots are not sitting in pooled water in their saucers.",
         d === 7 ? "ONE WEEK MILESTONE: Healthy plants will show at least one new node or set of leaves. Perk, green color, and new growth confirm successful establishment." : "",
       ].filter(Boolean),
-      notes: `No nutrients or supplements until Day 14 (${fmt(D.calMag)}) when Cal-Mag begins. Fox Farm nutrients start Day 28 (${fmt(D.feedStart)}). Plain tap water only right now.`,
+      notes: `No nutrients or supplements until Day 14 (${fmt(D.calMag)}) when Cal-Mag begins. Fox Farm nutrients start Day 28 (${fmt(D.feedStart)}). Plain tap water only right now. Plants are on the covered front porch — the roof protects from rain and hail. Backyard move target: July 27-29.`,
     };
   }
 
@@ -252,7 +254,7 @@ export function getDetail(date) {
         "HAZE HEIGHT: Both Strawberry Haze plants will start pulling ahead of GDP in height this week. Glance at the stakes — confirm they are positioned where the plant is growing toward.",
         d === 21 ? `THREE WEEK MARK: Fox Farm nutrients begin in 7 days on ${fmt(D.feedStart)}. If plants look healthy and growing consistently, you are on track.` : "",
       ].filter(Boolean),
-      notes: `Cal-Mag goes into every single watering from now through the pre-harvest flushes. Always use distilled water when mixing Cal-Mag or any supplement. Fox Farm nutrients start Day 28 (${fmt(D.feedStart)}) at half dose.`,
+      notes: `Cal-Mag goes into every single watering from now through the pre-harvest flushes. Always use distilled water when mixing Cal-Mag or any supplement. Fox Farm nutrients start Day 28 (${fmt(D.feedStart)}) at half dose. Still on the covered front porch — backyard move coming July 27-29.`,
     };
   }
 
@@ -273,28 +275,44 @@ export function getDetail(date) {
         "HAZE SUPPORT: Check both Haze plants. Any branch leaning heavily should be loosely tied to a stake with velcro tape. Never cinch the tape tight against the stem.",
         isStart ? "" : `Full dose begins Day 42 (${fmt(D.fullDose)}) if plants are responding well with no tip burn.`,
       ].filter(Boolean),
-      notes: "Half dose first gives you a baseline to gauge response. Fox Farm liquids are concentrated. Starting light protects plants that may still be sensitive from the transplant.",
+      notes: "Half dose first gives you a baseline to gauge response. Fox Farm liquids are concentrated. Starting light protects plants that may still be sensitive from the transplant. Still on the covered front porch — backyard move coming July 27-29.",
     };
   }
 
   if (phase === "veg_full") {
     const isStart = d === 42;
+    const inMoveWindow = d >= 64 && d <= 66; // July 27-29
+    const postMove = d > 66;
     return {
-      title: `Day ${d} — Full Dose Feeding${isStart ? " Begins" : ""}`,
+      title: `Day ${d} — Full Dose Feeding${isStart ? " Begins" : inMoveWindow ? " · Backyard Move Window" : ""}`,
       summary: isStart
-        ? "Stepping up to full Fox Farm dose today."
+        ? "Stepping up to full Fox Farm dose today. Plants are still on the front porch."
+        : inMoveWindow
+        ? "This is your backyard move window (July 27-29). Move when they feel too big for the porch."
+        : postMove
+        ? "Peak vegetative growth. Plants are in the backyard — all weather threats are now active."
         : "Peak vegetative growth. Plants are drinking heavily, especially in July heat.",
       tasks: [
         "MOISTURE CHECK: In July heat, fabric pots can need water every 24 hours. Check daily without exception.",
         isStart
           ? "FULL DOSE STARTS TODAY: Use distilled water. Mix Big Bloom 2 tbsp/gal + Grow Big 3 tsp/gal + Cal-Mag 5ml/gal. Stir well. Water each pot to runoff."
           : "FEEDING ROTATION: Alternate each watering between full nutrient mix (Big Bloom 2 tbsp/gal + Grow Big 3 tsp/gal + Cal-Mag 5ml/gal in distilled water) and plain Cal-Mag water (5ml/gal Cal-Mag in distilled water).",
+        inMoveWindow
+          ? "BACKYARD MOVE — PICK YOUR DAY THIS WEEK: Move when the plants feel too big for the porch, or just pick today. Steps: (1) Water all 3 pots 2 to 3 hours before moving — moist soil holds the root ball together and makes the pots easier to handle. (2) Scout the sunniest spot in the backyard — 8+ hours direct sun, ideally south or southwest exposure. (3) Set bricks or risers in position before you move the pots. (4) Move one pot at a time — fully watered 7-gallon fabric pots are heavy. (5) Once in the backyard, check all Haze stake ties — plants may have leaned toward the porch light and need adjustment."
+          : "",
+        inMoveWindow || postMove
+          ? "WEATHER THREATS NOW ACTIVE: The porch roof no longer protects. Rain, hail, and high winds are real risks from here on. Start checking the forecast daily."
+          : "",
         "HAZE HEIGHT: Strawberry Haze may already be 3 to 4 feet tall and growing fast. Check ties weekly. Add tie points higher on the stakes as plants grow upward.",
         "GDP DENSITY: GDP should be wide, bushy, and dense. Remove select interior fan leaves if there is no airflow to the center — a few at a time, never all at once.",
         "HEAT WATCH: If air temp consistently exceeds 90°F, consider moving pots to afternoon shade. Sustained heat above 90°F slows growth and invites spider mites.",
         "PRE-FLOWER WATCH: Starting late July, begin checking the nodes — where branches meet the main stem — for the first tiny white hairs (pistils). These signal the plant is beginning to transition toward flower.",
       ].filter(Boolean),
-      notes: `Pre-flower transition begins around August 1 (Day 69). You will shift nutrients at that point — reducing Grow Big, introducing Tiger Bloom. Watch for the first white pistils at the nodes as July ends.`,
+      notes: inMoveWindow
+        ? `BACKYARD MOVE WINDOW: July 27-29. Pre-flower transition begins around August 1 (Day 69) — you will shift nutrients at that point, reducing Grow Big and introducing Tiger Bloom.`
+        : postMove
+        ? `Plants are in the backyard — all weather threats fully active. Pre-flower transition begins around August 1 (Day 69). Watch for the first white pistils at the nodes.`
+        : `Backyard move window: July 27-29 (Day 64-66). Pre-flower transition begins around August 1 (Day 69). You will shift nutrients at that point — reducing Grow Big, introducing Tiger Bloom.`,
     };
   }
 
