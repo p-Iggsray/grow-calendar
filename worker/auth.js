@@ -10,6 +10,9 @@ const MIN_PASSWORD_LENGTH = 8;
 const MAX_USERNAME_LENGTH = 32;
 const USERNAME_RE = /^[a-zA-Z0-9_-]{2,32}$/;
 
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_SECONDS = 15 * 60; // 15 minutes
+
 async function hashPassword(password, saltBytes) {
   const salt = saltBytes || crypto.getRandomValues(new Uint8Array(16));
   const keyMaterial = await crypto.subtle.importKey(
@@ -36,6 +39,57 @@ function constantTimeEqual(a, b) {
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
+}
+
+function getClientIp(request) {
+  return (
+    request.headers.get("cf-connecting-ip") ||
+    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    "unknown"
+  );
+}
+
+async function checkRateLimit(env, ip, username) {
+  const key = `${ip}:${username.toLowerCase()}`;
+  const row = await env.DB.prepare(
+    "SELECT attempts, locked_until FROM login_attempts WHERE key = ?",
+  ).bind(key).first();
+
+  if (row?.locked_until && new Date(row.locked_until) > new Date()) {
+    const retryAfter = Math.ceil((new Date(row.locked_until) - Date.now()) / 1000);
+    return { blocked: true, retryAfter };
+  }
+  return { blocked: false };
+}
+
+async function recordFailedAttempt(env, ip, username) {
+  const key = `${ip}:${username.toLowerCase()}`;
+  const now = nowIso();
+
+  await env.DB.prepare(`
+    INSERT INTO login_attempts (key, attempts, locked_until, updated_at)
+    VALUES (?, 1, NULL, ?)
+    ON CONFLICT(key) DO UPDATE SET
+      attempts = attempts + 1,
+      locked_until = NULL,
+      updated_at = excluded.updated_at
+  `).bind(key, now).run();
+
+  const row = await env.DB.prepare(
+    "SELECT attempts FROM login_attempts WHERE key = ?",
+  ).bind(key).first();
+
+  if ((row?.attempts ?? 0) >= MAX_LOGIN_ATTEMPTS) {
+    const lockedUntil = new Date(Date.now() + LOCKOUT_SECONDS * 1000).toISOString();
+    await env.DB.prepare(
+      "UPDATE login_attempts SET locked_until = ? WHERE key = ?",
+    ).bind(lockedUntil, key).run();
+  }
+}
+
+async function clearRateLimit(env, ip, username) {
+  const key = `${ip}:${username.toLowerCase()}`;
+  await env.DB.prepare("DELETE FROM login_attempts WHERE key = ?").bind(key).run();
 }
 
 export async function getSignupStatus(env) {
@@ -87,20 +141,32 @@ export async function login(request, env) {
   const password = String(body.password || "");
   if (!username || !password) return error(400, "username and password required");
 
+  const ip = getClientIp(request);
+  const rateCheck = await checkRateLimit(env, ip, username);
+  if (rateCheck.blocked) {
+    return json(
+      { error: "too many failed attempts, please try again later" },
+      { status: 429, headers: { "retry-after": String(rateCheck.retryAfter) } },
+    );
+  }
+
   const user = await env.DB.prepare(
     "SELECT id, username, password_hash, password_salt FROM users WHERE username = ?",
   ).bind(username).first();
 
   if (!user) {
     await hashPassword(password, base64ToBytes("AAAAAAAAAAAAAAAAAAAAAA=="));
+    await recordFailedAttempt(env, ip, username);
     return error(401, "invalid credentials");
   }
 
   const { hash } = await hashPassword(password, base64ToBytes(user.password_salt));
   if (!constantTimeEqual(hash, user.password_hash)) {
+    await recordFailedAttempt(env, ip, username);
     return error(401, "invalid credentials");
   }
 
+  await clearRateLimit(env, ip, username);
   return finishLogin(request, env, user.id, user.username);
 }
 
