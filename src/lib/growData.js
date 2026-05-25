@@ -167,7 +167,7 @@ export function getDetail(date) {
           "Bring in before early evening.",
           "DO NOT water heavily today. Moist but not wet soil is ideal for transplanting — a moist root ball holds together when removed from the container.",
           "Set up your outdoor pot area: position bricks or risers where each fabric pot will permanently sit.",
-          "Run through your full supplies checklist: 3x VIVOSUN 7-gal fabric pots, 2x Happy Frog 2 cu ft, 24qt perlite, Cal-Mag Plus, Fox Farm Trio (Big Bloom + Grow Big + Tiger Bloom), pH meter, calibration solutions, pH Down, trowel, bamboo stakes, velcro tape.",
+          "Run through your full supplies checklist: 3x VIVOSUN 7-gal fabric pots, 2x Happy Frog 2 cu ft, 24qt perlite, Cal-Mag Plus, Fox Farm Trio (Big Bloom + Grow Big + Tiger Bloom), gallon jugs of distilled water (for mixing nutrients), trowel, bamboo stakes, velcro tape.",
           "Supplies arrive tomorrow. Being fully prepared means the transplant goes quickly and cleanly.",
         ],
         notes: "Tomorrow is transplant day. A fast transplant means less root exposure and less stress. Set everything up now so you are not hunting for supplies mid-process.",
@@ -181,7 +181,6 @@ export function getDetail(date) {
       title: "TRANSPLANT DAY — May 24",
       summary: "Supplies are here. Work through each step in order without skipping any.",
       tasks: [
-        "CALIBRATE pH METER FIRST: Use your 4.0 and 7.0 calibration solutions exactly as the meter instructions describe. A miscalibrated meter means every pH reading this season is wrong. Do this before touching anything else.",
         "MIX SOIL: On a tarp or in a large bin, combine both bags of Fox Farm Happy Frog with perlite at 80% Happy Frog / 20% perlite. Lightly mist with water while mixing to settle dust. Finished mix should be crumbly and slightly moist — not wet, not dusty.",
         "POSITION POTS: Place all 3 VIVOSUN 7-gallon fabric pots on bricks or risers in their permanent outdoor location. Confirm 8+ hours of direct sun.",
         "PRE-WATER PLANTS: Water the GDP and both Haze plants in their current containers. Wait 45 to 60 minutes. This ensures the root ball holds together when pulled free.",
@@ -190,7 +189,7 @@ export function getDetail(date) {
         "TRANSPLANT STRAWBERRY HAZE x2: Same process for both Haze plants.",
         "LABEL ALL 3 POTS clearly: GDP, Haze 1, Haze 2. You will track them separately later in the season.",
         "STAKE HAZE POTS NOW: Drive 4 to 5 foot bamboo stakes around the perimeter of both Haze pots before roots spread. Avoid driving stakes through the center root ball area.",
-        "FIRST WATERING — NO NUTRIENTS: pH your water to 6.5. Add pH Down if water reads above 6.8, mix, and retest. Water each pot slowly until runoff flows freely from the bottom. Let drain completely. No nutrients.",
+        "FIRST WATERING — NO NUTRIENTS: Use plain tap water. Water each pot slowly until runoff flows freely from the bottom. Let drain completely. No nutrients, no supplements.",
         "LEAVE THEM ALONE: Drooping and slight wilting today and tomorrow is normal transplant shock. Do not add more water — they are redirecting energy to root growth. Check moisture again in 2 to 3 days.",
       ],
       notes: "NO NUTRIENTS for 3 weeks until June 21. Happy Frog has a built-in nutrient charge that covers early establishment. Adding nutrients now will burn freshly disturbed roots.",
@@ -204,7 +203,7 @@ export function getDetail(date) {
       summary: "Salt buildup from nutrient feeding blocks uptake over time. Today is plain water only — no nutrients, no Cal-Mag.",
       tasks: [
         "MOISTURE CHECK FIRST: If pots are not ready to water today, postpone this flush by one day. Only flush when you would normally water.",
-        "PLAIN WATER ONLY: pH to 6.5. No Fox Farm nutrients. No Cal-Mag. Nothing added.",
+        "PLAIN WATER ONLY: Use tap water. No Fox Farm nutrients. No Cal-Mag. Nothing added.",
         "Water each pot generously to runoff — slightly more than a normal watering. You are pushing accumulated salts through the medium.",
         "Allow full drainage. Do not let pots sit in runoff water.",
         "RESUME NORMAL SCHEDULE on the very next watering — back to your regular nutrient mix.",
@@ -223,7 +222,7 @@ export function getDetail(date) {
       summary: `Week ${Math.ceil(d / 7)} of establishment. Plants are building roots, not showing much visible growth yet.`,
       tasks: [
         "MOISTURE CHECK: Lift each pot. Noticeably lighter than after last watering means water today. Or push your finger 2 inches into the soil — dry at that depth means water. Fabric pots dry faster than plastic, so check every day.",
-        "If moisture check says water: pH to 6.5, water slowly to runoff. No nutrients. Plain pH-adjusted water only.",
+        "If moisture check says water: use plain tap water, water slowly to runoff. No nutrients.",
         "If pots still feel heavy: do not water. Small plants in large pots are overwatering's most common victim. When in doubt, wait one more day.",
         d <= 3
           ? "TRANSPLANT SHOCK: Drooping, wilting, or curled leaves in the first 3 days is normal. It is not a watering problem. Leave the plants alone."
@@ -232,7 +231,7 @@ export function getDetail(date) {
         "Confirm pots are not sitting in pooled water in their saucers.",
         d === 7 ? "ONE WEEK MILESTONE: Healthy plants will show at least one new node or set of leaves. Perk, green color, and new growth confirm successful establishment." : "",
       ].filter(Boolean),
-      notes: `No nutrients or supplements until Day 14 (${fmt(D.calMag)}) when Cal-Mag begins. Fox Farm nutrients start Day 28 (${fmt(D.feedStart)}). Plain pH 6.5 water only right now.`,
+      notes: `No nutrients or supplements until Day 14 (${fmt(D.calMag)}) when Cal-Mag begins. Fox Farm nutrients start Day 28 (${fmt(D.feedStart)}). Plain tap water only right now.`,
     };
   }
 
@@ -246,14 +245,14 @@ export function getDetail(date) {
       tasks: [
         "MOISTURE CHECK: Lift or finger test each pot. Plants are growing and drinking more — you may be watering every 1 to 2 days now.",
         isFirst
-          ? "CAL-MAG STARTS TODAY: Add 5ml (1 tsp) Botanicare Cal-Mag Plus per gallon of water. Stir. THEN pH to 6.5 — always pH after adding supplements. Water to runoff."
-          : "CAL-MAG WATERING: 5ml Cal-Mag per gallon, pH to 6.5 after mixing. Water to runoff when moisture check says water.",
+          ? "CAL-MAG STARTS TODAY: Mix 5ml (1 tsp) Botanicare Cal-Mag Plus into a gallon of distilled water. Stir well. Water each pot to runoff."
+          : "CAL-MAG WATERING: Mix 5ml Cal-Mag per gallon of distilled water. Stir well. Water to runoff when moisture check says water.",
         "GROWTH OBSERVATION: Plants should be adding a new node every few days. GDP will widen and get bushy. Haze will reach upward and get taller.",
         "PEST INSPECTION: Underside of all leaves on all 3 plants, every single day. Catching problems when they are small saves plants.",
         "HAZE HEIGHT: Both Strawberry Haze plants will start pulling ahead of GDP in height this week. Glance at the stakes — confirm they are positioned where the plant is growing toward.",
         d === 21 ? `THREE WEEK MARK: Fox Farm nutrients begin in 7 days on ${fmt(D.feedStart)}. If plants look healthy and growing consistently, you are on track.` : "",
       ].filter(Boolean),
-      notes: `Cal-Mag goes into every single watering from now through the pre-harvest flushes. Always pH AFTER adding Cal-Mag or any supplement, not before. Fox Farm nutrients start Day 28 (${fmt(D.feedStart)}) at half dose.`,
+      notes: `Cal-Mag goes into every single watering from now through the pre-harvest flushes. Always use distilled water when mixing Cal-Mag or any supplement. Fox Farm nutrients start Day 28 (${fmt(D.feedStart)}) at half dose.`,
     };
   }
 
@@ -267,8 +266,8 @@ export function getDetail(date) {
       tasks: [
         "MOISTURE CHECK: Lift or finger test. You should be watering every 1 to 2 days now.",
         isStart
-          ? "FIRST FEEDING — HALF DOSE: Mix in this order: Big Bloom 1 tbsp/gal + Grow Big 1.5 tsp/gal + Cal-Mag 5ml/gal. Stir. pH to 6.5. Water each pot to runoff."
-          : "FEEDING ROTATION: Alternate each watering. Nutrient water (Big Bloom 1 tbsp/gal + Grow Big 1.5 tsp/gal + Cal-Mag 5ml/gal, pH 6.5) one watering, then plain Cal-Mag water (5ml/gal, pH 6.5) next, then nutrient again.",
+          ? "FIRST FEEDING — HALF DOSE: Use distilled water. Mix in this order: Big Bloom 1 tbsp/gal + Grow Big 1.5 tsp/gal + Cal-Mag 5ml/gal. Stir well. Water each pot to runoff."
+          : "FEEDING ROTATION: Alternate each watering. Nutrient water (Big Bloom 1 tbsp/gal + Grow Big 1.5 tsp/gal + Cal-Mag 5ml/gal in distilled water) one watering, then plain Cal-Mag water (5ml/gal Cal-Mag in distilled water) next, then nutrient again.",
         "LEAF TIP CHECK: Look at the newest leaf tips on all plants. Brown or yellow crispy tips mean slight overfeeding. Drop to quarter dose on the next feeding if you see tip burn.",
         "GDP SHAPE: GDP should be getting dense and wide. If the very interior center is crowded with no airflow, gently remove a few large fan leaves from the inside — never more than 10 to 15% of total foliage at once.",
         "HAZE SUPPORT: Check both Haze plants. Any branch leaning heavily should be loosely tied to a stake with velcro tape. Never cinch the tape tight against the stem.",
@@ -288,8 +287,8 @@ export function getDetail(date) {
       tasks: [
         "MOISTURE CHECK: In July heat, fabric pots can need water every 24 hours. Check daily without exception.",
         isStart
-          ? "FULL DOSE STARTS TODAY: Big Bloom 2 tbsp/gal + Grow Big 3 tsp/gal + Cal-Mag 5ml/gal. pH to 6.5. Water to runoff."
-          : "FEEDING ROTATION: Alternate each watering between full nutrient mix (Big Bloom 2 tbsp/gal + Grow Big 3 tsp/gal + Cal-Mag 5ml/gal, pH 6.5) and plain Cal-Mag water (5ml/gal, pH 6.5).",
+          ? "FULL DOSE STARTS TODAY: Use distilled water. Mix Big Bloom 2 tbsp/gal + Grow Big 3 tsp/gal + Cal-Mag 5ml/gal. Stir well. Water each pot to runoff."
+          : "FEEDING ROTATION: Alternate each watering between full nutrient mix (Big Bloom 2 tbsp/gal + Grow Big 3 tsp/gal + Cal-Mag 5ml/gal in distilled water) and plain Cal-Mag water (5ml/gal Cal-Mag in distilled water).",
         "HAZE HEIGHT: Strawberry Haze may already be 3 to 4 feet tall and growing fast. Check ties weekly. Add tie points higher on the stakes as plants grow upward.",
         "GDP DENSITY: GDP should be wide, bushy, and dense. Remove select interior fan leaves if there is no airflow to the center — a few at a time, never all at once.",
         "HEAT WATCH: If air temp consistently exceeds 90°F, consider moving pots to afternoon shade. Sustained heat above 90°F slows growth and invites spider mites.",
@@ -305,8 +304,8 @@ export function getDetail(date) {
       summary: "Days are shortening. Plants are shifting energy toward flower production. White pistils should be visible at nodes.",
       tasks: [
         "MOISTURE CHECK: Continue daily checks. Watering frequency stays similar to peak veg.",
-        "TRANSITION NUTRIENTS (nutrient days): Big Bloom 2 tbsp/gal + Grow Big 2 tsp/gal (reduced from 3) + Tiger Bloom 1 tsp/gal (introduced for first time) + Cal-Mag 5ml/gal. pH to 6.5.",
-        "PLAIN WATER DAYS: Cal-Mag 5ml/gal only, pH to 6.5. Alternate with nutrient days.",
+        "TRANSITION NUTRIENTS (nutrient days): Use distilled water. Mix Big Bloom 2 tbsp/gal + Grow Big 2 tsp/gal (reduced from 3) + Tiger Bloom 1 tsp/gal (introduced for first time) + Cal-Mag 5ml/gal. Stir well.",
+        "PLAIN WATER DAYS: Mix Cal-Mag 5ml/gal in distilled water. Alternate with nutrient days.",
         "PRE-FLOWER INSPECTION: Check every node where branches meet the main stem on all 3 plants. White hairs forming at those points confirm transition to flower. Note which plants are showing first.",
         "STRETCH PREP: Plants will stretch significantly in height during early flower — Haze especially. Ensure stakes can handle the expected final height. Add taller stakes now if needed.",
         "AIRFLOW: Look at canopy density on all plants. Remove large interior fan leaves blocking airflow to developing bud sites. Good airflow is your primary bud rot defense.",
@@ -326,9 +325,9 @@ export function getDetail(date) {
       tasks: [
         "MOISTURE CHECK: In flower, let each pot dry down noticeably between waterings. Do not keep soil continuously wet during flower.",
         isLate
-          ? "LATE FLOWER NUTRIENTS (nutrient days): Big Bloom 3 tbsp/gal + Tiger Bloom 2 tsp/gal + Cal-Mag 5ml/gal. pH to 6.5."
-          : "FLOWER NUTRIENTS (nutrient days): Big Bloom 2 tbsp/gal + Tiger Bloom 2 tsp/gal + Cal-Mag 5ml/gal. pH to 6.5.",
-        "PLAIN WATER DAYS: Cal-Mag 5ml/gal, pH 6.5. Alternate with nutrient days.",
+          ? "LATE FLOWER NUTRIENTS (nutrient days): Use distilled water. Mix Big Bloom 3 tbsp/gal + Tiger Bloom 2 tsp/gal + Cal-Mag 5ml/gal. Stir well."
+          : "FLOWER NUTRIENTS (nutrient days): Use distilled water. Mix Big Bloom 2 tbsp/gal + Tiger Bloom 2 tsp/gal + Cal-Mag 5ml/gal. Stir well.",
+        "PLAIN WATER DAYS: Cal-Mag 5ml/gal in distilled water. Alternate with nutrient days.",
         "BUD ROT INSPECTION: Check the interior of dense bud clusters on all plants — especially GDP which forms dense, compact buds. Look for any grey or brown mushy area inside a bud. If found, cut out the affected section immediately with clean scissors and improve airflow.",
         fw >= 3
           ? `TRICHOME WATCH — GDP: Use a jeweler's loupe or phone macro lens. Clear = not ready. Milky/cloudy = approaching window. Mostly milky with 10-20% amber = harvest window. GDP flush starts ${fmt(D.gdpFlush)}.`
@@ -345,8 +344,8 @@ export function getDetail(date) {
       title: `GDP Flush — Day ${fd} of 7`,
       summary: "GDP gets plain water only. Both Strawberry Haze plants continue full flower feeding.",
       tasks: [
-        "GDP — PLAIN WATER ONLY: pH to 6.5. No Cal-Mag. No nutrients. Water to runoff.",
-        "HAZE — CONTINUE LATE FLOWER NUTRIENTS: Big Bloom 3 tbsp/gal + Tiger Bloom 2 tsp/gal + Cal-Mag 5ml/gal, pH 6.5 on their nutrient days.",
+        "GDP — PLAIN WATER ONLY: Use tap water. No Cal-Mag. No nutrients. Water to runoff.",
+        "HAZE — CONTINUE LATE FLOWER NUTRIENTS: Use distilled water. Mix Big Bloom 3 tbsp/gal + Tiger Bloom 2 tsp/gal + Cal-Mag 5ml/gal on their nutrient days.",
         "GDP TRICHOME CHECK: Inspect multiple bud sites. Looking for mostly milky/cloudy trichomes with 10 to 20% amber. Harvest when that ratio is consistent across several bud sites.",
         "GDP APPEARANCE: Fan leaves on GDP will yellow and begin to drop. This is normal — the plant is pulling stored nitrogen from its own leaves to finish the buds.",
         "HAZE OBSERVATION: Both Haze plants are still building. They are not ready. Continue normal care.",
@@ -380,8 +379,8 @@ export function getDetail(date) {
       summary: "GDP is harvested and drying. Full attention on both Strawberry Haze plants in late flower.",
       tasks: [
         "MOISTURE CHECK on both Haze pots. Continue wet/dry cycling.",
-        "HAZE LATE FLOWER NUTRIENTS (nutrient days): Big Bloom 3 tbsp/gal + Tiger Bloom 2 tsp/gal + Cal-Mag 5ml/gal. pH to 6.5.",
-        "PLAIN WATER DAYS: Cal-Mag 5ml/gal, pH 6.5.",
+        "HAZE LATE FLOWER NUTRIENTS (nutrient days): Use distilled water. Mix Big Bloom 3 tbsp/gal + Tiger Bloom 2 tsp/gal + Cal-Mag 5ml/gal. Stir well.",
+        "PLAIN WATER DAYS: Cal-Mag 5ml/gal in distilled water.",
         "TRICHOME CHECK on both Haze plants: Clear = not ready. You want mostly milky/cloudy with amber beginning before flushing. Haze flush starts October 4.",
         "BUD ROT WATCH: October in Ohio brings cooler and sometimes wet weather — this is peak bud rot risk for Haze. Check inside dense Haze colas daily.",
         `FROST FORECAST: Check Athens, OH forecast every night now. First frost in Athens typically falls October 15 to 20. If frost is predicted before October 18, be prepared to move pots inside overnight. Haze flush starts ${fmt(D.hazeFlush)}.`,
@@ -396,7 +395,7 @@ export function getDetail(date) {
       title: `Haze Flush — Day ${fd} of 14`,
       summary: "Both Strawberry Haze plants get plain water only. Harvest is approaching.",
       tasks: [
-        "PLAIN WATER ONLY for both Haze plants: pH to 6.5. No nutrients. No Cal-Mag. Water to runoff.",
+        "PLAIN WATER ONLY for both Haze plants: Use tap water. No nutrients. No Cal-Mag. Water to runoff.",
         "TRICHOME CHECK: Looking for mostly milky/cloudy trichomes with 10 to 20% amber across multiple bud sites. Check both plants — they may not be at the exact same stage.",
         "FROST WATCH: Check the 10-day forecast for Athens, OH every single night. A hard frost kills the plants. If frost is predicted before October 18, harvest immediately — partial or full.",
         "LEAF YELLOWING: Fan leaves will yellow and drop. This is expected and correct.",
