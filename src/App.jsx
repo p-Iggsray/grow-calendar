@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { TODAY, daysBetween } from "./lib/dates.js";
+import { useToday, daysBetween } from "./lib/dates.js";
 import {
   PHASES,
   getPhase,
@@ -32,15 +32,16 @@ const SHELL_STYLE = {
 
 export default function App() {
   const { user } = useAuth();
-  const [month,    setMonth]    = useState(TODAY.getMonth());
+  const today    = useToday();
+  const [month,    setMonth]    = useState(() => today.getMonth());
   const [selected, setSelected] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
 
-  const todayPhase = getPhase(TODAY);
+  const todayPhase = getPhase(today);
   const todayStyle = todayPhase ? PHASES[todayPhase] : null;
-  const nextMs     = getNextMilestone();
-  const daysToNext = nextMs ? daysBetween(nextMs.date, TODAY) : 0;
-  const progress   = getGrowProgress();
+  const nextMs     = getNextMilestone(today);
+  const daysToNext = nextMs ? daysBetween(nextMs.date, today) : 0;
+  const progress   = getGrowProgress(today);
 
   const selPhase = selected ? getPhase(selected) : null;
   const selStyle = selPhase ? PHASES[selPhase]    : null;
@@ -71,7 +72,7 @@ export default function App() {
 
   function pickDay(date)       { openDay(date); }
   function pickMilestone(date) { setMonth(date.getMonth()); openDay(date); }
-  function jumpToday()         { setMonth(TODAY.getMonth()); openDay(TODAY); }
+  function jumpToday()         { setMonth(today.getMonth()); openDay(today); }
 
   const chatOverlay = (
     <>
@@ -129,9 +130,10 @@ export default function App() {
         progress={progress}
         onJumpToday={jumpToday}
       />
-      <MilestoneStrip onPick={pickMilestone} />
+      <MilestoneStrip today={today} onPick={pickMilestone} />
       <div className="app-screen">
         <Calendar
+          today={today}
           month={month}
           setMonth={setMonth}
           selected={selected}
