@@ -1,11 +1,11 @@
-import { MONTH_NAMES, DOW_SHORT, TODAY, sameDay } from "../lib/dates.js";
+import { MONTH_NAMES, DOW_SHORT, sameDay } from "../lib/dates.js";
 import { D, PHASES, getPhase, getThreatsForPhase } from "../lib/growData.js";
 
 const YEAR = 2026;
 const MIN_MONTH = 4;
 const MAX_MONTH = 9;
 
-export default function Calendar({ month, setMonth, selected, onPickDay, onClearSelection }) {
+export default function Calendar({ today, month, setMonth, selected, onPickDay, onClearSelection }) {
   const firstDow = new Date(YEAR, month, 1).getDay();
   const daysInMonth = new Date(YEAR, month + 1, 0).getDate();
   const cells = [];
@@ -51,7 +51,7 @@ export default function Calendar({ month, setMonth, selected, onPickDay, onClear
             const phase = getPhase(date);
             const pStyle = phase ? PHASES[phase] : null;
             const isSel = selected && sameDay(date, selected);
-            const isToday = sameDay(date, TODAY);
+            const isToday = sameDay(date, today);
             const isKey = sameDay(date, D.transplant) || sameDay(date, D.gdpHarvest) || sameDay(date, D.hazeHarvest);
             const hasThreat = phase && getThreatsForPhase(phase).length > 0;
 

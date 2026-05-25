@@ -1,8 +1,21 @@
-export const TODAY = (() => {
+import { useState, useEffect } from "react";
+
+export function getToday() {
   const t = new Date();
   t.setHours(0, 0, 0, 0);
   return t;
-})();
+}
+
+export function useToday() {
+  const [today, setToday] = useState(getToday);
+  useEffect(() => {
+    const midnight = new Date();
+    midnight.setHours(24, 0, 0, 0);
+    const id = setTimeout(() => setToday(getToday()), midnight - Date.now());
+    return () => clearTimeout(id);
+  }, [today]);
+  return today;
+}
 
 export const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",

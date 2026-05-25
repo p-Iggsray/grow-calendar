@@ -1,4 +1,4 @@
-import { TODAY, sameDay, daysBetween, fmt, fmtL } from "./dates.js";
+import { sameDay, daysBetween, fmt, fmtL } from "./dates.js";
 
 export const D = {
   start:        new Date(2026, 4, 21),
@@ -89,13 +89,13 @@ export const MILESTONES = [
 
 export const dpt = d => daysBetween(d, D.transplant);
 
-export function getNextMilestone() {
-  return MILESTONES.find(m => daysBetween(m.date, TODAY) > 0) || MILESTONES[MILESTONES.length - 1];
+export function getNextMilestone(today) {
+  return MILESTONES.find(m => daysBetween(m.date, today) > 0) || MILESTONES[MILESTONES.length - 1];
 }
 
-export function getGrowProgress() {
+export function getGrowProgress(today) {
   const total = daysBetween(D.hazeHarvest, D.start);
-  const done  = Math.max(0, Math.min(total, daysBetween(TODAY, D.start)));
+  const done  = Math.max(0, Math.min(total, daysBetween(today, D.start)));
   return Math.round((done / total) * 100);
 }
 
