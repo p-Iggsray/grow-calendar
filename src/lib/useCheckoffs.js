@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ymd } from "./api.js";
+import { useToast } from "./useToast.jsx";
 
 export function useCheckoffs(date, enabled) {
   const [checked, setChecked] = useState([]);
   const [loading, setLoading] = useState(false);
   const dateKey = date ? ymd(date) : null;
   const requestId = useRef(0);
+  const { addToast } = useToast();
 
   const fetchNow = useCallback(async () => {
     if (!dateKey || !enabled) {
@@ -18,11 +20,11 @@ export function useCheckoffs(date, enabled) {
       const data = await api.getCheckoffs(dateKey);
       if (myId === requestId.current) setChecked(data.checked || []);
     } catch {
-      // swallow; user retries by reselecting
+      if (myId === requestId.current) addToast("Couldn't load tasks — check your connection");
     } finally {
       if (myId === requestId.current) setLoading(false);
     }
-  }, [dateKey, enabled]);
+  }, [dateKey, enabled, addToast]);
 
   useEffect(() => { fetchNow(); }, [fetchNow]);
 
@@ -49,6 +51,7 @@ export function useCheckoffs(date, enabled) {
     try {
       await api.putCheckoffs(dateKey, next);
     } catch {
+      addToast("Couldn't save — your change was reversed");
       fetchNow();
     }
   }, [dateKey, enabled, fetchNow]);

@@ -3,7 +3,9 @@ import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import LoginGate from "./components/LoginGate.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
+import Toast from "./components/Toast.jsx";
 import { AuthProvider, useAuth } from "./lib/auth.jsx";
+import { ToastProvider } from "./lib/useToast.jsx";
 import "./styles.css";
 
 function Root() {
@@ -30,9 +32,12 @@ function Splash() {
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <ErrorBoundary>
-      <AuthProvider>
-        <Root />
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <Root />
+        </AuthProvider>
+        <Toast />
+      </ToastProvider>
     </ErrorBoundary>
   </StrictMode>
 );
