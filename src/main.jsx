@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import LoginGate from "./components/LoginGate.jsx";
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import { AuthProvider, useAuth } from "./lib/auth.jsx";
 import "./styles.css";
 
@@ -28,8 +29,10 @@ function Splash() {
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <AuthProvider>
-      <Root />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Root />
+      </AuthProvider>
+    </ErrorBoundary>
   </StrictMode>
 );
