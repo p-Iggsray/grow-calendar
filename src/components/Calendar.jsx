@@ -52,7 +52,7 @@ export default function Calendar({ today, month, setMonth, selected, onPickDay, 
             const pStyle = phase ? PHASES[phase] : null;
             const isSel = selected && sameDay(date, selected);
             const isToday = sameDay(date, today);
-            const isKey = sameDay(date, D.transplant) || sameDay(date, D.gdpHarvest) || sameDay(date, D.hazeHarvest);
+            const isKey = sameDay(date, D.transplant) || sameDay(date, D.backyardMove) || sameDay(date, D.gdpHarvest) || sameDay(date, D.hazeHarvest);
             const hasThreat = phase && getThreatsForPhase(phase).length > 0;
 
             return (
