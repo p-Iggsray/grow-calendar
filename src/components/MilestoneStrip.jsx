@@ -1,11 +1,10 @@
-import { MILESTONES } from "../lib/growData.js";
 import { sameDay, daysBetween, fmt } from "../lib/dates.js";
 
-export default function MilestoneStrip({ today, onPick }) {
+export default function MilestoneStrip({ today, milestones, onPick }) {
   return (
     <div style={{ overflowX: "auto", padding: "12px 16px 4px" }}>
       <div style={{ display: "flex", gap: 8, minWidth: "max-content" }}>
-        {MILESTONES.map(m => {
+        {milestones.map(m => {
           const passed = daysBetween(m.date, today) < 0;
           const isToday = sameDay(m.date, today);
           return (

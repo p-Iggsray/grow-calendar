@@ -1,11 +1,11 @@
 import { MONTH_NAMES, DOW_SHORT, sameDay } from "../lib/dates.js";
-import { D, PHASES, getPhase, getThreatsForPhase } from "../lib/growData.js";
+import { PHASES, getPhase, getThreatsForPhase } from "../lib/growData.js";
 
 const YEAR = 2026;
 const MIN_MONTH = 4;
 const MAX_MONTH = 9;
 
-export default function Calendar({ today, month, setMonth, selected, onPickDay, onClearSelection }) {
+export default function Calendar({ today, month, setMonth, selected, config, onPickDay, onClearSelection }) {
   const firstDow = new Date(YEAR, month, 1).getDay();
   const daysInMonth = new Date(YEAR, month + 1, 0).getDate();
   const cells = [];
@@ -48,11 +48,11 @@ export default function Calendar({ today, month, setMonth, selected, onPickDay, 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 3, padding: "6px 10px 12px" }}>
           {cells.map((date, i) => {
             if (!date) return <div key={`e${i}`} style={{ minHeight: 40 }} />;
-            const phase = getPhase(date);
+            const phase = getPhase(date, config);
             const pStyle = phase ? PHASES[phase] : null;
             const isSel = selected && sameDay(date, selected);
             const isToday = sameDay(date, today);
-            const isKey = sameDay(date, D.transplant) || sameDay(date, D.backyardMove) || sameDay(date, D.gdpHarvest) || sameDay(date, D.hazeHarvest);
+            const isKey = sameDay(date, config.transplant) || sameDay(date, config.backyardMove) || sameDay(date, config.gdpHarvest) || sameDay(date, config.hazeHarvest);
             const hasThreat = phase && getThreatsForPhase(phase).length > 0;
 
             return (

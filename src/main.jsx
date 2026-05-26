@@ -6,13 +6,18 @@ import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import Toast from "./components/Toast.jsx";
 import { AuthProvider, useAuth } from "./lib/auth.jsx";
 import { ToastProvider } from "./lib/useToast.jsx";
+import { PlanProvider } from "./lib/usePlan.jsx";
 import "./styles.css";
 
 function Root() {
   const { user, loading } = useAuth();
   if (loading) return <Splash />;
   if (!user)   return <LoginGate />;
-  return <App />;
+  return (
+    <PlanProvider>
+      <App />
+    </PlanProvider>
+  );
 }
 
 function Splash() {
