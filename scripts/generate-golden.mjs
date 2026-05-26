@@ -1,6 +1,7 @@
 // One-shot: captures the CURRENT generator output as the golden fixture.
-// Run once before refactoring growData.js. Not rerun afterward (the generator
-// signature changes); kept for provenance.
+// Run once before refactoring growData.js. Not rerun afterward (it imports the
+// pre-refactor `D` export and getDetail(date) signature, both removed in Task 3);
+// kept for provenance. Lives in scripts/ (not test/) so `node --test` ignores it.
 import { writeFileSync } from "node:fs";
 import { D, getPhase, getDetail } from "../src/lib/growData.js";
 
@@ -19,7 +20,7 @@ while (cur <= D.hazeHarvest) {
 }
 
 writeFileSync(
-  new URL("./golden-plan.json", import.meta.url),
+  new URL("../test/golden-plan.json", import.meta.url),
   JSON.stringify(out, null, 2) + "\n",
 );
 console.log(`wrote ${out.length} days to test/golden-plan.json`);
