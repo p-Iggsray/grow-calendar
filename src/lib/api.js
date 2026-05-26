@@ -35,8 +35,8 @@ export const api = {
   putNote: (date, body) =>
     request(`/api/notes/${date}`, { method: "PUT", body: JSON.stringify({ body }) }),
 
-  chat: (messages) =>
-    request("/api/chat", { method: "POST", body: JSON.stringify({ messages }) }),
+  mj: (messages) =>
+    request("/api/mj", { method: "POST", body: JSON.stringify({ messages }) }),
 
   getPlan: () => request("/api/plan"),
 };
