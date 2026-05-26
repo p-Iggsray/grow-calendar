@@ -2,9 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { api } from "../lib/api.js";
 
 const SUGGESTIONS = [
-  "What should I be doing this week?",
-  "My lower leaves are yellowing - what's going on?",
-  "How do I know when the GDP is ready to harvest?",
+  "What should I be doing today?",
+  "Mark today's watering done",
+  "Add a note to today: lower leaves yellowing",
 ];
 
 export default function ChatPanel({ onClose }) {
@@ -27,8 +27,8 @@ export default function ChatPanel({ onClose }) {
     setError("");
     setBusy(true);
     try {
-      const { reply } = await api.chat(next);
-      setMessages([...next, { role: "assistant", content: reply }]);
+      const { reply, actions } = await api.mj(next);
+      setMessages([...next, { role: "assistant", content: reply, actions: actions || [] }]);
     } catch (err) {
       setError(err.message || "Something went wrong. Try again.");
     } finally {
@@ -60,8 +60,8 @@ export default function ChatPanel({ onClose }) {
           fontFamily: "'Courier New', monospace", fontSize: 13, cursor: "pointer", letterSpacing: 1,
         }}>‹ Back</button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: "#5a8a5a", textTransform: "uppercase" }}>Grow Assistant</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>Ask about your grow</div>
+          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: "#5a8a5a", textTransform: "uppercase" }}>MJ</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>Your grow assistant</div>
         </div>
       </div>
 
@@ -70,7 +70,7 @@ export default function ChatPanel({ onClose }) {
           <div style={{ margin: "auto", maxWidth: 440, textAlign: "center" }}>
             <div style={{ fontSize: 34, marginBottom: 10 }}>🌿</div>
             <div style={{ fontSize: 15, color: "#a0d0a0", marginBottom: 14, lineHeight: 1.6 }}>
-              Ask anything about your plants, the schedule, dosing, or whatever the weather is doing. I know your full grow plan and your saved notes.
+              Ask anything about your grow, or tell me to do things - check off today's tasks, add to your daily notes. I know your full plan.
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {SUGGESTIONS.map(s => (
@@ -83,7 +83,7 @@ export default function ChatPanel({ onClose }) {
             </div>
           </div>
         )}
-        {messages.map((m, i) => <Bubble key={i} role={m.role} text={m.content} />)}
+        {messages.map((m, i) => <Bubble key={i} role={m.role} text={m.content} actions={m.actions} />)}
         {busy && <Bubble role="assistant" text="thinking..." dim />}
         {error && (
           <div style={{ fontSize: 12.5, color: "#fca5a5", background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.25)", borderRadius: 8, padding: "8px 10px" }}>{error}</div>
@@ -125,10 +125,10 @@ export default function ChatPanel({ onClose }) {
   );
 }
 
-function Bubble({ role, text, dim }) {
+function Bubble({ role, text, dim, actions }) {
   const isUser = role === "user";
   return (
-    <div style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: isUser ? "flex-end" : "flex-start" }}>
       <div style={{
         maxWidth: "82%", whiteSpace: "pre-wrap", lineHeight: 1.6, fontSize: 14,
         padding: "10px 13px", borderRadius: 12,
@@ -138,6 +138,19 @@ function Bubble({ role, text, dim }) {
         borderBottomRightRadius: isUser ? 4 : 12,
         borderBottomLeftRadius: isUser ? 12 : 4,
       }}>{text}</div>
+      {actions && actions.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6, maxWidth: "82%" }}>
+          {actions.map((a, i) => (
+            <span key={i} style={{
+              fontSize: 11, fontFamily: "'Courier New', monospace",
+              color: "#4ade80", background: "rgba(34,197,94,0.1)",
+              border: "1px solid rgba(34,197,94,0.25)", borderRadius: 8, padding: "3px 8px",
+            }}>
+              {a.type === "append_note" ? "📝" : "✓"} {a.summary}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
