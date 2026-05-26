@@ -32,7 +32,7 @@ Overrides (table, read path, generator application, tests) stay in the foundatio
 - Modify `worker/index.js` - route `GET /api/plan`.
 - Modify `schema.sql` - `plan_config` + `plan_day_overrides` tables.
 - Create `scripts/gen-seed.mjs` - emits `seed/seed-plan-config.sql` from `DEFAULT_CONFIG`.
-- Create `test/generate-golden.mjs` (one-shot), `test/golden-plan.json` (fixture), `test/plan-parity.test.js`, `test/plan-overrides.test.js`, `test/plan-config.test.js`.
+- Create `scripts/generate-golden.mjs` (one-shot; kept out of `test/` so `node --test` does not auto-run it), `test/golden-plan.json` (fixture), `test/plan-parity.test.js`, `test/plan-overrides.test.js`, `test/plan-config.test.js`.
 - Modify `package.json` - add `"test": "node --test"` script (built-in runner, no dependency).
 
 ---
