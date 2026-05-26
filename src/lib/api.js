@@ -37,6 +37,8 @@ export const api = {
 
   chat: (messages) =>
     request("/api/chat", { method: "POST", body: JSON.stringify({ messages }) }),
+
+  getPlan: () => request("/api/plan"),
 };
 
 export function ymd(date) {
