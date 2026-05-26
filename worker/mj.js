@@ -42,6 +42,8 @@ export async function postMj(request, env) {
       content: typeof m?.content === "string" ? m.content.slice(0, MAX_MSG_LEN) : "",
     }))
     .filter(m => m.content !== "");
+  // The length === 0 check must stay first: it short-circuits the array access
+  // so the .role read never runs on an empty array. Do not reorder.
   if (messages.length === 0 || messages[messages.length - 1].role !== "user") {
     return error(400, "the last message must be from the user");
   }
