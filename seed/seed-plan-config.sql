@@ -1,0 +1,2 @@
+INSERT OR IGNORE INTO plan_config (id, config, updated_at)
+VALUES (1, '{"start":"2026-05-21","transplant":"2026-05-24","calMag":"2026-06-07","feedStart":"2026-06-21","fullDose":"2026-07-05","flush1":"2026-06-24","flush2":"2026-07-24","flush3":"2026-08-24","backyardMove":"2026-07-28","preFlower":"2026-08-01","flowerStart":"2026-08-15","gdpFlush":"2026-09-20","gdpHarvest":"2026-09-27","hazeFlush":"2026-10-04","hazeHarvest":"2026-10-18"}', '2026-05-26T02:41:50.392Z');

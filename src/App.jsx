@@ -7,8 +7,10 @@ import {
   getThreatsForPhase,
   getNextMilestone,
   getGrowProgress,
+  buildMilestones,
 } from "./lib/growData.js";
 import { useAuth } from "./lib/auth.jsx";
+import { usePlan } from "./lib/usePlan.jsx";
 import { useCheckoffs } from "./lib/useCheckoffs.js";
 import { useDayNote } from "./lib/useDayNote.js";
 import { ymd } from "./lib/api.js";
@@ -33,20 +35,10 @@ const SHELL_STYLE = {
 export default function App() {
   const { user } = useAuth();
   const today    = useToday();
+  const { config, overrides, loading: planLoading, error: planError } = usePlan();
   const [month,    setMonth]    = useState(() => today.getMonth());
   const [selected, setSelected] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
-
-  const todayPhase = getPhase(today);
-  const todayStyle = todayPhase ? PHASES[todayPhase] : null;
-  const nextMs     = getNextMilestone(today);
-  const daysToNext = nextMs ? daysBetween(nextMs.date, today) : 0;
-  const progress   = getGrowProgress(today);
-
-  const selPhase = selected ? getPhase(selected) : null;
-  const selStyle = selPhase ? PHASES[selPhase]    : null;
-  const detail   = selected ? getDetail(selected) : null;
-  const threats  = selPhase ? getThreatsForPhase(selPhase) : [];
 
   const { checked, toggle } = useCheckoffs(selected, Boolean(user));
   const { note, setNote, status: noteStatus, flush: flushNote } =
@@ -69,6 +61,37 @@ export default function App() {
     flushNote();
     window.history.back();
   }, [flushNote]);
+
+  if (planError) {
+    return (
+      <div className="app-shell" style={SHELL_STYLE}>
+        <div className="app-screen" style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "#c98a8a" }}>
+          Could not load the grow plan. {planError.message}
+        </div>
+      </div>
+    );
+  }
+  if (planLoading || !config) {
+    return (
+      <div className="app-shell" style={SHELL_STYLE}>
+        <div className="app-screen" style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "#3a5a3a", letterSpacing: 4 }}>
+          LOADING PLAN
+        </div>
+      </div>
+    );
+  }
+
+  const todayPhase = getPhase(today, config);
+  const todayStyle = todayPhase ? PHASES[todayPhase] : null;
+  const nextMs     = getNextMilestone(today, config);
+  const daysToNext = nextMs ? daysBetween(nextMs.date, today) : 0;
+  const progress   = getGrowProgress(today, config);
+  const milestones = buildMilestones(config);
+
+  const selPhase = selected ? getPhase(selected, config) : null;
+  const selStyle = selPhase ? PHASES[selPhase]    : null;
+  const detail   = selected ? getDetail(selected, config, overrides) : null;
+  const threats  = selPhase ? getThreatsForPhase(selPhase) : [];
 
   function pickDay(date)       { openDay(date); }
   function pickMilestone(date) { setMonth(date.getMonth()); openDay(date); }
@@ -130,13 +153,14 @@ export default function App() {
         progress={progress}
         onJumpToday={jumpToday}
       />
-      <MilestoneStrip today={today} onPick={pickMilestone} />
+      <MilestoneStrip today={today} milestones={milestones} onPick={pickMilestone} />
       <div className="app-screen">
         <Calendar
           today={today}
           month={month}
           setMonth={setMonth}
           selected={selected}
+          config={config}
           onPickDay={pickDay}
           onClearSelection={() => setSelected(null)}
         />

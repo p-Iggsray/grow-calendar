@@ -39,9 +39,14 @@ CREATE TABLE IF NOT EXISTS day_notes (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS login_attempts (
-  key          TEXT PRIMARY KEY,  -- 'ip:username'
-  attempts     INTEGER NOT NULL DEFAULT 0,
-  locked_until TEXT,
-  updated_at   TEXT NOT NULL
+CREATE TABLE IF NOT EXISTS plan_config (
+  id          INTEGER PRIMARY KEY CHECK (id = 1),  -- single global row
+  config      TEXT NOT NULL,                        -- JSON: driving dates
+  updated_at  TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS plan_day_overrides (
+  date        TEXT PRIMARY KEY,   -- YYYY-MM-DD
+  payload     TEXT NOT NULL,      -- JSON: addedTasks/editedTasks/removedTasks/note/warning
+  updated_at  TEXT NOT NULL
 );
