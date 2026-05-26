@@ -1,4 +1,4 @@
-import { sameDay, daysBetween, fmt, fmtL } from "./dates.js";
+import { sameDay, daysBetween, fmt, fmtL } from "./dates-core.js";
 
 export const PHASES = {
   pre:          { label:"Pre-Transplant",       color:"#5b8dee", light:"#e8f0fe", dark:"#1e3a8a" },
