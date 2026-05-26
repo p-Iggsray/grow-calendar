@@ -1,23 +1,5 @@
 import { sameDay, daysBetween, fmt, fmtL } from "./dates.js";
 
-export const D = {
-  start:        new Date(2026, 4, 21),
-  transplant:   new Date(2026, 4, 24),
-  calMag:       new Date(2026, 5,  7),
-  feedStart:    new Date(2026, 5, 21),
-  fullDose:     new Date(2026, 6,  5),
-  flush1:       new Date(2026, 5, 24),
-  flush2:       new Date(2026, 6, 24),
-  flush3:       new Date(2026, 7, 24),
-  backyardMove: new Date(2026, 6, 28), // target window July 27-29, using 28 as reference
-  preFlower:    new Date(2026, 7,  1),
-  flowerStart:  new Date(2026, 7, 15),
-  gdpFlush:     new Date(2026, 8, 20),
-  gdpHarvest:   new Date(2026, 8, 27),
-  hazeFlush:    new Date(2026, 9,  4),
-  hazeHarvest:  new Date(2026, 9, 18),
-};
-
 export const PHASES = {
   pre:          { label:"Pre-Transplant",       color:"#5b8dee", light:"#e8f0fe", dark:"#1e3a8a" },
   transplant:   { label:"Transplant Day",       color:"#7c3aed", light:"#f3effe", dark:"#4c1d95" },
@@ -78,42 +60,45 @@ export const THREATS = [
   },
 ];
 
-export const MILESTONES = [
-  { label:"Transplant",      date:D.transplant,   icon:"🌱", color:"#7c3aed" },
-  { label:"Cal-Mag Starts",  date:D.calMag,       icon:"💊", color:"#16a34a" },
-  { label:"Feeding Starts",  date:D.feedStart,    icon:"🧪", color:"#15803d" },
-  { label:"Move to Backyard",date:D.backyardMove, icon:"🏡", color:"#22c55e" },
-  { label:"Pre-Flower",      date:D.preFlower,    icon:"🌸", color:"#f59e0b" },
-  { label:"Flower",          date:D.flowerStart,  icon:"🌺", color:"#f97316" },
-  { label:"GDP Harvest",     date:D.gdpHarvest,   icon:"✂️", color:"#d97706" },
-  { label:"Haze Harvest",    date:D.hazeHarvest,  icon:"🏆", color:"#b45309" },
-];
-
-export const dpt = d => daysBetween(d, D.transplant);
-
-export function getNextMilestone(today) {
-  return MILESTONES.find(m => daysBetween(m.date, today) > 0) || MILESTONES[MILESTONES.length - 1];
+export function buildMilestones(config) {
+  return [
+    { label:"Transplant",       date:config.transplant,   icon:"🌱", color:"#7c3aed" },
+    { label:"Cal-Mag Starts",   date:config.calMag,       icon:"💊", color:"#16a34a" },
+    { label:"Feeding Starts",   date:config.feedStart,    icon:"🧪", color:"#15803d" },
+    { label:"Move to Backyard", date:config.backyardMove, icon:"🏡", color:"#22c55e" },
+    { label:"Pre-Flower",       date:config.preFlower,    icon:"🌸", color:"#f59e0b" },
+    { label:"Flower",           date:config.flowerStart,  icon:"🌺", color:"#f97316" },
+    { label:"GDP Harvest",      date:config.gdpHarvest,   icon:"✂️", color:"#d97706" },
+    { label:"Haze Harvest",     date:config.hazeHarvest,  icon:"🏆", color:"#b45309" },
+  ];
 }
 
-export function getGrowProgress(today) {
-  const total = daysBetween(D.hazeHarvest, D.start);
-  const done  = Math.max(0, Math.min(total, daysBetween(today, D.start)));
+export const dpt = (date, config) => daysBetween(date, config.transplant);
+
+export function getNextMilestone(today, config) {
+  const milestones = buildMilestones(config);
+  return milestones.find(m => daysBetween(m.date, today) > 0) || milestones[milestones.length - 1];
+}
+
+export function getGrowProgress(today, config) {
+  const total = daysBetween(config.hazeHarvest, config.start);
+  const done  = Math.max(0, Math.min(total, daysBetween(today, config.start)));
   return Math.round((done / total) * 100);
 }
 
-export function getPhase(date) {
-  if (date < D.start || date > D.hazeHarvest) return null;
-  if (date < D.transplant) return "pre";
-  const d = dpt(date);
+export function getPhase(date, config) {
+  if (date < config.start || date > config.hazeHarvest) return null;
+  if (date < config.transplant) return "pre";
+  const d = dpt(date, config);
   if (d === 0) return "transplant";
-  if (sameDay(date, D.gdpHarvest))  return "harvest_gdp";
-  if (sameDay(date, D.hazeHarvest)) return "harvest_haze";
-  if (sameDay(date, D.flush1) || sameDay(date, D.flush2) || sameDay(date, D.flush3)) return "flush";
-  if (date >= D.hazeFlush)   return "flush_haze";
-  if (date >  D.gdpHarvest)  return "flower_haze";
-  if (date >= D.gdpFlush)    return "flush_gdp";
-  if (date >= D.flowerStart) return "flower";
-  if (date >= D.preFlower)   return "pre_flower";
+  if (sameDay(date, config.gdpHarvest))  return "harvest_gdp";
+  if (sameDay(date, config.hazeHarvest)) return "harvest_haze";
+  if (sameDay(date, config.flush1) || sameDay(date, config.flush2) || sameDay(date, config.flush3)) return "flush";
+  if (date >= config.hazeFlush)   return "flush_haze";
+  if (date >  config.gdpHarvest)  return "flower_haze";
+  if (date >= config.gdpFlush)    return "flush_gdp";
+  if (date >= config.flowerStart) return "flower";
+  if (date >= config.preFlower)   return "pre_flower";
   if (d >= 42) return "veg_full";
   if (d >= 28) return "veg_half";
   if (d >= 14) return "veg_cm";
@@ -125,13 +110,13 @@ export function getThreatsForPhase(phase) {
   return THREATS.filter(t => t.phases.includes(phase));
 }
 
-export function getDetail(date) {
-  const phase = getPhase(date);
+function generateDetail(date, config) {
+  const phase = getPhase(date, config);
   if (!phase) return null;
-  const d = dpt(date);
+  const d = dpt(date, config);
 
   if (phase === "pre") {
-    const n = daysBetween(date, D.start);
+    const n = daysBetween(date, config.start);
     const plans = [
       {
         title: "Pre-Transplant — Prep Day",
@@ -199,7 +184,7 @@ export function getDetail(date) {
   }
 
   if (phase === "flush") {
-    const which = sameDay(date, D.flush1) ? 1 : sameDay(date, D.flush2) ? 2 : 3;
+    const which = sameDay(date, config.flush1) ? 1 : sameDay(date, config.flush2) ? 2 : 3;
     return {
       title: `Flush Day #${which} — ${fmtL(date)}`,
       summary: "Salt buildup from nutrient feeding blocks uptake over time. Today is plain water only — no nutrients, no Cal-Mag.",
@@ -233,7 +218,7 @@ export function getDetail(date) {
         "Confirm pots are not sitting in pooled water in their saucers.",
         d === 7 ? "ONE WEEK MILESTONE: Healthy plants will show at least one new node or set of leaves. Perk, green color, and new growth confirm successful establishment." : "",
       ].filter(Boolean),
-      notes: `No nutrients or supplements until Day 14 (${fmt(D.calMag)}) when Cal-Mag begins. Fox Farm nutrients start Day 28 (${fmt(D.feedStart)}). Plain tap water only right now. Plants are on the covered front porch — the roof protects from rain and hail. Backyard move target: July 27-29.`,
+      notes: `No nutrients or supplements until Day 14 (${fmt(config.calMag)}) when Cal-Mag begins. Fox Farm nutrients start Day 28 (${fmt(config.feedStart)}). Plain tap water only right now. Plants are on the covered front porch — the roof protects from rain and hail. Backyard move target: July 27-29.`,
     };
   }
 
@@ -252,9 +237,9 @@ export function getDetail(date) {
         "GROWTH OBSERVATION: Plants should be adding a new node every few days. GDP will widen and get bushy. Haze will reach upward and get taller.",
         "PEST INSPECTION: Underside of all leaves on all 3 plants, every single day. Catching problems when they are small saves plants.",
         "HAZE HEIGHT: Both Strawberry Haze plants will start pulling ahead of GDP in height this week. Glance at the stakes — confirm they are positioned where the plant is growing toward.",
-        d === 21 ? `THREE WEEK MARK: Fox Farm nutrients begin in 7 days on ${fmt(D.feedStart)}. If plants look healthy and growing consistently, you are on track.` : "",
+        d === 21 ? `THREE WEEK MARK: Fox Farm nutrients begin in 7 days on ${fmt(config.feedStart)}. If plants look healthy and growing consistently, you are on track.` : "",
       ].filter(Boolean),
-      notes: `Cal-Mag goes into every single watering from now through the pre-harvest flushes. Always use distilled water when mixing Cal-Mag or any supplement. Fox Farm nutrients start Day 28 (${fmt(D.feedStart)}) at half dose. Still on the covered front porch — backyard move coming July 27-29.`,
+      notes: `Cal-Mag goes into every single watering from now through the pre-harvest flushes. Always use distilled water when mixing Cal-Mag or any supplement. Fox Farm nutrients start Day 28 (${fmt(config.feedStart)}) at half dose. Still on the covered front porch — backyard move coming July 27-29.`,
     };
   }
 
@@ -273,7 +258,7 @@ export function getDetail(date) {
         "LEAF TIP CHECK: Look at the newest leaf tips on all plants. Brown or yellow crispy tips mean slight overfeeding. Drop to quarter dose on the next feeding if you see tip burn.",
         "GDP SHAPE: GDP should be getting dense and wide. If the very interior center is crowded with no airflow, gently remove a few large fan leaves from the inside — never more than 10 to 15% of total foliage at once.",
         "HAZE SUPPORT: Check both Haze plants. Any branch leaning heavily should be loosely tied to a stake with velcro tape. Never cinch the tape tight against the stem.",
-        isStart ? "" : `Full dose begins Day 42 (${fmt(D.fullDose)}) if plants are responding well with no tip burn.`,
+        isStart ? "" : `Full dose begins Day 42 (${fmt(config.fullDose)}) if plants are responding well with no tip burn.`,
       ].filter(Boolean),
       notes: "Half dose first gives you a baseline to gauge response. Fox Farm liquids are concentrated. Starting light protects plants that may still be sensitive from the transplant. Still on the covered front porch — backyard move coming July 27-29.",
     };
@@ -334,12 +319,12 @@ export function getDetail(date) {
   }
 
   if (phase === "flower") {
-    const fd = daysBetween(date, D.flowerStart) + 1;
+    const fd = daysBetween(date, config.flowerStart) + 1;
     const fw = Math.ceil(fd / 7);
     const isLate = fd >= 28;
     return {
       title: `Day ${d} — Flower Week ${fw}`,
-      summary: `Flower day ${fd}. Buds are forming and building. GDP flush: ${fmt(D.gdpFlush)}. GDP harvest: ${fmt(D.gdpHarvest)}.`,
+      summary: `Flower day ${fd}. Buds are forming and building. GDP flush: ${fmt(config.gdpFlush)}. GDP harvest: ${fmt(config.gdpHarvest)}.`,
       tasks: [
         "MOISTURE CHECK: In flower, let each pot dry down noticeably between waterings. Do not keep soil continuously wet during flower.",
         isLate
@@ -348,16 +333,16 @@ export function getDetail(date) {
         "PLAIN WATER DAYS: Cal-Mag 5ml/gal in distilled water. Alternate with nutrient days.",
         "BUD ROT INSPECTION: Check the interior of dense bud clusters on all plants — especially GDP which forms dense, compact buds. Look for any grey or brown mushy area inside a bud. If found, cut out the affected section immediately with clean scissors and improve airflow.",
         fw >= 3
-          ? `TRICHOME WATCH — GDP: Use a jeweler's loupe or phone macro lens. Clear = not ready. Milky/cloudy = approaching window. Mostly milky with 10-20% amber = harvest window. GDP flush starts ${fmt(D.gdpFlush)}.`
+          ? `TRICHOME WATCH — GDP: Use a jeweler's loupe or phone macro lens. Clear = not ready. Milky/cloudy = approaching window. Mostly milky with 10-20% amber = harvest window. GDP flush starts ${fmt(config.gdpFlush)}.`
           : "BUD DEVELOPMENT: Bud sites on all plants should be visibly forming. GDP buds will be dense and compact. Haze buds are elongated and more airy.",
         "OHIO WEATHER: Heavy sustained rain promotes bud rot. Move pots temporarily under an overhang or covered porch if multi-day rain is forecast.",
       ].filter(Boolean),
-      notes: `GDP flush ${fmt(D.gdpFlush)}, harvest ${fmt(D.gdpHarvest)}. Haze continues through ${fmt(D.hazeHarvest)}.`,
+      notes: `GDP flush ${fmt(config.gdpFlush)}, harvest ${fmt(config.gdpHarvest)}. Haze continues through ${fmt(config.hazeHarvest)}.`,
     };
   }
 
   if (phase === "flush_gdp") {
-    const fd = daysBetween(date, D.gdpFlush) + 1;
+    const fd = daysBetween(date, config.gdpFlush) + 1;
     return {
       title: `GDP Flush — Day ${fd} of 7`,
       summary: "GDP gets plain water only. Both Strawberry Haze plants continue full flower feeding.",
@@ -369,7 +354,7 @@ export function getDetail(date) {
         "HAZE OBSERVATION: Both Haze plants are still building. They are not ready. Continue normal care.",
         fd >= 5 ? "GDP harvest is very close. Do a thorough trichome check today and tomorrow before cutting." : `${7 - fd} flush days remaining for GDP.`,
       ].filter(Boolean),
-      notes: `GDP harvest target: ${fmtL(D.gdpHarvest)}. The flush clears residual nutrients from plant tissue. A 7-day flush produces a noticeably cleaner final product.`,
+      notes: `GDP harvest target: ${fmtL(config.gdpHarvest)}. The flush clears residual nutrients from plant tissue. A 7-day flush produces a noticeably cleaner final product.`,
     };
   }
 
@@ -401,14 +386,14 @@ export function getDetail(date) {
         "PLAIN WATER DAYS: Cal-Mag 5ml/gal in distilled water.",
         "TRICHOME CHECK on both Haze plants: Clear = not ready. You want mostly milky/cloudy with amber beginning before flushing. Haze flush starts October 4.",
         "BUD ROT WATCH: October in Ohio brings cooler and sometimes wet weather — this is peak bud rot risk for Haze. Check inside dense Haze colas daily.",
-        `FROST FORECAST: Check Athens, OH forecast every night now. First frost in Athens typically falls October 15 to 20. If frost is predicted before October 18, be prepared to move pots inside overnight. Haze flush starts ${fmt(D.hazeFlush)}.`,
+        `FROST FORECAST: Check Athens, OH forecast every night now. First frost in Athens typically falls October 15 to 20. If frost is predicted before October 18, be prepared to move pots inside overnight. Haze flush starts ${fmt(config.hazeFlush)}.`,
       ],
       notes: "Strawberry Haze finishes in 10 to 12 weeks of flower. Flush begins October 4, harvest October 18. Watch the frost calendar closely from here on.",
     };
   }
 
   if (phase === "flush_haze") {
-    const fd = daysBetween(date, D.hazeFlush) + 1;
+    const fd = daysBetween(date, config.hazeFlush) + 1;
     return {
       title: `Haze Flush — Day ${fd} of 14`,
       summary: "Both Strawberry Haze plants get plain water only. Harvest is approaching.",
@@ -422,7 +407,7 @@ export function getDetail(date) {
           ? "HARVEST IS NEAR: If trichomes look right before October 18, harvest a day early rather than risk frost. A day early is far better than losing the crop to cold."
           : `${14 - fd} flush days remaining.`,
       ].filter(Boolean),
-      notes: `Haze harvest target: ${fmtL(D.hazeHarvest)}. If frost threatens before that date, harvest immediately. Partial harvest — cutting the most mature colas first — is also a valid option.`,
+      notes: `Haze harvest target: ${fmtL(config.hazeHarvest)}. If frost threatens before that date, harvest immediately. Partial harvest — cutting the most mature colas first — is also a valid option.`,
     };
   }
 
@@ -445,4 +430,46 @@ export function getDetail(date) {
   }
 
   return null;
+}
+
+function ymdLocal(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+// Apply a per-day override onto generated detail. Order: edit in place, drop by
+// original index, then append. Indices refer to the generated task list.
+function applyDayOverride(detail, override) {
+  if (!detail || !override) return detail;
+  let tasks = detail.tasks.slice();
+  if (override.editedTasks) {
+    for (const [i, text] of Object.entries(override.editedTasks)) {
+      const idx = Number(i);
+      if (idx >= 0 && idx < tasks.length) tasks[idx] = text;
+    }
+  }
+  if (Array.isArray(override.removedTasks)) {
+    const drop = new Set(override.removedTasks);
+    tasks = tasks.filter((_, idx) => !drop.has(idx));
+  }
+  if (Array.isArray(override.addedTasks)) {
+    tasks = tasks.concat(override.addedTasks);
+  }
+  return {
+    ...detail,
+    tasks,
+    // payload key is `note`; it overrides the rendered `notes` field (what DayView shows).
+    notes: override.note != null ? override.note : detail.notes,
+    // `warning` has no base equivalent; only attach when provided (UI for it lands with MJ).
+    ...(override.warning != null ? { warning: override.warning } : {}),
+  };
+}
+
+export function getDetail(date, config, overrides) {
+  const base = generateDetail(date, config);
+  if (!base) return null;
+  const override = overrides ? overrides[ymdLocal(date)] : undefined;
+  return applyDayOverride(base, override);
 }
