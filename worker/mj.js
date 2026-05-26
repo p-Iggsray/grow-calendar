@@ -108,21 +108,24 @@ async function executeTool(block, env, userId, config, overrides, actions) {
     const date = input?.date;
     if (typeof date !== "string" || !DATE_RE.test(date)) return { error: "date must be YYYY-MM-DD" };
     const dt = parseDate(date);
-    const detail = getDetail(dt, config, overrides);
-    if (!detail) return { error: `no plan for ${date} (outside the grow season)` };
+    // Cheap season-validity guard; the full day detail (task generation) is computed
+    // lazily only by the tools that actually need the task list.
+    const phase = getPhase(dt, config);
+    if (!phase) return { error: `no plan for ${date} (outside the grow season)` };
 
     if (name === "get_day") {
-      const phase = getPhase(dt, config);
+      const detail = getDetail(dt, config, overrides);
       const checked = await readCheckoffs(env, userId, date);
       const userNote = await readNote(env, userId, date);
       return buildDayView(date, phase, detail, checked, userNote);
     }
 
     if (name === "set_tasks_done") {
-      const indices = Array.isArray(input.taskIndices)
+      const indices = Array.isArray(input?.taskIndices)
         ? input.taskIndices.map(Number).filter(Number.isInteger) : null;
       if (!indices) return { error: "taskIndices must be an array of integers" };
-      if (typeof input.done !== "boolean") return { error: "done must be a boolean" };
+      if (typeof input?.done !== "boolean") return { error: "done must be a boolean" };
+      const detail = getDetail(dt, config, overrides);
       const inRange = indices.filter(i => i >= 0 && i < detail.tasks.length);
       const ignored = indices.filter(i => i < 0 || i >= detail.tasks.length);
       const current = await readCheckoffs(env, userId, date);
@@ -133,7 +136,7 @@ async function executeTool(block, env, userId, config, overrides, actions) {
     }
 
     if (name === "append_note") {
-      if (typeof input.text !== "string" || input.text.trim() === "") {
+      if (typeof input?.text !== "string" || input.text.trim() === "") {
         return { error: "text must be a non-empty string" };
       }
       const existing = await readNote(env, userId, date);
