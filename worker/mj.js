@@ -16,6 +16,24 @@ const MAX_MSG_LEN = 4000;
 const MAX_TOOL_ITERATIONS = 6;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+export const MJ_DAILY_LIMIT = 30;
+
+export function isOverMjLimit(count, limit) {
+  return count >= limit;
+}
+
+async function bumpMjUsageOrReject(env, userId, today) {
+  const row = await env.DB.prepare(
+    "SELECT count FROM mj_usage WHERE user_id = ? AND date = ?",
+  ).bind(userId, today).first();
+  if (isOverMjLimit(row?.count ?? 0, MJ_DAILY_LIMIT)) return false;
+  await env.DB.prepare(
+    "INSERT INTO mj_usage (user_id, date, count) VALUES (?, ?, 1) " +
+    "ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1",
+  ).bind(userId, today).run();
+  return true;
+}
+
 export function pickModel(user, env) {
   if (isAdmin(user)) {
     return { provider: "anthropic", model: "claude-haiku-4-5", apiKey: env.ANTHROPIC_API_KEY };
@@ -47,11 +65,19 @@ export async function postMj(request, env, user) {
     return error(400, "the last message must be from the user");
   }
 
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+
+  if (!isAdmin(user)) {
+    const allowed = await bumpMjUsageOrReject(env, user.id, today);
+    if (!allowed) {
+      return error(429, `You have reached today's MJ limit (${MJ_DAILY_LIMIT} messages). It resets tomorrow.`);
+    }
+  }
+
   const raw = await loadRawPlan(env, user.id);
   const config = parseConfig(raw.config);
   const overrides = raw.overrides;
 
-  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
   const systemSegments = [
     { text: `${MJ_PERSONA}\n\n${buildPlanText(config, overrides)}`, cache: true },
     { text: `Today's date is ${today}.`, cache: false },
