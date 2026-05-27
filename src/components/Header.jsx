@@ -48,7 +48,7 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress, onJum
       <div style={{ marginTop: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
           <span style={{ fontSize: 11, color: "#5a8a5a", fontFamily: "'Courier New', monospace" }}>
-            May 21 — Oct 18
+            May 21 to Oct 18
           </span>
           <span style={{ fontSize: 11, color: "#4ade80", fontFamily: "'Courier New', monospace" }}>
             {progress}% complete

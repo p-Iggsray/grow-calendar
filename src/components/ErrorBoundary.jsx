@@ -34,7 +34,7 @@ export default class ErrorBoundary extends Component {
           Something went wrong
         </div>
         <div style={{ fontSize: 12, color: "#5a8a5a", maxWidth: 300, lineHeight: 1.7 }}>
-          The app hit an unexpected error. Your data is safe — a reload should fix it.
+          The app hit an unexpected error. Your data is safe. A reload should fix it.
         </div>
         <button
           onClick={() => window.location.reload()}
