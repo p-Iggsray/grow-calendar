@@ -16,6 +16,7 @@ import { useDayNote } from "./lib/useDayNote.js";
 import { ymd } from "./lib/api.js";
 
 import Header from "./components/Header.jsx";
+import AdminPanel from "./components/AdminPanel.jsx";
 import MilestoneStrip from "./components/MilestoneStrip.jsx";
 import Calendar from "./components/Calendar.jsx";
 import PhaseLegend from "./components/PhaseLegend.jsx";
@@ -36,9 +37,10 @@ export default function App() {
   const { user } = useAuth();
   const today    = useToday();
   const { config, overrides, loading: planLoading, error: planError } = usePlan();
-  const [month,    setMonth]    = useState(() => today.getMonth());
-  const [selected, setSelected] = useState(null);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [month,     setMonth]    = useState(() => today.getMonth());
+  const [selected,  setSelected] = useState(null);
+  const [chatOpen,  setChatOpen] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   const { checked, toggle } = useCheckoffs(selected, Boolean(user));
   const { note, setNote, status: noteStatus, flush: flushNote } =
@@ -61,6 +63,16 @@ export default function App() {
     flushNote();
     window.history.back();
   }, [flushNote]);
+
+  if (showAdmin) {
+    return (
+      <div className="app-shell" style={SHELL_STYLE}>
+        <div className="app-screen">
+          <AdminPanel onClose={() => setShowAdmin(false)} />
+        </div>
+      </div>
+    );
+  }
 
   if (planError) {
     return (
@@ -152,6 +164,7 @@ export default function App() {
         daysToNext={daysToNext}
         progress={progress}
         onJumpToday={jumpToday}
+        onOpenAdmin={user?.role === "admin" ? () => setShowAdmin(true) : null}
       />
       <MilestoneStrip today={today} milestones={milestones} onPick={pickMilestone} />
       <div className="app-screen">
