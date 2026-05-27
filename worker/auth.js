@@ -116,22 +116,32 @@ export async function signup(request, env) {
     return error(400, `password must be at least ${MIN_PASSWORD_LENGTH} characters`);
   }
 
-  const userCount = await env.DB.prepare("SELECT COUNT(*) AS n FROM users").first();
-  if ((userCount?.n ?? 0) > 0) {
-    return error(403, "signup is closed");
+  const ip = getClientIp(request);
+  const rateCheck = await checkRateLimit(env, ip, username);
+  if (rateCheck.blocked) {
+    return json(
+      { error: "too many attempts, please try again later" },
+      { status: 429, headers: { "retry-after": String(rateCheck.retryAfter) } },
+    );
   }
 
   const existing = await env.DB.prepare("SELECT id FROM users WHERE username = ?").bind(username).first();
-  if (existing) return error(409, "username already taken");
+  if (existing) {
+    await recordFailedAttempt(env, ip, username);
+    return error(409, "username already taken");
+  }
 
   const { salt, hash } = await hashPassword(password);
   const createdAt = nowIso();
   const result = await env.DB.prepare(
-    "INSERT INTO users (username, password_hash, password_salt, created_at) VALUES (?, ?, ?, ?)",
+    "INSERT INTO users (username, password_hash, password_salt, created_at, role, status) VALUES (?, ?, ?, ?, 'user', 'pending')",
   ).bind(username, hash, salt, createdAt).run();
 
+  await clearRateLimit(env, ip, username);
   const userId = result.meta.last_row_id;
-  return finishLogin(request, env, { id: userId, username, role: "user", status: "pending" });
+  return finishLogin(request, env, {
+    id: userId, username, role: "user", status: "pending",
+  });
 }
 
 export async function login(request, env) {
