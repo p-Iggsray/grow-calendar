@@ -44,7 +44,7 @@ export async function postMj(request, env, user) {
     return error(400, "the last message must be from the user");
   }
 
-  const raw = await loadRawPlan(env);
+  const raw = await loadRawPlan(env, user.id);
   const config = parseConfig(raw.config);
   const overrides = raw.overrides;
 
