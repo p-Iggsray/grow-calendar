@@ -98,6 +98,17 @@ Order matters; run as one migration file:
 
 This is the first real use of a numbered migrations directory (relates to #54). Migration files live in `migrations/` and are applied to local and remote D1 explicitly. `schema.sql` is updated to the new shape for fresh environments.
 
+### Data preservation guarantee (the owner's live grow must stay intact)
+
+The owner is actively running the real GDP/Haze grow in production. The migration is designed to be fully preserving, and this is a hard requirement, not a best-effort:
+
+- `users`: `ADD COLUMN` keeps every existing row; the owner row is only updated to `role='admin', status='approved'`. Login is unaffected (password hash/salt untouched).
+- `plan_config`: the rebuild copies the existing global row's `config` JSON verbatim into the owner's per-user row, so the exact driving dates the owner is tracking are unchanged.
+- `plan_day_overrides`: existing rows copy to the owner verbatim (0 rows in prod today, but the copy is unconditional).
+- `task_checkoffs` and `day_notes`: not touched by the migration at all (already keyed by `user_id`); the owner's check-off history and journal entries are preserved as-is.
+
+The migration must be idempotent-safe to abort: it runs as a single transaction where possible so a failure leaves the database in its original state rather than half-migrated.
+
 ## Backend (worker)
 
 ### Auth changes (`worker/auth.js`)
@@ -208,10 +219,12 @@ The shared MJ tool definitions in `worker/mj-logic.js` stay the single source of
 ## Deployment / rollout
 
 1. Land code + migration behind PRs to `main`.
-2. Apply the migration to local D1, run the test suite.
-3. Apply the migration to remote D1 (`npx wrangler d1 execute grow-calendar-db --remote --file=./migrations/<file>.sql`). This preserves the existing owner and their plan.
-4. Cloudflare auto-deploys on push to `main`.
-5. Set both Worker secrets: `ANTHROPIC_API_KEY` (owner's paid Claude) and `GEMINI_API_KEY` (shared free key for non-owner users), via `npx wrangler secret put <NAME>`. Each gates its own users independently.
+2. Apply the migration to local D1, run the test suite. Then rehearse it against a throwaway copy of the live data: `npx wrangler d1 export grow-calendar-db --remote --output ./backup-pre-A.sql`, load that dump into a scratch local DB, run the migration on it, and confirm the owner's account, plan dates, check-offs, and notes are intact.
+3. Back up remote first: keep `./backup-pre-A.sql` (from step 2) as the explicit restore point, and note D1 Time Travel covers 7 days of point-in-time recovery as a second safety net.
+4. Apply the migration to remote D1 (`npx wrangler d1 execute grow-calendar-db --remote --file=./migrations/<file>.sql`).
+5. Verify remote immediately: the owner can log in; `GET /api/plan` returns the same driving dates as before; a known checked-off day and a known note still read back correctly; the calendar renders the same season. Only after this passes is the migration considered done.
+6. Cloudflare auto-deploys on push to `main`.
+7. Set both Worker secrets: `ANTHROPIC_API_KEY` (owner's paid Claude) and `GEMINI_API_KEY` (shared free key for non-owner users), via `npx wrangler secret put <NAME>`. Each gates its own users independently.
 
 ## Decisions made (alternatives weighed)
 
