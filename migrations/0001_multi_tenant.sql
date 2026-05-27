@@ -2,8 +2,8 @@
 -- One-time migration. NOT re-runnable (table rebuilds). Take a backup first.
 -- Preserves the existing owner (lowest user id), their plan_config row, and
 -- their plan_day_overrides. task_checkoffs and day_notes are untouched.
-
-BEGIN TRANSACTION;
+-- Note: no explicit BEGIN/COMMIT - D1 rejects those in SQL files and runs a
+-- --file execution atomically on its own (it rolls back if any statement fails).
 
 -- 1. users gains role + status (additive; existing rows backfill with defaults)
 ALTER TABLE users ADD COLUMN role   TEXT NOT NULL DEFAULT 'user';
@@ -49,5 +49,3 @@ CREATE TABLE IF NOT EXISTS mj_usage (
   PRIMARY KEY (user_id, date),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-
-COMMIT;
