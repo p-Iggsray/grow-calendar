@@ -151,6 +151,8 @@ npx wrangler d1 execute grow-calendar-db --remote --file=./migrations/0001_multi
 
 `0001_multi_tenant.sql` adds `role` and `status` to `users`, makes `plan_config` and `plan_day_overrides` per-user (keyed by `user_id`), adds the `mj_usage` table, and promotes the original owner (lowest `user_id`) to `role='admin'`, `status='approved'`.
 
+**Note on `login_attempts`:** This table was originally added to existing databases via the root-level `migrate-login-attempts.sql` file (applied in production before the migrations/ system existed). It is now included directly in `schema.sql` so fresh environments get it automatically. Existing databases already have it - do not re-apply `migrate-login-attempts.sql`.
+
 ## Account management
 
 Self-signup is open. Anyone who reaches the login screen can click **Request an account** to submit a signup. New accounts are created in a `pending` state immediately.

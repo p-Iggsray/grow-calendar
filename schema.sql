@@ -21,6 +21,13 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
 
+CREATE TABLE IF NOT EXISTS login_attempts (
+  key          TEXT PRIMARY KEY,
+  attempts     INTEGER NOT NULL DEFAULT 0,
+  locked_until TEXT,
+  updated_at   TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS task_checkoffs (
   user_id    INTEGER NOT NULL,
   date       TEXT NOT NULL,
