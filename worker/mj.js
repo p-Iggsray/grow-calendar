@@ -6,19 +6,17 @@ import { buildPlanText } from "../src/lib/planText.js";
 import { readCheckoffs, writeCheckoffs } from "./checkoffs.js";
 import { readNote, writeNote, MAX_NOTE_LEN } from "./notes.js";
 import { MJ_PERSONA, MJ_TOOLS, mergeChecked, appendNoteText, buildDayView } from "./mj-logic.js";
+import { runAnthropic } from "./providers/anthropic.js";
+import { ProviderError } from "./providers/errors.js";
 
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MAX_TOKENS = 1024;
 const MAX_MESSAGES = 20;
 const MAX_MSG_LEN = 4000;
 const MAX_TOOL_ITERATIONS = 6;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-// Model-selection seam. v1: all users route to Claude with the shared key.
-// A2 will route non-admin users to a free Gemini model (env.GEMINI_API_KEY)
-// and enforce a per-user daily cap (mj_usage table).
-function pickModel(user, env) {
-  return { model: "claude-haiku-4-5", apiKey: env.ANTHROPIC_API_KEY };
+// Provider routing. Task 4 sends non-admins to Gemini; for now everyone uses Claude.
+export function pickModel(user, env) {
+  return { provider: "anthropic", model: "claude-haiku-4-5", apiKey: env.ANTHROPIC_API_KEY };
 }
 
 export async function postMj(request, env, user) {
@@ -29,7 +27,7 @@ export async function postMj(request, env, user) {
     return error(400, "messages must be a non-empty array");
   }
 
-  const { model, apiKey } = pickModel(user, env);
+  const { provider, model, apiKey } = pickModel(user, env);
   if (!apiKey) return error(503, "MJ is not configured yet");
 
   const messages = body.messages
@@ -50,65 +48,37 @@ export async function postMj(request, env, user) {
   const overrides = raw.overrides;
 
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-  const system = [
-    { type: "text", text: `${MJ_PERSONA}\n\n${buildPlanText(config, overrides)}`, cache_control: { type: "ephemeral" } },
-    { type: "text", text: `Today's date is ${today}.` },
+  const systemSegments = [
+    { text: `${MJ_PERSONA}\n\n${buildPlanText(config, overrides)}`, cache: true },
+    { text: `Today's date is ${today}.`, cache: false },
   ];
 
   const actions = [];
-  const apiMessages = messages.map(m => ({ role: m.role, content: m.content }));
-  let finalText = "";
+  const executeToolUse = (name, input) => executeTool(name, input, env, user.id, config, overrides, actions);
 
-  for (let iter = 0; iter < MAX_TOOL_ITERATIONS; iter++) {
-    let data;
-    try {
-      const res = await fetch(ANTHROPIC_URL, {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({ model, max_tokens: MAX_TOKENS, system, tools: MJ_TOOLS, messages: apiMessages }),
-      });
-      if (!res.ok) {
-        const detail = await res.text().catch(() => "");
-        console.error("anthropic error", res.status, detail);
-        return error(502, "the AI service returned an error");
-      }
-      data = await res.json();
-    } catch {
+  const run = runAnthropic; // Task 4 selects between providers
+  try {
+    const { reply } = await run({
+      apiKey, model, systemSegments, tools: MJ_TOOLS, messages, executeToolUse, maxIterations: MAX_TOOL_ITERATIONS,
+    });
+    return json({ reply, actions });
+  } catch (e) {
+    if (e instanceof ProviderError && e.kind === "quota") {
+      return error(429, "MJ has hit today's limit, please try again later");
+    }
+    if (e instanceof ProviderError && e.kind === "unreachable") {
       return error(502, "could not reach the AI service");
     }
-
-    const content = Array.isArray(data.content) ? data.content : [];
-    finalText = content.filter(b => b.type === "text").map(b => b.text).join("").trim();
-
-    if (data.stop_reason !== "tool_use") {
-      return json({ reply: finalText || "(no response)", actions });
-    }
-
-    apiMessages.push({ role: "assistant", content });
-    const toolResults = [];
-    for (const b of content) {
-      if (b.type !== "tool_use") continue;
-      const result = await executeTool(b, env, user.id, config, overrides, actions);
-      toolResults.push({ type: "tool_result", tool_use_id: b.id, content: JSON.stringify(result) });
-    }
-    apiMessages.push({ role: "user", content: toolResults });
+    console.error("MJ provider error", e);
+    return error(502, "the AI service returned an error");
   }
-
-  return json({ reply: finalText || "I stopped after several steps - could you rephrase?", actions });
 }
 
-async function executeTool(block, env, userId, config, overrides, actions) {
-  const { name, input } = block;
+async function executeTool(name, input, env, userId, config, overrides, actions) {
   try {
     const date = input?.date;
     if (typeof date !== "string" || !DATE_RE.test(date)) return { error: "date must be YYYY-MM-DD" };
     const dt = parseDate(date);
-    // Cheap season-validity guard; the full day detail (task generation) is computed
-    // lazily only by the tools that actually need the task list.
     const phase = getPhase(dt, config);
     if (!phase) return { error: `no plan for ${date} (outside the grow season)` };
 
