@@ -16,3 +16,8 @@ test("can delete another non-admin user", () => {
   const r = canDeleteUser({ actingId: 1, targetId: 2, targetRole: "user", adminCount: 1 });
   assert.equal(r.ok, true);
 });
+
+test("can delete a second admin when more than one admin exists", () => {
+  const r = canDeleteUser({ actingId: 1, targetId: 2, targetRole: "admin", adminCount: 2 });
+  assert.equal(r.ok, true);
+});

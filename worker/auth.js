@@ -92,11 +92,6 @@ async function clearRateLimit(env, ip, username) {
   await env.DB.prepare("DELETE FROM login_attempts WHERE key = ?").bind(key).run();
 }
 
-export async function getSignupStatus(env) {
-  const row = await env.DB.prepare("SELECT COUNT(*) AS n FROM users").first();
-  return json({ open: (row?.n ?? 0) === 0 });
-}
-
 export async function getMe(request, env) {
   const user = await currentUser(request, env);
   if (!user) return error(401, "not authenticated");

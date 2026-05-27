@@ -1,5 +1,5 @@
 import { error } from "./util.js";
-import { getSignupStatus, signup, login, logout, getMe, currentUser } from "./auth.js";
+import { signup, login, logout, getMe, currentUser } from "./auth.js";
 import { getCheckoffs, putCheckoffs } from "./checkoffs.js";
 import { getNote, putNote } from "./notes.js";
 import { postMj } from "./mj.js";
@@ -37,8 +37,7 @@ async function route(request, env, path) {
   const method = request.method;
 
   // public auth routes
-  if (path === "/api/auth/signup-status" && method === "GET")  return getSignupStatus(env);
-  if (path === "/api/auth/signup"        && method === "POST") return signup(request, env);
+  if (path === "/api/auth/signup"  && method === "POST") return signup(request, env);
   if (path === "/api/auth/login"         && method === "POST") return login(request, env);
   if (path === "/api/auth/logout"        && method === "POST") return logout(request, env);
   if (path === "/api/auth/me"            && method === "GET")  return getMe(request, env);

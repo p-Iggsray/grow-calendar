@@ -3,6 +3,8 @@
 -- Preserves the existing owner (lowest user id), their plan_config row, and
 -- their plan_day_overrides. task_checkoffs and day_notes are untouched.
 
+BEGIN TRANSACTION;
+
 -- 1. users gains role + status (additive; existing rows backfill with defaults)
 ALTER TABLE users ADD COLUMN role   TEXT NOT NULL DEFAULT 'user';
 ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'pending';
@@ -47,3 +49,5 @@ CREATE TABLE IF NOT EXISTS mj_usage (
   PRIMARY KEY (user_id, date),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+COMMIT;

@@ -69,7 +69,7 @@ export default function LoginGate() {
             type="password"
             value={password}
             onChange={setPassword}
-            autoComplete="current-password"
+            autoComplete={mode === "signup" ? "new-password" : "current-password"}
           />
 
           {error && (
