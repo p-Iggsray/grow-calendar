@@ -35,7 +35,7 @@ export const MJ_TOOLS = [
   {
     name: "get_day",
     description: "Get a single day's plan detail: phase, title, summary, the task list with their indices and done-state, the plan's guidance note, and the grower's personal note. Call this before checking tasks off so you know the correct task indices.",
-    input_schema: {
+    parameters: {
       type: "object",
       properties: { date: { type: "string", description: "Target day as YYYY-MM-DD" } },
       required: ["date"],
@@ -44,7 +44,7 @@ export const MJ_TOOLS = [
   {
     name: "set_tasks_done",
     description: "Mark one or more of a day's tasks done (done=true) or not-done (done=false), by their task indices from get_day. Merges with the day's current checkoffs.",
-    input_schema: {
+    parameters: {
       type: "object",
       properties: {
         date: { type: "string", description: "Target day as YYYY-MM-DD" },
@@ -57,7 +57,7 @@ export const MJ_TOOLS = [
   {
     name: "append_note",
     description: "Append text to the grower's personal note for a day. Never overwrites existing note text; it is added on a new line.",
-    input_schema: {
+    parameters: {
       type: "object",
       properties: {
         date: { type: "string", description: "Target day as YYYY-MM-DD" },
