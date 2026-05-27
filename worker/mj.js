@@ -1,5 +1,4 @@
 import { json, error } from "./util.js";
-import { currentUser } from "./auth.js";
 import { loadRawPlan } from "./plan.js";
 import { parseConfig, parseDate } from "../src/lib/planConfig.js";
 import { getPhase, getDetail } from "../src/lib/growData.js";
@@ -15,16 +14,14 @@ const MAX_MSG_LEN = 4000;
 const MAX_TOOL_ITERATIONS = 6;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-// Model-selection seam. v1: always Claude with the shared key. Future: a non-owner
-// user could route to Gemini (env.GEMINI_API_KEY). Not wired - single user today.
+// Model-selection seam. v1: all users route to Claude with the shared key.
+// A2 will route non-admin users to a free Gemini model (env.GEMINI_API_KEY)
+// and enforce a per-user daily cap (mj_usage table).
 function pickModel(user, env) {
   return { model: "claude-haiku-4-5", apiKey: env.ANTHROPIC_API_KEY };
 }
 
-export async function postMj(request, env) {
-  const user = await currentUser(request, env);
-  if (!user) return error(401, "not authenticated");
-
+export async function postMj(request, env, user) {
   let body;
   try { body = await request.json(); }
   catch { return error(400, "invalid json"); }
@@ -48,7 +45,7 @@ export async function postMj(request, env) {
     return error(400, "the last message must be from the user");
   }
 
-  const raw = await loadRawPlan(env);
+  const raw = await loadRawPlan(env, user.id);
   const config = parseConfig(raw.config);
   const overrides = raw.overrides;
 

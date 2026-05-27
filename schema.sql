@@ -5,7 +5,9 @@ CREATE TABLE IF NOT EXISTS users (
   username      TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   password_salt TEXT NOT NULL,
-  created_at    TEXT NOT NULL
+  created_at    TEXT NOT NULL,
+  role          TEXT NOT NULL DEFAULT 'user',
+  status        TEXT NOT NULL DEFAULT 'pending'
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -18,6 +20,13 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
+
+CREATE TABLE IF NOT EXISTS login_attempts (
+  key          TEXT PRIMARY KEY,
+  attempts     INTEGER NOT NULL DEFAULT 0,
+  locked_until TEXT,
+  updated_at   TEXT NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS task_checkoffs (
   user_id    INTEGER NOT NULL,
@@ -40,13 +49,25 @@ CREATE TABLE IF NOT EXISTS day_notes (
 );
 
 CREATE TABLE IF NOT EXISTS plan_config (
-  id          INTEGER PRIMARY KEY CHECK (id = 1),  -- single global row
-  config      TEXT NOT NULL,                        -- JSON: driving dates
-  updated_at  TEXT NOT NULL
+  user_id    INTEGER PRIMARY KEY,
+  config     TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS plan_day_overrides (
-  date        TEXT PRIMARY KEY,   -- YYYY-MM-DD
-  payload     TEXT NOT NULL,      -- JSON: addedTasks/editedTasks/removedTasks/note/warning
-  updated_at  TEXT NOT NULL
+  user_id    INTEGER NOT NULL,
+  date       TEXT NOT NULL,      -- YYYY-MM-DD
+  payload    TEXT NOT NULL,      -- JSON: addedTasks/editedTasks/removedTasks/note/warning
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (user_id, date),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS mj_usage (
+  user_id INTEGER NOT NULL,
+  date    TEXT NOT NULL,
+  count   INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, date),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

@@ -1,4 +1,4 @@
-export default function Header({ todayStyle, nextMs, daysToNext, progress, onJumpToday }) {
+export default function Header({ todayStyle, nextMs, daysToNext, progress, onJumpToday, onOpenAdmin }) {
   return (
     <div style={{
       background: "linear-gradient(160deg, #0a1a0d 0%, #1a3a1e 50%, #0d2410 100%)",
@@ -22,14 +22,27 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress, onJum
             1× Grandaddy Purp · 2× Strawberry Haze
           </div>
         </div>
-        <button onClick={onJumpToday} style={{
-          background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)",
-          borderRadius: 10, padding: "8px 14px", color: "#4ade80", fontSize: 12,
-          fontFamily: "'Courier New', monospace", cursor: "pointer", letterSpacing: 1,
-          flexShrink: 0,
-        }}>
-          TODAY
-        </button>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          {onOpenAdmin && (
+            <button
+              onClick={onOpenAdmin}
+              title="Manage members"
+              style={{
+                background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)",
+                borderRadius: 8, color: "#cbe6cb", fontSize: 12, padding: "5px 10px",
+                cursor: "pointer", fontFamily: "'Courier New', monospace", letterSpacing: 1,
+              }}>
+              MEMBERS
+            </button>
+          )}
+          <button onClick={onJumpToday} style={{
+            background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)",
+            borderRadius: 10, padding: "8px 14px", color: "#4ade80", fontSize: 12,
+            fontFamily: "'Courier New', monospace", cursor: "pointer", letterSpacing: 1,
+          }}>
+            TODAY
+          </button>
+        </div>
       </div>
 
       <div style={{ marginTop: 16 }}>

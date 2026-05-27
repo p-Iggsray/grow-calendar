@@ -19,8 +19,7 @@ async function request(path, opts = {}) {
 }
 
 export const api = {
-  signupStatus: () => request("/api/auth/signup-status"),
-  me:           () => request("/api/auth/me"),
+  me: () => request("/api/auth/me"),
   signup: (username, password) =>
     request("/api/auth/signup", { method: "POST", body: JSON.stringify({ username, password }) }),
   login: (username, password) =>
@@ -39,6 +38,10 @@ export const api = {
     request("/api/mj", { method: "POST", body: JSON.stringify({ messages }) }),
 
   getPlan: () => request("/api/plan"),
+
+  adminListUsers: () => request("/api/admin/users"),
+  approveUser: (id) => request(`/api/admin/users/${id}/approve`, { method: "POST" }),
+  deleteUser: (id) => request(`/api/admin/users/${id}`, { method: "DELETE" }),
 };
 
 export function ymd(date) {
