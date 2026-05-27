@@ -6,7 +6,9 @@ import { buildPlanText } from "../src/lib/planText.js";
 import { readCheckoffs, writeCheckoffs } from "./checkoffs.js";
 import { readNote, writeNote, MAX_NOTE_LEN } from "./notes.js";
 import { MJ_PERSONA, MJ_TOOLS, mergeChecked, appendNoteText, buildDayView } from "./mj-logic.js";
+import { isAdmin } from "./guard.js";
 import { runAnthropic } from "./providers/anthropic.js";
+import { runGemini } from "./providers/gemini.js";
 import { ProviderError } from "./providers/errors.js";
 
 const MAX_MESSAGES = 20;
@@ -14,9 +16,11 @@ const MAX_MSG_LEN = 4000;
 const MAX_TOOL_ITERATIONS = 6;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-// Provider routing. Task 4 sends non-admins to Gemini; for now everyone uses Claude.
 export function pickModel(user, env) {
-  return { provider: "anthropic", model: "claude-haiku-4-5", apiKey: env.ANTHROPIC_API_KEY };
+  if (isAdmin(user)) {
+    return { provider: "anthropic", model: "claude-haiku-4-5", apiKey: env.ANTHROPIC_API_KEY };
+  }
+  return { provider: "gemini", model: "gemini-2.5-flash", apiKey: env.GEMINI_API_KEY };
 }
 
 export async function postMj(request, env, user) {
@@ -56,7 +60,7 @@ export async function postMj(request, env, user) {
   const actions = [];
   const executeToolUse = (name, input) => executeTool(name, input, env, user.id, config, overrides, actions);
 
-  const run = runAnthropic; // Task 4 selects between providers
+  const run = provider === "gemini" ? runGemini : runAnthropic;
   try {
     const { reply } = await run({
       apiKey, model, systemSegments, tools: MJ_TOOLS, messages, executeToolUse, maxIterations: MAX_TOOL_ITERATIONS,
@@ -79,6 +83,8 @@ async function executeTool(name, input, env, userId, config, overrides, actions)
     const date = input?.date;
     if (typeof date !== "string" || !DATE_RE.test(date)) return { error: "date must be YYYY-MM-DD" };
     const dt = parseDate(date);
+    // Validate the date via a cheap season check; full day detail is computed
+    // lazily only by the tools that actually need the task list.
     const phase = getPhase(dt, config);
     if (!phase) return { error: `no plan for ${date} (outside the grow season)` };
 
