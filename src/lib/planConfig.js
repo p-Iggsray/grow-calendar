@@ -19,7 +19,7 @@ export const DEFAULT_CONFIG = {
   hazeHarvest:  "2026-10-18",
 };
 
-function parseDate(iso) {
+export function parseDate(iso) {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d);
 }

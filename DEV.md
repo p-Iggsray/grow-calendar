@@ -52,9 +52,9 @@ curl.exe http://localhost:8787/api/auth/signup -X POST -H "content-type: applica
 
 Your real production login is different and lives in the remote database.
 
-## AI grow assistant
+## MJ (AI grow assistant)
 
-The floating "Ask" button opens a chat backed by the Anthropic API. The Worker holds the API key as a secret and never exposes it to the browser.
+The floating "MJ" button opens a chat backed by the Anthropic API. MJ answers questions about the grow AND takes actions on your behalf: checking tasks off and appending to your daily notes. The Worker holds the API key as a secret and never exposes it to the browser.
 
 **Local:** create a gitignored `.dev.vars` file in the project root:
 
@@ -62,7 +62,7 @@ The floating "Ask" button opens a chat backed by the Anthropic API. The Worker h
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-`wrangler dev` reads it automatically. Without it, `/api/chat` returns a friendly "chat is not configured yet" message.
+`wrangler dev` reads it automatically. Without it, `/api/mj` returns a friendly "MJ is not configured yet" message.
 
 **Production:** set the secret once, then deploy:
 
@@ -70,7 +70,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 npx wrangler secret put ANTHROPIC_API_KEY
 ```
 
-Model: Claude Haiku 4.5 (`claude-haiku-4-5`), non-streaming. Conversations are ephemeral (in memory, cleared on reload). Context sent to the model: the grow plan, today's date, and your saved daily notes. The chat reads the `day_notes` table, so that table must exist in the target environment before deploying.
+Model: Claude Haiku 4.5 (`claude-haiku-4-5`), non-streaming, via a tool-use loop in `worker/mj.js`. Conversations are ephemeral (in memory, cleared on reload). The system prompt carries a generated season overview (`buildPlanText`, derived live from the D1 plan config) plus today's date. MJ reads per-day specifics on demand with its `get_day` tool and acts with `set_tasks_done` and `append_note` (notes are appended, never overwritten). It touches the `task_checkoffs`, `day_notes`, and `plan_config`/`plan_day_overrides` tables, which must exist in the target environment before deploying.
 
 ## First-time Cloudflare setup
 
@@ -155,10 +155,11 @@ src/                              Frontend (React)
 worker/                           Backend (Cloudflare Worker)
   index.js                        Router. /api/* hits worker, everything else serves assets.
   auth.js                         Signup, login, logout, me, PBKDF2 hashing, session cookies.
-  checkoffs.js                    GET/PUT /api/checkoffs/:date.
-  notes.js                        GET/PUT /api/notes/:date.
-  chat.js                         POST /api/chat - proxies to the Anthropic API.
-  growContext.js                  Static grow-plan text for the assistant system prompt.
+  checkoffs.js                    GET/PUT /api/checkoffs/:date + readCheckoffs/writeCheckoffs helpers.
+  notes.js                        GET/PUT /api/notes/:date + readNote/writeNote helpers.
+  plan.js                         GET /api/plan + loadRawPlan helper.
+  mj.js                           POST /api/mj - MJ's Anthropic tool-use loop and tool executor.
+  mj-logic.js                     Pure MJ helpers (merge checkoffs, append note, day view) + tool schemas.
   util.js                         JSON helpers, cookie helpers.
 
 public/

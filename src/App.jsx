@@ -114,7 +114,7 @@ export default function App() {
             fontFamily: "'Courier New', monospace", letterSpacing: 0.5, cursor: "pointer",
             boxShadow: "0 10px 30px rgba(0,0,0,0.45)",
           }}>
-          🌿 Ask
+          🌿 MJ
         </button>
       )}
       {chatOpen && <ChatPanel onClose={() => setChatOpen(false)} />}
