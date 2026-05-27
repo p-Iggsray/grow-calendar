@@ -8,7 +8,7 @@ export default function ThreatsReference() {
         border: "1px solid rgba(255,255,255,0.06)", padding: "14px",
       }}>
         <div style={{ fontSize: 9, letterSpacing: 3, color: "#3a5a3a", textTransform: "uppercase", fontFamily: "'Courier New', monospace", marginBottom: 12 }}>
-          All Season Threats — Quick Reference
+          All Season Threats: Quick Reference
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {THREATS.map(t => (

@@ -20,7 +20,7 @@ export function useCheckoffs(date, enabled) {
       const data = await api.getCheckoffs(dateKey);
       if (myId === requestId.current) setChecked(data.checked || []);
     } catch {
-      if (myId === requestId.current) addToast("Couldn't load tasks — check your connection");
+      if (myId === requestId.current) addToast("Couldn't load tasks. Check your connection");
     } finally {
       if (myId === requestId.current) setLoading(false);
     }
@@ -51,7 +51,7 @@ export function useCheckoffs(date, enabled) {
     try {
       await api.putCheckoffs(dateKey, next);
     } catch {
-      addToast("Couldn't save — your change was reversed");
+      addToast("Couldn't save. Your change was reversed");
       fetchNow();
     }
   }, [dateKey, enabled, fetchNow]);
