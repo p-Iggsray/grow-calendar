@@ -7,7 +7,7 @@ Everything you need to run, modify, or self-host **The Grow Calendar**.
 - Vite + React 18 (frontend SPA)
 - Cloudflare Workers (backend `worker/` directory)
 - Cloudflare D1 (SQL database for users, sessions, check-offs, daily notes)
-- Anthropic API (Claude Haiku 4.5) for the in-app grow assistant
+- Anthropic API (Claude Haiku 4.5) for the owner's MJ assistant; Google Gemini (gemini-2.5-flash) for all other approved users
 - Wrangler 4 (deploy tooling)
 - Pure CSS media queries for responsive layout (no UI framework)
 
@@ -54,23 +54,46 @@ Your real production login is different and lives in the remote database.
 
 ## MJ (AI grow assistant)
 
-The floating "MJ" button opens a chat backed by the Anthropic API. MJ answers questions about the grow AND takes actions on your behalf: checking tasks off and appending to your daily notes. The Worker holds the API key as a secret and never exposes it to the browser.
+The floating "MJ" button opens a chat backed by an AI provider. MJ answers questions about the grow AND takes actions on your behalf: checking tasks off and appending to your daily notes. The Worker holds all API keys as secrets and never exposes them to the browser.
 
-**Local:** create a gitignored `.dev.vars` file in the project root:
+### Model routing (per user role)
+
+MJ routes each request to a different AI provider depending on who is asking:
+
+| User | Model | Secret |
+|---|---|---|
+| Owner (role = `admin`) | Claude Haiku 4.5 (`claude-haiku-4-5`) | `ANTHROPIC_API_KEY` |
+| Every other approved user | Gemini 2.5 Flash (`gemini-2.5-flash`) | `GEMINI_API_KEY` (shared) |
+
+Only the owner spends money. All non-admin users run on Gemini's free tier. The two providers are fully independent: if one key is missing, only that group of users is affected.
+
+### Daily cap (non-admin users)
+
+Non-admin users are capped at 30 MJ messages per day, tracked in the `mj_usage` D1 table. Exceeding the cap returns a friendly 429 message. The owner is exempt from the cap. If Gemini's own free-tier quota is exhausted, MJ returns a "hit today's limit, try again later" message instead of an error.
+
+### Local setup
+
+Create a gitignored `.dev.vars` file in the project root with both keys:
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...
+GEMINI_API_KEY=...
 ```
 
-`wrangler dev` reads it automatically. Without it, `/api/mj` returns a friendly "MJ is not configured yet" message.
+`wrangler dev` reads it automatically. If either key is missing, `/api/mj` returns a friendly "MJ is not configured yet" message for the affected user group.
 
-**Production:** set the secret once, then deploy:
+### Production setup
+
+Set each secret once, then deploy:
 
 ```bash
 npx wrangler secret put ANTHROPIC_API_KEY
+npx wrangler secret put GEMINI_API_KEY
 ```
 
-Model: Claude Haiku 4.5 (`claude-haiku-4-5`), non-streaming, via a tool-use loop in `worker/mj.js`. Conversations are ephemeral (in memory, cleared on reload). The system prompt carries a generated season overview (`buildPlanText`, derived live from the D1 plan config) plus today's date. MJ reads per-day specifics on demand with its `get_day` tool and acts with `set_tasks_done` and `append_note` (notes are appended, never overwritten). It touches the `task_checkoffs`, `day_notes`, and `plan_config`/`plan_day_overrides` tables, which must exist in the target environment before deploying.
+### How MJ works
+
+Non-streaming, via a tool-use loop in `worker/mj.js`. Conversations are ephemeral (in memory, cleared on reload). The system prompt carries a generated season overview (`buildPlanText`, derived live from the D1 plan config) plus today's date. MJ reads per-day specifics on demand with its `get_day` tool and acts with `set_tasks_done` and `append_note` (notes are appended, never overwritten). It touches the `task_checkoffs`, `day_notes`, `plan_config`/`plan_day_overrides`, and `mj_usage` tables, which must exist in the target environment before deploying.
 
 ## First-time Cloudflare setup
 
@@ -169,8 +192,6 @@ Reject and Remove both cascade: the user row deletion cascades through sessions,
 
 Each user has a fully isolated grow: their own plan config, per-day overrides, check-offs, notes, and MJ usage. When a new user is approved and first loads the app, the backend auto-seeds them a copy of the default plan.
 
-> **Note (until sub-project A2 ships):** Per-user MJ model routing (owner uses paid Claude via `ANTHROPIC_API_KEY`; other users use a free Gemini model via a shared `GEMINI_API_KEY`) and per-user daily MJ caps are coming in A2. Until A2 is deployed, any approved user's MJ requests consume the owner's `ANTHROPIC_API_KEY`. Do not approve other users in production until A2 is deployed.
-
 **Wipe and reset:**
 ```bash
 npx wrangler d1 execute grow-calendar-db --remote --command="DELETE FROM users; DELETE FROM sessions; DELETE FROM login_attempts; DELETE FROM task_checkoffs; DELETE FROM day_notes; DELETE FROM plan_config; DELETE FROM plan_day_overrides; DELETE FROM mj_usage;"
@@ -208,7 +229,7 @@ worker/                           Backend (Cloudflare Worker)
   checkoffs.js                    GET/PUT /api/checkoffs/:date + readCheckoffs/writeCheckoffs helpers.
   notes.js                        GET/PUT /api/notes/:date + readNote/writeNote helpers.
   plan.js                         GET /api/plan + loadRawPlan helper.
-  mj.js                           POST /api/mj - MJ's Anthropic tool-use loop and tool executor.
+  mj.js                           POST /api/mj - per-user model routing (Claude for admin, Gemini for others), tool-use loop and tool executor.
   mj-logic.js                     Pure MJ helpers (merge checkoffs, append note, day view) + tool schemas.
   util.js                         JSON helpers, cookie helpers.
 
@@ -248,7 +269,7 @@ launch.bat                        Windows one-click dev launcher.
 - [x] PWA manifest + custom icon
 - [x] Daily notes / journal
 - [x] Full-screen day view (tasks, notes, threats)
-- [x] In-app AI grow assistant (Claude Haiku 4.5)
+- [x] In-app AI grow assistant (Claude Haiku 4.5 for owner; Gemini 2.5 Flash for other users)
 - [ ] Structured grow log (pH, water, feed, temp, humidity)
 - [ ] Photo uploads via R2
 - [ ] In-app SVG icon replacements for all emojis
