@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import LoginGate from "./components/LoginGate.jsx";
+import PendingScreen from "./components/PendingScreen.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import Toast from "./components/Toast.jsx";
 import { AuthProvider, useAuth } from "./lib/auth.jsx";
@@ -12,7 +13,8 @@ import "./styles.css";
 function Root() {
   const { user, loading } = useAuth();
   if (loading) return <Splash />;
-  if (!user)   return <LoginGate />;
+  if (!user) return <LoginGate />;
+  if (user.status !== "approved") return <PendingScreen />;
   return (
     <PlanProvider>
       <App />
