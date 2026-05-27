@@ -2,18 +2,20 @@ import { useState } from "react";
 import { useAuth } from "../lib/auth.jsx";
 
 export default function LoginGate() {
-  const { login } = useAuth();
+  const { login, signup } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState("login"); // "login" | "signup"
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     setBusy(true);
     try {
-      await login(username.trim(), password);
+      if (mode === "signup") await signup(username.trim(), password);
+      else await login(username.trim(), password);
     } catch (err) {
       setError(err.message || "something went wrong");
     } finally {
@@ -97,9 +99,19 @@ export default function LoginGate() {
               letterSpacing: 1,
               opacity: !username || !password ? 0.5 : 1,
             }}>
-            {busy ? "..." : "LOG IN"}
+            {busy ? "..." : mode === "signup" ? "REQUEST ACCOUNT" : "LOG IN"}
           </button>
         </form>
+        <button
+          type="button"
+          onClick={() => { setError(""); setMode(mode === "login" ? "signup" : "login"); }}
+          style={{
+            marginTop: 14, width: "100%", background: "none", border: "none",
+            color: "#5a8a5a", fontFamily: "'Courier New', monospace",
+            fontSize: 11, letterSpacing: 1, cursor: "pointer",
+          }}>
+          {mode === "login" ? "Need an account? Request one" : "Have an account? Log in"}
+        </button>
       </div>
     </div>
   );
