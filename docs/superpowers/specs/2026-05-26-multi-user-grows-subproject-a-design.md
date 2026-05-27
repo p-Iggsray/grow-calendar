@@ -10,7 +10,8 @@ Turn the single-user app into a multi-user app with an owner-approval (request-t
 - A pending user can log in but only sees a "waiting for approval" holding screen.
 - The owner (admin) approves or rejects pending requests and can remove existing members.
 - Each approved user has their own isolated grow: their own plan config and per-day overrides, check-offs, notes, and MJ context.
-- A per-user daily MJ cap bounds the owner's shared-key Anthropic cost.
+- MJ routes per user: the owner (admin) uses paid Claude on the owner's own key; every other user uses a free Gemini model on a single owner-provided shared key. Only the owner ever spends money.
+- A per-user daily MJ cap keeps non-owner users under Gemini's shared free-tier quota (and is a general abuse backstop).
 
 No AI plan generation and no plan editor in A. New users get a copy of the existing GDP/Haze plan. Those are sub-projects B (#92) and C (#93).
 
@@ -130,10 +131,26 @@ This is the first real use of a numbered migrations directory (relates to #54). 
 - Lazy seeding: if the user has no `plan_config` row, insert a copy of `DEFAULT_CONFIG` (`{ user_id, config: JSON.stringify(DEFAULT_CONFIG), updated_at: now }`) and return it. This covers newly approved users without special-casing the approval step, and the owner's row already exists from migration.
 - `getPlan` passes `user.id`. `worker/mj.js` updates its `loadRawPlan(env)` call to `loadRawPlan(env, user.id)`.
 
+### Per-user model routing (MJ provider)
+
+MJ today speaks only Anthropic's API. Sub-project A generalizes the existing `pickModel(user, env)` seam in `worker/mj.js` so each user is routed to the right provider:
+
+- Owner (`role === 'admin'`): provider `anthropic`, model `claude-haiku-4-5`, key `env.ANTHROPIC_API_KEY`. Billed to the owner.
+- Everyone else: provider `gemini`, model `gemini-2.5-flash`, key `env.GEMINI_API_KEY` (one shared owner-provided free key). Free.
+- If the relevant key is unset, that user's MJ returns the existing 503 ("MJ is not configured yet"), so the owner can enable Claude and Gemini independently.
+
+The tool-use loop is abstracted behind a small provider adapter so the rest of `postMj` is provider-agnostic:
+
+- `callAnthropic(...)` — current implementation (Anthropic messages API: system array with `cache_control`, Anthropic tool schema, `tool_use`/`tool_result` content blocks).
+- `callGemini(...)` — Gemini `generateContent` endpoint: maps the same conversation, the shared system text, and the same logical tools (`get_day`, `set_tasks_done`, `append_note`) to Gemini's `functionDeclarations` / `functionCall` / `functionResponse` format, looping until no more function calls.
+- Both adapters return the same normalized shape (`{ replyText, toolCalls }`) that the existing loop in `postMj` consumes, so the tool executor (`executeTool`) and the actions array are unchanged.
+
+The shared MJ tool definitions in `worker/mj-logic.js` stay the single source of truth; each adapter translates them into its provider's schema. This Gemini adapter is the one substantial new integration in A; if the implementation plan finds it large, it may be split into its own task/PR within A.
+
 ### Per-user MJ rate limit (`worker/mj.js`)
 
-- After auth + approved check, before calling Anthropic: read/increment `mj_usage` for `(user.id, today)` where `today` is the same `America/New_York` date MJ already computes.
-- Constant `MJ_DAILY_LIMIT` (default 50 messages/user/day; one-line tunable). Admins are exempt (no cap).
+- After auth + approved check, before calling the provider: read/increment `mj_usage` for `(user.id, today)` where `today` is the same `America/New_York` date MJ already computes.
+- Constant `MJ_DAILY_LIMIT` (default 50 messages/user/day; one-line tunable). The owner/admin (on their own paid Claude key) is exempt; the cap applies to non-owner Gemini users to keep them within the shared free-tier daily quota (~250 req/day on Gemini 2.5 Flash).
 - Over the cap returns 429 with a friendly message; the frontend surfaces it via the existing toast/error path. The counter increments on accepted requests only.
 
 ## Frontend
@@ -174,7 +191,8 @@ This is the first real use of a numbered migrations directory (relates to #54). 
 - Signup is rate-limited like login to prevent spam account creation.
 - Deletes cascade via FKs so no orphaned per-user rows remain.
 - Self-delete and last-admin-delete are blocked to avoid lockout.
-- The Anthropic key remains a Worker secret, shared, never exposed to the browser; the per-user cap limits abuse of the shared key.
+- Both provider keys (`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`) remain Worker secrets, never exposed to the browser; the per-user cap limits abuse of the shared Gemini key.
+- Data privacy: non-owner MJ traffic goes to Gemini's free tier, whose data may be used by Google for product improvement (the owner's paid Claude tier is not). This is acceptable for the friends-scale use here, but should be disclosed to users (a short note on the signup/holding screen is a reasonable place; full handling can come with C).
 
 ## Testing (node --test, matching existing suite)
 
@@ -185,6 +203,7 @@ This is the first real use of a numbered migrations directory (relates to #54). 
 - delete cascades (sessions/checkoffs/notes/plan/overrides/mj_usage gone) and is blocked for self and last admin.
 - plan isolation: two approved users have independent `plan_config`/overrides; lazy seeding creates a default plan on first read.
 - MJ rate limit: the (N+1)th request in a day returns 429 for a non-admin; admin is exempt; counter rolls over by date.
+- Model routing: `pickModel` returns the Anthropic provider/key for an admin and the Gemini provider/key for a non-admin; a missing key yields 503 for that user. The Gemini adapter maps the shared tool schema to Gemini's function-calling format and normalizes its response to the same `{ replyText, toolCalls }` shape (unit-tested against a recorded Gemini response, without a live call).
 
 ## Deployment / rollout
 
@@ -192,7 +211,7 @@ This is the first real use of a numbered migrations directory (relates to #54). 
 2. Apply the migration to local D1, run the test suite.
 3. Apply the migration to remote D1 (`npx wrangler d1 execute grow-calendar-db --remote --file=./migrations/<file>.sql`). This preserves the existing owner and their plan.
 4. Cloudflare auto-deploys on push to `main`.
-5. Set `ANTHROPIC_API_KEY` (separate prerequisite) so MJ answers for everyone.
+5. Set both Worker secrets: `ANTHROPIC_API_KEY` (owner's paid Claude) and `GEMINI_API_KEY` (shared free key for non-owner users), via `npx wrangler secret put <NAME>`. Each gates its own users independently.
 
 ## Decisions made (alternatives weighed)
 
@@ -202,3 +221,4 @@ This is the first real use of a numbered migrations directory (relates to #54). 
 - One `DELETE` endpoint serving both Reject and Remove rather than two endpoints: same operation (delete user + cascade).
 - In-app admin view rather than a separate page/router: the SPA has no router; a state toggle is the lightest fit.
 - Per-user MJ cap via a dedicated `mj_usage` table rather than overloading `login_attempts`: clearer semantics, independent lifecycle.
+- Per-user model routing (owner -> paid Claude on owner's key, others -> free Gemini 2.5 Flash on one shared owner-provided key) rather than one shared model for all: the owner explicitly wants to be the only one who spends money. Gemini chosen over Cloudflare Workers AI (too small a free allocation for multi-user calendar generation) and Groq (tokens/min too low for a full-calendar generation); Gemini Flash has a 1M context, function calling, and the most generous free quota. Routed by role behind the existing `pickModel` seam, with a provider adapter so the tool-use loop stays provider-agnostic.
