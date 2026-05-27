@@ -1,5 +1,4 @@
 import { json, error, nowIso } from "./util.js";
-import { currentUser } from "./auth.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -25,17 +24,13 @@ export async function writeCheckoffs(env, userId, date, checkedIndices) {
   await env.DB.batch(statements);
 }
 
-export async function getCheckoffs(request, env, date) {
-  const user = await currentUser(request, env);
-  if (!user) return error(401, "not authenticated");
+export async function getCheckoffs(env, user, date) {
   if (!DATE_RE.test(date)) return error(400, "invalid date format, expected YYYY-MM-DD");
 
   return json({ date, checked: await readCheckoffs(env, user.id, date) });
 }
 
-export async function putCheckoffs(request, env, date) {
-  const user = await currentUser(request, env);
-  if (!user) return error(401, "not authenticated");
+export async function putCheckoffs(request, env, user, date) {
   if (!DATE_RE.test(date)) return error(400, "invalid date format, expected YYYY-MM-DD");
 
   let body;

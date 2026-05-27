@@ -1,5 +1,4 @@
-import { json, error } from "./util.js";
-import { currentUser } from "./auth.js";
+import { json } from "./util.js";
 import { DEFAULT_CONFIG } from "../src/lib/planConfig.js";
 
 // GET /api/plan -> { config, overrides }
@@ -22,10 +21,7 @@ export async function loadRawPlan(env) {
   return { config, overrides };
 }
 
-export async function getPlan(request, env) {
-  const user = await currentUser(request, env);
-  if (!user) return error(401, "not authenticated");
-
+export async function getPlan(env, user) {
   const { config, overrides } = await loadRawPlan(env);
   return json({ config, overrides });
 }

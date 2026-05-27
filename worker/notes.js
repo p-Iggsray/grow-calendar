@@ -1,5 +1,4 @@
 import { json, error, nowIso } from "./util.js";
-import { currentUser } from "./auth.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export const MAX_NOTE_LEN = 20000;
@@ -27,17 +26,13 @@ export async function writeNote(env, userId, date, body) {
   return text;
 }
 
-export async function getNote(request, env, date) {
-  const user = await currentUser(request, env);
-  if (!user) return error(401, "not authenticated");
+export async function getNote(env, user, date) {
   if (!DATE_RE.test(date)) return error(400, "invalid date format, expected YYYY-MM-DD");
 
   return json({ date, body: await readNote(env, user.id, date) });
 }
 
-export async function putNote(request, env, date) {
-  const user = await currentUser(request, env);
-  if (!user) return error(401, "not authenticated");
+export async function putNote(request, env, user, date) {
   if (!DATE_RE.test(date)) return error(400, "invalid date format, expected YYYY-MM-DD");
 
   let body;

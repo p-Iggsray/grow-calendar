@@ -1,5 +1,4 @@
 import { json, error } from "./util.js";
-import { currentUser } from "./auth.js";
 import { loadRawPlan } from "./plan.js";
 import { parseConfig, parseDate } from "../src/lib/planConfig.js";
 import { getPhase, getDetail } from "../src/lib/growData.js";
@@ -21,10 +20,7 @@ function pickModel(user, env) {
   return { model: "claude-haiku-4-5", apiKey: env.ANTHROPIC_API_KEY };
 }
 
-export async function postMj(request, env) {
-  const user = await currentUser(request, env);
-  if (!user) return error(401, "not authenticated");
-
+export async function postMj(request, env, user) {
   let body;
   try { body = await request.json(); }
   catch { return error(400, "invalid json"); }
