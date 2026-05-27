@@ -102,7 +102,7 @@ Open `wrangler.jsonc` and replace `REPLACE_WITH_DB_ID_FROM_WRANGLER_D1_CREATE` w
 npx wrangler d1 execute grow-calendar-db --remote --file=./schema.sql
 ```
 
-Creates `users`, `sessions`, and `task_checkoffs` tables on the production D1 database.
+Creates all current tables on the production D1 database (`users`, `sessions`, `login_attempts`, `task_checkoffs`, `day_notes`, `plan_config`, `plan_day_overrides`, `mj_usage`).
 
 ### 5. Deploy
 
@@ -123,16 +123,64 @@ In the Cloudflare dashboard, find your `grow-calendar` Worker, go to **Settings 
 
 Every push to `main` redeploys automatically.
 
+## Database migrations
+
+**Fresh environment:** apply `schema.sql` once to create all current tables:
+
+```bash
+# local
+npx wrangler d1 execute grow-calendar-db --local --file=./schema.sql
+# remote production
+npx wrangler d1 execute grow-calendar-db --remote --file=./schema.sql
+```
+
+**Existing database (upgrading):** apply numbered files in `migrations/` in order. Each file is a one-time migration - not re-runnable. Take a remote backup before applying to production:
+
+```bash
+npx wrangler d1 export grow-calendar-db --remote --output=./backup-before-migration.sql
+```
+
+Then apply:
+
+```bash
+# local
+npx wrangler d1 execute grow-calendar-db --local --file=./migrations/0001_multi_tenant.sql
+# remote production
+npx wrangler d1 execute grow-calendar-db --remote --file=./migrations/0001_multi_tenant.sql
+```
+
+`0001_multi_tenant.sql` adds `role` and `status` to `users`, makes `plan_config` and `plan_day_overrides` per-user (keyed by `user_id`), adds the `mj_usage` table, and promotes the original owner (lowest `user_id`) to `role='admin'`, `status='approved'`.
+
 ## Account management
 
-The **Create Account** UI was removed after the initial user signed up. The backend `signup` endpoint still exists but auto-rejects with 403 once any user row exists.
+Self-signup is open. Anyone who reaches the login screen can click **Request an account** to submit a signup. New accounts are created in a `pending` state immediately.
+
+Pending users can log in, but they only see a "waiting for approval" holding screen. They have no access to the app or any API endpoints until an admin approves them.
+
+The **admin** (owner) is the user with `role='admin'` - the original/first user, promoted automatically by the migration. Admins see a **MEMBERS** button in the app header that opens an in-app panel listing pending requests and existing members. From there the admin can:
+
+- **Approve** a pending request (grants full access)
+- **Reject** a pending request (permanently deletes that user and all their data)
+- **Remove** an existing member (permanently deletes that user and all their data)
+
+Reject and Remove both cascade: the user row deletion cascades through sessions, task_checkoffs, day_notes, plan_config, plan_day_overrides, and mj_usage.
+
+Each user has a fully isolated grow: their own plan config, per-day overrides, check-offs, notes, and MJ usage. When a new user is approved and first loads the app, the backend auto-seeds them a copy of the default plan.
+
+> **Note (until sub-project A2 ships):** Per-user MJ model routing (owner uses paid Claude via `ANTHROPIC_API_KEY`; other users use a free Gemini model via a shared `GEMINI_API_KEY`) and per-user daily MJ caps are coming in A2. Until A2 is deployed, any approved user's MJ requests consume the owner's `ANTHROPIC_API_KEY`. Do not approve other users in production until A2 is deployed.
 
 **Wipe and reset:**
 ```bash
-npx wrangler d1 execute grow-calendar-db --remote --command="DELETE FROM users; DELETE FROM sessions; DELETE FROM task_checkoffs; DELETE FROM day_notes;"
+npx wrangler d1 execute grow-calendar-db --remote --command="DELETE FROM users; DELETE FROM sessions; DELETE FROM login_attempts; DELETE FROM task_checkoffs; DELETE FROM day_notes; DELETE FROM plan_config; DELETE FROM plan_day_overrides; DELETE FROM mj_usage;"
 ```
 
-After running this, you'd need to temporarily re-add the signup UI to bootstrap a new account, then remove it again.
+After wiping, re-seed the first admin manually:
+
+```bash
+# 1. Sign up via the login screen to create the user row
+# 2. Promote that user to admin in D1
+npx wrangler d1 execute grow-calendar-db --remote --command="UPDATE users SET role='admin', status='approved' WHERE id=(SELECT MIN(id) FROM users);"
+```
 
 ## Project layout
 
