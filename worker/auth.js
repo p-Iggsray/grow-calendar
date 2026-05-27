@@ -100,7 +100,7 @@ export async function getSignupStatus(env) {
 export async function getMe(request, env) {
   const user = await currentUser(request, env);
   if (!user) return error(401, "not authenticated");
-  return json({ user: { id: user.id, username: user.username } });
+  return json({ user: { id: user.id, username: user.username, role: user.role, status: user.status } });
 }
 
 export async function signup(request, env) {
@@ -131,7 +131,7 @@ export async function signup(request, env) {
   ).bind(username, hash, salt, createdAt).run();
 
   const userId = result.meta.last_row_id;
-  return finishLogin(request, env, userId, username);
+  return finishLogin(request, env, { id: userId, username, role: "user", status: "pending" });
 }
 
 export async function login(request, env) {
@@ -151,7 +151,7 @@ export async function login(request, env) {
   }
 
   const user = await env.DB.prepare(
-    "SELECT id, username, password_hash, password_salt FROM users WHERE username = ?",
+    "SELECT id, username, password_hash, password_salt, role, status FROM users WHERE username = ?",
   ).bind(username).first();
 
   if (!user) {
@@ -167,7 +167,9 @@ export async function login(request, env) {
   }
 
   await clearRateLimit(env, ip, username);
-  return finishLogin(request, env, user.id, user.username);
+  return finishLogin(request, env, {
+    id: user.id, username: user.username, role: user.role, status: user.status,
+  });
 }
 
 export async function logout(request, env) {
@@ -187,7 +189,7 @@ export async function currentUser(request, env) {
   if (!token) return null;
 
   const row = await env.DB.prepare(`
-    SELECT u.id, u.username, s.expires_at
+    SELECT u.id, u.username, u.role, u.status, s.expires_at
     FROM sessions s
     JOIN users u ON u.id = s.user_id
     WHERE s.token = ?
@@ -198,18 +200,18 @@ export async function currentUser(request, env) {
     await env.DB.prepare("DELETE FROM sessions WHERE token = ?").bind(token).run();
     return null;
   }
-  return { id: row.id, username: row.username };
+  return { id: row.id, username: row.username, role: row.role, status: row.status };
 }
 
-async function finishLogin(request, env, userId, username) {
+async function finishLogin(request, env, user) {
   const token = newSessionToken();
   const createdAt = nowIso();
   const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000).toISOString();
   await env.DB.prepare(
     "INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
-  ).bind(token, userId, createdAt, expiresAt).run();
+  ).bind(token, user.id, createdAt, expiresAt).run();
 
-  return json({ user: { id: userId, username } }, {
+  return json({ user: { id: user.id, username: user.username, role: user.role, status: user.status } }, {
     headers: { "set-cookie": sessionCookie(token, SESSION_TTL_SECONDS, isHttps(request)) },
   });
 }
