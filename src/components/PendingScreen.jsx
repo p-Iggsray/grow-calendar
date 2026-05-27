@@ -15,6 +15,7 @@ export default function PendingScreen() {
         background: "rgba(255,255,255,0.04)",
         border: "1px solid rgba(255,255,255,0.08)",
         borderRadius: 14, padding: "30px 24px",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
       }}>
         <div style={{ fontSize: 40, marginBottom: 10 }}>🌱</div>
         <div style={{ fontSize: 22, fontWeight: 900, color: "#e8f5e3", marginBottom: 10 }}>
