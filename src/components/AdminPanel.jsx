@@ -28,6 +28,12 @@ export default function AdminPanel({ onClose }) {
     catch (err) { setError(err.message || "action failed"); }
   }
 
+  function confirmDelete(u) {
+    if (window.confirm(`Permanently delete "${u.username}" and all of their data? This cannot be undone.`)) {
+      act(api.deleteUser, u.id);
+    }
+  }
+
   const pending = users.filter(u => u.status === "pending");
   const members = users.filter(u => u.status === "approved");
 
@@ -46,7 +52,7 @@ export default function AdminPanel({ onClose }) {
             {pending.map(u => (
               <Row key={u.id} name={u.username} sub={`requested ${u.created_at?.slice(0,10) || ""}`}>
                 <button style={btnGreen} onClick={() => act(api.approveUser, u.id)}>Approve</button>
-                <button style={btnRed} onClick={() => act(api.deleteUser, u.id)}>Reject</button>
+                <button style={btnRed} onClick={() => confirmDelete(u)}>Reject</button>
               </Row>
             ))}
           </Section>
@@ -55,7 +61,7 @@ export default function AdminPanel({ onClose }) {
             {members.map(u => (
               <Row key={u.id} name={u.username} sub={u.role === "admin" ? "admin" : "member"}>
                 {u.id !== user.id && u.role !== "admin" && (
-                  <button style={btnRed} onClick={() => act(api.deleteUser, u.id)}>Remove</button>
+                  <button style={btnRed} onClick={() => confirmDelete(u)}>Remove</button>
                 )}
               </Row>
             ))}
