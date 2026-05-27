@@ -39,6 +39,10 @@ export const api = {
     request("/api/mj", { method: "POST", body: JSON.stringify({ messages }) }),
 
   getPlan: () => request("/api/plan"),
+
+  adminListUsers: () => request("/api/admin/users"),
+  approveUser: (id) => request(`/api/admin/users/${id}/approve`, { method: "POST" }),
+  deleteUser: (id) => request(`/api/admin/users/${id}`, { method: "DELETE" }),
 };
 
 export function ymd(date) {
