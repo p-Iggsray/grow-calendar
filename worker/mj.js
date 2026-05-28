@@ -8,6 +8,7 @@ import { readNote, writeNote, MAX_NOTE_LEN } from "./notes.js";
 import { MJ_PERSONA, MJ_TOOLS, mergeChecked, appendNoteText, buildDayView } from "./mj-logic.js";
 import { runGemini } from "./providers/gemini.js";
 import { ProviderError } from "./providers/errors.js";
+import { logError } from "./log.js";
 
 const MAX_MESSAGES = 20;
 const MAX_MSG_LEN = 4000;
@@ -95,7 +96,7 @@ export async function postMj(request, env, user) {
     if (e instanceof ProviderError && e.kind === "unreachable") {
       return error(502, "could not reach the AI service");
     }
-    console.error("MJ provider error", e);
+    logError("mj-provider", { kind: e?.kind, message: String(e?.message ?? e) });
     return error(502, "the AI service returned an error");
   }
 }
@@ -146,7 +147,7 @@ async function executeTool(name, input, env, userId, config, overrides, actions)
 
     return { error: `unknown tool: ${name}` };
   } catch (err) {
-    console.error("tool execution error", name, err);
+    logError("mj-tool", { tool: name, message: String(err?.message ?? err) });
     return { error: "tool failed to execute" };
   }
 }

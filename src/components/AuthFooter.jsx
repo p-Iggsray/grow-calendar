@@ -1,8 +1,8 @@
 import { useAuth } from "../lib/auth.jsx";
+import { version } from "../../package.json";
 
 export default function AuthFooter() {
   const { user, logout } = useAuth();
-  if (!user) return null;
 
   async function handleLogout() {
     if (!confirm("Sign out?")) return;
@@ -26,6 +26,7 @@ export default function AuthFooter() {
         }}>
         Sign out
       </button>
+      <div style={{ marginTop: 8, opacity: 0.5 }}>v{version}</div>
     </div>
   );
 }

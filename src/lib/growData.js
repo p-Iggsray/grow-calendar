@@ -77,7 +77,11 @@ export const dpt = (date, config) => daysBetween(date, config.transplant);
 
 export function getNextMilestone(today, config) {
   const milestones = buildMilestones(config);
-  return milestones.find(m => daysBetween(m.date, today) > 0) || milestones[milestones.length - 1];
+  const upcoming = milestones.find(m => daysBetween(m.date, today) > 0);
+  if (upcoming) return upcoming;
+  // Past the final harvest: surface a stable "season complete" marker instead
+  // of "Haze Harvest 0 days ago" looping forever.
+  return { label: "Season complete", date: today, icon: "🏆", color: "#16a34a", done: true };
 }
 
 export function getGrowProgress(today, config) {

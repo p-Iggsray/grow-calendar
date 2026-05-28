@@ -1,7 +1,7 @@
 {
   "name": "The Grow Calendar",
   "short_name": "Grow",
-  "description": "Personal outdoor grow calendar for the 2026 season.",
+  "description": "Your grow plan, anywhere you are. Day-by-day tasks, daily notes, threats, and an AI assistant for the full season.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

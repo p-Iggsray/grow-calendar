@@ -3,7 +3,7 @@ import { fmtL } from "../lib/dates.js";
 
 export default function DayView({
   selected, detail, selStyle, threats,
-  checked, onToggle,
+  checked, checkoffsLoading, onToggle,
   note, onChangeNote, onFlushNote, noteStatus,
   onBack,
 }) {
@@ -52,8 +52,9 @@ export default function DayView({
             color: checkedCount === totalTasks ? "#4ade80" : selStyle?.color,
             background: "rgba(0,0,0,0.25)", padding: "6px 10px", borderRadius: 8,
             whiteSpace: "nowrap", flexShrink: 0,
+            opacity: checkoffsLoading ? 0.5 : 1, transition: "opacity 0.15s",
           }}>
-            {checkedCount}/{totalTasks}
+            {checkoffsLoading ? "..." : `${checkedCount}/${totalTasks}`}
           </div>
         )}
       </div>
@@ -187,8 +188,9 @@ export default function DayView({
           {tab === "threats" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {threats.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "24px 0", color: "#3a5a3a", fontFamily: "'Courier New', monospace", fontSize: 13 }}>
-                  No active threats for this phase.
+                <div style={{ textAlign: "center", padding: "24px 0", color: "#3a5a3a", fontFamily: "'Courier New', monospace", fontSize: 13, lineHeight: 1.8 }}>
+                  Smooth sailing for now.<br />
+                  <span style={{ opacity: 0.7 }}>No active threats this phase.</span>
                 </div>
               ) : threats.map(threat => (
                 <div key={threat.id} style={{

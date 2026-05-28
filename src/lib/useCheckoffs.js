@@ -29,14 +29,11 @@ export function useCheckoffs(date, enabled) {
   useEffect(() => { fetchNow(); }, [fetchNow]);
 
   useEffect(() => {
-    function onFocus() { fetchNow(); }
+    // visibilitychange alone covers both tab switches and window focus on
+    // modern browsers - using both fired two GETs per refocus.
     function onVisible() { if (!document.hidden) fetchNow(); }
-    window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [fetchNow]);
 
   const toggle = useCallback(async (idx) => {

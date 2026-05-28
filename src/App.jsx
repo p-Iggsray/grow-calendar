@@ -42,7 +42,7 @@ export default function App() {
   const [chatOpen,  setChatOpen] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
 
-  const { checked, toggle } = useCheckoffs(selected, Boolean(user));
+  const { checked, loading: checkoffsLoading, toggle } = useCheckoffs(selected, Boolean(user));
   const { note, setNote, status: noteStatus, flush: flushNote } =
     useDayNote(selected, Boolean(user));
 
@@ -143,6 +143,7 @@ export default function App() {
             selStyle={selStyle}
             threats={threats}
             checked={checked}
+            checkoffsLoading={checkoffsLoading}
             onToggle={toggle}
             note={note}
             onChangeNote={setNote}

@@ -59,6 +59,7 @@ export default function Calendar({ today, month, setMonth, selected, config, onP
               <div
                 key={date.getDate()}
                 onClick={() => { if (pStyle) onPickDay(date); }}
+                className={isToday && !isSel ? "cell-today" : undefined}
                 style={{
                   borderRadius: 8, minHeight: 40,
                   display: "flex", flexDirection: "column",

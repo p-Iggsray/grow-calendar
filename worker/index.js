@@ -6,6 +6,7 @@ import { postMj, getMjUsage } from "./mj.js";
 import { getPlan } from "./plan.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
 import { requireApproved, requireAdmin } from "./guard.js";
+import { logError, logInfo } from "./log.js";
 
 export default {
   async fetch(request, env, ctx) {
@@ -19,7 +20,7 @@ export default {
     try {
       return await route(request, env, path);
     } catch (err) {
-      console.error("worker error", err);
+      logError("worker-uncaught", { path, message: String(err?.message ?? err), stack: err?.stack });
       return error(500, "internal server error");
     }
   },
@@ -29,7 +30,7 @@ export default {
     const { meta } = await env.DB.prepare(
       "DELETE FROM sessions WHERE expires_at < ?"
     ).bind(now).run();
-    console.log(`session cleanup: deleted ${meta.changes} expired row(s)`);
+    logInfo("session-cleanup", { deleted: meta.changes });
   },
 };
 

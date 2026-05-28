@@ -73,7 +73,16 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress, onJum
             <span style={{ opacity: 0.6 }}>Now: </span>{todayStyle.label}
           </div>
         )}
-        {nextMs && daysToNext > 0 && (
+        {nextMs?.done && (
+          <div style={{
+            background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)",
+            borderRadius: 8, padding: "6px 12px", fontSize: 11, fontFamily: "'Courier New', monospace",
+            color: "#4ade80",
+          }}>
+            {nextMs.icon} {nextMs.label}
+          </div>
+        )}
+        {nextMs && !nextMs.done && daysToNext > 0 && (
           <div style={{
             background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: 8, padding: "6px 12px", fontSize: 11, fontFamily: "'Courier New', monospace",
@@ -82,7 +91,7 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress, onJum
             <span style={{ color: "#facc15", fontWeight: 700 }}>{daysToNext}d</span>
           </div>
         )}
-        {daysToNext === 0 && nextMs && (
+        {nextMs && !nextMs.done && daysToNext === 0 && (
           <div style={{
             background: "rgba(250,204,21,0.12)", border: "1px solid rgba(250,204,21,0.3)",
             borderRadius: 8, padding: "6px 12px", fontSize: 11, fontFamily: "'Courier New', monospace",
