@@ -1,3 +1,4 @@
+// @ts-check
 import { json, error, nowIso, safeJsonBounded } from "./util.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;

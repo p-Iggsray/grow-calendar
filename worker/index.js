@@ -1,6 +1,7 @@
+// @ts-check
 import { error } from "./util.js";
 import { signup, login, logout, getMe, currentUser, attachSessionCookie } from "./auth.js";
-import { getCheckoffs, putCheckoffs } from "./checkoffs.js";
+import { getCheckoffs, putCheckoffs, getMonthCheckoffs } from "./checkoffs.js";
 import { getNote, putNote } from "./notes.js";
 import { postMj, getMjUsage } from "./mj.js";
 import { getPlan } from "./plan.js";
@@ -9,7 +10,7 @@ import { requireApproved, requireAdmin } from "./guard.js";
 import { logError, logInfo } from "./log.js";
 
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request, env, _ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -25,7 +26,7 @@ export default {
     }
   },
 
-  async scheduled(event, env, ctx) {
+  async scheduled(_event, env, _ctx) {
     const now = new Date().toISOString();
     const { meta } = await env.DB.prepare(
       "DELETE FROM sessions WHERE expires_at < ?"
@@ -93,6 +94,13 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (path === "/api/mj"        && method === "POST") return postMj(request, env, user);
   if (path === "/api/mj/usage"  && method === "GET")  return getMjUsage(env);
   if (path === "/api/plan"      && method === "GET")  return getPlan(env, user);
+
+  if (path === "/api/checkoffs" && method === "GET") {
+    const url = new URL(request.url);
+    const month = url.searchParams.get("month");
+    if (!month) return error(400, "month query param required, e.g. ?month=2026-08");
+    return getMonthCheckoffs(env, user, month);
+  }
 
   const checkoffsMatch = path.match(/^\/api\/checkoffs\/(\d{4}-\d{2}-\d{2})$/);
   if (checkoffsMatch) {

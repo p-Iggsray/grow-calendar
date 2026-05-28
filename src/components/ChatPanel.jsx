@@ -79,7 +79,7 @@ export default function ChatPanel({ onClose }) {
           <div style={{ margin: "auto", maxWidth: 440, textAlign: "center" }}>
             <div style={{ fontSize: 34, marginBottom: 10 }}>🌿</div>
             <div style={{ fontSize: 15, color: "#a0d0a0", marginBottom: 14, lineHeight: 1.6 }}>
-              Ask anything about your grow, or tell me to do things - check off today's tasks, add to your daily notes. I know your full plan.
+              Ask anything about your grow, or tell me to do things - check off today&apos;s tasks, add to your daily notes. I know your full plan.
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {SUGGESTIONS.map(s => (

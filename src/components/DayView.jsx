@@ -5,7 +5,7 @@ export default function DayView({
   selected, detail, selStyle, threats,
   checked, checkoffsLoading, onToggle,
   note, onChangeNote, onFlushNote, noteStatus,
-  onBack,
+  onBack, onJumpToday,
 }) {
   const [tab, setTab] = useState("tasks");
   const checkedCount = checked?.length ?? 0;
@@ -212,6 +212,29 @@ export default function DayView({
           )}
         </div>
       </div>
+
+      {onJumpToday && (
+        <button
+          type="button"
+          onClick={onJumpToday}
+          aria-label="Jump to today"
+          style={{
+            position: "fixed", zIndex: 30,
+            left: "calc(16px + env(safe-area-inset-left, 0px))",
+            bottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
+            background: "rgba(0,0,0,0.7)",
+            border: "1px solid rgba(34,197,94,0.35)",
+            color: "#4ade80",
+            borderRadius: 999, padding: "10px 16px",
+            fontSize: 12, fontWeight: 700, letterSpacing: 1,
+            fontFamily: "'Courier New', monospace", cursor: "pointer",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.45)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+          }}>
+          ↑ TODAY
+        </button>
+      )}
     </div>
   );
 }

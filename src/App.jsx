@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { useToday, daysBetween } from "./lib/dates.js";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useToday, daysBetween, sameDay } from "./lib/dates.js";
 import {
   PHASES,
   getPhase,
@@ -12,6 +12,7 @@ import {
 import { useAuth } from "./lib/auth.jsx";
 import { usePlan } from "./lib/usePlan.jsx";
 import { useCheckoffs } from "./lib/useCheckoffs.js";
+import { useMonthCheckoffs } from "./lib/useMonthCheckoffs.js";
 import { useDayNote } from "./lib/useDayNote.js";
 import { ymd } from "./lib/api.js";
 
@@ -43,21 +44,48 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
 
   const { checked, loading: checkoffsLoading, toggle } = useCheckoffs(selected, Boolean(user));
+  const { counts: monthCheckoffCounts } = useMonthCheckoffs(today.getFullYear(), month, Boolean(user));
   const { note, setNote, status: noteStatus, flush: flushNote } =
     useDayNote(selected, Boolean(user));
 
   // Opening a day pushes a history entry so the device/browser back button
-  // returns to the calendar instead of leaving the app.
+  // returns to the calendar instead of leaving the app. The URL gets ?d= so
+  // the day is shareable via copy-paste (handled by the mount effect below).
   const openDay = useCallback((date) => {
     setSelected(date);
-    window.history.pushState({ growDay: ymd(date) }, "");
+    window.history.pushState({ growDay: ymd(date) }, "", `?d=${ymd(date)}`);
   }, []);
 
   useEffect(() => {
-    function onPop() { setSelected(null); }
+    // popstate fires on Back; clear selection and strip ?d= from the URL.
+    function onPop() {
+      setSelected(null);
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("d")) {
+        url.searchParams.delete("d");
+        window.history.replaceState(window.history.state, "", url.pathname + url.search);
+      }
+    }
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
+
+  // Mount: honor `?d=YYYY-MM-DD` so a shared link opens that day directly.
+  // Run once after the plan has loaded (so getPhase can validate the date).
+  const deepLinkApplied = useRef(false);
+  useEffect(() => {
+    if (deepLinkApplied.current || !config) return;
+    const url = new URL(window.location.href);
+    const d = url.searchParams.get("d");
+    if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+    const [y, m, day] = d.split("-").map(Number);
+    const date = new Date(y, m - 1, day);
+    if (Number.isNaN(date.getTime())) return;
+    if (!getPhase(date, config)) return; // outside grow season
+    deepLinkApplied.current = true;
+    setMonth(date.getMonth());
+    openDay(date);
+  }, [config, openDay]);
 
   const goBack = useCallback(() => {
     flushNote();
@@ -150,6 +178,7 @@ export default function App() {
             onFlushNote={flushNote}
             noteStatus={noteStatus}
             onBack={goBack}
+            onJumpToday={sameDay(selected, today) ? null : jumpToday}
           />
         </div>
         {chatOverlay}
@@ -175,6 +204,8 @@ export default function App() {
           setMonth={setMonth}
           selected={selected}
           config={config}
+          overrides={overrides}
+          checkoffCounts={monthCheckoffCounts}
           onPickDay={pickDay}
           onClearSelection={() => setSelected(null)}
         />

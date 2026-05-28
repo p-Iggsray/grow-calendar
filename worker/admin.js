@@ -1,3 +1,4 @@
+// @ts-check
 import { json, error } from "./util.js";
 
 // Pure guard: returns { ok: true } or { ok: false, reason }.

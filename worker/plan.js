@@ -1,3 +1,4 @@
+// @ts-check
 import { json } from "./util.js";
 import { DEFAULT_CONFIG } from "../src/lib/planConfig.js";
 

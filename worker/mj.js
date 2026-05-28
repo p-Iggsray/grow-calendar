@@ -1,3 +1,4 @@
+// @ts-check
 import { json, error, safeJsonBounded } from "./util.js";
 import { loadRawPlan } from "./plan.js";
 import { parseConfig, parseDate } from "../src/lib/planConfig.js";

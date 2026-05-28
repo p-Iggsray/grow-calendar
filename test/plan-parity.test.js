@@ -8,13 +8,6 @@ const golden = JSON.parse(
   readFileSync(new URL("./golden-plan.json", import.meta.url), "utf8"),
 );
 
-function ymd(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
 test("refactored generator with default config matches the golden snapshot", () => {
   const config = parseConfig(DEFAULT_CONFIG);
   const regenerated = golden.map(({ date }) => {

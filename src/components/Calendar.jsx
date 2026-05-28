@@ -1,11 +1,28 @@
+import { useRef } from "react";
 import { MONTH_NAMES, DOW_SHORT, sameDay } from "../lib/dates.js";
-import { PHASES, getPhase, getThreatsForPhase, phaseGlyph } from "../lib/growData.js";
+import { PHASES, getPhase, getDetail, getThreatsForPhase, phaseGlyph } from "../lib/growData.js";
 
 const YEAR = 2026;
 const MIN_MONTH = 4;
 const MAX_MONTH = 9;
+// Tuned for one-thumb phone use. Threshold below ~40px catches incidental drag
+// during a tap; horizontal-vs-vertical ratio under ~1.5 catches diagonal
+// scrolls. Bump if false-positives appear during vertical page scroll.
+const SWIPE_THRESHOLD_PX = 50;
+const SWIPE_HORIZONTAL_RATIO = 2;
 
-export default function Calendar({ today, month, setMonth, selected, config, onPickDay, onClearSelection }) {
+function ymdKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+export default function Calendar({
+  today, month, setMonth, selected, config, overrides,
+  checkoffCounts, onPickDay, onClearSelection,
+}) {
+  const touchStart = useRef(null);
   const firstDow = new Date(YEAR, month, 1).getDay();
   const daysInMonth = new Date(YEAR, month + 1, 0).getDate();
   const cells = [];
@@ -15,24 +32,69 @@ export default function Calendar({ today, month, setMonth, selected, config, onP
   const canPrev = month > MIN_MONTH;
   const canNext = month < MAX_MONTH;
 
+  function goPrev() { if (canPrev) { setMonth(m => m - 1); onClearSelection(); } }
+  function goNext() { if (canNext) { setMonth(m => m + 1); onClearSelection(); } }
+
+  function onTouchStart(e) {
+    const t = e.changedTouches?.[0];
+    if (!t) return;
+    touchStart.current = { x: t.clientX, y: t.clientY };
+  }
+  function onTouchEnd(e) {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start) return;
+    // Swipes that originate on a real interactive child (day button, nav
+    // chevron) belong to that control - don't hijack them as month swipes.
+    if (e.target?.closest?.("button")) return;
+    const t = e.changedTouches?.[0];
+    if (!t) return;
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < SWIPE_THRESHOLD_PX) return;
+    if (Math.abs(dx) < Math.abs(dy) * SWIPE_HORIZONTAL_RATIO) return;
+    if (dx < 0) goNext(); else goPrev();
+  }
+
   return (
     <div style={{ padding: "12px 14px 0" }}>
-      <div style={{
-        background: "rgba(255,255,255,0.04)", borderRadius: 14,
-        border: "1px solid rgba(255,255,255,0.07)", overflow: "hidden",
-      }}>
+      <div
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        style={{
+          background: "rgba(255,255,255,0.04)", borderRadius: 14,
+          border: "1px solid rgba(255,255,255,0.07)", overflow: "hidden",
+        }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 10px" }}>
           <button
-            onClick={() => { if (canPrev) { setMonth(m => m - 1); onClearSelection(); } }}
-            style={{ background: "none", border: "none", color: canPrev ? "#4ade80" : "#2a4a2a", fontSize: 22, cursor: canPrev ? "pointer" : "default", padding: "0 8px", lineHeight: 1 }}>
+            type="button"
+            onClick={goPrev}
+            disabled={!canPrev}
+            aria-label="Previous month"
+            style={{
+              background: "none", border: "none",
+              color: canPrev ? "#4ade80" : "#2a4a2a", fontSize: 22,
+              cursor: canPrev ? "pointer" : "default",
+              minWidth: 44, minHeight: 44, padding: "8px 12px", lineHeight: 1,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
             ‹
           </button>
           <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.5, color: "#e8f5e3" }}>
             {MONTH_NAMES[month]} {YEAR}
           </div>
           <button
-            onClick={() => { if (canNext) { setMonth(m => m + 1); onClearSelection(); } }}
-            style={{ background: "none", border: "none", color: canNext ? "#4ade80" : "#2a4a2a", fontSize: 22, cursor: canNext ? "pointer" : "default", padding: "0 8px", lineHeight: 1 }}>
+            type="button"
+            onClick={goNext}
+            disabled={!canNext}
+            aria-label="Next month"
+            style={{
+              background: "none", border: "none",
+              color: canNext ? "#4ade80" : "#2a4a2a", fontSize: 22,
+              cursor: canNext ? "pointer" : "default",
+              minWidth: 44, minHeight: 44, padding: "8px 12px", lineHeight: 1,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
             ›
           </button>
         </div>
@@ -56,12 +118,31 @@ export default function Calendar({ today, month, setMonth, selected, config, onP
             const hasThreat = phase && getThreatsForPhase(phase).length > 0;
 
             const glyph = pStyle ? phaseGlyph(phase) : "";
+
+            // Completion ring: ratio of checked / total tasks for this day.
+            // Only render once the user has checked at least one task on this
+            // day - avoids showing empty 0/N rings on every future cell.
+            let ringRatio = 0;
+            let totalTasks = 0;
+            if (pStyle) {
+              const dayDetail = getDetail(date, config, overrides);
+              totalTasks = dayDetail?.tasks?.length ?? 0;
+              const doneCount = checkoffCounts?.[ymdKey(date)] ?? 0;
+              if (totalTasks > 0 && doneCount > 0) {
+                ringRatio = Math.min(1, doneCount / totalTasks);
+              }
+            }
+
+            const doneCount = checkoffCounts?.[ymdKey(date)] ?? 0;
             const ariaParts = [
               `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`,
               pStyle ? `${pStyle.label} phase` : "outside grow season",
               isToday ? "today" : null,
               isKey ? "key milestone" : null,
               hasThreat ? "has active threats" : null,
+              totalTasks > 0 && doneCount > 0
+                ? `${doneCount} of ${totalTasks} tasks done`
+                : null,
               isSel ? "selected" : null,
             ].filter(Boolean);
 
@@ -129,6 +210,9 @@ export default function Calendar({ today, month, setMonth, selected, config, onP
                       background: "#f59e0b",
                     }} />
                 )}
+                {ringRatio > 0 && !isSel && (
+                  <CompletionRing ratio={ringRatio} complete={ringRatio >= 1} />
+                )}
               </button>
             );
           })}
@@ -136,8 +220,44 @@ export default function Calendar({ today, month, setMonth, selected, config, onP
       </div>
 
       <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "#3a5a3a", textAlign: "center", marginTop: 8, lineHeight: 1.8 }}>
-        Solid border = today · Dashed = key date · Amber dot = active threats
+        Solid border = today · Dashed = key date · Amber dot = active threats · Green ring = day complete
       </div>
     </div>
+  );
+}
+
+// SVG arc traces the completion ratio around a day cell. A full ratio (>=1)
+// becomes a closed green ring; partial ratios are amber arcs so partially-done
+// days don't read as "done."
+function CompletionRing({ ratio, complete }) {
+  const size = 30;        // outer box; cell minHeight is 40, this fits inside
+  const stroke = 2;
+  const r = (size - stroke) / 2;
+  const cx = size / 2;
+  const cy = size / 2;
+  const circumference = 2 * Math.PI * r;
+  const dash = ratio * circumference;
+  const color = complete ? "#22c55e" : "#f59e0b";
+  return (
+    <svg
+      aria-hidden="true"
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      style={{
+        position: "absolute", inset: 0, margin: "auto",
+        pointerEvents: "none",
+      }}>
+      <circle
+        cx={cx} cy={cy} r={r}
+        fill="none"
+        stroke={color}
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeDasharray={`${dash} ${circumference - dash}`}
+        transform={`rotate(-90 ${cx} ${cy})`}
+        opacity={complete ? 0.85 : 0.7}
+      />
+    </svg>
   );
 }

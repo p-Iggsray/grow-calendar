@@ -1,13 +1,29 @@
+// @ts-check
+
+/**
+ * Build a JSON Response. Sets content-type and merges any caller-provided
+ * headers/status.
+ * @param {unknown} data
+ * @param {ResponseInit} [init]
+ * @returns {Response}
+ */
 export function json(data, init = {}) {
   const headers = new Headers(init.headers || {});
   headers.set("content-type", "application/json; charset=utf-8");
   return new Response(JSON.stringify(data), { ...init, headers });
 }
 
+/**
+ * Shortcut for the project's standard `{ error: string }` JSON shape.
+ * @param {number} status
+ * @param {string} message
+ * @returns {Response}
+ */
 export function error(status, message) {
   return json({ error: message }, { status });
 }
 
+/** @returns {string} an ISO-8601 timestamp in UTC */
 export function nowIso() {
   return new Date().toISOString();
 }
@@ -56,12 +72,17 @@ export function isHttps(request) {
   return xfp === "https";
 }
 
-// Read a request body as JSON with a hard byte cap. Returns:
-//   { ok: true,  data }                          - parsed JSON
-//   { ok: false, status: 413, error: "..." }    - body too large
-//   { ok: false, status: 400, error: "..." }    - invalid JSON
-// Rejects via content-length first (fast); falls back to actual byte count.
-// Callers should bound by their own payload shape, not a global default.
+/**
+ * Read a request body as JSON with a hard byte cap. Rejects via content-length
+ * first (fast); falls back to actual byte count. Callers should bound by their
+ * own payload shape, not a global default.
+ * @param {Request} request
+ * @param {number} maxBytes
+ * @returns {Promise<
+ *   { ok: true, data: unknown } |
+ *   { ok: false, status: 400 | 413, error: string }
+ * >}
+ */
 export async function safeJsonBounded(request, maxBytes) {
   const cl = Number(request.headers.get("content-length"));
   if (Number.isFinite(cl) && cl > maxBytes) {

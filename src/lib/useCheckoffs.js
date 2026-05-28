@@ -42,8 +42,16 @@ export function useCheckoffs(date, enabled) {
       ? checked.filter(n => n !== idx)
       : [...checked, idx].sort((a, b) => a - b);
     setChecked(next);
+    // 10ms blip on supporting devices (Android Chrome). Safari iOS ignores
+    // the Vibration API entirely - this is a graceful no-op there.
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(10);
+    }
     try {
       await api.putCheckoffs(dateKey, next);
+      // Tell sibling hooks (e.g. useMonthCheckoffs feeding the calendar ring)
+      // that something changed so they can refetch without polling.
+      window.dispatchEvent(new CustomEvent("checkoffs-mutated"));
     } catch {
       addToast("Couldn't save. Your change was reversed");
       fetchNow();

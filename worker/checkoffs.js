@@ -1,6 +1,8 @@
+// @ts-check
 import { json, error, nowIso, safeJsonBounded } from "./util.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MONTH_RE = /^\d{4}-\d{2}$/;
 const MAX_CHECKOFFS_REQUEST_BYTES = 4 * 1024;
 
 export async function readCheckoffs(env, userId, date) {
@@ -29,6 +31,26 @@ export async function getCheckoffs(env, user, date) {
   if (!DATE_RE.test(date)) return error(400, "invalid date format, expected YYYY-MM-DD");
 
   return json({ date, checked: await readCheckoffs(env, user.id, date) });
+}
+
+/**
+ * Returns checkoff *counts* per date inside a month, used by the calendar's
+ * per-cell completion ring. Counts only (not the full index arrays) keeps the
+ * response small even for a heavy month.
+ *
+ *   GET /api/checkoffs?month=YYYY-MM
+ *
+ * Response: { month, counts: { "YYYY-MM-DD": number, ... } }
+ */
+export async function getMonthCheckoffs(env, user, month) {
+  if (!MONTH_RE.test(month)) return error(400, "invalid month format, expected YYYY-MM");
+  const result = await env.DB.prepare(
+    "SELECT date, COUNT(*) AS n FROM task_checkoffs " +
+    "WHERE user_id = ? AND substr(date, 1, 7) = ? GROUP BY date",
+  ).bind(user.id, month).all();
+  const counts = {};
+  for (const row of (result.results || [])) counts[row.date] = Number(row.n);
+  return json({ month, counts });
 }
 
 export async function putCheckoffs(request, env, user, date) {

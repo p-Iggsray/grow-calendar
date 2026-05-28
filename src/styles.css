@@ -104,3 +104,15 @@ button.day-cell:focus-visible {
   outline: 2px solid #4ade80;
   outline-offset: 2px;
 }
+
+/* Native <details> with a hand-rolled chevron. The chevron lives inside the
+   <summary>; we rotate it 90deg when the <details> is open. */
+details > summary { user-select: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary span[aria-hidden] {
+  display: inline-block;
+  transition: transform 0.15s;
+}
+details[open] > summary span[aria-hidden] {
+  transform: rotate(90deg);
+}

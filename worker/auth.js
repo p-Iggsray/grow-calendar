@@ -1,3 +1,4 @@
+// @ts-check
 import {
   json, error, nowIso,
   bytesToBase64, base64ToBytes, bytesToBase64Url,
@@ -10,11 +11,61 @@ const MAX_AUTH_REQUEST_BYTES = 1024;
 const PBKDF2_ITERATIONS = 100_000;
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 const MIN_PASSWORD_LENGTH = 8;
-const MAX_USERNAME_LENGTH = 32;
 const USERNAME_RE = /^[a-zA-Z0-9_-]{2,32}$/;
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_SECONDS = 15 * 60; // 15 minutes
+
+/**
+ * Pure input validators - exported for unit testing.
+ * Return null on success, an error message on failure.
+ * @param {unknown} username
+ * @returns {string | null}
+ */
+export function validateUsername(username) {
+  if (typeof username !== "string") return "username required";
+  const trimmed = username.trim();
+  if (!USERNAME_RE.test(trimmed)) {
+    return "username must be 2-32 chars, letters/numbers/underscore/hyphen only";
+  }
+  return null;
+}
+/**
+ * @param {unknown} password
+ * @returns {string | null}
+ */
+export function validatePassword(password) {
+  if (typeof password !== "string") return "password required";
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return `password must be at least ${MIN_PASSWORD_LENGTH} characters`;
+  }
+  return null;
+}
+
+/**
+ * Stable composite key for login_attempts. Lowercased so attempts against
+ * 'Alice' and 'ALICE' from the same IP share a counter.
+ * @param {string} ip
+ * @param {string} username
+ * @returns {string}
+ */
+export function loginAttemptKey(ip, username) {
+  return `${ip}:${String(username).toLowerCase()}`;
+}
+
+/**
+ * Pure helper around the DB-resident lockout row. Returns null when the
+ * lockout has expired or there's no lock.
+ * @param {string | null | undefined} lockedUntilIso
+ * @param {number} nowMs
+ * @returns {number | null}
+ */
+export function retryAfterSeconds(lockedUntilIso, nowMs) {
+  if (!lockedUntilIso) return null;
+  const until = Date.parse(lockedUntilIso);
+  if (!Number.isFinite(until) || until <= nowMs) return null;
+  return Math.ceil((until - nowMs) / 1000);
+}
 
 // Sliding session rotation: every authenticated request whose session is older
 // than this threshold gets a fresh token. Caps the replay window of a stolen
@@ -67,20 +118,18 @@ function getClientIp(request) {
 }
 
 async function checkRateLimit(env, ip, username) {
-  const key = `${ip}:${username.toLowerCase()}`;
+  const key = loginAttemptKey(ip, username);
   const row = await env.DB.prepare(
     "SELECT attempts, locked_until FROM login_attempts WHERE key = ?",
   ).bind(key).first();
 
-  if (row?.locked_until && new Date(row.locked_until) > new Date()) {
-    const retryAfter = Math.ceil((new Date(row.locked_until) - Date.now()) / 1000);
-    return { blocked: true, retryAfter };
-  }
+  const retryAfter = retryAfterSeconds(row?.locked_until, Date.now());
+  if (retryAfter !== null) return { blocked: true, retryAfter };
   return { blocked: false };
 }
 
 async function recordFailedAttempt(env, ip, username) {
-  const key = `${ip}:${username.toLowerCase()}`;
+  const key = loginAttemptKey(ip, username);
   const now = nowIso();
 
   await env.DB.prepare(`
@@ -105,7 +154,7 @@ async function recordFailedAttempt(env, ip, username) {
 }
 
 async function clearRateLimit(env, ip, username) {
-  const key = `${ip}:${username.toLowerCase()}`;
+  const key = loginAttemptKey(ip, username);
   await env.DB.prepare("DELETE FROM login_attempts WHERE key = ?").bind(key).run();
 }
 
@@ -123,12 +172,10 @@ export async function signup(request, env) {
   const username = String(body.username || "").trim();
   const password = String(body.password || "");
 
-  if (!USERNAME_RE.test(username)) {
-    return error(400, "username must be 2-32 chars, letters/numbers/underscore/hyphen only");
-  }
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return error(400, `password must be at least ${MIN_PASSWORD_LENGTH} characters`);
-  }
+  const usernameErr = validateUsername(username);
+  if (usernameErr) return error(400, usernameErr);
+  const passwordErr = validatePassword(password);
+  if (passwordErr) return error(400, passwordErr);
 
   const ip = getClientIp(request);
   const rateCheck = await checkRateLimit(env, ip, username);

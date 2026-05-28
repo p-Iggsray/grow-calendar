@@ -1,8 +1,18 @@
+// @ts-check
+
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
+/**
+ * Thin fetch wrapper. Throws an Error with `.status` on non-2xx; returns the
+ * parsed JSON body otherwise. Worker requires application/json on every
+ * mutating verb (defense-in-depth CSRF check) even for body-less requests
+ * like logout, so we always send the header on those.
+ *
+ * @param {string} path
+ * @param {RequestInit} [opts]
+ * @returns {Promise<any>}
+ */
 async function request(path, opts = {}) {
-  // Worker requires application/json on every mutating verb (defense-in-depth
-  // CSRF check) even for body-less requests like logout. Always send it.
   const isMutating = MUTATING_METHODS.has((opts.method || "GET").toUpperCase());
   const headers = isMutating ? { "content-type": "application/json" } : undefined;
   const res = await fetch(path, {
@@ -17,7 +27,7 @@ async function request(path, opts = {}) {
   }
   if (!res.ok) {
     const message = data?.error || `request failed with status ${res.status}`;
-    const err = new Error(message);
+    const err = /** @type {Error & { status?: number }} */ (new Error(message));
     err.status = res.status;
     throw err;
   }
@@ -35,6 +45,7 @@ export const api = {
   getCheckoffs: (date) => request(`/api/checkoffs/${date}`),
   putCheckoffs: (date, checked) =>
     request(`/api/checkoffs/${date}`, { method: "PUT", body: JSON.stringify({ checked }) }),
+  getMonthCheckoffs: (month) => request(`/api/checkoffs?month=${month}`),
 
   getNote: (date) => request(`/api/notes/${date}`),
   putNote: (date, body) =>
@@ -51,6 +62,12 @@ export const api = {
   deleteUser: (id) => request(`/api/admin/users/${id}`, { method: "DELETE" }),
 };
 
+/**
+ * Format a Date as YYYY-MM-DD in the local timezone (the format every
+ * date-keyed Worker route accepts).
+ * @param {Date} date
+ * @returns {string}
+ */
 export function ymd(date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
