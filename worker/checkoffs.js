@@ -1,6 +1,7 @@
-import { json, error, nowIso } from "./util.js";
+import { json, error, nowIso, safeJsonBounded } from "./util.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_CHECKOFFS_REQUEST_BYTES = 4 * 1024;
 
 export async function readCheckoffs(env, userId, date) {
   const result = await env.DB.prepare(
@@ -33,11 +34,11 @@ export async function getCheckoffs(env, user, date) {
 export async function putCheckoffs(request, env, user, date) {
   if (!DATE_RE.test(date)) return error(400, "invalid date format, expected YYYY-MM-DD");
 
-  let body;
-  try { body = await request.json(); }
-  catch { return error(400, "invalid json"); }
+  const parsed = await safeJsonBounded(request, MAX_CHECKOFFS_REQUEST_BYTES);
+  if (!parsed.ok) return error(parsed.status, parsed.error);
+  const body = parsed.data;
 
-  if (!Array.isArray(body.checked)) return error(400, "checked must be an array of task indexes");
+  if (!body || !Array.isArray(body.checked)) return error(400, "checked must be an array of task indexes");
   const checked = body.checked
     .map(n => Number(n))
     .filter(n => Number.isInteger(n) && n >= 0 && n < 100);

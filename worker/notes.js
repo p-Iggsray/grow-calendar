@@ -1,7 +1,10 @@
-import { json, error, nowIso } from "./util.js";
+import { json, error, nowIso, safeJsonBounded } from "./util.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export const MAX_NOTE_LEN = 20000;
+// JSON wrapper overhead is tiny; allow ~4x the raw note length as headroom for
+// escape sequences (a worst-case 20k note of nothing but quotes ~= 40k JSON).
+const MAX_NOTE_REQUEST_BYTES = MAX_NOTE_LEN * 4 + 256;
 
 export async function readNote(env, userId, date) {
   const row = await env.DB.prepare(
@@ -35,9 +38,9 @@ export async function getNote(env, user, date) {
 export async function putNote(request, env, user, date) {
   if (!DATE_RE.test(date)) return error(400, "invalid date format, expected YYYY-MM-DD");
 
-  let body;
-  try { body = await request.json(); }
-  catch { return error(400, "invalid json"); }
+  const parsed = await safeJsonBounded(request, MAX_NOTE_REQUEST_BYTES);
+  if (!parsed.ok) return error(parsed.status, parsed.error);
+  const body = parsed.data;
 
   if (typeof body?.body !== "string") return error(400, "body must be a string");
   const text = body.body;

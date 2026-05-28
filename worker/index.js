@@ -1,5 +1,5 @@
 import { error } from "./util.js";
-import { signup, login, logout, getMe, currentUser } from "./auth.js";
+import { signup, login, logout, getMe, currentUser, attachSessionCookie } from "./auth.js";
 import { getCheckoffs, putCheckoffs } from "./checkoffs.js";
 import { getNote, putNote } from "./notes.js";
 import { postMj, getMjUsage } from "./mj.js";
@@ -34,8 +34,24 @@ export default {
   },
 };
 
+// Defense-in-depth against form-based CSRF: any mutating request must declare
+// application/json. SameSite=Lax already blocks cross-origin POST cookies, but
+// requiring JSON makes a <form>-driven attack impossible too (forms can't send
+// application/json without a CORS preflight that we don't honor).
+function isMutating(method) {
+  return method === "POST" || method === "PUT" || method === "DELETE" || method === "PATCH";
+}
+function hasJsonContentType(request) {
+  const ct = (request.headers.get("content-type") || "").toLowerCase();
+  return ct.startsWith("application/json");
+}
+
 async function route(request, env, path) {
   const method = request.method;
+
+  if (isMutating(method) && !hasJsonContentType(request)) {
+    return error(415, "content-type must be application/json");
+  }
 
   // public auth routes
   if (path === "/api/auth/signup"  && method === "POST") return signup(request, env);
@@ -47,6 +63,14 @@ async function route(request, env, path) {
   const user = await currentUser(request, env);
   if (!user) return error(401, "not authenticated");
 
+  // Sliding rotation: currentUser may have minted a new session token. Attach
+  // it to whatever response the handler returns, so the browser's cookie
+  // catches up on this same round-trip.
+  const response = await authenticatedRoute(request, env, path, method, user);
+  return attachSessionCookie(response, request, user.rotateTo);
+}
+
+async function authenticatedRoute(request, env, path, method, user) {
   // admin routes
   if (path === "/api/admin/users" && method === "GET") {
     const gate = requireAdmin(user); if (gate) return gate;

@@ -1,4 +1,4 @@
-import { json, error } from "./util.js";
+import { json, error, safeJsonBounded } from "./util.js";
 import { loadRawPlan } from "./plan.js";
 import { parseConfig, parseDate } from "../src/lib/planConfig.js";
 import { getPhase, getDetail } from "../src/lib/growData.js";
@@ -15,6 +15,8 @@ const MAX_MSG_LEN = 4000;
 const MAX_TOOL_ITERATIONS = 6;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const GEMINI_MODEL = "gemini-2.5-flash";
+// 20 messages * 4000 chars + JSON envelope + per-message escape overhead.
+const MAX_MJ_REQUEST_BYTES = MAX_MESSAGES * MAX_MSG_LEN * 1.2 + 2048;
 
 // Displayed ceiling for the usage bar. Matches the documented Gemini API free
 // tier daily request limit for gemini-2.5-flash. Bump if Google changes it.
@@ -45,9 +47,9 @@ export async function getMjUsage(env) {
 }
 
 export async function postMj(request, env, user) {
-  let body;
-  try { body = await request.json(); }
-  catch { return error(400, "invalid json"); }
+  const parsed = await safeJsonBounded(request, MAX_MJ_REQUEST_BYTES);
+  if (!parsed.ok) return error(parsed.status, parsed.error);
+  const body = parsed.data;
   if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
     return error(400, "messages must be a non-empty array");
   }

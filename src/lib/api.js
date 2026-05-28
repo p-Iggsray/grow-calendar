@@ -1,7 +1,13 @@
+const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
 async function request(path, opts = {}) {
+  // Worker requires application/json on every mutating verb (defense-in-depth
+  // CSRF check) even for body-less requests like logout. Always send it.
+  const isMutating = MUTATING_METHODS.has((opts.method || "GET").toUpperCase());
+  const headers = isMutating ? { "content-type": "application/json" } : undefined;
   const res = await fetch(path, {
     credentials: "same-origin",
-    headers: opts.body ? { "content-type": "application/json" } : undefined,
+    headers,
     ...opts,
   });
   let data = null;

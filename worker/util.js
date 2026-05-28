@@ -55,3 +55,31 @@ export function isHttps(request) {
   const xfp = request.headers.get("x-forwarded-proto");
   return xfp === "https";
 }
+
+// Read a request body as JSON with a hard byte cap. Returns:
+//   { ok: true,  data }                          - parsed JSON
+//   { ok: false, status: 413, error: "..." }    - body too large
+//   { ok: false, status: 400, error: "..." }    - invalid JSON
+// Rejects via content-length first (fast); falls back to actual byte count.
+// Callers should bound by their own payload shape, not a global default.
+export async function safeJsonBounded(request, maxBytes) {
+  const cl = Number(request.headers.get("content-length"));
+  if (Number.isFinite(cl) && cl > maxBytes) {
+    return { ok: false, status: 413, error: "request body too large" };
+  }
+  let text;
+  try { text = await request.text(); }
+  catch { return { ok: false, status: 400, error: "could not read request body" }; }
+  if (text.length > maxBytes) {
+    return { ok: false, status: 413, error: "request body too large" };
+  }
+  if (text === "") return { ok: true, data: null };
+  let data;
+  try { data = JSON.parse(text); }
+  catch { return { ok: false, status: 400, error: "invalid json" }; }
+  return { ok: true, data };
+}
+
+export function isOverBytes(text, maxBytes) {
+  return typeof text === "string" && text.length > maxBytes;
+}

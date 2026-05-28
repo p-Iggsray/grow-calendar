@@ -2,7 +2,10 @@ import {
   json, error, nowIso,
   bytesToBase64, base64ToBytes, bytesToBase64Url,
   parseCookies, sessionCookie, clearSessionCookie, isHttps,
+  safeJsonBounded,
 } from "./util.js";
+
+const MAX_AUTH_REQUEST_BYTES = 1024;
 
 const PBKDF2_ITERATIONS = 100_000;
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
@@ -12,6 +15,20 @@ const USERNAME_RE = /^[a-zA-Z0-9_-]{2,32}$/;
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_SECONDS = 15 * 60; // 15 minutes
+
+// Sliding session rotation: every authenticated request whose session is older
+// than this threshold gets a fresh token. Caps the replay window of a stolen
+// cookie to ~SESSION_ROTATE_AFTER_MS from the moment of theft, without forcing
+// the user to log back in. The OLD token stays valid for ROTATION_GRACE_MS so
+// concurrent in-flight requests from other tabs don't get bumped to 401.
+export const SESSION_ROTATE_AFTER_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+export const ROTATION_GRACE_MS = 60 * 1000; // 60 seconds
+
+export function shouldRotate(createdAtIso, nowMs) {
+  const created = Date.parse(createdAtIso);
+  if (!Number.isFinite(created)) return false;
+  return nowMs - created >= SESSION_ROTATE_AFTER_MS;
+}
 
 async function hashPassword(password, saltBytes) {
   const salt = saltBytes || crypto.getRandomValues(new Uint8Array(16));
@@ -99,7 +116,9 @@ export async function getMe(request, env) {
 }
 
 export async function signup(request, env) {
-  const body = await safeJson(request);
+  const parsed = await safeJsonBounded(request, MAX_AUTH_REQUEST_BYTES);
+  if (!parsed.ok) return error(parsed.status, parsed.error);
+  const body = parsed.data;
   if (!body) return error(400, "invalid json");
   const username = String(body.username || "").trim();
   const password = String(body.password || "");
@@ -122,8 +141,10 @@ export async function signup(request, env) {
 
   const existing = await env.DB.prepare("SELECT id FROM users WHERE username = ?").bind(username).first();
   if (existing) {
+    // Don't volunteer that the username exists. Rate-limit (above) caps bulk
+    // enumeration. Generic phrasing slows targeted probing without breaking UX.
     await recordFailedAttempt(env, ip, username);
-    return error(409, "username already taken");
+    return error(409, "username unavailable");
   }
 
   const { salt, hash } = await hashPassword(password);
@@ -140,7 +161,9 @@ export async function signup(request, env) {
 }
 
 export async function login(request, env) {
-  const body = await safeJson(request);
+  const parsed = await safeJsonBounded(request, MAX_AUTH_REQUEST_BYTES);
+  if (!parsed.ok) return error(parsed.status, parsed.error);
+  const body = parsed.data;
   if (!body) return error(400, "invalid json");
   const username = String(body.username || "").trim();
   const password = String(body.password || "");
@@ -194,18 +217,46 @@ export async function currentUser(request, env) {
   if (!token) return null;
 
   const row = await env.DB.prepare(`
-    SELECT u.id, u.username, u.role, u.status, s.expires_at
+    SELECT u.id, u.username, u.role, u.status, s.expires_at, s.created_at
     FROM sessions s
     JOIN users u ON u.id = s.user_id
     WHERE s.token = ?
   `).bind(token).first();
 
   if (!row) return null;
-  if (new Date(row.expires_at) < new Date()) {
+  const nowMs = Date.now();
+  if (new Date(row.expires_at).getTime() < nowMs) {
     await env.DB.prepare("DELETE FROM sessions WHERE token = ?").bind(token).run();
     return null;
   }
-  return { id: row.id, username: row.username, role: row.role, status: row.status };
+
+  const base = { id: row.id, username: row.username, role: row.role, status: row.status };
+  if (!shouldRotate(row.created_at, nowMs)) return base;
+
+  // Rotate: issue a new token, mark the old one to expire after the grace
+  // window. Two parallel tabs will both still authenticate during the grace.
+  const newToken = newSessionToken();
+  const createdAt = new Date(nowMs).toISOString();
+  const expiresAt = new Date(nowMs + SESSION_TTL_SECONDS * 1000).toISOString();
+  const oldGraceEnd = new Date(nowMs + ROTATION_GRACE_MS).toISOString();
+  await env.DB.batch([
+    env.DB.prepare(
+      "INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
+    ).bind(newToken, row.id, createdAt, expiresAt),
+    env.DB.prepare(
+      "UPDATE sessions SET expires_at = ? WHERE token = ? AND expires_at > ?",
+    ).bind(oldGraceEnd, token, oldGraceEnd),
+  ]);
+  return { ...base, rotateTo: newToken };
+}
+
+// Used by the router to layer a rotated session cookie on top of whatever
+// response the handler produced. No-op if the session didn't rotate.
+export function attachSessionCookie(response, request, newToken) {
+  if (!newToken) return response;
+  const copy = new Response(response.body, response);
+  copy.headers.append("set-cookie", sessionCookie(newToken, SESSION_TTL_SECONDS, isHttps(request)));
+  return copy;
 }
 
 async function finishLogin(request, env, user) {
@@ -221,7 +272,3 @@ async function finishLogin(request, env, user) {
   });
 }
 
-async function safeJson(request) {
-  try { return await request.json(); }
-  catch { return null; }
-}
