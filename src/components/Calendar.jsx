@@ -1,5 +1,5 @@
 import { MONTH_NAMES, DOW_SHORT, sameDay } from "../lib/dates.js";
-import { PHASES, getPhase, getThreatsForPhase } from "../lib/growData.js";
+import { PHASES, getPhase, getThreatsForPhase, phaseGlyph } from "../lib/growData.js";
 
 const YEAR = 2026;
 const MIN_MONTH = 4;
@@ -55,13 +55,30 @@ export default function Calendar({ today, month, setMonth, selected, config, onP
             const isKey = sameDay(date, config.transplant) || sameDay(date, config.backyardMove) || sameDay(date, config.gdpHarvest) || sameDay(date, config.hazeHarvest);
             const hasThreat = phase && getThreatsForPhase(phase).length > 0;
 
+            const glyph = pStyle ? phaseGlyph(phase) : "";
+            const ariaParts = [
+              `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`,
+              pStyle ? `${pStyle.label} phase` : "outside grow season",
+              isToday ? "today" : null,
+              isKey ? "key milestone" : null,
+              hasThreat ? "has active threats" : null,
+              isSel ? "selected" : null,
+            ].filter(Boolean);
+
             return (
-              <div
+              <button
+                type="button"
                 key={date.getDate()}
                 onClick={() => { if (pStyle) onPickDay(date); }}
-                className={isToday && !isSel ? "cell-today" : undefined}
+                disabled={!pStyle}
+                aria-label={ariaParts.join(", ")}
+                aria-pressed={isSel ? true : undefined}
+                aria-current={isToday ? "date" : undefined}
+                className={isToday && !isSel ? "cell-today day-cell" : "day-cell"}
                 style={{
+                  font: "inherit",
                   borderRadius: 8, minHeight: 40,
+                  padding: 0,
                   display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 2,
                   cursor: pStyle ? "pointer" : "default",
@@ -87,23 +104,32 @@ export default function Calendar({ today, month, setMonth, selected, config, onP
                   fontSize: 13, fontFamily: "'Courier New', monospace",
                   fontWeight: (isSel || isToday || isKey) ? 800 : 400,
                   color: isSel ? "white" : pStyle ? "#d4edd4" : "#444",
-                }}>
+                  lineHeight: 1,
+                }} aria-hidden="true">
                   {date.getDate()}
                 </span>
-                {pStyle && (
-                  <div style={{
-                    width: 4, height: 4, borderRadius: "50%",
-                    background: isSel ? "rgba(255,255,255,0.6)" : pStyle.color,
-                  }} />
+                {glyph && (
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      fontSize: 9, fontFamily: "'Courier New', monospace",
+                      fontWeight: 700, letterSpacing: 0.5,
+                      color: isSel ? "rgba(255,255,255,0.85)" : pStyle.color,
+                      lineHeight: 1,
+                    }}>
+                    {glyph}
+                  </span>
                 )}
                 {hasThreat && !isSel && (
-                  <div style={{
-                    position: "absolute", top: 3, right: 4,
-                    width: 5, height: 5, borderRadius: "50%",
-                    background: "#f59e0b",
-                  }} />
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      position: "absolute", top: 3, right: 4,
+                      width: 5, height: 5, borderRadius: "50%",
+                      background: "#f59e0b",
+                    }} />
                 )}
-              </div>
+              </button>
             );
           })}
         </div>

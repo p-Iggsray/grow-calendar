@@ -181,7 +181,7 @@ export default function App() {
         <PhaseLegend />
         <ThreatsReference />
       </div>
-      <AuthFooter />
+      <AuthFooter onBeforeSignOut={flushNote} />
       {chatOverlay}
     </div>
   );

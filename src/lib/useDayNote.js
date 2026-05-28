@@ -77,7 +77,7 @@ export function useDayNote(date, enabled) {
 
   const flush = useCallback(() => {
     if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
-    doSave();
+    return doSave();
   }, [doSave]);
 
   // Best-effort save when the tab is hidden (mobile background, tab switch).

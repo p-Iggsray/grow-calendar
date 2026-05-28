@@ -1,5 +1,19 @@
 import { sameDay, daysBetween, fmt, fmtL } from "./dates-core.js";
 
+// Single-character glyph per phase so the calendar is readable without color
+// (WCAG 1.4.1). Same-color/different-strain phases share a glyph and rely on
+// the surrounding date + aria-label to disambiguate.
+export function phaseGlyph(phase) {
+  if (!phase) return "";
+  if (phase === "pre") return "";
+  if (phase === "transplant") return "T";
+  if (phase.startsWith("veg") || phase === "early_veg") return "V";
+  if (phase.startsWith("flush")) return "~";
+  if (phase.startsWith("harvest")) return "H";
+  if (phase.startsWith("flower") || phase === "pre_flower") return "F";
+  return "";
+}
+
 export const PHASES = {
   pre:          { label:"Pre-Transplant",       color:"#5b8dee", light:"#e8f0fe", dark:"#1e3a8a" },
   transplant:   { label:"Transplant Day",       color:"#7c3aed", light:"#f3effe", dark:"#4c1d95" },

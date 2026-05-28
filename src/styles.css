@@ -88,3 +88,19 @@ textarea {
   .cell-today { animation: none; }
   * { transition: none !important; }
 }
+
+/* Calendar day buttons: keep the visual identical to the prior <div> cells
+   (background/border come from inline styles) but give keyboard focus a
+   clearly visible ring so tab navigation has feedback. */
+button.day-cell {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+button.day-cell:disabled {
+  pointer-events: none;
+}
+button.day-cell:focus-visible {
+  outline: 2px solid #4ade80;
+  outline-offset: 2px;
+}

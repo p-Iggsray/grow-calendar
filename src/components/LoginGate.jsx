@@ -1,6 +1,22 @@
 import { useState } from "react";
 import { useAuth } from "../lib/auth.jsx";
 
+const LABEL_STYLE = {
+  fontSize: 10, letterSpacing: 2, color: "#5a8a5a",
+  textTransform: "uppercase", fontFamily: "'Courier New', monospace",
+};
+const INPUT_STYLE = {
+  background: "rgba(0,0,0,0.25)",
+  border: "1px solid rgba(255,255,255,0.1)",
+  borderRadius: 8,
+  padding: "10px 12px",
+  color: "#e8f5e3",
+  fontSize: 14,
+  fontFamily: "'Courier New', monospace",
+  outline: "none",
+  width: "100%",
+};
+
 export default function LoginGate() {
   const { login, signup } = useAuth();
   const [username, setUsername] = useState("");
@@ -64,9 +80,7 @@ export default function LoginGate() {
             autoComplete="username"
             autoFocus
           />
-          <Field
-            label="Password"
-            type="password"
+          <PasswordField
             value={password}
             onChange={setPassword}
             autoComplete={mode === "signup" ? "new-password" : "current-password"}
@@ -120,31 +134,93 @@ export default function LoginGate() {
 function Field({ label, value, onChange, type = "text", autoComplete, autoFocus }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <span style={{
-        fontSize: 10, letterSpacing: 2, color: "#5a8a5a",
-        textTransform: "uppercase", fontFamily: "'Courier New', monospace",
-      }}>
-        {label}
-      </span>
+      <span style={LABEL_STYLE}>{label}</span>
       <input
         type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
         autoComplete={autoComplete}
         autoFocus={autoFocus}
-        style={{
-          background: "rgba(0,0,0,0.25)",
-          border: "1px solid rgba(255,255,255,0.1)",
-          borderRadius: 8,
-          padding: "10px 12px",
-          color: "#e8f5e3",
-          fontSize: 14,
-          fontFamily: "'Courier New', monospace",
-          outline: "none",
-        }}
+        style={INPUT_STYLE}
         onFocus={e => { e.target.style.borderColor = "rgba(74,222,128,0.5)"; }}
         onBlur={e => { e.target.style.borderColor = "rgba(255,255,255,0.1)"; }}
       />
     </label>
+  );
+}
+
+function PasswordField({ value, onChange, autoComplete }) {
+  const [reveal, setReveal] = useState(false);
+  const [capsLockOn, setCapsLockOn] = useState(false);
+
+  function updateCapsLock(e) {
+    if (typeof e.getModifierState === "function") {
+      setCapsLockOn(e.getModifierState("CapsLock"));
+    }
+  }
+
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={LABEL_STYLE}>Password</span>
+        {capsLockOn && (
+          <span
+            role="status"
+            aria-live="polite"
+            style={{
+              fontSize: 9, letterSpacing: 1.5, fontFamily: "'Courier New', monospace",
+              color: "#facc15", background: "rgba(250,204,21,0.12)",
+              border: "1px solid rgba(250,204,21,0.35)",
+              borderRadius: 6, padding: "1px 6px", textTransform: "uppercase",
+            }}>
+            Caps Lock
+          </span>
+        )}
+      </span>
+      <div style={{ position: "relative" }}>
+        <input
+          type={reveal ? "text" : "password"}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onKeyDown={updateCapsLock}
+          onKeyUp={updateCapsLock}
+          onBlur={e => { e.target.style.borderColor = "rgba(255,255,255,0.1)"; setCapsLockOn(false); }}
+          autoComplete={autoComplete}
+          style={{ ...INPUT_STYLE, paddingRight: 44 }}
+          onFocus={e => { e.target.style.borderColor = "rgba(74,222,128,0.5)"; }}
+        />
+        <button
+          type="button"
+          onClick={() => setReveal(r => !r)}
+          aria-label={reveal ? "Hide password" : "Show password"}
+          aria-pressed={reveal}
+          tabIndex={-1}
+          style={{
+            position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)",
+            background: "transparent", border: "none",
+            padding: 8, cursor: "pointer",
+            color: reveal ? "#4ade80" : "#5a8a5a",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+          <EyeIcon hidden={reveal} />
+        </button>
+      </div>
+    </label>
+  );
+}
+
+// Open eye when password is hidden (click to reveal); closed eye when revealed
+// (click to hide). Matches the convention every major site uses.
+function EyeIcon({ hidden }) {
+  return hidden ? (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+      <line x1="3" y1="3" x2="21" y2="21" />
+    </svg>
+  ) : (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
   );
 }
