@@ -6,8 +6,6 @@ import { buildPlanText } from "../src/lib/planText.js";
 import { readCheckoffs, writeCheckoffs } from "./checkoffs.js";
 import { readNote, writeNote, MAX_NOTE_LEN } from "./notes.js";
 import { MJ_PERSONA, MJ_TOOLS, mergeChecked, appendNoteText, buildDayView } from "./mj-logic.js";
-import { isAdmin } from "./guard.js";
-import { runAnthropic } from "./providers/anthropic.js";
 import { runGemini } from "./providers/gemini.js";
 import { ProviderError } from "./providers/errors.js";
 
@@ -15,30 +13,34 @@ const MAX_MESSAGES = 20;
 const MAX_MSG_LEN = 4000;
 const MAX_TOOL_ITERATIONS = 6;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const GEMINI_MODEL = "gemini-2.5-flash";
 
-export const MJ_DAILY_LIMIT = 30;
+// Displayed ceiling for the usage bar. Matches the documented Gemini API free
+// tier daily request limit for gemini-2.5-flash. Bump if Google changes it.
+export const GEMINI_DAILY_LIMIT = 1500;
 
-export function isOverMjLimit(count, limit) {
-  return count >= limit;
+function todayInET() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 }
 
-async function bumpMjUsageOrReject(env, userId, today) {
-  const row = await env.DB.prepare(
-    "SELECT count FROM mj_usage WHERE user_id = ? AND date = ?",
-  ).bind(userId, today).first();
-  if (isOverMjLimit(row?.count ?? 0, MJ_DAILY_LIMIT)) return false;
+async function bumpMjUsage(env, userId, today) {
   await env.DB.prepare(
     "INSERT INTO mj_usage (user_id, date, count) VALUES (?, ?, 1) " +
     "ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1",
   ).bind(userId, today).run();
-  return true;
 }
 
-export function pickModel(user, env) {
-  if (isAdmin(user)) {
-    return { provider: "anthropic", model: "claude-haiku-4-5", apiKey: env.ANTHROPIC_API_KEY };
-  }
-  return { provider: "gemini", model: "gemini-2.5-flash", apiKey: env.GEMINI_API_KEY };
+async function readMjUsageTotal(env, today) {
+  const row = await env.DB.prepare(
+    "SELECT COALESCE(SUM(count), 0) AS total FROM mj_usage WHERE date = ?",
+  ).bind(today).first();
+  return Number(row?.total ?? 0);
+}
+
+export async function getMjUsage(env) {
+  const today = todayInET();
+  const count = await readMjUsageTotal(env, today);
+  return json({ date: today, count, limit: GEMINI_DAILY_LIMIT });
 }
 
 export async function postMj(request, env, user) {
@@ -49,7 +51,7 @@ export async function postMj(request, env, user) {
     return error(400, "messages must be a non-empty array");
   }
 
-  const { provider, model, apiKey } = pickModel(user, env);
+  const apiKey = env.GEMINI_API_KEY;
   if (!apiKey) return error(503, "MJ is not configured yet");
 
   const messages = body.messages
@@ -65,14 +67,8 @@ export async function postMj(request, env, user) {
     return error(400, "the last message must be from the user");
   }
 
-  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-
-  if (!isAdmin(user)) {
-    const allowed = await bumpMjUsageOrReject(env, user.id, today);
-    if (!allowed) {
-      return error(429, `You have reached today's MJ limit (${MJ_DAILY_LIMIT} messages). It resets tomorrow.`);
-    }
-  }
+  const today = todayInET();
+  await bumpMjUsage(env, user.id, today);
 
   const raw = await loadRawPlan(env, user.id);
   const config = parseConfig(raw.config);
@@ -86,12 +82,12 @@ export async function postMj(request, env, user) {
   const actions = [];
   const executeToolUse = (name, input) => executeTool(name, input, env, user.id, config, overrides, actions);
 
-  const run = provider === "gemini" ? runGemini : runAnthropic;
   try {
-    const { reply } = await run({
-      apiKey, model, systemSegments, tools: MJ_TOOLS, messages, executeToolUse, maxIterations: MAX_TOOL_ITERATIONS,
+    const { reply } = await runGemini({
+      apiKey, model: GEMINI_MODEL, systemSegments, tools: MJ_TOOLS, messages, executeToolUse, maxIterations: MAX_TOOL_ITERATIONS,
     });
-    return json({ reply, actions });
+    const count = await readMjUsageTotal(env, today);
+    return json({ reply, actions, usage: { date: today, count, limit: GEMINI_DAILY_LIMIT } });
   } catch (e) {
     if (e instanceof ProviderError && e.kind === "quota") {
       return error(429, "MJ has hit today's limit, please try again later");

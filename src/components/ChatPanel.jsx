@@ -12,11 +12,18 @@ export default function ChatPanel({ onClose }) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [usage, setUsage] = useState(null); // { count, limit, date }
   const scrollRef = useRef(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, busy]);
+
+  useEffect(() => {
+    let alive = true;
+    api.getMjUsage().then(u => { if (alive) setUsage(u); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   async function send() {
     const text = input.trim();
@@ -27,8 +34,9 @@ export default function ChatPanel({ onClose }) {
     setError("");
     setBusy(true);
     try {
-      const { reply, actions } = await api.mj(next);
+      const { reply, actions, usage: u } = await api.mj(next);
       setMessages([...next, { role: "assistant", content: reply, actions: actions || [] }]);
+      if (u) setUsage(u);
     } catch (err) {
       setError(err.message || "Something went wrong. Try again.");
     } finally {
@@ -63,6 +71,7 @@ export default function ChatPanel({ onClose }) {
           <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: "#5a8a5a", textTransform: "uppercase" }}>MJ</div>
           <div style={{ fontSize: 16, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>Your grow assistant</div>
         </div>
+        <UsageBar usage={usage} />
       </div>
 
       <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "16px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
@@ -120,6 +129,27 @@ export default function ChatPanel({ onClose }) {
         }}>
           {busy ? "..." : "Send"}
         </button>
+      </div>
+    </div>
+  );
+}
+
+function UsageBar({ usage }) {
+  if (!usage) return null;
+  const { count = 0, limit = 0 } = usage;
+  const safeLimit = limit > 0 ? limit : 1;
+  const pct = Math.min(100, Math.round((count / safeLimit) * 100));
+  const color = pct >= 90 ? "#f87171" : pct >= 70 ? "#fbbf24" : "#4ade80";
+  return (
+    <div
+      title={`Gemini API: ${count} of ${limit} calls used today (shared across all users)`}
+      style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, minWidth: 84 }}
+    >
+      <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "#5a8a5a", letterSpacing: 1 }}>
+        {count}/{limit}
+      </div>
+      <div style={{ width: 84, height: 4, background: "rgba(255,255,255,0.08)", borderRadius: 2, overflow: "hidden" }}>
+        <div style={{ width: `${pct}%`, height: "100%", background: color, transition: "width 0.3s, background 0.3s" }} />
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { error } from "./util.js";
 import { signup, login, logout, getMe, currentUser } from "./auth.js";
 import { getCheckoffs, putCheckoffs } from "./checkoffs.js";
 import { getNote, putNote } from "./notes.js";
-import { postMj } from "./mj.js";
+import { postMj, getMjUsage } from "./mj.js";
 import { getPlan } from "./plan.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
 import { requireApproved, requireAdmin } from "./guard.js";
@@ -65,8 +65,9 @@ async function route(request, env, path) {
   // app routes require an approved user
   const gate = requireApproved(user); if (gate) return gate;
 
-  if (path === "/api/mj"   && method === "POST") return postMj(request, env, user);
-  if (path === "/api/plan" && method === "GET")  return getPlan(env, user);
+  if (path === "/api/mj"        && method === "POST") return postMj(request, env, user);
+  if (path === "/api/mj/usage"  && method === "GET")  return getMjUsage(env);
+  if (path === "/api/plan"      && method === "GET")  return getPlan(env, user);
 
   const checkoffsMatch = path.match(/^\/api\/checkoffs\/(\d{4}-\d{2}-\d{2})$/);
   if (checkoffsMatch) {

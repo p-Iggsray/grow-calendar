@@ -7,7 +7,7 @@ Everything you need to run, modify, or self-host **The Grow Calendar**.
 - Vite + React 18 (frontend SPA)
 - Cloudflare Workers (backend `worker/` directory)
 - Cloudflare D1 (SQL database for users, sessions, check-offs, daily notes)
-- Anthropic API (Claude Haiku 4.5) for the owner's MJ assistant; Google Gemini (gemini-2.5-flash) for all other approved users
+- Google Gemini (`gemini-2.5-flash`, free tier) for the MJ assistant (all users)
 - Wrangler 4 (deploy tooling)
 - Pure CSS media queries for responsive layout (no UI framework)
 
@@ -54,40 +54,38 @@ Your real production login is different and lives in the remote database.
 
 ## MJ (AI grow assistant)
 
-The floating "MJ" button opens a chat backed by an AI provider. MJ answers questions about the grow AND takes actions on your behalf: checking tasks off and appending to your daily notes. The Worker holds all API keys as secrets and never exposes them to the browser.
+The floating "MJ" button opens a chat backed by Google Gemini 2.5 Flash. MJ answers questions about the grow AND takes actions on your behalf: checking tasks off and appending to your daily notes. The Worker holds the API key as a secret and never exposes it to the browser.
 
-### Model routing (per user role)
+### Model
 
-MJ routes each request to a different AI provider depending on who is asking:
+All users hit `gemini-2.5-flash` via the free-tier Generative Language API, using the single shared `GEMINI_API_KEY` secret. If the key is missing, `/api/mj` returns a friendly "MJ is not configured yet" message.
 
-| User | Model | Secret |
-|---|---|---|
-| Owner (role = `admin`) | Claude Haiku 4.5 (`claude-haiku-4-5`) | `ANTHROPIC_API_KEY` |
-| Every other approved user | Gemini 2.5 Flash (`gemini-2.5-flash`) | `GEMINI_API_KEY` (shared) |
+### Usage tracking and the in-chat usage bar
 
-Only the owner spends money. All non-admin users run on Gemini's free tier. The two providers are fully independent: if one key is missing, only that group of users is affected.
+There is no per-user daily cap. Instead, each call increments the `mj_usage` D1 table and the MJ chat header shows a small usage bar that reflects today's aggregate request count against `GEMINI_DAILY_LIMIT` (defined in `worker/mj.js`, currently `1500` — the documented Gemini API free-tier RPD for `gemini-2.5-flash`). Bump the constant if Google changes the limit.
 
-### Daily cap (non-admin users)
+The bar is fed by:
 
-Non-admin users are capped at 30 MJ messages per day, tracked in the `mj_usage` D1 table. Exceeding the cap returns a friendly 429 message. The owner is exempt from the cap. If Gemini's own free-tier quota is exhausted, MJ returns a "hit today's limit, try again later" message instead of an error.
+- `GET /api/mj/usage` (called when the chat opens) returning `{ date, count, limit }`
+- The `usage` field on each `POST /api/mj` response (refreshes the bar after every send)
+
+If Gemini's own free-tier quota is exhausted at Google's end, MJ returns a "hit today's limit, try again later" message instead of an error.
 
 ### Local setup
 
-Create a gitignored `.dev.vars` file in the project root with both keys:
+Create a gitignored `.dev.vars` file in the project root:
 
 ```
-ANTHROPIC_API_KEY=sk-ant-...
 GEMINI_API_KEY=...
 ```
 
-`wrangler dev` reads it automatically. If either key is missing, `/api/mj` returns a friendly "MJ is not configured yet" message for the affected user group.
+`wrangler dev` reads it automatically.
 
 ### Production setup
 
-Set each secret once, then deploy:
+Set the secret once, then deploy:
 
 ```bash
-npx wrangler secret put ANTHROPIC_API_KEY
 npx wrangler secret put GEMINI_API_KEY
 ```
 
@@ -229,7 +227,7 @@ worker/                           Backend (Cloudflare Worker)
   checkoffs.js                    GET/PUT /api/checkoffs/:date + readCheckoffs/writeCheckoffs helpers.
   notes.js                        GET/PUT /api/notes/:date + readNote/writeNote helpers.
   plan.js                         GET /api/plan + loadRawPlan helper.
-  mj.js                           POST /api/mj - per-user model routing (Claude for admin, Gemini for others), tool-use loop and tool executor.
+  mj.js                           POST /api/mj + GET /api/mj/usage - Gemini-only, tool-use loop, tool executor, aggregate usage counter.
   mj-logic.js                     Pure MJ helpers (merge checkoffs, append note, day view) + tool schemas.
   util.js                         JSON helpers, cookie helpers.
 
@@ -269,7 +267,7 @@ launch.bat                        Windows one-click dev launcher.
 - [x] PWA manifest + custom icon
 - [x] Daily notes / journal
 - [x] Full-screen day view (tasks, notes, threats)
-- [x] In-app AI grow assistant (Claude Haiku 4.5 for owner; Gemini 2.5 Flash for other users)
+- [x] In-app AI grow assistant (Gemini 2.5 Flash free tier, shared key, usage bar in chat)
 - [ ] Structured grow log (pH, water, feed, temp, humidity)
 - [ ] Photo uploads via R2
 - [ ] In-app SVG icon replacements for all emojis

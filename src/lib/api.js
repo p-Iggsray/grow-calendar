@@ -36,6 +36,7 @@ export const api = {
 
   mj: (messages) =>
     request("/api/mj", { method: "POST", body: JSON.stringify({ messages }) }),
+  getMjUsage: () => request("/api/mj/usage"),
 
   getPlan: () => request("/api/plan"),
 
