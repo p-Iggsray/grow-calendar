@@ -41,20 +41,17 @@ export function useCheckoffs(date, enabled) {
 
   const toggle = useCallback(async (idx) => {
     if (!dateKey || !enabled) return;
-    let next;
-    setChecked(prev => {
-      next = prev.includes(idx)
-        ? prev.filter(n => n !== idx)
-        : [...prev, idx].sort((a, b) => a - b);
-      return next;
-    });
+    const next = checked.includes(idx)
+      ? checked.filter(n => n !== idx)
+      : [...checked, idx].sort((a, b) => a - b);
+    setChecked(next);
     try {
       await api.putCheckoffs(dateKey, next);
     } catch {
       addToast("Couldn't save. Your change was reversed");
       fetchNow();
     }
-  }, [dateKey, enabled, fetchNow]);
+  }, [checked, dateKey, enabled, fetchNow, addToast]);
 
   return { checked, loading, toggle };
 }
