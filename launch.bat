@@ -3,6 +3,23 @@ setlocal
 cd /d "%~dp0"
 title The Grow Calendar - Dev Server
 
+:: Verify Node.js is installed and meets the minimum version requirement
+where node >nul 2>&1
+if errorlevel 1 (
+  echo ERROR: Node.js is not installed or not found in PATH.
+  echo Download the latest LTS from https://nodejs.org
+  pause >nul
+  exit /b 1
+)
+for /f "tokens=1 delims=." %%v in ('node --version') do set "NODE_VER=%%v"
+set "NODE_MAJOR=%NODE_VER:~1%"
+if %NODE_MAJOR% LSS 18 (
+  echo ERROR: Node 18 or higher is required. You are on Node %NODE_MAJOR%.
+  echo Download the latest LTS from https://nodejs.org
+  pause >nul
+  exit /b 1
+)
+
 if not exist node_modules (
   echo node_modules not found. Running npm install...
   call npm install

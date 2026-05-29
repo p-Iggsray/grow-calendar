@@ -1,6 +1,5 @@
-import { StrictMode } from "react";
+import { StrictMode, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App.jsx";
 import LoginGate from "./components/LoginGate.jsx";
 import PendingScreen from "./components/PendingScreen.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
@@ -10,6 +9,10 @@ import { ToastProvider } from "./lib/useToast.jsx";
 import { PlanProvider } from "./lib/usePlan.jsx";
 import "./styles.css";
 
+// Lazy-load the full calendar app so logged-out and pending users only receive
+// the auth/login chunk — not the entire calendar engine.
+const App = lazy(() => import("./App.jsx"));
+
 function Root() {
   const { user, loading } = useAuth();
   if (loading) return <Splash />;
@@ -17,7 +20,9 @@ function Root() {
   if (user.status !== "approved") return <PendingScreen />;
   return (
     <PlanProvider>
-      <App />
+      <Suspense fallback={<Splash />}>
+        <App />
+      </Suspense>
     </PlanProvider>
   );
 }
