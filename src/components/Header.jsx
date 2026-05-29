@@ -1,3 +1,5 @@
+import { LOCATION } from "../lib/appConfig.js";
+
 export default function Header({ todayStyle, nextMs, daysToNext, progress, onJumpToday, onOpenAdmin }) {
   return (
     <div style={{
@@ -13,7 +15,7 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress, onJum
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <div style={{ fontSize: 10, letterSpacing: 4, color: "#5a8a5a", textTransform: "uppercase", marginBottom: 6, fontFamily: "'Courier New', monospace" }}>
-            Grow Log · Athens, Ohio
+            Grow Log · {LOCATION}
           </div>
           <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: -1, lineHeight: 1.1, color: "#e8f5e3" }}>
             The Grow Calendar

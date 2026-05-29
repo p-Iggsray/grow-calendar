@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../lib/auth.jsx";
+import { LOCATION } from "../lib/appConfig.js";
 
 const LABEL_STYLE = {
   fontSize: 10, letterSpacing: 2, color: "#5a8a5a",
@@ -65,7 +66,7 @@ export default function LoginGate() {
             textTransform: "uppercase", marginBottom: 6,
             fontFamily: "'Courier New', monospace",
           }}>
-            Grow Log · Athens, Ohio
+            Grow Log · {LOCATION}
           </div>
           <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: -1, color: "#e8f5e3" }}>
             The Grow Calendar
