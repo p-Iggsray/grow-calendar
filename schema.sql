@@ -71,3 +71,14 @@ CREATE TABLE IF NOT EXISTS mj_usage (
   PRIMARY KEY (user_id, date),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS mj_conversations (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role       TEXT NOT NULL CHECK(role IN ('user','assistant')),
+  content    TEXT NOT NULL,
+  actions    TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_mj_conversations_user ON mj_conversations(user_id, id DESC);

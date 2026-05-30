@@ -11,17 +11,25 @@ import { runGemini } from "./providers/gemini.js";
 import { ProviderError } from "./providers/errors.js";
 import { logError } from "./log.js";
 
-const MAX_MESSAGES = 20;
 const MAX_MSG_LEN = 4000;
 const MAX_TOOL_ITERATIONS = 6;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const GEMINI_MODEL = "gemini-2.5-flash";
-// 20 messages * 4000 chars + JSON envelope + per-message escape overhead.
-const MAX_MJ_REQUEST_BYTES = MAX_MESSAGES * MAX_MSG_LEN * 1.2 + 2048;
+// Max request body: one user message + contextDate field + JSON envelope.
+const MAX_MJ_REQUEST_BYTES = MAX_MSG_LEN * 1.5 + 512;
+
+// Number of conversation rows fetched for UI display.
+const MAX_HISTORY_ROWS = 40;
+// Number of messages passed to the AI as context (must be even so the window
+// starts on a user turn after prepending the new user message).
+const MAX_CONTEXT_MESSAGES = 20;
 
 // Displayed ceiling for the usage bar. Matches the documented Gemini API free
 // tier daily request limit for gemini-2.5-flash. Bump if Google changes it.
 export const GEMINI_DAILY_LIMIT = 1500;
+
+// Per-user daily cap. Non-admin users are blocked once they hit this.
+export const PER_USER_DAILY_CAP = 30;
 
 function todayInET() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
@@ -41,38 +49,94 @@ async function readMjUsageTotal(env, today) {
   return Number(row?.total ?? 0);
 }
 
-export async function getMjUsage(env) {
+async function readMjUsageForUser(env, userId, today) {
+  const row = await env.DB.prepare(
+    "SELECT COALESCE(count, 0) AS count FROM mj_usage WHERE user_id = ? AND date = ?",
+  ).bind(userId, today).first();
+  return Number(row?.count ?? 0);
+}
+
+async function loadHistory(env, userId, limit) {
+  const rows = await env.DB.prepare(
+    "SELECT role, content, actions FROM mj_conversations WHERE user_id = ? ORDER BY id DESC LIMIT ?",
+  ).bind(userId, limit).all();
+  // Rows come back newest-first; reverse so oldest is first.
+  return (rows.results ?? []).reverse().map(r => ({
+    role: r.role,
+    content: r.content,
+    actions: r.actions ? JSON.parse(r.actions) : undefined,
+  }));
+}
+
+async function saveConversation(env, userId, userContent, assistantContent, actions) {
+  await env.DB.batch([
+    env.DB.prepare(
+      "INSERT INTO mj_conversations (user_id, role, content) VALUES (?, 'user', ?)",
+    ).bind(userId, userContent),
+    env.DB.prepare(
+      "INSERT INTO mj_conversations (user_id, role, content, actions) VALUES (?, 'assistant', ?, ?)",
+    ).bind(userId, assistantContent, actions.length > 0 ? JSON.stringify(actions) : null),
+  ]);
+}
+
+export async function getMjUsage(env, user) {
   const today = todayInET();
-  const count = await readMjUsageTotal(env, today);
-  return json({ date: today, count, limit: GEMINI_DAILY_LIMIT });
+  const [count, userCount] = await Promise.all([
+    readMjUsageTotal(env, today),
+    readMjUsageForUser(env, user.id, today),
+  ]);
+  return json({ date: today, count, limit: GEMINI_DAILY_LIMIT, userCount, userLimit: PER_USER_DAILY_CAP });
+}
+
+export async function getMjHistory(env, user) {
+  const history = await loadHistory(env, user.id, MAX_HISTORY_ROWS);
+  return json({ history });
+}
+
+export async function deleteMjHistory(env, user) {
+  await env.DB.prepare("DELETE FROM mj_conversations WHERE user_id = ?").bind(user.id).run();
+  return json({ ok: true });
 }
 
 export async function postMj(request, env, user) {
   const parsed = await safeJsonBounded(request, MAX_MJ_REQUEST_BYTES);
   if (!parsed.ok) return error(parsed.status, parsed.error);
   const body = parsed.data;
-  if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
-    return error(400, "messages must be a non-empty array");
-  }
+
+  const userContent = typeof body?.message === "string" ? body.message.trim() : "";
+  if (!userContent) return error(400, "message must be a non-empty string");
+  if (userContent.length > MAX_MSG_LEN) return error(400, "message too long");
+
+  const contextDate =
+    typeof body?.contextDate === "string" && DATE_RE.test(body.contextDate)
+      ? body.contextDate : null;
 
   const apiKey = env.GEMINI_API_KEY;
   if (!apiKey) return error(503, "MJ is not configured yet");
 
-  const messages = body.messages
-    .slice(-MAX_MESSAGES)
-    .map(m => ({
-      role: m && m.role === "assistant" ? "assistant" : "user",
-      content: typeof m?.content === "string" ? m.content.slice(0, MAX_MSG_LEN) : "",
-    }))
-    .filter(m => m.content !== "");
-  // The length === 0 check must stay first: it short-circuits the array access
-  // so the .role read never runs on an empty array. Do not reorder.
-  if (messages.length === 0 || messages[messages.length - 1].role !== "user") {
-    return error(400, "the last message must be from the user");
+  const today = todayInET();
+
+  // Per-user daily cap: check before bumping so we don't charge a blocked call.
+  if (user.role !== "admin") {
+    const userCount = await readMjUsageForUser(env, user.id, today);
+    if (userCount >= PER_USER_DAILY_CAP) {
+      return error(429, `You've used all ${PER_USER_DAILY_CAP} MJ messages for today. Resets at midnight ET.`);
+    }
   }
 
-  const today = todayInET();
   await bumpMjUsage(env, user.id, today);
+
+  // Build AI context from persisted history (most recent MAX_CONTEXT_MESSAGES - 1
+  // messages) plus the new user message at the end.
+  const history = await loadHistory(env, user.id, MAX_CONTEXT_MESSAGES - 1);
+  const contextMessages = history.map(m => ({
+    role: m.role,
+    content: m.content.slice(0, MAX_MSG_LEN),
+  }));
+  const messages = [...contextMessages, { role: "user", content: userContent }];
+
+  // Last message must be from user (history could end on assistant).
+  // The messages array always ends with the new user message so this is guaranteed.
 
   const raw = await loadRawPlan(env, user.id);
   const config = parseConfig(raw.config);
@@ -82,6 +146,9 @@ export async function postMj(request, env, user) {
     { text: `${MJ_PERSONA}\n\n${buildPlanText(config, overrides)}`, cache: true },
     { text: `Today's date is ${today}.`, cache: false },
   ];
+  if (contextDate) {
+    systemSegments.push({ text: `The grower currently has ${contextDate} open in the app.`, cache: false });
+  }
 
   const actions = [];
   const executeToolUse = (name, input) => executeTool(name, input, env, user.id, config, overrides, actions);
@@ -90,8 +157,12 @@ export async function postMj(request, env, user) {
     const { reply } = await runGemini({
       apiKey, model: GEMINI_MODEL, systemSegments, tools: MJ_TOOLS, messages, executeToolUse, maxIterations: MAX_TOOL_ITERATIONS,
     });
-    const count = await readMjUsageTotal(env, today);
-    return json({ reply, actions, usage: { date: today, count, limit: GEMINI_DAILY_LIMIT } });
+    await saveConversation(env, user.id, userContent, reply, actions);
+    const [count, userCount] = await Promise.all([
+      readMjUsageTotal(env, today),
+      readMjUsageForUser(env, user.id, today),
+    ]);
+    return json({ reply, actions, usage: { date: today, count, limit: GEMINI_DAILY_LIMIT, userCount, userLimit: PER_USER_DAILY_CAP } });
   } catch (e) {
     if (e instanceof ProviderError && e.kind === "quota") {
       return error(429, "MJ has hit today's limit, please try again later");

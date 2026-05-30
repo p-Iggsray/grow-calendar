@@ -7,12 +7,18 @@ const SUGGESTIONS = [
   "Add a note to today: lower leaves yellowing",
 ];
 
-export default function ChatPanel({ onClose }) {
-  const [messages, setMessages] = useState([]); // { role, content }
+function fmtContextDate(yyyymmdd) {
+  const [y, m, d] = yyyymmdd.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+export default function ChatPanel({ onClose, contextDate }) {
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [usage, setUsage] = useState(null); // { count, limit, date }
+  const [usage, setUsage] = useState(null); // { count, limit, date, userCount, userLimit }
+  const [historyLoading, setHistoryLoading] = useState(true);
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -21,24 +27,34 @@ export default function ChatPanel({ onClose }) {
 
   useEffect(() => {
     let alive = true;
-    api.getMjUsage().then(u => { if (alive) setUsage(u); }).catch(() => {});
+    Promise.all([
+      api.getMjHistory().catch(() => ({ history: [] })),
+      api.getMjUsage().catch(() => null),
+    ]).then(([h, u]) => {
+      if (!alive) return;
+      setMessages(h.history ?? []);
+      if (u) setUsage(u);
+      setHistoryLoading(false);
+    });
     return () => { alive = false; };
   }, []);
 
   async function send() {
     const text = input.trim();
     if (!text || busy) return;
-    const next = [...messages, { role: "user", content: text }];
-    setMessages(next);
+    setMessages(prev => [...prev, { role: "user", content: text }]);
     setInput("");
     setError("");
     setBusy(true);
     try {
-      const { reply, actions, usage: u } = await api.mj(next);
-      setMessages([...next, { role: "assistant", content: reply, actions: actions || [] }]);
+      const { reply, actions, usage: u } = await api.mj(text, contextDate ?? null);
+      setMessages(prev => [...prev, { role: "assistant", content: reply, actions: actions || [] }]);
       if (u) setUsage(u);
     } catch (err) {
-      setError(err.message || "Something went wrong. Try again.");
+      const msg = err.status === 429
+        ? (err.message || "Daily message limit reached. Try again tomorrow.")
+        : (err.message || "Something went wrong. Try again.");
+      setError(msg);
     } finally {
       setBusy(false);
     }
@@ -69,13 +85,29 @@ export default function ChatPanel({ onClose }) {
         }}>‹ Back</button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: "#5a8a5a", textTransform: "uppercase" }}>MJ</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>Your grow assistant</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>Your grow assistant</div>
+            {contextDate && (
+              <span style={{
+                fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 1,
+                color: "#4ade80", background: "rgba(34,197,94,0.12)",
+                border: "1px solid rgba(34,197,94,0.25)", borderRadius: 6, padding: "2px 7px",
+              }}>
+                📅 {fmtContextDate(contextDate)}
+              </span>
+            )}
+          </div>
         </div>
         <UsageBar usage={usage} />
       </div>
 
       <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "16px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
-        {messages.length === 0 && (
+        {historyLoading && (
+          <div style={{ margin: "auto", fontFamily: "'Courier New', monospace", fontSize: 11, color: "#3a5a3a", letterSpacing: 2 }}>
+            LOADING...
+          </div>
+        )}
+        {!historyLoading && messages.length === 0 && (
           <div style={{ margin: "auto", maxWidth: 440, textAlign: "center" }}>
             <div style={{ fontSize: 34, marginBottom: 10 }}>🌿</div>
             <div style={{ fontSize: 15, color: "#a0d0a0", marginBottom: 14, lineHeight: 1.6 }}>
@@ -136,20 +168,40 @@ export default function ChatPanel({ onClose }) {
 
 function UsageBar({ usage }) {
   if (!usage) return null;
-  const { count = 0, limit = 0 } = usage;
+  const { count = 0, limit = 0, userCount, userLimit } = usage;
   const safeLimit = limit > 0 ? limit : 1;
   const pct = Math.min(100, Math.round((count / safeLimit) * 100));
   const color = pct >= 90 ? "#f87171" : pct >= 70 ? "#fbbf24" : "#4ade80";
+
+  const showUserCap = typeof userCount === "number" && typeof userLimit === "number";
+  const userPct = showUserCap ? Math.min(100, Math.round((userCount / userLimit) * 100)) : 0;
+  const userColor = userPct >= 90 ? "#f87171" : userPct >= 70 ? "#fbbf24" : "#4ade80";
+
   return (
-    <div
-      title={`Gemini API: ${count} of ${limit} calls used today (shared across all users)`}
-      style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, minWidth: 84 }}
-    >
-      <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "#5a8a5a", letterSpacing: 1 }}>
-        {count}/{limit}
-      </div>
-      <div style={{ width: 84, height: 4, background: "rgba(255,255,255,0.08)", borderRadius: 2, overflow: "hidden" }}>
-        <div style={{ width: `${pct}%`, height: "100%", background: color, transition: "width 0.3s, background 0.3s" }} />
+    <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+      {showUserCap && (
+        <div
+          title={`Your messages today: ${userCount} of ${userLimit}`}
+          style={{ display: "flex", alignItems: "center", gap: 5 }}
+        >
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: userColor, letterSpacing: 1 }}>
+            {userCount}/{userLimit}
+          </span>
+          <div style={{ width: 48, height: 3, background: "rgba(255,255,255,0.08)", borderRadius: 2, overflow: "hidden" }}>
+            <div style={{ width: `${userPct}%`, height: "100%", background: userColor, transition: "width 0.3s, background 0.3s" }} />
+          </div>
+        </div>
+      )}
+      <div
+        title={`Gemini API: ${count} of ${limit} calls used today (shared across all users)`}
+        style={{ display: "flex", alignItems: "center", gap: 5 }}
+      >
+        <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "#5a8a5a", letterSpacing: 1 }}>
+          {count}/{limit}
+        </span>
+        <div style={{ width: 48, height: 3, background: "rgba(255,255,255,0.08)", borderRadius: 2, overflow: "hidden" }}>
+          <div style={{ width: `${pct}%`, height: "100%", background: color, transition: "width 0.3s, background 0.3s" }} />
+        </div>
       </div>
     </div>
   );
