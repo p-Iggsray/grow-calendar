@@ -1,5 +1,29 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { fmtL } from "../lib/dates.js";
+
+function renderNote(raw) {
+  if (!raw?.trim()) return "";
+  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const inline = s => esc(s)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*\n]+)\*/g, "<em>$1</em>")
+    .replace(/_([^_\n]+)_/g, "<em>$1</em>");
+  const lines = raw.split("\n");
+  const parts = [];
+  let inList = false;
+  for (const line of lines) {
+    const t = line.trimEnd();
+    if (/^[-*] /.test(t)) {
+      if (!inList) { parts.push("<ul>"); inList = true; }
+      parts.push(`<li>${inline(t.slice(2))}</li>`);
+    } else {
+      if (inList) { parts.push("</ul>"); inList = false; }
+      parts.push(t ? `<p>${inline(t)}</p>` : "<br>");
+    }
+  }
+  if (inList) parts.push("</ul>");
+  return parts.join("");
+}
 
 export default function DayView({
   selected, detail, selStyle, threats,
@@ -8,6 +32,16 @@ export default function DayView({
   onBack, onJumpToday,
 }) {
   const [tab, setTab] = useState("tasks");
+  const [noteEditing, setNoteEditing] = useState(false);
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    if (noteEditing) textareaRef.current?.focus();
+  }, [noteEditing]);
+
+  useEffect(() => {
+    if (tab !== "notes") setNoteEditing(false);
+  }, [tab]);
   const checkedCount = checked?.length ?? 0;
   const totalTasks = detail?.tasks?.length ?? 0;
 
@@ -163,25 +197,66 @@ export default function DayView({
                 <label htmlFor="day-note" style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1, color: "#7a9a7a", textTransform: "uppercase" }}>
                   Your notes & concerns
                 </label>
-                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: statusColor, minHeight: 12 }}>
-                  {statusLabel}
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {note?.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => setNoteEditing(e => !e)}
+                      style={{
+                        background: "none", border: "1px solid rgba(255,255,255,0.12)",
+                        borderRadius: 6, padding: "2px 8px",
+                        color: "#7a9a7a", fontFamily: "'Courier New', monospace",
+                        fontSize: 10, letterSpacing: 1, cursor: "pointer",
+                        textTransform: "uppercase",
+                      }}>
+                      {noteEditing ? "DONE" : "EDIT"}
+                    </button>
+                  )}
+                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: statusColor, minHeight: 12 }}>
+                    {statusLabel}
+                  </span>
+                </div>
               </div>
-              <textarea
-                id="day-note"
-                value={note}
-                onChange={(e) => onChangeNote(e.target.value)}
-                onBlur={() => onFlushNote()}
-                placeholder="Write anything you observed or are worried about on this day: watering, leaf color, pests, weather, questions to look up later."
-                rows={12}
-                style={{
-                  width: "100%", resize: "vertical",
-                  background: "rgba(0,0,0,0.25)", color: "#e8f5e3",
-                  border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10,
-                  padding: "12px 14px", fontSize: 14, lineHeight: 1.7,
-                  fontFamily: "'Georgia', 'Times New Roman', serif", outline: "none",
-                }}
-              />
+
+              {noteEditing || !note?.trim() ? (
+                <>
+                  <textarea
+                    ref={textareaRef}
+                    id="day-note"
+                    value={note}
+                    onChange={(e) => onChangeNote(e.target.value)}
+                    onBlur={() => { onFlushNote(); if (note?.trim()) setNoteEditing(false); }}
+                    onClick={() => setNoteEditing(true)}
+                    placeholder="Write anything you observed or are worried about on this day: watering, leaf color, pests, weather, questions to look up later."
+                    rows={12}
+                    style={{
+                      width: "100%", resize: "vertical",
+                      background: "rgba(0,0,0,0.25)", color: "#e8f5e3",
+                      border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10,
+                      padding: "12px 14px", fontSize: 14, lineHeight: 1.7,
+                      fontFamily: "'Georgia', 'Times New Roman', serif", outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  <div style={{ marginTop: 6, fontFamily: "'Courier New', monospace", fontSize: 10, color: "#3a5a3a", lineHeight: 1.8 }}>
+                    **bold** · *italic* · - bullet list
+                  </div>
+                </>
+              ) : (
+                <div
+                  onClick={() => setNoteEditing(true)}
+                  title="Tap to edit"
+                  style={{
+                    minHeight: 120, cursor: "text",
+                    background: "rgba(0,0,0,0.2)",
+                    border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10,
+                    padding: "12px 14px", fontSize: 14, lineHeight: 1.8,
+                    fontFamily: "'Georgia', 'Times New Roman', serif",
+                    color: "#c8dcc8",
+                  }}
+                  dangerouslySetInnerHTML={{ __html: renderNote(note) }}
+                />
+              )}
             </div>
           )}
 

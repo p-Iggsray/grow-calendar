@@ -42,6 +42,18 @@ The whole season lives inside this app. Every day from transplant to harvest has
 
 <img src="assets/divider.svg" alt="" width="100%" />
 
+## Screenshots
+
+<!-- SCREENSHOT: replace the img tag below with a real screenshot when you have one.
+     Recommended: open the app, navigate to a day view, take a screenshot, save it to
+     assets/screenshot.png, then replace "assets/screenshot-placeholder.png" below. -->
+
+<div align="center">
+<img src="assets/screenshot.png" alt="Grow Calendar — day view showing tasks and phase info" width="380" />
+</div>
+
+<img src="assets/divider.svg" alt="" width="100%" />
+
 ## The plants
 
 <div align="center">
