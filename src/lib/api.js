@@ -51,9 +51,11 @@ export const api = {
   putNote: (date, body) =>
     request(`/api/notes/${date}`, { method: "PUT", body: JSON.stringify({ body }) }),
 
-  mj: (messages) =>
-    request("/api/mj", { method: "POST", body: JSON.stringify({ messages }) }),
+  mj: (message, contextDate) =>
+    request("/api/mj", { method: "POST", body: JSON.stringify({ message, ...(contextDate ? { contextDate } : {}) }) }),
   getMjUsage: () => request("/api/mj/usage"),
+  getMjHistory: () => request("/api/mj/history"),
+  clearMjHistory: () => request("/api/mj/history", { method: "DELETE" }),
 
   getPlan: () => request("/api/plan"),
 

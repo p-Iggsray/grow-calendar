@@ -3,7 +3,7 @@ import { error } from "./util.js";
 import { signup, login, logout, getMe, currentUser, attachSessionCookie } from "./auth.js";
 import { getCheckoffs, putCheckoffs, getMonthCheckoffs } from "./checkoffs.js";
 import { getNote, putNote } from "./notes.js";
-import { postMj, getMjUsage } from "./mj.js";
+import { postMj, getMjUsage, getMjHistory, deleteMjHistory } from "./mj.js";
 import { getPlan } from "./plan.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
 import { requireApproved, requireAdmin } from "./guard.js";
@@ -91,8 +91,10 @@ async function authenticatedRoute(request, env, path, method, user) {
   // app routes require an approved user
   const gate = requireApproved(user); if (gate) return gate;
 
-  if (path === "/api/mj"        && method === "POST") return postMj(request, env, user);
-  if (path === "/api/mj/usage"  && method === "GET")  return getMjUsage(env);
+  if (path === "/api/mj"              && method === "POST")   return postMj(request, env, user);
+  if (path === "/api/mj/usage"        && method === "GET")    return getMjUsage(env, user);
+  if (path === "/api/mj/history"      && method === "GET")    return getMjHistory(env, user);
+  if (path === "/api/mj/history"      && method === "DELETE") return deleteMjHistory(env, user);
   if (path === "/api/plan"      && method === "GET")  return getPlan(env, user);
 
   if (path === "/api/checkoffs" && method === "GET") {

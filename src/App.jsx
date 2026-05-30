@@ -38,10 +38,11 @@ export default function App() {
   const { user } = useAuth();
   const today    = useToday();
   const { config, overrides, loading: planLoading, error: planError } = usePlan();
-  const [month,     setMonth]    = useState(() => today.getMonth());
-  const [selected,  setSelected] = useState(null);
-  const [chatOpen,  setChatOpen] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
+  const [month,       setMonth]      = useState(() => today.getMonth());
+  const [selected,    setSelected]   = useState(null);
+  const [chatOpen,    setChatOpen]   = useState(false);
+  const [chatContext, setChatContext] = useState(null); // YYYY-MM-DD of the day open in the app, or null
+  const [showAdmin,   setShowAdmin]  = useState(false);
 
   const { checked, loading: checkoffsLoading, toggle } = useCheckoffs(selected, Boolean(user));
   const { counts: monthCheckoffCounts } = useMonthCheckoffs(today.getFullYear(), month, Boolean(user));
@@ -137,13 +138,22 @@ export default function App() {
   function pickMilestone(date) { setMonth(date.getMonth()); openDay(date); }
   function jumpToday()         { setMonth(today.getMonth()); openDay(today); }
 
+  function openChat() {
+    setChatContext(selected ? ymd(selected) : null);
+    setChatOpen(true);
+  }
+  function closeChat() {
+    setChatOpen(false);
+    setChatContext(null);
+  }
+
   const chatOverlay = (
     <>
       {!chatOpen && (
         <button
           type="button"
           aria-label="Ask the grow assistant"
-          onClick={() => setChatOpen(true)}
+          onClick={openChat}
           style={{
             position: "fixed", zIndex: 40,
             right: "calc(16px + env(safe-area-inset-right, 0px))",
@@ -157,7 +167,7 @@ export default function App() {
           🌿 MJ
         </button>
       )}
-      {chatOpen && <ChatPanel onClose={() => setChatOpen(false)} />}
+      {chatOpen && <ChatPanel onClose={closeChat} contextDate={chatContext} />}
     </>
   );
 
