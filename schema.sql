@@ -72,6 +72,15 @@ CREATE TABLE IF NOT EXISTS mj_usage (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Per-model global daily call counts, separate from the per-user cap table.
+-- model values match the GEMINI_*_MODEL constants in worker/mj.js.
+CREATE TABLE IF NOT EXISTS mj_model_usage (
+  model TEXT NOT NULL,
+  date  TEXT NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (model, date)
+);
+
 CREATE TABLE IF NOT EXISTS mj_conversations (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

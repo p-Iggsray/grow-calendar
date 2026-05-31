@@ -314,35 +314,31 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
 
 function UsageBar({ usage }) {
   if (!usage) return null;
-  const { count = 0, limit = 0, userCount, userLimit } = usage;
-  const safeLimit = limit > 0 ? limit : 1;
-  const pct = Math.min(100, Math.round((count / safeLimit) * 100));
-  const color = pct >= 90 ? "#f87171" : pct >= 70 ? "#fbbf24" : "#4ade80";
+  const { proCount, proLimit, flashCount = 0, flashLimit = 1500, userCount, userLimit } = usage;
 
+  const showPro = typeof proCount === "number" && typeof proLimit === "number";
   const showUserCap = typeof userCount === "number" && typeof userLimit === "number";
-  const userPct = showUserCap ? Math.min(100, Math.round((userCount / userLimit) * 100)) : 0;
-  const userColor = userPct >= 90 ? "#f87171" : userPct >= 70 ? "#fbbf24" : "#4ade80";
 
-  return (
-    <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-      {showUserCap && (
-        <div title={`Your messages today: ${userCount} of ${userLimit}`} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: userColor, letterSpacing: 1 }}>
-            {userCount}/{userLimit}
-          </span>
-          <div style={{ width: 48, height: 3, background: "rgba(255,255,255,0.08)", borderRadius: 2, overflow: "hidden" }}>
-            <div style={{ width: `${userPct}%`, height: "100%", background: userColor, transition: "width 0.3s, background 0.3s" }} />
-          </div>
-        </div>
-      )}
-      <div title={`Gemini API: ${count} of ${limit} calls used today`} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-        <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "#5a8a5a", letterSpacing: 1 }}>
+  function bar(count, limit, label, dimLabel) {
+    const pct = limit > 0 ? Math.min(100, Math.round((count / limit) * 100)) : 0;
+    const color = pct >= 90 ? "#f87171" : pct >= 70 ? "#fbbf24" : (dimLabel ? "#5a8a5a" : "#4ade80");
+    return (
+      <div title={`${label}: ${count} of ${limit} today`} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+        <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color, letterSpacing: 1 }}>
           {count}/{limit}
         </span>
         <div style={{ width: 48, height: 3, background: "rgba(255,255,255,0.08)", borderRadius: 2, overflow: "hidden" }}>
           <div style={{ width: `${pct}%`, height: "100%", background: color, transition: "width 0.3s, background 0.3s" }} />
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+      {showUserCap && bar(userCount, userLimit, "Your messages today", false)}
+      {showPro && bar(proCount, proLimit, "Gemini Pro calls today", false)}
+      {bar(flashCount, flashLimit, "Gemini Flash calls today", true)}
     </div>
   );
 }

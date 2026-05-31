@@ -44,9 +44,11 @@ const MAX_HISTORY_ROWS = 40;
 // starts on a user turn after prepending the new user message).
 const MAX_CONTEXT_MESSAGES = 20;
 
-// Displayed ceiling for the usage bar. Matches the documented Gemini API free
-// tier daily request limit for gemini-2.5-flash. Bump if Google changes it.
+// Displayed ceilings for the usage bar.
+// Flash: documented free-tier RPD for gemini-2.5-flash.
+// Pro:   documented free-tier RPD for gemini-2.5-pro.
 export const GEMINI_DAILY_LIMIT = 1500;
+export const GEMINI_PRO_DAILY_LIMIT = 25;
 
 // Per-user daily cap. Non-admin users are blocked once they hit this.
 export const PER_USER_DAILY_CAP = 30;
@@ -55,18 +57,26 @@ function todayInET() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 }
 
-async function bumpMjUsage(env, userId, today) {
-  await env.DB.prepare(
-    "INSERT INTO mj_usage (user_id, date, count) VALUES (?, ?, 1) " +
-    "ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1",
-  ).bind(userId, today).run();
+// Bumps both the per-user cap table and the per-model global table atomically.
+async function bumpMjUsage(env, userId, today, model) {
+  await env.DB.batch([
+    env.DB.prepare(
+      "INSERT INTO mj_usage (user_id, date, count) VALUES (?, ?, 1) " +
+      "ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1",
+    ).bind(userId, today),
+    env.DB.prepare(
+      "INSERT INTO mj_model_usage (model, date, count) VALUES (?, ?, 1) " +
+      "ON CONFLICT(model, date) DO UPDATE SET count = count + 1",
+    ).bind(model, today),
+  ]);
 }
 
-async function readMjUsageTotal(env, today) {
+// Global call count for one model today (for the usage bar display).
+async function readMjModelUsage(env, today, model) {
   const row = await env.DB.prepare(
-    "SELECT COALESCE(SUM(count), 0) AS total FROM mj_usage WHERE date = ?",
-  ).bind(today).first();
-  return Number(row?.total ?? 0);
+    "SELECT COALESCE(count, 0) AS count FROM mj_model_usage WHERE model = ? AND date = ?",
+  ).bind(model, today).first();
+  return Number(row?.count ?? 0);
 }
 
 async function readMjUsageForUser(env, userId, today) {
@@ -101,12 +111,13 @@ async function saveConversation(env, userId, userContent, assistantContent, acti
 
 export async function getMjUsage(env, user) {
   const today = todayInET();
-  const [count, userCount] = await Promise.all([
-    readMjUsageTotal(env, today),
+  const [proCount, flashCount, userCount] = await Promise.all([
+    readMjModelUsage(env, today, GEMINI_PRO_MODEL),
+    readMjModelUsage(env, today, GEMINI_MODEL),
     readMjUsageForUser(env, user.id, today),
   ]);
   const userLimit = user.role === "admin" ? null : PER_USER_DAILY_CAP;
-  return json({ date: today, count, limit: GEMINI_DAILY_LIMIT, userCount, userLimit });
+  return json({ date: today, proCount, proLimit: GEMINI_PRO_DAILY_LIMIT, flashCount, flashLimit: GEMINI_DAILY_LIMIT, userCount, userLimit });
 }
 
 export async function getMjHistory(env, user) {
@@ -138,15 +149,14 @@ export async function postMj(request, env, user) {
 
   const today = todayInET();
 
-  // Per-user daily cap: check before bumping so we don't charge a blocked call.
+  // Per-user daily cap check. Bump happens inside the stream (on success) so
+  // failed/quota-blocked calls don't count against the user's daily allowance.
   if (user.role !== "admin") {
     const userCount = await readMjUsageForUser(env, user.id, today);
     if (userCount >= PER_USER_DAILY_CAP) {
       return error(429, `You've used all ${PER_USER_DAILY_CAP} MJ messages for today. Resets at midnight ET.`);
     }
   }
-
-  await bumpMjUsage(env, user.id, today);
 
   // Load everything needed before opening the stream so startup errors
   // become normal JSON 5xx responses rather than corrupt SSE frames.
@@ -186,6 +196,7 @@ export async function postMj(request, env, user) {
         executeTool(name, input, env, user.id, config, overrides, actions);
 
       let reply = null;
+      let modelUsed = null;
       try {
         for (const model of modelsToTry) {
           actions.length = 0;
@@ -196,6 +207,7 @@ export async function postMj(request, env, user) {
               executeToolUse, maxIterations: MAX_TOOL_ITERATIONS,
               onChunk: (delta) => send({ delta }),
             }));
+            modelUsed = model;
           } catch (e) {
             if (e instanceof ProviderError && e.kind === "quota") {
               quotaHit = true;
@@ -211,18 +223,21 @@ export async function postMj(request, env, user) {
           if (!quotaHit) break;
         }
 
-        if (reply === null) {
+        if (reply === null || modelUsed === null) {
           send({ error: "MJ has hit today's limit, please try again later" });
           return;
         }
 
+        // Bump usage for the model that actually answered.
+        await bumpMjUsage(env, user.id, today, modelUsed);
         await saveConversation(env, user.id, userContent, reply, actions);
-        const [count, userCount] = await Promise.all([
-          readMjUsageTotal(env, today),
+        const [proCount, flashCount, userCount] = await Promise.all([
+          readMjModelUsage(env, today, GEMINI_PRO_MODEL),
+          readMjModelUsage(env, today, GEMINI_MODEL),
           readMjUsageForUser(env, user.id, today),
         ]);
         const userLimit = user.role === "admin" ? null : PER_USER_DAILY_CAP;
-        send({ done: true, actions, usage: { date: today, count, limit: GEMINI_DAILY_LIMIT, userCount, userLimit } });
+        send({ done: true, actions, usage: { date: today, proCount, proLimit: GEMINI_PRO_DAILY_LIMIT, flashCount, flashLimit: GEMINI_DAILY_LIMIT, userCount, userLimit } });
       } catch (e) {
         logError("mj-stream", { message: String(e?.message ?? e) });
         send({ error: "Something went wrong" });
