@@ -88,6 +88,24 @@ export default function App() {
     openDay(date);
   }, [config, openDay]);
 
+  // Lock body scroll while chat is open. iOS Safari ignores overflow:hidden on
+  // the body, so position:fixed + restoring scrollY on close is the reliable fix.
+  useEffect(() => {
+    if (!chatOpen) return;
+    const y = window.scrollY;
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${y}px`;
+    document.body.style.width = "100%";
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      window.scrollTo(0, y);
+    };
+  }, [chatOpen]);
+
   const goBack = useCallback(() => {
     flushNote();
     window.history.back();

@@ -188,46 +188,60 @@ export default function ChatPanel({ onClose, contextDate }) {
         <div ref={bottomRef} style={{ height: 1, flexShrink: 0 }} />
       </div>
 
-      {/* Input bar */}
+      {/* Input bar — pill composer */}
       <div style={{
-        padding: "10px 12px",
+        padding: "8px 12px",
         paddingBottom: "calc(10px + env(safe-area-inset-bottom, 0px))",
-        borderTop: "1px solid rgba(255,255,255,0.08)",
-        display: "flex", gap: 8, alignItems: "flex-end",
+        borderTop: "1px solid rgba(255,255,255,0.06)",
         flexShrink: 0,
         background: "#0e1a12",
       }}>
-        <textarea
-          ref={textareaRef}
-          value={input}
-          onChange={onTextareaChange}
-          onKeyDown={onKeyDown}
-          rows={1}
-          placeholder="Ask about your grow..."
-          style={{
-            flex: 1, resize: "none", maxHeight: 120,
-            background: "rgba(0,0,0,0.25)", color: "#e8f5e3",
-            border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10,
-            padding: "12px", fontSize: 16, lineHeight: 1.5,
-            fontFamily: "'Georgia', 'Times New Roman', serif", outline: "none",
-            // fontSize 16 prevents iOS auto-zoom on focus.
-          }}
-        />
-        <button
-          type="button"
-          onClick={send}
-          disabled={busy || !input.trim()}
-          style={{
-            flexShrink: 0, minHeight: 44, minWidth: 64,
-            background: busy || !input.trim() ? "rgba(34,197,94,0.08)" : "rgba(34,197,94,0.18)",
-            border: "1px solid rgba(34,197,94,0.35)", borderRadius: 10, padding: "12px 16px",
-            color: "#4ade80", fontFamily: "'Courier New', monospace", fontSize: 13,
-            cursor: busy || !input.trim() ? "default" : "pointer", letterSpacing: 1,
-            opacity: !input.trim() ? 0.5 : 1,
-          }}
-        >
-          {busy ? "..." : "Send"}
-        </button>
+        <div style={{
+          display: "flex", alignItems: "flex-end", gap: 8,
+          background: "rgba(255,255,255,0.06)",
+          border: "1px solid rgba(255,255,255,0.11)",
+          borderRadius: 26, padding: "6px 6px 6px 16px",
+        }}>
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={onTextareaChange}
+            onKeyDown={onKeyDown}
+            rows={1}
+            placeholder="Ask about your grow..."
+            style={{
+              flex: 1, resize: "none", maxHeight: 120,
+              background: "none", border: "none", outline: "none",
+              color: "#e8f5e3", fontSize: 16, lineHeight: 1.5,
+              fontFamily: "'Georgia', 'Times New Roman', serif",
+              padding: "5px 0",
+            }}
+          />
+          <button
+            type="button"
+            onClick={send}
+            disabled={busy || !input.trim()}
+            aria-label="Send"
+            style={{
+              flexShrink: 0, width: 38, height: 38, borderRadius: "50%",
+              background: input.trim() && !busy ? "#22c55e" : "rgba(34,197,94,0.1)",
+              border: "none",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: input.trim() && !busy ? "pointer" : "default",
+              transition: "background 0.2s",
+            }}
+          >
+            {busy ? (
+              <span style={{ fontSize: 15, color: "#4ade80" }}>…</span>
+            ) : (
+              <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+                <path d="M8.5 14V3M8.5 3L4 7.5M8.5 3L13 7.5"
+                  stroke={input.trim() ? "#0e1a12" : "#2a4a2a"}
+                  strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
