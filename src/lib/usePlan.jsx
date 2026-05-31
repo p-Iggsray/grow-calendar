@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { api } from "./api.js";
 import { parseConfig } from "./planConfig.js";
 
@@ -7,16 +7,28 @@ const PlanContext = createContext(null);
 export function PlanProvider({ children }) {
   const [config, setConfig] = useState(null);
   const [overrides, setOverrides] = useState({});
+  const [generatedPlan, setGeneratedPlan] = useState(null);
+  const [needsSetup, setNeedsSetup] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [fetchKey, setFetchKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     api.getPlan()
       .then(data => {
         if (cancelled) return;
-        setConfig(parseConfig(data.config));
+        if (data.needsSetup) {
+          setNeedsSetup(true);
+          setConfig(null);
+        } else {
+          setNeedsSetup(false);
+          setConfig(parseConfig(data.config));
+        }
         setOverrides(data.overrides || {});
+        setGeneratedPlan(data.generatedPlan || null);
+        setError(null);
         setLoading(false);
       })
       .catch(err => {
@@ -25,10 +37,12 @@ export function PlanProvider({ children }) {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [fetchKey]);
+
+  const reload = useCallback(() => setFetchKey(k => k + 1), []);
 
   return (
-    <PlanContext.Provider value={{ config, overrides, loading, error }}>
+    <PlanContext.Provider value={{ config, overrides, generatedPlan, needsSetup, loading, error, reload }}>
       {children}
     </PlanContext.Provider>
   );

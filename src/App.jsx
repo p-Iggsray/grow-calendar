@@ -19,6 +19,7 @@ import { buildSuggestions } from "./lib/mjSuggestions.js";
 
 import Header from "./components/Header.jsx";
 import AdminPanel from "./components/AdminPanel.jsx";
+import SetupWizard from "./components/SetupWizard.jsx";
 import MilestoneStrip from "./components/MilestoneStrip.jsx";
 import Calendar from "./components/Calendar.jsx";
 import DayView from "./components/DayView.jsx";
@@ -39,7 +40,7 @@ const TAB_CLEARANCE = "calc(66px + env(safe-area-inset-bottom, 0px))";
 export default function App() {
   const { user } = useAuth();
   const today    = useToday();
-  const { config, overrides, loading: planLoading, error: planError } = usePlan();
+  const { config, overrides, generatedPlan, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
   const [month,       setMonth]      = useState(() => today.getMonth());
   const [selected,    setSelected]   = useState(null);
   const [activeTab,   setActiveTab]  = useState("calendar");
@@ -126,7 +127,25 @@ export default function App() {
       </div>
     );
   }
-  if (planLoading || !config) {
+  if (planLoading) {
+    return (
+      <div style={SHELL_STYLE}>
+        <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "#3a5a3a", letterSpacing: 4 }}>
+          LOADING PLAN
+        </div>
+      </div>
+    );
+  }
+
+  if (needsSetup) {
+    return (
+      <div style={SHELL_STYLE}>
+        <SetupWizard onComplete={reloadPlan} />
+      </div>
+    );
+  }
+
+  if (!config) {
     return (
       <div style={SHELL_STYLE}>
         <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "#3a5a3a", letterSpacing: 4 }}>
@@ -145,10 +164,10 @@ export default function App() {
 
   const selPhase    = selected ? getPhase(selected, config) : null;
   const selStyle    = selPhase ? PHASES[selPhase] : null;
-  const detail      = selected ? getDetail(selected, config, overrides) : null;
-  const threats     = selPhase ? getThreatsForPhase(selPhase) : [];
+  const detail      = selected ? getDetail(selected, config, overrides, generatedPlan) : null;
+  const threats     = selPhase ? getThreatsForPhase(selPhase, generatedPlan) : [];
   // Threats for today used when chat is opened from the calendar (no day selected).
-  const todayThreats = todayPhase ? getThreatsForPhase(todayPhase) : [];
+  const todayThreats = todayPhase ? getThreatsForPhase(todayPhase, generatedPlan) : [];
 
   const suggestions = buildSuggestions({
     detail,
@@ -242,6 +261,7 @@ export default function App() {
               selected={selected}
               config={config}
               overrides={overrides}
+              generatedPlan={generatedPlan}
               checkoffCounts={monthCheckoffCounts}
               onPickDay={pickDay}
               onClearSelection={() => setSelected(null)}

@@ -21,7 +21,7 @@ function ymdKey(date) {
 }
 
 export default function Calendar({
-  today, month, setMonth, selected, config, overrides,
+  today, month, setMonth, selected, config, overrides, generatedPlan,
   checkoffCounts, onPickDay, onClearSelection,
 }) {
   const touchStart = useRef(null);
@@ -117,7 +117,7 @@ export default function Calendar({
             const isSel = selected && sameDay(date, selected);
             const isToday = sameDay(date, today);
             const isKey = sameDay(date, config.transplant) || sameDay(date, config.backyardMove) || sameDay(date, config.gdpHarvest) || sameDay(date, config.hazeHarvest);
-            const hasThreat = phase && getThreatsForPhase(phase).length > 0;
+            const hasThreat = phase && getThreatsForPhase(phase, generatedPlan).length > 0;
 
             const glyph = pStyle ? phaseGlyph(phase) : "";
 
@@ -127,7 +127,7 @@ export default function Calendar({
             let ringRatio = 0;
             let totalTasks = 0;
             if (pStyle) {
-              const dayDetail = getDetail(date, config, overrides);
+              const dayDetail = getDetail(date, config, overrides, generatedPlan);
               totalTasks = dayDetail?.tasks?.length ?? 0;
               const doneCount = checkoffCounts?.[ymdKey(date)] ?? 0;
               if (totalTasks > 0 && doneCount > 0) {

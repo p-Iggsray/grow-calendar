@@ -124,9 +124,10 @@ export function getPhase(date, config) {
   return "early_veg";
 }
 
-export function getThreatsForPhase(phase) {
+export function getThreatsForPhase(phase, generatedPlan) {
   if (!phase) return [];
-  return THREATS.filter(t => t.phases.includes(phase));
+  const source = generatedPlan?.threats?.length ? generatedPlan.threats : THREATS;
+  return source.filter(t => t.phases.includes(phase));
 }
 
 function generateDetail(date, config) {
@@ -486,8 +487,31 @@ function applyDayOverride(detail, override) {
   };
 }
 
-export function getDetail(date, config, overrides) {
-  const base = generateDetail(date, config);
+// Phases that use generated static content (not day-specific logic).
+const AI_OVERRIDABLE_PHASES = new Set([
+  "early_veg", "veg_cm", "veg_half", "veg_full",
+  "pre_flower", "flower", "flower_haze",
+]);
+
+export function getDetail(date, config, overrides, generatedPlan) {
+  const phase = getPhase(date, config);
+  const aiPhase = phase && AI_OVERRIDABLE_PHASES.has(phase)
+    ? generatedPlan?.phases?.[phase]
+    : null;
+
+  let base;
+  if (aiPhase) {
+    const d = dpt(date, config);
+    base = {
+      title: `Day ${d} — ${PHASES[phase].label}`,
+      summary: aiPhase.summary || "",
+      tasks: Array.isArray(aiPhase.tasks) ? aiPhase.tasks : [],
+      notes: aiPhase.notes || null,
+    };
+  } else {
+    base = generateDetail(date, config);
+  }
+
   if (!base) return null;
   const override = overrides ? overrides[ymdLocal(date)] : undefined;
   return applyDayOverride(base, override);

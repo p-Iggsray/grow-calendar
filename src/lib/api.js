@@ -102,6 +102,8 @@ export const api = {
     request("/api/errors", { method: "POST", body: JSON.stringify({ message, stack, url }) }).catch(() => {}),
 
   getPlan: () => request("/api/plan"),
+  planSetup: (survey) =>
+    request("/api/plan/setup", { method: "POST", body: JSON.stringify({ survey }) }),
 
   adminListUsers: () => request("/api/admin/users"),
   approveUser: (id) => request(`/api/admin/users/${id}/approve`, { method: "POST" }),

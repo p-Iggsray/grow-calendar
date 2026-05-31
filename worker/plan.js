@@ -2,29 +2,26 @@
 import { json } from "./util.js";
 import { DEFAULT_CONFIG } from "../src/lib/planConfig.js";
 
-export function buildSeedConfigJson() {
-  return JSON.stringify(DEFAULT_CONFIG);
-}
-
-// GET /api/plan -> { config, overrides } for the given user.
+// GET /api/plan -> { config, overrides, generatedPlan, needsSetup } for the given user.
 export async function loadRawPlan(env, userId) {
-  let row = await env.DB.prepare(
-    "SELECT config FROM plan_config WHERE user_id = ?",
+  const row = await env.DB.prepare(
+    "SELECT config, survey, generated_plan FROM plan_config WHERE user_id = ?",
   ).bind(userId).first();
 
   if (!row?.config) {
-    // Lazy-seed a fresh user with a copy of the default plan.
-    const now = new Date().toISOString();
-    const seed = buildSeedConfigJson();
-    await env.DB.prepare(
-      "INSERT OR IGNORE INTO plan_config (user_id, config, updated_at) VALUES (?, ?, ?)",
-    ).bind(userId, seed, now).run();
-    row = { config: seed };
+    // New user — no plan yet. Caller should prompt for setup.
+    return { config: null, overrides: {}, generatedPlan: null, needsSetup: true };
   }
 
   let config = DEFAULT_CONFIG;
   try { config = JSON.parse(row.config); }
   catch { console.error("plan_config JSON parse failed; using defaults"); }
+
+  let generatedPlan = null;
+  if (row.generated_plan) {
+    try { generatedPlan = JSON.parse(row.generated_plan); }
+    catch { console.error("generated_plan JSON parse failed"); }
+  }
 
   const overrides = {};
   const res = await env.DB.prepare(
@@ -34,10 +31,10 @@ export async function loadRawPlan(env, userId) {
     try { overrides[r.date] = JSON.parse(r.payload); }
     catch { console.error("skipping unparseable override", r.date); }
   }
-  return { config, overrides };
+  return { config, overrides, generatedPlan, needsSetup: false };
 }
 
 export async function getPlan(env, user) {
-  const { config, overrides } = await loadRawPlan(env, user.id);
-  return json({ config, overrides });
+  const { config, overrides, generatedPlan, needsSetup } = await loadRawPlan(env, user.id);
+  return json({ config, overrides, generatedPlan, needsSetup });
 }
