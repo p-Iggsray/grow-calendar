@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { MONTH_NAMES, DOW_SHORT, sameDay } from "../lib/dates.js";
 import { PHASES, getPhase, getDetail, getThreatsForPhase, phaseGlyph } from "../lib/growData.js";
 import { GROW_MIN_MONTH, GROW_MAX_MONTH } from "../lib/appConfig.js";
@@ -74,12 +75,12 @@ export default function Calendar({
             aria-label="Previous month"
             style={{
               background: "none", border: "none",
-              color: canPrev ? "#4ade80" : "#2a4a2a", fontSize: 22,
+              color: canPrev ? "#4ade80" : "#2a4a2a",
               cursor: canPrev ? "pointer" : "default",
-              minWidth: 44, minHeight: 44, padding: "8px 12px", lineHeight: 1,
+              minWidth: 44, minHeight: 44, padding: "8px 12px",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-            ‹
+            <ChevronLeft size={22} strokeWidth={canPrev ? 2 : 1.5} />
           </button>
           <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.5, color: "#e8f5e3" }}>
             {MONTH_NAMES[month]} {YEAR}
@@ -91,12 +92,12 @@ export default function Calendar({
             aria-label="Next month"
             style={{
               background: "none", border: "none",
-              color: canNext ? "#4ade80" : "#2a4a2a", fontSize: 22,
+              color: canNext ? "#4ade80" : "#2a4a2a",
               cursor: canNext ? "pointer" : "default",
-              minWidth: 44, minHeight: 44, padding: "8px 12px", lineHeight: 1,
+              minWidth: 44, minHeight: 44, padding: "8px 12px",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-            ›
+            <ChevronRight size={22} strokeWidth={canNext ? 2 : 1.5} />
           </button>
         </div>
 

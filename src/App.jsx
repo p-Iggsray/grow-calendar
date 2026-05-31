@@ -21,19 +21,20 @@ import Header from "./components/Header.jsx";
 import AdminPanel from "./components/AdminPanel.jsx";
 import MilestoneStrip from "./components/MilestoneStrip.jsx";
 import Calendar from "./components/Calendar.jsx";
-import PhaseLegend from "./components/PhaseLegend.jsx";
 import DayView from "./components/DayView.jsx";
 import ChatPanel from "./components/ChatPanel.jsx";
-import ThreatsReference from "./components/ThreatsReference.jsx";
-import AuthFooter from "./components/AuthFooter.jsx";
+import TabBar from "./components/TabBar.jsx";
+import MoreScreen from "./components/MoreScreen.jsx";
 
 const SHELL_STYLE = {
   fontFamily: "'Georgia', 'Times New Roman', serif",
   background: "#0e1a12",
   minHeight: "100vh",
-  paddingBottom: 24,
   color: "#f0ebe0",
 };
+
+// Bottom padding so scrollable content clears the fixed tab bar.
+const TAB_CLEARANCE = "calc(66px + env(safe-area-inset-bottom, 0px))";
 
 export default function App() {
   const { user } = useAuth();
@@ -41,6 +42,7 @@ export default function App() {
   const { config, overrides, loading: planLoading, error: planError } = usePlan();
   const [month,       setMonth]      = useState(() => today.getMonth());
   const [selected,    setSelected]   = useState(null);
+  const [activeTab,   setActiveTab]  = useState("calendar");
   const [chatOpen,    setChatOpen]   = useState(false);
   const [chatContext, setChatContext] = useState(null); // YYYY-MM-DD of the day open in the app, or null
   const [showAdmin,   setShowAdmin]  = useState(false);
@@ -112,20 +114,10 @@ export default function App() {
     window.history.back();
   }, [flushNote]);
 
-  if (showAdmin) {
-    return (
-      <div className="app-shell" style={SHELL_STYLE}>
-        <div className="app-screen">
-          <AdminPanel onClose={() => setShowAdmin(false)} />
-        </div>
-      </div>
-    );
-  }
-
   if (planError) {
     return (
-      <div className="app-shell" style={SHELL_STYLE}>
-        <div className="app-screen" style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "#c98a8a" }}>
+      <div style={SHELL_STYLE}>
+        <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "#c98a8a" }}>
           Could not load the grow plan. {planError.message}
         </div>
       </div>
@@ -133,8 +125,8 @@ export default function App() {
   }
   if (planLoading || !config) {
     return (
-      <div className="app-shell" style={SHELL_STYLE}>
-        <div className="app-screen" style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "#3a5a3a", letterSpacing: 4 }}>
+      <div style={SHELL_STYLE}>
+        <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "#3a5a3a", letterSpacing: 4 }}>
           LOADING PLAN
         </div>
       </div>
@@ -163,7 +155,7 @@ export default function App() {
     today,
   });
 
-  function pickDay(date)       { openDay(date); }
+  function pickDay(date)       { setActiveTab("calendar"); openDay(date); }
   function pickMilestone(date) { setMonth(date.getMonth()); openDay(date); }
   function jumpToday()         { setMonth(today.getMonth()); openDay(today); }
 
@@ -176,34 +168,35 @@ export default function App() {
     setChatContext(null);
   }
 
-  const chatOverlay = (
-    <>
-      {!chatOpen && (
-        <button
-          type="button"
-          aria-label="Ask the grow assistant"
-          onClick={openChat}
-          style={{
-            position: "fixed", zIndex: 40,
-            right: "calc(16px + env(safe-area-inset-right, 0px))",
-            bottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
-            background: "linear-gradient(160deg, #166534, #22c55e)",
-            color: "#0e1a12", border: "1px solid rgba(255,255,255,0.25)",
-            borderRadius: 999, padding: "12px 18px", fontSize: 14, fontWeight: 800,
-            fontFamily: "'Courier New', monospace", letterSpacing: 0.5, cursor: "pointer",
-            boxShadow: "0 10px 30px rgba(0,0,0,0.45)",
-          }}>
-          🌿 MJ
-        </button>
-      )}
-      {chatOpen && <ChatPanel onClose={closeChat} contextDate={chatContext} suggestions={suggestions} />}
-    </>
-  );
+  function handleTab(tabId) {
+    if (tabId === "today") {
+      setActiveTab("calendar");
+      jumpToday();
+    } else if (tabId === "mj") {
+      openChat();
+    } else if (tabId === "calendar") {
+      setActiveTab("calendar");
+      if (chatOpen) closeChat();
+    } else if (tabId === "more") {
+      setSelected(null);
+      setActiveTab("more");
+      if (chatOpen) closeChat();
+    }
+  }
 
-  if (selected) {
+  if (showAdmin) {
     return (
-      <div className="app-shell" style={SHELL_STYLE}>
-        <div className="app-screen">
+      <div style={{ ...SHELL_STYLE, paddingBottom: TAB_CLEARANCE }}>
+        <AdminPanel onClose={() => setShowAdmin(false)} />
+      </div>
+    );
+  }
+
+  return (
+    <div style={SHELL_STYLE}>
+      {/* Main content area — padded so nothing hides behind the tab bar */}
+      <div style={{ paddingBottom: TAB_CLEARANCE }}>
+        {activeTab === "calendar" && selected ? (
           <DayView
             selected={selected}
             detail={detail}
@@ -219,40 +212,48 @@ export default function App() {
             onBack={goBack}
             onJumpToday={sameDay(selected, today) ? null : jumpToday}
           />
-        </div>
-        {chatOverlay}
+        ) : activeTab === "calendar" ? (
+          <>
+            <Header
+              todayStyle={todayStyle}
+              nextMs={nextMs}
+              daysToNext={daysToNext}
+              progress={progress}
+            />
+            <MilestoneStrip today={today} milestones={milestones} onPick={pickMilestone} />
+            <Calendar
+              today={today}
+              month={month}
+              setMonth={setMonth}
+              selected={selected}
+              config={config}
+              overrides={overrides}
+              checkoffCounts={monthCheckoffCounts}
+              onPickDay={pickDay}
+              onClearSelection={() => setSelected(null)}
+            />
+          </>
+        ) : (
+          <MoreScreen
+            isAdmin={user?.role === "admin"}
+            onOpenAdmin={() => setShowAdmin(true)}
+            onBeforeSignOut={flushNote}
+          />
+        )}
       </div>
-    );
-  }
 
-  return (
-    <div className="app-shell" style={SHELL_STYLE}>
-      <Header
-        todayStyle={todayStyle}
-        nextMs={nextMs}
-        daysToNext={daysToNext}
-        progress={progress}
-        onJumpToday={jumpToday}
-        onOpenAdmin={user?.role === "admin" ? () => setShowAdmin(true) : null}
-      />
-      <MilestoneStrip today={today} milestones={milestones} onPick={pickMilestone} />
-      <div className="app-screen">
-        <Calendar
-          today={today}
-          month={month}
-          setMonth={setMonth}
-          selected={selected}
-          config={config}
-          overrides={overrides}
-          checkoffCounts={monthCheckoffCounts}
-          onPickDay={pickDay}
-          onClearSelection={() => setSelected(null)}
+      {/* Chat full-screen overlay — hides tab bar */}
+      {chatOpen && (
+        <ChatPanel onClose={closeChat} contextDate={chatContext} suggestions={suggestions} />
+      )}
+
+      {/* Tab bar — hidden while chat is open */}
+      {!chatOpen && (
+        <TabBar
+          activeTab={activeTab}
+          onTab={handleTab}
         />
-        <PhaseLegend />
-        <ThreatsReference />
-      </div>
-      <AuthFooter onBeforeSignOut={flushNote} />
-      {chatOverlay}
+      )}
     </div>
   );
 }
