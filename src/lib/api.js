@@ -51,8 +51,47 @@ export const api = {
   putNote: (date, body) =>
     request(`/api/notes/${date}`, { method: "PUT", body: JSON.stringify({ body }) }),
 
-  mj: (message, contextDate) =>
-    request("/api/mj", { method: "POST", body: JSON.stringify({ message, ...(contextDate ? { contextDate } : {}) }) }),
+  // Streams MJ's reply via SSE. Calls onChunk(delta) for each text piece,
+  // onDone({ actions, usage }) when the response completes, and onError(err)
+  // on any failure. Never throws — all errors route through onError.
+  mj: (message, contextDate, { onChunk, onDone, onError }) => {
+    fetch("/api/mj", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message, ...(contextDate ? { contextDate } : {}) }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        let msg;
+        try { msg = JSON.parse(text).error; } catch { msg = `request failed ${res.status}`; }
+        const err = new Error(msg);
+        err.status = res.status;
+        onError(err);
+        return;
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const raw = line.slice(6).trim();
+          if (!raw) continue;
+          let evt;
+          try { evt = JSON.parse(raw); } catch { continue; }
+          if (evt.delta !== undefined) { onChunk(evt.delta); }
+          else if (evt.done) { onDone(evt); }
+          else if (evt.error) { const e = new Error(evt.error); onError(e); return; }
+        }
+      }
+    }).catch(onError);
+  },
   getMjUsage: () => request("/api/mj/usage"),
   getMjHistory: () => request("/api/mj/history"),
   clearMjHistory: () => request("/api/mj/history", { method: "DELETE" }),
