@@ -1,4 +1,4 @@
-import { LOCATION } from "../lib/appConfig.js";
+import { LOCATION, STRAIN_1, STRAIN_2 } from "../lib/appConfig.js";
 
 export default function Header({ todayStyle, nextMs, daysToNext, progress, onJumpToday, onOpenAdmin }) {
   return (
@@ -21,7 +21,7 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress, onJum
             The Grow Calendar
           </div>
           <div style={{ fontSize: 12, color: "#6aaa6a", marginTop: 5, fontFamily: "'Courier New', monospace" }}>
-            1× Grandaddy Purp · 2× Strawberry Haze
+            1× {STRAIN_1} · 2× {STRAIN_2}
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
