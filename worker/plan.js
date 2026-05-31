@@ -5,7 +5,7 @@ import { DEFAULT_CONFIG } from "../src/lib/planConfig.js";
 // GET /api/plan -> { config, overrides, generatedPlan, needsSetup } for the given user.
 export async function loadRawPlan(env, userId) {
   const row = await env.DB.prepare(
-    "SELECT config, survey, generated_plan FROM plan_config WHERE user_id = ?",
+    "SELECT * FROM plan_config WHERE user_id = ?",
   ).bind(userId).first();
 
   if (!row?.config) {
