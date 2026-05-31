@@ -2,6 +2,7 @@
 import { error } from "./util.js";
 import { signup, login, logout, getMe, currentUser, attachSessionCookie } from "./auth.js";
 import { getCheckoffs, putCheckoffs, getMonthCheckoffs } from "./checkoffs.js";
+import { getTaskNotes, putTaskNote } from "./taskNotes.js";
 import { getNote, putNote } from "./notes.js";
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
 import { getHealth, postClientError } from "./health.js";
@@ -118,6 +119,16 @@ async function authenticatedRoute(request, env, path, method, user) {
     if (method === "GET") return getCheckoffs(env, user, date);
     if (method === "PUT") return putCheckoffs(request, env, user, date);
   }
+
+  const taskNoteMatch = path.match(/^\/api\/task-notes\/(\d{4}-\d{2}-\d{2})\/(\d+)$/);
+  if (taskNoteMatch) {
+    const date = taskNoteMatch[1];
+    const taskIndex = Number(taskNoteMatch[2]);
+    if (method === "GET") return getTaskNotes(env, user, date);
+    if (method === "PUT") return putTaskNote(request, env, user, date, taskIndex);
+  }
+  const taskNotesDateMatch = path.match(/^\/api\/task-notes\/(\d{4}-\d{2}-\d{2})$/);
+  if (taskNotesDateMatch && method === "GET") return getTaskNotes(env, user, taskNotesDateMatch[1]);
 
   const notesMatch = path.match(/^\/api\/notes\/(\d{4}-\d{2}-\d{2})$/);
   if (notesMatch) {

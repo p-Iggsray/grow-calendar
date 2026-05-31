@@ -22,7 +22,7 @@ function fmtShort(yyyymmdd) {
  *   contextDate — YYYY-MM-DD of the day open in the app, or null
  *   today       — Date object for today
  */
-export function buildSuggestions({ detail, checked, threats, contextDate, today }) {
+export function buildSuggestions({ detail, resolvedCount, threats, contextDate, today }) {
   const todayYmd = toYmd(today);
   const isToday = !contextDate || contextDate === todayYmd;
   const dayLabel = isToday ? "today" : fmtShort(contextDate);
@@ -31,7 +31,7 @@ export function buildSuggestions({ detail, checked, threats, contextDate, today 
 
   // Slot 1 — task-aware
   if (detail?.tasks?.length > 0) {
-    const remaining = detail.tasks.length - (checked?.length ?? 0);
+    const remaining = detail.tasks.length - (resolvedCount ?? 0);
     if (remaining > 0) {
       suggestions.push(
         `Walk me through ${dayLabel}'s ${remaining} remaining task${remaining === 1 ? "" : "s"}`,
