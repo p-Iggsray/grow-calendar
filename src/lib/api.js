@@ -98,6 +98,9 @@ export const api = {
   getMjHistory: () => request("/api/mj/history"),
   clearMjHistory: () => request("/api/mj/history", { method: "DELETE" }),
 
+  reportError: ({ message, stack, url }) =>
+    request("/api/errors", { method: "POST", body: JSON.stringify({ message, stack, url }) }).catch(() => {}),
+
   getPlan: () => request("/api/plan"),
 
   adminListUsers: () => request("/api/admin/users"),

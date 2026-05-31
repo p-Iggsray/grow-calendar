@@ -4,6 +4,7 @@ import { signup, login, logout, getMe, currentUser, attachSessionCookie } from "
 import { getCheckoffs, putCheckoffs, getMonthCheckoffs } from "./checkoffs.js";
 import { getNote, putNote } from "./notes.js";
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
+import { getHealth, postClientError } from "./health.js";
 import { getPlan } from "./plan.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
 import { requireApproved, requireAdmin } from "./guard.js";
@@ -54,6 +55,9 @@ async function route(request, env, path) {
     return error(415, "content-type must be application/json");
   }
 
+  // public routes (no auth required)
+  if (path === "/api/health" && method === "GET") return getHealth(env);
+
   // public auth routes
   if (path === "/api/auth/signup"  && method === "POST") return signup(request, env);
   if (path === "/api/auth/login"         && method === "POST") return login(request, env);
@@ -97,6 +101,7 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (path === "/api/mj/history"      && method === "GET")    return getMjHistory(env, user);
   if (path === "/api/mj/history"      && method === "DELETE") return deleteMjHistory(env, user);
   if (path === "/api/plan"      && method === "GET")  return getPlan(env, user);
+  if (path === "/api/errors"    && method === "POST") return postClientError(request, env, user);
 
   if (path === "/api/checkoffs" && method === "GET") {
     const url = new URL(request.url);
