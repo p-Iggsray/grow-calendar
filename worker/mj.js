@@ -120,6 +120,7 @@ export async function deleteMjHistory(env, user) {
 }
 
 export async function postMj(request, env, user) {
+  // --- Validate and gate before opening the stream ---
   const parsed = await safeJsonBounded(request, MAX_MJ_REQUEST_BYTES);
   if (!parsed.ok) return error(parsed.status, parsed.error);
   const body = parsed.data;
@@ -147,17 +148,14 @@ export async function postMj(request, env, user) {
 
   await bumpMjUsage(env, user.id, today);
 
-  // Build AI context from persisted history (most recent MAX_CONTEXT_MESSAGES - 1
-  // messages) plus the new user message at the end.
+  // Load everything needed before opening the stream so startup errors
+  // become normal JSON 5xx responses rather than corrupt SSE frames.
   const history = await loadHistory(env, user.id, MAX_CONTEXT_MESSAGES - 1);
   const contextMessages = history.map(m => ({
     role: m.role,
     content: m.content.slice(0, MAX_MSG_LEN),
   }));
   const messages = [...contextMessages, { role: "user", content: userContent }];
-
-  // Last message must be from user (history could end on assistant).
-  // The messages array always ends with the new user message so this is guaranteed.
 
   const raw = await loadRawPlan(env, user.id);
   const config = parseConfig(raw.config);
@@ -171,45 +169,77 @@ export async function postMj(request, env, user) {
     systemSegments.push({ text: `The grower currently has ${contextDate} open in the app.`, cache: false });
   }
 
-  // Admin gets Pro first for best quality, with automatic fallback to Flash when
-  // the free-tier daily Pro quota (25 req/day) is exhausted. Regular users go
-  // straight to Flash (the 1500/day free tier).
+  // Admin gets Pro first; falls back to Flash when free-tier quota is exhausted.
   const modelsToTry = user.role === "admin" ? [GEMINI_PRO_MODEL, GEMINI_MODEL] : [GEMINI_MODEL];
 
-  const actions = [];
-  const executeToolUse = (name, input) => executeTool(name, input, env, user.id, config, overrides, actions);
+  // --- SSE stream ---
+  const encoder = new TextEncoder();
 
-  let reply = null;
-  for (const model of modelsToTry) {
-    actions.length = 0; // clear on retry so no partial actions leak across attempts
-    let quotaHit = false;
-    try {
-      ({ reply } = await runGemini({
-        apiKey, model, systemSegments, tools: MJ_TOOLS, messages, executeToolUse, maxIterations: MAX_TOOL_ITERATIONS,
-      }));
-    } catch (e) {
-      if (e instanceof ProviderError && e.kind === "quota") {
-        quotaHit = true;
-      } else if (e instanceof ProviderError && e.kind === "unreachable") {
-        return error(502, "could not reach the AI service");
-      } else {
-        logError("mj-provider", { kind: e?.kind, message: String(e?.message ?? e) });
-        return error(502, "the AI service returned an error");
+  const stream = new ReadableStream({
+    async start(controller) {
+      function send(data) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       }
-    }
-    if (!quotaHit) break;
-  }
-  if (reply === null) {
-    return error(429, "MJ has hit today's limit, please try again later");
-  }
 
-  await saveConversation(env, user.id, userContent, reply, actions);
-  const [count, userCount] = await Promise.all([
-    readMjUsageTotal(env, today),
-    readMjUsageForUser(env, user.id, today),
-  ]);
-  const userLimit = user.role === "admin" ? null : PER_USER_DAILY_CAP;
-  return json({ reply, actions, usage: { date: today, count, limit: GEMINI_DAILY_LIMIT, userCount, userLimit } });
+      const actions = [];
+      const executeToolUse = (name, input) =>
+        executeTool(name, input, env, user.id, config, overrides, actions);
+
+      let reply = null;
+      try {
+        for (const model of modelsToTry) {
+          actions.length = 0;
+          let quotaHit = false;
+          try {
+            ({ reply } = await runGemini({
+              apiKey, model, systemSegments, tools: MJ_TOOLS, messages,
+              executeToolUse, maxIterations: MAX_TOOL_ITERATIONS,
+              onChunk: (delta) => send({ delta }),
+            }));
+          } catch (e) {
+            if (e instanceof ProviderError && e.kind === "quota") {
+              quotaHit = true;
+            } else if (e instanceof ProviderError && e.kind === "unreachable") {
+              send({ error: "Could not reach the AI service" });
+              return;
+            } else {
+              logError("mj-provider", { kind: e?.kind, message: String(e?.message ?? e) });
+              send({ error: "The AI service returned an error" });
+              return;
+            }
+          }
+          if (!quotaHit) break;
+        }
+
+        if (reply === null) {
+          send({ error: "MJ has hit today's limit, please try again later" });
+          return;
+        }
+
+        await saveConversation(env, user.id, userContent, reply, actions);
+        const [count, userCount] = await Promise.all([
+          readMjUsageTotal(env, today),
+          readMjUsageForUser(env, user.id, today),
+        ]);
+        const userLimit = user.role === "admin" ? null : PER_USER_DAILY_CAP;
+        send({ done: true, actions, usage: { date: today, count, limit: GEMINI_DAILY_LIMIT, userCount, userLimit } });
+      } catch (e) {
+        logError("mj-stream", { message: String(e?.message ?? e) });
+        send({ error: "Something went wrong" });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "content-type": "text/event-stream",
+      "cache-control": "no-cache",
+      // Prevent nginx/CDN from buffering the stream before it reaches the client.
+      "x-accel-buffering": "no",
+    },
+  });
 }
 
 async function executeTool(name, input, env, userId, config, overrides, actions) {

@@ -66,19 +66,56 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
   async function send() {
     const text = input.trim();
     if (!text || busy) return;
-    setMessages(prev => [...prev, { role: "user", content: text }]);
+    setBusy(true);
     setInput("");
     setError("");
-    setBusy(true);
+    // Append user message and an empty assistant placeholder immediately.
+    // The placeholder shows "thinking..." until the first token arrives.
+    setMessages(prev => [
+      ...prev,
+      { role: "user", content: text },
+      { role: "assistant", content: "", actions: [] },
+    ]);
     try {
-      const { reply, actions, usage: u } = await api.mj(text, contextDate ?? null);
-      setMessages(prev => [...prev, { role: "assistant", content: reply, actions: actions || [] }]);
-      if (u) setUsage(u);
-    } catch (err) {
-      const msg = err.status === 429
-        ? (err.message || "Daily message limit reached. Try again tomorrow.")
-        : (err.message || "Something went wrong. Try again.");
-      setError(msg);
+      await new Promise((resolve) => {
+        api.mj(text, contextDate ?? null, {
+          onChunk: (delta) => {
+            setMessages(prev => {
+              const msgs = [...prev];
+              const last = msgs[msgs.length - 1];
+              if (last?.role === "assistant") {
+                msgs[msgs.length - 1] = { ...last, content: last.content + delta };
+              }
+              return msgs;
+            });
+          },
+          onDone: ({ actions, usage: u }) => {
+            setMessages(prev => {
+              const msgs = [...prev];
+              const last = msgs[msgs.length - 1];
+              if (last?.role === "assistant") {
+                msgs[msgs.length - 1] = { ...last, actions: actions || [] };
+              }
+              return msgs;
+            });
+            if (u) setUsage(u);
+            resolve();
+          },
+          onError: (err) => {
+            setMessages(prev => {
+              // Remove the empty placeholder if no text arrived before the error.
+              const last = prev[prev.length - 1];
+              if (last?.role === "assistant" && !last.content) return prev.slice(0, -1);
+              return prev;
+            });
+            const msg = err.status === 429
+              ? (err.message || "Daily message limit reached. Try again tomorrow.")
+              : (err.message || "Something went wrong. Try again.");
+            setError(msg);
+            resolve();
+          },
+        });
+      });
     } finally {
       setBusy(false);
     }
@@ -194,8 +231,21 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
             </div>
           </div>
         )}
-        {messages.map((m, i) => <Bubble key={i} role={m.role} text={m.content} actions={m.actions} />)}
-        {busy && <Bubble role="assistant" text="thinking..." dim />}
+        {messages.map((m, i) => {
+          // While streaming, the last assistant message starts empty. Show
+          // "thinking..." dimly until the first token fills it in.
+          const isThinking = busy && i === messages.length - 1
+            && m.role === "assistant" && !m.content;
+          return (
+            <Bubble
+              key={i}
+              role={m.role}
+              text={isThinking ? "thinking..." : m.content}
+              dim={isThinking}
+              actions={m.actions}
+            />
+          );
+        })}
         {error && (
           <div style={{ fontSize: 12.5, color: "#fca5a5", background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.25)", borderRadius: 8, padding: "8px 10px" }}>{error}</div>
         )}
