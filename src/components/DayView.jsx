@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { ChevronLeft, Pencil, Check } from "lucide-react";
 import { fmtL } from "../lib/dates.js";
 
 function renderNote(raw) {
@@ -67,10 +68,12 @@ export default function DayView({
           style={{
             background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
             borderRadius: 10, padding: "8px 14px", color: "#a0d0a0",
-            fontFamily: "'Courier New', monospace", fontSize: 13, cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 6, flexShrink: 0, letterSpacing: 1,
+            cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
+            minHeight: 44,
           }}>
-          ‹ Back
+          <ChevronLeft size={16} strokeWidth={2} />
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1 }}>Back</span>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: selStyle?.color, textTransform: "uppercase" }}>
@@ -152,7 +155,7 @@ export default function DayView({
                         transition: "background 0.15s",
                       }}>
                       <div style={{
-                        width: 24, height: 24, borderRadius: 6,
+                        width: 28, height: 28, borderRadius: 7,
                         background: isChecked ? selStyle?.color : `${selStyle?.color}22`,
                         color: isChecked ? "#0e1a12" : selStyle?.color,
                         fontFamily: "'Courier New', monospace", fontSize: 12, fontWeight: 800,
@@ -161,7 +164,10 @@ export default function DayView({
                         border: `1px solid ${isChecked ? selStyle?.color : `${selStyle?.color}44`}`,
                         transition: "background 0.15s, color 0.15s",
                       }}>
-                        {isChecked ? "✓" : i + 1}
+                        {isChecked
+                          ? <Check size={14} strokeWidth={2.5} />
+                          : <span style={{ fontSize: 11 }}>{i + 1}</span>
+                        }
                       </div>
                       <div style={{
                         fontSize: 13.5, lineHeight: 1.7,
@@ -202,14 +208,15 @@ export default function DayView({
                     <button
                       type="button"
                       onClick={() => setNoteEditing(e => !e)}
+                      aria-label={noteEditing ? "Done editing" : "Edit note"}
                       style={{
                         background: "none", border: "1px solid rgba(255,255,255,0.12)",
-                        borderRadius: 6, padding: "2px 8px",
-                        color: "#7a9a7a", fontFamily: "'Courier New', monospace",
-                        fontSize: 10, letterSpacing: 1, cursor: "pointer",
-                        textTransform: "uppercase",
+                        borderRadius: 6, padding: "5px 8px",
+                        color: "#7a9a7a", cursor: "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        minHeight: 32,
                       }}>
-                      {noteEditing ? "DONE" : "EDIT"}
+                      <Pencil size={13} strokeWidth={1.8} />
                     </button>
                   )}
                   <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: statusColor, minHeight: 12 }}>
@@ -296,7 +303,7 @@ export default function DayView({
           style={{
             position: "fixed", zIndex: 30,
             left: "calc(16px + env(safe-area-inset-left, 0px))",
-            bottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
+            bottom: "calc(72px + env(safe-area-inset-bottom, 0px))",
             background: "rgba(0,0,0,0.7)",
             border: "1px solid rgba(34,197,94,0.35)",
             color: "#4ade80",

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { ChevronLeft, Trash2, ArrowUp, Loader } from "lucide-react";
 import { api } from "../lib/api.js";
 
 function fmtContextDate(yyyymmdd) {
@@ -199,9 +200,12 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
         <button type="button" onClick={onClose} style={{
           background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
           borderRadius: 10, padding: "10px 14px", color: "#a0d0a0",
-          fontFamily: "'Courier New', monospace", fontSize: 13, cursor: "pointer", letterSpacing: 1,
-          minHeight: 44,
-        }}>‹ Back</button>
+          cursor: "pointer", minHeight: 44,
+          display: "flex", alignItems: "center", gap: 4,
+        }}>
+          <ChevronLeft size={16} strokeWidth={2} />
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1 }}>Back</span>
+        </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: "#5a8a5a", textTransform: "uppercase" }}>MJ</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -221,15 +225,15 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
           <button
             type="button"
             onClick={handleClear}
+            aria-label="Clear conversation"
             style={{
               background: "none", border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 8, padding: "5px 10px", color: "#5a7a5a",
-              fontFamily: "'Courier New', monospace", fontSize: 10,
-              letterSpacing: 1, cursor: "pointer", textTransform: "uppercase",
-              flexShrink: 0,
+              borderRadius: 8, padding: "8px 10px", color: "#5a7a5a",
+              cursor: "pointer", flexShrink: 0,
+              display: "flex", alignItems: "center",
             }}
           >
-            Clear
+            <Trash2 size={14} strokeWidth={1.8} />
           </button>
         )}
         <UsageBar usage={usage} />
@@ -335,13 +339,9 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
             }}
           >
             {busy ? (
-              <span style={{ fontSize: 15, color: "#4ade80" }}>…</span>
+              <Loader size={16} strokeWidth={2} color="#4ade80" style={{ animation: "spin 1s linear infinite" }} />
             ) : (
-              <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
-                <path d="M8.5 14V3M8.5 3L4 7.5M8.5 3L13 7.5"
-                  stroke={input.trim() ? "#0e1a12" : "#2a4a2a"}
-                  strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <ArrowUp size={17} strokeWidth={2.2} color={input.trim() ? "#0e1a12" : "#2a4a2a"} />
             )}
           </button>
         </div>

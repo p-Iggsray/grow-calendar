@@ -116,3 +116,7 @@ details > summary span[aria-hidden] {
 details[open] > summary span[aria-hidden] {
   transform: rotate(90deg);
 }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
