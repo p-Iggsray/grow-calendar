@@ -48,7 +48,7 @@ export default function App() {
   const [chatContext, setChatContext] = useState(null); // YYYY-MM-DD of the day open in the app, or null
   const [showAdmin,   setShowAdmin]  = useState(false);
 
-  const { checked, loading: checkoffsLoading, toggle } = useCheckoffs(selected, Boolean(user));
+  const { taskStates, loading: checkoffsLoading, toggle, setTaskState } = useCheckoffs(selected, Boolean(user));
   const { counts: monthCheckoffCounts } = useMonthCheckoffs(today.getFullYear(), month, Boolean(user));
   const { note, setNote, status: noteStatus, flush: flushNote } =
     useDayNote(selected, Boolean(user));
@@ -169,9 +169,10 @@ export default function App() {
   // Threats for today used when chat is opened from the calendar (no day selected).
   const todayThreats = todayPhase ? getThreatsForPhase(todayPhase, generatedPlan) : [];
 
+  const resolvedCount = Object.keys(taskStates).length;
   const suggestions = buildSuggestions({
     detail,
-    checked,
+    resolvedCount,
     threats: chatContext ? threats : todayThreats,
     contextDate: chatContext,
     today,
@@ -228,9 +229,10 @@ export default function App() {
             detail={detail}
             selStyle={selStyle}
             threats={threats}
-            checked={checked}
+            taskStates={taskStates}
             checkoffsLoading={checkoffsLoading}
             onToggle={toggle}
+            onSetTaskState={setTaskState}
             note={note}
             onChangeNote={setNote}
             onFlushNote={flushNote}

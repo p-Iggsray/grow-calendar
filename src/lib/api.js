@@ -43,9 +43,13 @@ export const api = {
   logout: () => request("/api/auth/logout", { method: "POST" }),
 
   getCheckoffs: (date) => request(`/api/checkoffs/${date}`),
-  putCheckoffs: (date, checked) =>
-    request(`/api/checkoffs/${date}`, { method: "PUT", body: JSON.stringify({ checked }) }),
+  putCheckoffs: (date, taskStates) =>
+    request(`/api/checkoffs/${date}`, { method: "PUT", body: JSON.stringify({ taskStates }) }),
   getMonthCheckoffs: (month) => request(`/api/checkoffs?month=${month}`),
+
+  getTaskNotes: (date) => request(`/api/task-notes/${date}`),
+  putTaskNote: (date, taskIndex, note) =>
+    request(`/api/task-notes/${date}/${taskIndex}`, { method: "PUT", body: JSON.stringify({ note }) }),
 
   getNote: (date) => request(`/api/notes/${date}`),
   putNote: (date, body) =>

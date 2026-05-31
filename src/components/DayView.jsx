@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from "react";
-import { ChevronLeft, Pencil, Check } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { ChevronLeft, Pencil, Check, Minus, X } from "lucide-react";
 import { fmtL } from "../lib/dates.js";
+import { useTaskNotes, MAX_TASK_NOTE_LEN } from "../lib/useTaskNote.js";
 
 function renderNote(raw) {
   if (!raw?.trim()) return "";
@@ -26,15 +27,200 @@ function renderNote(raw) {
   return parts.join("");
 }
 
+function useLongPress(onLongPress, ms = 500) {
+  const timer = useRef(null);
+  const fired = useRef(false);
+
+  const start = useCallback(() => {
+    fired.current = false;
+    timer.current = setTimeout(() => {
+      fired.current = true;
+      onLongPress();
+    }, ms);
+  }, [onLongPress, ms]);
+
+  const cancel = useCallback(() => { clearTimeout(timer.current); }, []);
+
+  return {
+    handlers: { onMouseDown: start, onTouchStart: start, onMouseUp: cancel, onMouseLeave: cancel, onTouchEnd: cancel },
+    didLongPress: () => fired.current,
+  };
+}
+
+const STATE_CFG = {
+  done:    { color: "#4ade80", bg: "rgba(74,222,128,0.05)",  label: null,      textColor: "#5a7a5a" },
+  skipped: { color: "#facc15", bg: "rgba(250,204,21,0.05)",  label: "SKIPPED", textColor: "#8a8060" },
+  blocked: { color: "#f87171", bg: "rgba(248,113,113,0.05)", label: "BLOCKED", textColor: "#8a6060" },
+};
+
+function StatePicker({ task, currentState, onPick, onClose }) {
+  return (
+    <>
+      <div
+        onClick={onClose}
+        style={{
+          position: "fixed", inset: 0, zIndex: 50,
+          background: "rgba(0,0,0,0.55)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)",
+        }}
+      />
+      <div style={{
+        position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 51,
+        background: "#141f16", borderTop: "1px solid rgba(255,255,255,0.1)",
+        borderRadius: "18px 18px 0 0",
+        padding: "20px 20px calc(24px + env(safe-area-inset-bottom, 0px))",
+      }}>
+        <div style={{ fontSize: 12, color: "#7a9a7a", marginBottom: 16, fontFamily: "'Courier New', monospace", letterSpacing: 0.5, lineHeight: 1.5 }}>
+          {task}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {[
+            { state: "done",    label: "Done",    icon: <Check size={16} strokeWidth={2.5} />, color: "#4ade80", bg: "rgba(74,222,128,0.1)" },
+            { state: "skipped", label: "Skipped", icon: <Minus size={16} strokeWidth={2.5} />, color: "#facc15", bg: "rgba(250,204,21,0.1)" },
+            { state: "blocked", label: "Blocked", icon: <X    size={16} strokeWidth={2.5} />, color: "#f87171", bg: "rgba(248,113,113,0.1)" },
+          ].map(({ state, label, icon, color, bg }) => (
+            <button
+              key={state}
+              type="button"
+              onClick={() => onPick(state === currentState ? null : state)}
+              style={{
+                display: "flex", alignItems: "center", gap: 12,
+                padding: "14px 16px", borderRadius: 12,
+                background: currentState === state ? bg : "rgba(255,255,255,0.04)",
+                border: `1px solid ${currentState === state ? color + "66" : "rgba(255,255,255,0.08)"}`,
+                color, cursor: "pointer", textAlign: "left",
+                fontSize: 15, fontWeight: 600,
+              }}>
+              {icon}
+              {label}
+              {currentState === state && (
+                <span style={{ marginLeft: "auto", fontSize: 10, fontFamily: "'Courier New', monospace", color: "#5a7a5a" }}>
+                  tap to clear
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function TaskRow({ task, index, state, accentColor, onTap, onLongPress, note, onNoteChange }) {
+  const [noteOpen, setNoteOpen] = useState(false);
+
+  const handleLongPress = useCallback(() => onLongPress(index), [onLongPress, index]);
+  const { handlers: lpHandlers, didLongPress } = useLongPress(handleLongPress, 500);
+
+  const handleClick = useCallback(() => {
+    if (didLongPress()) return;
+    onTap(index);
+  }, [didLongPress, onTap, index]);
+
+  const cfg = state ? STATE_CFG[state] : null;
+
+  return (
+    <div style={{ borderRadius: 8, overflow: "hidden" }}>
+      <div style={{
+        display: "flex", gap: 10, alignItems: "flex-start",
+        background: cfg?.bg ?? "transparent",
+        padding: "6px 4px",
+      }}>
+        {/* Checkbox: tap toggles done, long-press opens state picker */}
+        <button
+          type="button"
+          onClick={handleClick}
+          {...lpHandlers}
+          style={{
+            width: 28, height: 28, borderRadius: 7, flexShrink: 0,
+            background: cfg ? cfg.color : `${accentColor}22`,
+            color: cfg ? "#0e1a12" : accentColor,
+            border: `1px solid ${cfg ? cfg.color : accentColor + "44"}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", transition: "background 0.15s, color 0.15s",
+            fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 800,
+          }}>
+          {state === "done"    ? <Check size={14} strokeWidth={2.5} />
+           : state === "skipped" ? <Minus size={14} strokeWidth={2.5} />
+           : state === "blocked" ? <X    size={14} strokeWidth={2.5} />
+           : <span>{index + 1}</span>}
+        </button>
+
+        {/* Task label + state badge */}
+        <div style={{ flex: 1, minWidth: 0, paddingTop: 3 }}>
+          <div style={{
+            fontSize: 13.5, lineHeight: 1.7,
+            color: cfg?.textColor ?? "#c8dcc8",
+            textDecoration: state === "done" ? "line-through" : "none",
+            transition: "color 0.15s",
+          }}>
+            {task}
+          </div>
+          {cfg?.label && (
+            <div style={{ fontSize: 10, fontFamily: "'Courier New', monospace", color: cfg.color, letterSpacing: 1, marginTop: 1 }}>
+              {cfg.label}
+            </div>
+          )}
+        </div>
+
+        {/* Per-task note toggle */}
+        <button
+          type="button"
+          onClick={() => setNoteOpen(o => !o)}
+          aria-label="Toggle task note"
+          style={{
+            background: (noteOpen || note) ? `${accentColor}22` : "none",
+            border: `1px solid ${note ? accentColor + "55" : "rgba(255,255,255,0.1)"}`,
+            borderRadius: 6, padding: "5px 7px",
+            color: note ? accentColor : "#5a7a5a",
+            cursor: "pointer", flexShrink: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            minHeight: 28, minWidth: 28,
+            transition: "background 0.15s, color 0.15s",
+          }}>
+          <Pencil size={12} strokeWidth={1.8} />
+        </button>
+      </div>
+
+      {/* Inline note */}
+      {noteOpen && (
+        <div style={{ padding: "6px 8px 10px", borderTop: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.15)" }}>
+          <textarea
+            value={note ?? ""}
+            onChange={e => onNoteChange(index, e.target.value.slice(0, MAX_TASK_NOTE_LEN))}
+            placeholder="Add a note for this task…"
+            rows={2}
+            // eslint-disable-next-line jsx-a11y/no-autofocus
+            autoFocus
+            style={{
+              width: "100%", resize: "vertical",
+              background: "rgba(0,0,0,0.2)", color: "#e8f5e3",
+              border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8,
+              padding: "8px 10px", fontSize: 13, lineHeight: 1.6,
+              fontFamily: "'Georgia', 'Times New Roman', serif", outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+          <div style={{ textAlign: "right", fontFamily: "'Courier New', monospace", fontSize: 10, color: "#3a5a3a", marginTop: 3 }}>
+            {(note ?? "").length}/{MAX_TASK_NOTE_LEN}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DayView({
   selected, detail, selStyle, threats,
-  checked, checkoffsLoading, onToggle,
+  taskStates, checkoffsLoading, onToggle, onSetTaskState,
   note, onChangeNote, onFlushNote, noteStatus,
   onBack, onJumpToday,
 }) {
   const [tab, setTab] = useState("tasks");
   const [noteEditing, setNoteEditing] = useState(false);
+  const [pickerIdx, setPickerIdx] = useState(null);
   const textareaRef = useRef(null);
+
+  const { notes: taskNotes, setNote: setTaskNote } = useTaskNotes(selected, true);
 
   useEffect(() => {
     if (noteEditing) textareaRef.current?.focus();
@@ -43,7 +229,8 @@ export default function DayView({
   useEffect(() => {
     if (tab !== "notes") setNoteEditing(false);
   }, [tab]);
-  const checkedCount = checked?.length ?? 0;
+
+  const resolvedCount = Object.keys(taskStates ?? {}).length;
   const totalTasks = detail?.tasks?.length ?? 0;
 
   const statusLabel =
@@ -54,6 +241,11 @@ export default function DayView({
     noteStatus === "error" ? "#f87171" :
     noteStatus === "saved" ? "#4ade80" : "#5a7a5a";
 
+  function handlePickState(state) {
+    onSetTaskState?.(pickerIdx, state);
+    setPickerIdx(null);
+  }
+
   return (
     <div style={{
       paddingTop: "calc(12px + env(safe-area-inset-top, 0px))",
@@ -61,6 +253,15 @@ export default function DayView({
       paddingBottom: 24,
       paddingLeft: "calc(14px + env(safe-area-inset-left, 0px))",
     }}>
+      {pickerIdx !== null && (
+        <StatePicker
+          task={detail?.tasks?.[pickerIdx] ?? ""}
+          currentState={taskStates?.[String(pickerIdx)] ?? null}
+          onPick={handlePickState}
+          onClose={() => setPickerIdx(null)}
+        />
+      )}
+
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "4px 2px 14px" }}>
         <button
           type="button"
@@ -68,8 +269,7 @@ export default function DayView({
           style={{
             background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
             borderRadius: 10, padding: "8px 14px", color: "#a0d0a0",
-            cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
+            cursor: "pointer", display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
             minHeight: 44,
           }}>
           <ChevronLeft size={16} strokeWidth={2} />
@@ -86,12 +286,12 @@ export default function DayView({
         {totalTasks > 0 && (
           <div style={{
             fontSize: 11, fontFamily: "'Courier New', monospace",
-            color: checkedCount === totalTasks ? "#4ade80" : selStyle?.color,
+            color: resolvedCount === totalTasks ? "#4ade80" : selStyle?.color,
             background: "rgba(0,0,0,0.25)", padding: "6px 10px", borderRadius: 8,
             whiteSpace: "nowrap", flexShrink: 0,
             opacity: checkoffsLoading ? 0.5 : 1, transition: "opacity 0.15s",
           }}>
-            {checkoffsLoading ? "..." : `${checkedCount}/${totalTasks}`}
+            {checkoffsLoading ? "..." : `${resolvedCount}/${totalTasks}`}
           </div>
         )}
       </div>
@@ -138,49 +338,19 @@ export default function DayView({
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {detail.tasks.map((task, i) => {
-                  const isChecked = checked?.includes(i);
-                  return (
-                    <button
-                      type="button"
-                      key={i}
-                      onClick={() => onToggle?.(i)}
-                      style={{
-                        display: "flex", gap: 10, alignItems: "flex-start",
-                        background: isChecked ? "rgba(34,197,94,0.05)" : "transparent",
-                        border: "none", borderRadius: 8,
-                        padding: "4px 6px", margin: "-4px -6px",
-                        textAlign: "left", width: "calc(100% + 12px)",
-                        cursor: onToggle ? "pointer" : "default",
-                        transition: "background 0.15s",
-                      }}>
-                      <div style={{
-                        width: 28, height: 28, borderRadius: 7,
-                        background: isChecked ? selStyle?.color : `${selStyle?.color}22`,
-                        color: isChecked ? "#0e1a12" : selStyle?.color,
-                        fontFamily: "'Courier New', monospace", fontSize: 12, fontWeight: 800,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        flexShrink: 0,
-                        border: `1px solid ${isChecked ? selStyle?.color : `${selStyle?.color}44`}`,
-                        transition: "background 0.15s, color 0.15s",
-                      }}>
-                        {isChecked
-                          ? <Check size={14} strokeWidth={2.5} />
-                          : <span style={{ fontSize: 11 }}>{i + 1}</span>
-                        }
-                      </div>
-                      <div style={{
-                        fontSize: 13.5, lineHeight: 1.7,
-                        color: isChecked ? "#5a7a5a" : "#c8dcc8",
-                        paddingTop: 3,
-                        textDecoration: isChecked ? "line-through" : "none",
-                        transition: "color 0.15s",
-                      }}>
-                        {task}
-                      </div>
-                    </button>
-                  );
-                })}
+                {detail.tasks.map((task, i) => (
+                  <TaskRow
+                    key={i}
+                    index={i}
+                    task={task}
+                    state={taskStates?.[String(i)] ?? null}
+                    accentColor={selStyle?.color ?? "#4ade80"}
+                    onTap={onToggle ?? (() => {})}
+                    onLongPress={setPickerIdx}
+                    note={taskNotes[String(i)] ?? ""}
+                    onNoteChange={setTaskNote}
+                  />
+                ))}
               </div>
 
               {detail.notes && (

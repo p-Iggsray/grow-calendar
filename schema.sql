@@ -32,10 +32,24 @@ CREATE TABLE IF NOT EXISTS task_checkoffs (
   user_id    INTEGER NOT NULL,
   date       TEXT NOT NULL,
   task_index INTEGER NOT NULL,
+  state      TEXT NOT NULL DEFAULT 'done' CHECK(state IN ('done','skipped','blocked')),
   checked_at TEXT NOT NULL,
   PRIMARY KEY (user_id, date, task_index),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS task_notes (
+  user_id    INTEGER NOT NULL,
+  date       TEXT NOT NULL,
+  task_index INTEGER NOT NULL,
+  note       TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (user_id, date, task_index),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Migrations for existing databases (skip on fresh installs):
+-- ALTER TABLE task_checkoffs ADD COLUMN state TEXT NOT NULL DEFAULT 'done';
 
 CREATE INDEX IF NOT EXISTS idx_checkoffs_user_date ON task_checkoffs(user_id, date);
 

@@ -2,23 +2,32 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ymd } from "./api.js";
 import { useToast } from "./useToast.jsx";
 
+const VALID_STATES = new Set(["done", "skipped", "blocked"]);
+
 export function useCheckoffs(date, enabled) {
-  const [checked, setChecked] = useState([]);
+  // taskStates: { "0": "done", "2": "skipped" } — keyed by string task index
+  const [taskStates, setTaskStates] = useState({});
   const [loading, setLoading] = useState(false);
   const dateKey = date ? ymd(date) : null;
   const requestId = useRef(0);
   const { addToast } = useToast();
 
   const fetchNow = useCallback(async () => {
-    if (!dateKey || !enabled) {
-      setChecked([]);
-      return;
-    }
+    if (!dateKey || !enabled) { setTaskStates({}); return; }
     const myId = ++requestId.current;
     setLoading(true);
     try {
       const data = await api.getCheckoffs(dateKey);
-      if (myId === requestId.current) setChecked(data.checked || []);
+      if (myId === requestId.current) {
+        // Prefer taskStates (new format); fall back to legacy checked array.
+        if (data.taskStates && typeof data.taskStates === "object") {
+          setTaskStates(data.taskStates);
+        } else if (Array.isArray(data.checked)) {
+          setTaskStates(Object.fromEntries(data.checked.map(i => [String(i), "done"])));
+        } else {
+          setTaskStates({});
+        }
+      }
     } catch {
       if (myId === requestId.current) addToast("Couldn't load tasks. Check your connection");
     } finally {
@@ -29,34 +38,45 @@ export function useCheckoffs(date, enabled) {
   useEffect(() => { fetchNow(); }, [fetchNow]);
 
   useEffect(() => {
-    // visibilitychange alone covers both tab switches and window focus on
-    // modern browsers - using both fired two GETs per refocus.
     function onVisible() { if (!document.hidden) fetchNow(); }
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [fetchNow]);
 
-  const toggle = useCallback(async (idx) => {
-    if (!dateKey || !enabled) return;
-    const next = checked.includes(idx)
-      ? checked.filter(n => n !== idx)
-      : [...checked, idx].sort((a, b) => a - b);
-    setChecked(next);
-    // 10ms blip on supporting devices (Android Chrome). Safari iOS ignores
-    // the Vibration API entirely - this is a graceful no-op there.
+  /** Optimistically update local state and persist to the server. */
+  const applyState = useCallback(async (idx, nextStates) => {
+    setTaskStates(nextStates);
     if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
       navigator.vibrate(10);
     }
     try {
-      await api.putCheckoffs(dateKey, next);
-      // Tell sibling hooks (e.g. useMonthCheckoffs feeding the calendar ring)
-      // that something changed so they can refetch without polling.
+      await api.putCheckoffs(dateKey, nextStates);
       window.dispatchEvent(new CustomEvent("checkoffs-mutated"));
     } catch {
       addToast("Couldn't save. Your change was reversed");
       fetchNow();
     }
-  }, [checked, dateKey, enabled, fetchNow, addToast]);
+  }, [dateKey, fetchNow, addToast]);
 
-  return { checked, loading, toggle };
+  /** Tap: toggle between "done" and unset. Any other state → unset. */
+  const toggle = useCallback(async (idx) => {
+    if (!dateKey || !enabled) return;
+    const key = String(idx);
+    const next = { ...taskStates };
+    if (next[key]) delete next[key];
+    else next[key] = "done";
+    await applyState(idx, next);
+  }, [taskStates, dateKey, enabled, applyState]);
+
+  /** Long-press: set a specific state, or pass null to clear. */
+  const setTaskState = useCallback(async (idx, state) => {
+    if (!dateKey || !enabled) return;
+    const key = String(idx);
+    const next = { ...taskStates };
+    if (state === null || !VALID_STATES.has(state)) delete next[key];
+    else next[key] = state;
+    await applyState(idx, next);
+  }, [taskStates, dateKey, enabled, applyState]);
+
+  return { taskStates, loading, toggle, setTaskState };
 }
