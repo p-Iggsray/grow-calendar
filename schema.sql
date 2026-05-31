@@ -91,3 +91,14 @@ CREATE TABLE IF NOT EXISTS mj_conversations (
 );
 
 CREATE INDEX IF NOT EXISTS idx_mj_conversations_user ON mj_conversations(user_id, id DESC);
+
+-- Client-side JS errors reported by the browser. user_id is nullable so
+-- errors that occur before login (or from unapproved users) can still be stored.
+CREATE TABLE IF NOT EXISTS client_errors (
+  id       INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id  INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  ts       TEXT NOT NULL,
+  message  TEXT NOT NULL,
+  stack    TEXT,
+  url      TEXT
+);
