@@ -312,15 +312,20 @@ function Bubble({ role, text, dim, actions }) {
       }}>{text}</div>
       {actions && actions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6, maxWidth: "85%" }}>
-          {actions.map((a, i) => (
-            <span key={i} style={{
-              fontSize: 11, fontFamily: "'Courier New', monospace",
-              color: "#4ade80", background: "rgba(34,197,94,0.1)",
-              border: "1px solid rgba(34,197,94,0.25)", borderRadius: 8, padding: "4px 9px",
-            }}>
-              {a.type === "append_note" ? "📝" : "✓"} {a.summary}
-            </span>
-          ))}
+          {actions.map((a, i) => {
+            const isNote = a.type === "replace_note";
+            return (
+              <span key={i} style={{
+                fontSize: 11, fontFamily: "'Courier New', monospace",
+                color: isNote ? "#fbbf24" : "#4ade80",
+                background: isNote ? "rgba(251,191,36,0.1)" : "rgba(34,197,94,0.1)",
+                border: `1px solid ${isNote ? "rgba(251,191,36,0.25)" : "rgba(34,197,94,0.25)"}`,
+                borderRadius: 8, padding: "4px 9px",
+              }}>
+                {a.type === "replace_note" ? "✏️" : a.type === "append_note" ? "📝" : "✓"} {a.summary}
+              </span>
+            );
+          })}
         </div>
       )}
     </div>

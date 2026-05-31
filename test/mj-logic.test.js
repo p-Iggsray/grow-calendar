@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mergeChecked, appendNoteText, buildDayView } from "../worker/mj-logic.js";
+import { mergeChecked, appendNoteText, buildDayView, MJ_TOOLS } from "../worker/mj-logic.js";
 
 test("mergeChecked adds indices, dedupes, sorts ascending", () => {
   assert.deepEqual(mergeChecked([2, 1], [3, 1], true), [1, 2, 3]);
@@ -21,6 +21,21 @@ test("appendNoteText creates the note when existing is empty or null", () => {
 
 test("appendNoteText ignores a blank addition", () => {
   assert.equal(appendNoteText("foo", "   "), "foo");
+});
+
+test("MJ_TOOLS includes get_week with start_date parameter", () => {
+  const tool = MJ_TOOLS.find(t => t.name === "get_week");
+  assert.ok(tool, "get_week tool missing from MJ_TOOLS");
+  assert.ok(tool.parameters.properties.start_date, "get_week missing start_date parameter");
+  assert.deepEqual(tool.parameters.required, ["start_date"]);
+});
+
+test("MJ_TOOLS includes replace_note with date and text parameters", () => {
+  const tool = MJ_TOOLS.find(t => t.name === "replace_note");
+  assert.ok(tool, "replace_note tool missing from MJ_TOOLS");
+  assert.ok(tool.parameters.properties.date, "replace_note missing date parameter");
+  assert.ok(tool.parameters.properties.text, "replace_note missing text parameter");
+  assert.deepEqual(tool.parameters.required, ["date", "text"]);
 });
 
 test("buildDayView maps tasks with done flags and splits guidance/userNote", () => {
