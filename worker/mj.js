@@ -2,7 +2,7 @@
 import { json, error, safeJsonBounded } from "./util.js";
 import { loadRawPlan } from "./plan.js";
 import { parseConfig, parseDate } from "../src/lib/planConfig.js";
-import { getPhase, getDetail } from "../src/lib/growData.js";
+import { getPhase, getDetail, getThreatsForPhase } from "../src/lib/growData.js";
 import { buildPlanText } from "../src/lib/planText.js";
 import { readCheckoffs, writeCheckoffs } from "./checkoffs.js";
 import { readNote, writeNote, MAX_NOTE_LEN } from "./notes.js";
@@ -12,6 +12,25 @@ import { ProviderError } from "./providers/errors.js";
 import { logError } from "./log.js";
 
 const MAX_MSG_LEN = 4000;
+
+function dateToYmd(dt) {
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth() + 1).padStart(2, "0");
+  const d = String(dt.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+async function readCheckoffsInRange(env, userId, startDate, endDate) {
+  const rows = await env.DB.prepare(
+    "SELECT date, task_index FROM task_checkoffs WHERE user_id = ? AND date >= ? AND date <= ? ORDER BY date, task_index",
+  ).bind(userId, startDate, endDate).all();
+  const map = new Map();
+  for (const r of rows.results ?? []) {
+    if (!map.has(r.date)) map.set(r.date, []);
+    map.get(r.date).push(r.task_index);
+  }
+  return map;
+}
 const MAX_TOOL_ITERATIONS = 6;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const GEMINI_MODEL = "gemini-2.5-flash";
@@ -177,6 +196,38 @@ export async function postMj(request, env, user) {
 
 async function executeTool(name, input, env, userId, config, overrides, actions) {
   try {
+    // get_week uses start_date (not date) — handle before the shared date validation.
+    if (name === "get_week") {
+      const startDate = input?.start_date;
+      if (typeof startDate !== "string" || !DATE_RE.test(startDate)) {
+        return { error: "start_date must be YYYY-MM-DD" };
+      }
+      const startDt = parseDate(startDate);
+      const endDt = new Date(startDt);
+      endDt.setDate(endDt.getDate() + 6);
+      const endDate = dateToYmd(endDt);
+      const checkoffMap = await readCheckoffsInRange(env, userId, startDate, endDate);
+      const days = [];
+      for (let i = 0; i < 7; i++) {
+        const dt = new Date(startDt);
+        dt.setDate(startDt.getDate() + i);
+        const date = dateToYmd(dt);
+        const phase = getPhase(dt, config);
+        if (!phase) {
+          days.push({ date, outside_season: true });
+          continue;
+        }
+        const detail = getDetail(dt, config, overrides);
+        const checked = checkoffMap.get(date) ?? [];
+        const userNote = await readNote(env, userId, date);
+        const threats = getThreatsForPhase(phase);
+        const dayView = buildDayView(date, phase, detail, checked, userNote);
+        if (threats.length > 0) dayView.threats = threats.map(t => t.title);
+        days.push(dayView);
+      }
+      return { start_date: startDate, end_date: endDate, days };
+    }
+
     const date = input?.date;
     if (typeof date !== "string" || !DATE_RE.test(date)) return { error: "date must be YYYY-MM-DD" };
     const dt = parseDate(date);
@@ -217,6 +268,17 @@ async function executeTool(name, input, env, userId, config, overrides, actions)
       await writeNote(env, userId, date, note);
       actions.push({ type: "append_note", date, summary: `Added to ${date} note` });
       return { date, note };
+    }
+
+    if (name === "replace_note") {
+      if (typeof input?.text !== "string") {
+        return { error: "text must be a string" };
+      }
+      const text = input.text.trim();
+      if (text.length > MAX_NOTE_LEN) return { error: "note text exceeds maximum length" };
+      await writeNote(env, userId, date, text);
+      actions.push({ type: "replace_note", date, summary: `Replaced ${date} note` });
+      return { date, note: text };
     }
 
     return { error: `unknown tool: ${name}` };
