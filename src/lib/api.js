@@ -92,6 +92,8 @@ export const api = {
       }
     }).catch(onError);
   },
+  mjUndo: (undoPayload) =>
+    request("/api/mj/undo", { method: "POST", body: JSON.stringify(undoPayload) }),
   getMjUsage: () => request("/api/mj/usage"),
   getMjHistory: () => request("/api/mj/history"),
   clearMjHistory: () => request("/api/mj/history", { method: "DELETE" }),
