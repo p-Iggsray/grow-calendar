@@ -64,6 +64,9 @@ export default function App() {
     // popstate fires on Back; clear selection and strip ?d= from the URL.
     function onPop() {
       setSelected(null);
+      // If the "today" tab was active, revert it to calendar so the tab bar
+      // reflects the new state (no day selected = calendar grid).
+      setActiveTab(prev => prev === "today" ? "calendar" : prev);
       const url = new URL(window.location.href);
       if (url.searchParams.has("d")) {
         url.searchParams.delete("d");
@@ -170,11 +173,14 @@ export default function App() {
 
   function handleTab(tabId) {
     if (tabId === "today") {
-      setActiveTab("calendar");
+      // Keep "today" highlighted while viewing today's DayView.
+      setActiveTab("today");
       jumpToday();
     } else if (tabId === "mj") {
       openChat();
     } else if (tabId === "calendar") {
+      // Always return to the calendar grid when tapping this tab.
+      setSelected(null);
       setActiveTab("calendar");
       if (chatOpen) closeChat();
     } else if (tabId === "more") {
@@ -186,7 +192,7 @@ export default function App() {
 
   if (showAdmin) {
     return (
-      <div style={{ ...SHELL_STYLE, paddingBottom: TAB_CLEARANCE }}>
+      <div style={SHELL_STYLE}>
         <AdminPanel onClose={() => setShowAdmin(false)} />
       </div>
     );
@@ -196,7 +202,8 @@ export default function App() {
     <div style={SHELL_STYLE}>
       {/* Main content area — padded so nothing hides behind the tab bar */}
       <div style={{ paddingBottom: TAB_CLEARANCE }}>
-        {activeTab === "calendar" && selected ? (
+        {/* DayView: shown when a day is selected via either calendar or today tab */}
+        {(activeTab === "calendar" || activeTab === "today") && selected ? (
           <DayView
             selected={selected}
             detail={detail}
@@ -212,7 +219,14 @@ export default function App() {
             onBack={goBack}
             onJumpToday={sameDay(selected, today) ? null : jumpToday}
           />
-        ) : activeTab === "calendar" ? (
+        ) : activeTab === "more" ? (
+          <MoreScreen
+            isAdmin={user?.role === "admin"}
+            onOpenAdmin={() => setShowAdmin(true)}
+            onBeforeSignOut={flushNote}
+          />
+        ) : (
+          // Calendar grid — default for "calendar" and fallback for "today" with no selection
           <>
             <Header
               todayStyle={todayStyle}
@@ -233,12 +247,6 @@ export default function App() {
               onClearSelection={() => setSelected(null)}
             />
           </>
-        ) : (
-          <MoreScreen
-            isAdmin={user?.role === "admin"}
-            onOpenAdmin={() => setShowAdmin(true)}
-            onBeforeSignOut={flushNote}
-          />
         )}
       </div>
 
