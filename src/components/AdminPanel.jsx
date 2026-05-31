@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { X } from "lucide-react";
 import { api } from "../lib/api.js";
 import { useAuth } from "../lib/auth.jsx";
 
@@ -38,64 +39,138 @@ export default function AdminPanel({ onClose }) {
   const members = users.filter(u => u.status === "approved");
 
   return (
-    <div style={{ padding: 16, maxWidth: 560, margin: "0 auto", color: "#1a2e1a" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <h2 style={{ margin: 0, fontSize: 20 }}>Members</h2>
-        <button onClick={onClose} style={btn}>Close</button>
+    <div style={{ minHeight: "100vh", fontFamily: "'Courier New', monospace", color: "#e8f5e3" }}>
+      {/* Header — safe-area-aware so the X button clears the notch */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "14px 16px",
+        paddingTop: "calc(14px + env(safe-area-inset-top, 0px))",
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        background: "linear-gradient(160deg, #0a1a0d, #13301a)",
+      }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 10, letterSpacing: 3, color: "#5a8a5a", textTransform: "uppercase", marginBottom: 3 }}>
+            Admin
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>
+            Manage Members
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            borderRadius: 10, width: 40, height: 40,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", color: "#a0d0a0", flexShrink: 0,
+          }}
+        >
+          <X size={18} strokeWidth={2} />
+        </button>
       </div>
 
-      {error && <div style={errBox}>{error}</div>}
-      {loading ? <div>Loading...</div> : (
-        <>
-          <Section title={`Pending requests (${pending.length})`}>
-            {pending.length === 0 && <Empty>No pending requests.</Empty>}
-            {pending.map(u => (
-              <Row key={u.id} name={u.username} sub={`requested ${u.created_at?.slice(0,10) || ""}`}>
-                <button style={btnGreen} onClick={() => act(api.approveUser, u.id)}>Approve</button>
-                <button style={btnRed} onClick={() => confirmDelete(u)}>Reject</button>
-              </Row>
-            ))}
-          </Section>
+      {/* Content */}
+      <div style={{ padding: "16px", maxWidth: 560, margin: "0 auto" }}>
+        {error && (
+          <div style={{
+            background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.3)",
+            borderRadius: 8, padding: "8px 12px", marginBottom: 14,
+            fontSize: 12, color: "#fca5a5",
+          }}>
+            {error}
+          </div>
+        )}
 
-          <Section title={`Members (${members.length})`}>
-            {members.map(u => (
-              <Row key={u.id} name={u.username} sub={u.role === "admin" ? "admin" : "member"}>
-                {u.id !== user.id && u.role !== "admin" && (
-                  <button style={btnRed} onClick={() => confirmDelete(u)}>Remove</button>
-                )}
-              </Row>
-            ))}
-          </Section>
-        </>
-      )}
+        {loading ? (
+          <div style={{ color: "#3a5a3a", letterSpacing: 3, padding: "24px 0" }}>LOADING...</div>
+        ) : (
+          <>
+            <Section title={`Pending requests (${pending.length})`}>
+              {pending.length === 0 && <Empty>No pending requests.</Empty>}
+              {pending.map(u => (
+                <Row key={u.id} name={u.username} sub={`requested ${u.created_at?.slice(0, 10) || ""}`}>
+                  <ActionBtn color="green" onClick={() => act(api.approveUser, u.id)}>Approve</ActionBtn>
+                  <ActionBtn color="red" onClick={() => confirmDelete(u)}>Reject</ActionBtn>
+                </Row>
+              ))}
+            </Section>
+
+            <Section title={`Members (${members.length})`}>
+              {members.map(u => (
+                <Row key={u.id} name={u.username} sub={u.role === "admin" ? "admin" : "member"}>
+                  {u.id !== user.id && u.role !== "admin" && (
+                    <ActionBtn color="red" onClick={() => confirmDelete(u)}>Remove</ActionBtn>
+                  )}
+                </Row>
+              ))}
+            </Section>
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
 function Section({ title, children }) {
   return (
-    <div style={{ marginBottom: 20 }}>
-      <div style={{ fontSize: 12, letterSpacing: 1, textTransform: "uppercase", color: "#5a8a5a", marginBottom: 8 }}>{title}</div>
+    <div style={{ marginBottom: 24 }}>
+      <div style={{
+        fontSize: 10, letterSpacing: 2, textTransform: "uppercase",
+        color: "#5a8a5a", marginBottom: 10,
+      }}>
+        {title}
+      </div>
       {children}
     </div>
   );
 }
+
 function Row({ name, sub, children }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "10px 12px", border: "1px solid #d8e6d8", borderRadius: 10, marginBottom: 8 }}>
+    <div style={{
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      padding: "12px 14px",
+      background: "rgba(255,255,255,0.04)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      borderRadius: 12, marginBottom: 8,
+    }}>
       <div>
-        <div style={{ fontWeight: 700 }}>{name}</div>
-        <div style={{ fontSize: 12, color: "#6b836b" }}>{sub}</div>
+        <div style={{ fontWeight: 700, fontSize: 13, color: "#e8f5e3" }}>{name}</div>
+        <div style={{ fontSize: 11, color: "#5a8a5a", marginTop: 2 }}>{sub}</div>
       </div>
       <div style={{ display: "flex", gap: 8 }}>{children}</div>
     </div>
   );
 }
+
 function Empty({ children }) {
-  return <div style={{ fontSize: 13, color: "#6b836b", fontStyle: "italic" }}>{children}</div>;
+  return (
+    <div style={{ fontSize: 12, color: "#3a5a3a", fontStyle: "italic", padding: "4px 0" }}>
+      {children}
+    </div>
+  );
 }
-const btn = { padding: "6px 12px", border: "1px solid #c2d2c2", borderRadius: 8, background: "#fff", cursor: "pointer", fontSize: 13 };
-const btnGreen = { ...btn, background: "#16a34a", color: "#fff", border: "none" };
-const btnRed = { ...btn, background: "#dc2626", color: "#fff", border: "none" };
-const errBox = { background: "#fde8e8", border: "1px solid #f5b5b5", color: "#a11", borderRadius: 8, padding: "8px 10px", marginBottom: 12, fontSize: 13 };
+
+function ActionBtn({ color, onClick, children }) {
+  const green = color === "green";
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: "7px 14px",
+        background: green ? "rgba(34,197,94,0.15)" : "rgba(220,38,38,0.15)",
+        border: `1px solid ${green ? "rgba(34,197,94,0.35)" : "rgba(220,38,38,0.35)"}`,
+        borderRadius: 8,
+        color: green ? "#4ade80" : "#f87171",
+        cursor: "pointer",
+        fontSize: 11, letterSpacing: 0.5,
+        fontFamily: "'Courier New', monospace",
+        minHeight: 36,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
