@@ -1,10 +1,11 @@
 import { useRef } from "react";
 import { MONTH_NAMES, DOW_SHORT, sameDay } from "../lib/dates.js";
 import { PHASES, getPhase, getDetail, getThreatsForPhase, phaseGlyph } from "../lib/growData.js";
+import { GROW_MIN_MONTH, GROW_MAX_MONTH } from "../lib/appConfig.js";
 
 const YEAR = 2026;
-const MIN_MONTH = 4;
-const MAX_MONTH = 9;
+const MIN_MONTH = GROW_MIN_MONTH;
+const MAX_MONTH = GROW_MAX_MONTH;
 // Tuned for one-thumb phone use. Threshold below ~40px catches incidental drag
 // during a tap; horizontal-vs-vertical ratio under ~1.5 catches diagonal
 // scrolls. Bump if false-positives appear during vertical page scroll.
