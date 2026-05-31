@@ -1,0 +1,698 @@
+import { useState } from "react";
+import { api } from "../lib/api.js";
+
+// ─── Supply checklist ───────────────────────────────────────────────────────
+
+const SUPPLY_ITEMS = [
+  { id: "soil",        label: "Potting mix / growing medium",   example: "e.g. Fox Farm Happy Frog, coco coir" },
+  { id: "perlite",     label: "Perlite or drainage amendment",  example: "" },
+  { id: "containers",  label: "Containers / fabric pots",       example: "e.g. 5-gal or 7-gal fabric pots" },
+  { id: "calmag",      label: "Cal-Mag supplement",             example: "e.g. Botanicare Cal-Mag Plus" },
+  { id: "veg_nutes",   label: "Veg / grow nutrients",           example: "e.g. Fox Farm Grow Big, General Hydroponics Micro" },
+  { id: "bloom_nutes", label: "Bloom / flower nutrients",       example: "e.g. Fox Farm Tiger Bloom, Flora Bloom" },
+  { id: "bloom_boost", label: "Bloom booster",                  example: "e.g. Fox Farm Big Bloom, Bud Candy" },
+  { id: "ph_kit",      label: "pH test kit or digital pH meter",example: "" },
+  { id: "tds_meter",   label: "TDS / EC meter",                 example: "" },
+  { id: "support",     label: "Stakes, trellis, or SCROG net",  example: "" },
+  { id: "ties",        label: "Plant ties or velcro tape",       example: "" },
+  { id: "watering",    label: "Watering can or irrigation",     example: "" },
+  { id: "loupe",       label: "Jeweler's loupe (trichome check)",example: "10x or 60x" },
+  { id: "humidity",    label: "Hygrometer (humidity meter)",     example: "" },
+  { id: "drying",      label: "Drying space",                   example: "dark room, 60-70°F, 55-65% RH" },
+  { id: "jars",        label: "Mason jars for curing",          example: "" },
+  { id: "neem",        label: "Pest preventative",              example: "e.g. neem oil, insecticidal soap" },
+];
+
+const SUPPLY_STATUS = ["have", "need_to_order", "not_using"];
+const SUPPLY_STATUS_LABEL = { have: "✓ Have", need_to_order: "⏳ Need", not_using: "— Skip" };
+const SUPPLY_STATUS_COLOR = {
+  have:          { bg: "rgba(34,197,94,0.15)",  border: "rgba(34,197,94,0.4)",  text: "#4ade80" },
+  need_to_order: { bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.4)", text: "#fbbf24" },
+  not_using:     { bg: "rgba(255,255,255,0.06)",border: "rgba(255,255,255,0.1)","text": "#5a7a5a" },
+};
+
+// ─── Default wizard state ───────────────────────────────────────────────────
+
+function defaultSurvey() {
+  return {
+    growName: "",
+    environment: "outdoor",
+    medium: "soil",
+    containerType: "fabric",
+    containerGallons: 7,
+    plantCount: 2,
+    strains: [
+      { name: "", type: "hybrid", photo: true, flowerWeeks: 9 },
+      { name: "", type: "sativa", photo: true, flowerWeeks: 11 },
+    ],
+    startType: "clone",
+    transplantDate: "",
+    vegWeeks: 10,
+    location: "",
+    experienceLevel: "beginner",
+    wateringMethod: "hand",
+    extraNotes: "",
+    supplies: Object.fromEntries(SUPPLY_ITEMS.map(s => [s.id, "need_to_order"])),
+  };
+}
+
+// ─── Style helpers ──────────────────────────────────────────────────────────
+
+const MONO = "'Courier New', monospace";
+const SERIF = "'Georgia', 'Times New Roman', serif";
+
+function Label({ children }) {
+  return (
+    <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: "#5a8a5a", marginBottom: 6 }}>
+      {children}
+    </div>
+  );
+}
+
+function Input({ value, onChange, placeholder, type = "text" }) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      style={{
+        width: "100%", boxSizing: "border-box",
+        background: "rgba(0,0,0,0.3)", color: "#e8f5e3",
+        border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10,
+        padding: "12px 14px", fontSize: 14, fontFamily: SERIF,
+        outline: "none",
+      }}
+    />
+  );
+}
+
+function RadioGroup({ options, value, onChange }) {
+  return (
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      {options.map(opt => {
+        const sel = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            style={{
+              padding: "9px 16px", borderRadius: 10,
+              background: sel ? "rgba(34,197,94,0.18)" : "rgba(255,255,255,0.05)",
+              border: sel ? "1.5px solid rgba(34,197,94,0.5)" : "1px solid rgba(255,255,255,0.12)",
+              color: sel ? "#4ade80" : "#8ab89a",
+              fontFamily: MONO, fontSize: 12, cursor: "pointer",
+              letterSpacing: 0.5, whiteSpace: "nowrap",
+            }}>
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function NumStepper({ value, onChange, min = 1, max = 10, label }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <button
+        type="button"
+        onClick={() => onChange(Math.max(min, value - 1))}
+        disabled={value <= min}
+        style={{
+          width: 40, height: 40, borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)",
+          background: "rgba(255,255,255,0.05)", color: value <= min ? "#3a5a3a" : "#a0d0a0",
+          fontSize: 20, cursor: value <= min ? "default" : "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+        −
+      </button>
+      <span style={{ fontFamily: MONO, fontSize: 18, fontWeight: 800, color: "#e8f5e3", minWidth: 32, textAlign: "center" }}>
+        {value}
+      </span>
+      <button
+        type="button"
+        onClick={() => onChange(Math.min(max, value + 1))}
+        disabled={value >= max}
+        style={{
+          width: 40, height: 40, borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)",
+          background: "rgba(255,255,255,0.05)", color: value >= max ? "#3a5a3a" : "#a0d0a0",
+          fontSize: 20, cursor: value >= max ? "default" : "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+        +
+      </button>
+      {label && <span style={{ fontFamily: MONO, fontSize: 11, color: "#5a7a5a" }}>{label}</span>}
+    </div>
+  );
+}
+
+// ─── Step components ────────────────────────────────────────────────────────
+
+function StepBasics({ survey, update }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div>
+        <Label>Grow name</Label>
+        <Input value={survey.growName} onChange={v => update("growName", v)} placeholder="e.g. Summer 2026 Outdoor" />
+      </div>
+      <div>
+        <Label>Environment</Label>
+        <RadioGroup
+          value={survey.environment}
+          onChange={v => update("environment", v)}
+          options={[
+            { value: "outdoor",    label: "Outdoor" },
+            { value: "indoor",     label: "Indoor" },
+            { value: "greenhouse", label: "Greenhouse" },
+          ]}
+        />
+      </div>
+      <div>
+        <Label>Growing medium</Label>
+        <RadioGroup
+          value={survey.medium}
+          onChange={v => update("medium", v)}
+          options={[
+            { value: "soil",  label: "Soil / potting mix" },
+            { value: "coco",  label: "Coco coir" },
+            { value: "hydro", label: "Hydro" },
+            { value: "other", label: "Other" },
+          ]}
+        />
+      </div>
+      <div>
+        <Label>Container type</Label>
+        <RadioGroup
+          value={survey.containerType}
+          onChange={v => update("containerType", v)}
+          options={[
+            { value: "fabric",  label: "Fabric pots" },
+            { value: "plastic", label: "Plastic pots" },
+            { value: "ground",  label: "In-ground" },
+            { value: "other",   label: "Other" },
+          ]}
+        />
+      </div>
+      {survey.containerType !== "ground" && (
+        <div>
+          <Label>Container size (gallons)</Label>
+          <NumStepper
+            value={survey.containerGallons}
+            onChange={v => update("containerGallons", v)}
+            min={1} max={30}
+            label="gal"
+          />
+        </div>
+      )}
+      <div>
+        <Label>Number of plants</Label>
+        <NumStepper
+          value={survey.plantCount}
+          onChange={v => {
+            const strains = [...survey.strains];
+            while (strains.length < v) strains.push({ name: "", type: "hybrid", photo: true, flowerWeeks: 9 });
+            while (strains.length > v) strains.pop();
+            update("strains", strains);
+            update("plantCount", v);
+          }}
+          min={1} max={8}
+          label="plants"
+        />
+      </div>
+    </div>
+  );
+}
+
+function StepStrains({ survey, update }) {
+  function updateStrain(i, field, value) {
+    const strains = survey.strains.map((s, idx) => idx === i ? { ...s, [field]: value } : s);
+    update("strains", strains);
+  }
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {survey.strains.map((strain, i) => (
+        <div key={i} style={{
+          background: "rgba(255,255,255,0.04)", borderRadius: 12,
+          border: "1px solid rgba(255,255,255,0.08)", padding: "16px",
+        }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 2, color: "#5a8a5a", marginBottom: 12 }}>
+            Plant {i + 1} {i === 0 ? "(primary)" : "(secondary)"}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <Label>Strain name</Label>
+              <Input
+                value={strain.name}
+                onChange={v => updateStrain(i, "name", v)}
+                placeholder={i === 0 ? "e.g. Grandaddy Purp" : "e.g. Strawberry Haze"}
+              />
+            </div>
+            <div>
+              <Label>Type</Label>
+              <RadioGroup
+                value={strain.type}
+                onChange={v => updateStrain(i, "type", v)}
+                options={[
+                  { value: "indica",  label: "Indica" },
+                  { value: "sativa",  label: "Sativa" },
+                  { value: "hybrid",  label: "Hybrid" },
+                ]}
+              />
+            </div>
+            <div>
+              <Label>Photoperiod or autoflower?</Label>
+              <RadioGroup
+                value={strain.photo ? "photo" : "auto"}
+                onChange={v => updateStrain(i, "photo", v === "photo")}
+                options={[
+                  { value: "photo", label: "Photoperiod" },
+                  { value: "auto",  label: "Autoflower" },
+                ]}
+              />
+            </div>
+            <div>
+              <Label>Expected flower time</Label>
+              <NumStepper
+                value={strain.flowerWeeks}
+                onChange={v => updateStrain(i, "flowerWeeks", v)}
+                min={6} max={16}
+                label="weeks"
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StepTimeline({ survey, update }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div>
+        <Label>Starting from</Label>
+        <RadioGroup
+          value={survey.startType}
+          onChange={v => update("startType", v)}
+          options={[
+            { value: "clone", label: "Clone" },
+            { value: "seed",  label: "Seed" },
+            { value: "veg",   label: "Already in veg" },
+          ]}
+        />
+      </div>
+      <div>
+        <Label>Transplant date</Label>
+        <input
+          type="date"
+          value={survey.transplantDate}
+          onChange={e => update("transplantDate", e.target.value)}
+          style={{
+            background: "rgba(0,0,0,0.3)", color: "#e8f5e3",
+            border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10,
+            padding: "12px 14px", fontSize: 14, fontFamily: SERIF,
+            outline: "none", width: "100%", boxSizing: "border-box",
+            colorScheme: "dark",
+          }}
+        />
+        <div style={{ fontFamily: MONO, fontSize: 10, color: "#3a5a3a", marginTop: 5, lineHeight: 1.7 }}>
+          When plants go into their final containers.
+        </div>
+      </div>
+      <div>
+        <Label>Planned veg duration</Label>
+        <NumStepper
+          value={survey.vegWeeks}
+          onChange={v => update("vegWeeks", v)}
+          min={4} max={20}
+          label="weeks"
+        />
+        <div style={{ fontFamily: MONO, fontSize: 10, color: "#3a5a3a", marginTop: 6, lineHeight: 1.7 }}>
+          For outdoor photoperiod, the plant decides — estimate how long before pre-flower starts in your area.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StepSetup({ survey, update }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div>
+        <Label>Location / region</Label>
+        <Input
+          value={survey.location}
+          onChange={v => update("location", v)}
+          placeholder="e.g. Central Ohio, USA"
+        />
+        <div style={{ fontFamily: MONO, fontSize: 10, color: "#3a5a3a", marginTop: 5, lineHeight: 1.7 }}>
+          Used to tailor weather threats and frost timing.
+        </div>
+      </div>
+      <div>
+        <Label>Experience level</Label>
+        <RadioGroup
+          value={survey.experienceLevel}
+          onChange={v => update("experienceLevel", v)}
+          options={[
+            { value: "beginner",     label: "First grow" },
+            { value: "intermediate", label: "1-3 grows" },
+            { value: "advanced",     label: "4+ grows" },
+          ]}
+        />
+      </div>
+      <div>
+        <Label>Watering method</Label>
+        <RadioGroup
+          value={survey.wateringMethod}
+          onChange={v => update("wateringMethod", v)}
+          options={[
+            { value: "hand", label: "Hand watering" },
+            { value: "drip", label: "Drip / automated" },
+          ]}
+        />
+      </div>
+      <div>
+        <Label>Anything else the AI should know</Label>
+        <textarea
+          value={survey.extraNotes}
+          onChange={e => update("extraNotes", e.target.value)}
+          placeholder="e.g. I have a covered porch for the first half, moving to the backyard in late July. No tent — fully outdoor."
+          rows={5}
+          style={{
+            width: "100%", boxSizing: "border-box", resize: "vertical",
+            background: "rgba(0,0,0,0.3)", color: "#e8f5e3",
+            border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10,
+            padding: "12px 14px", fontSize: 14, fontFamily: SERIF,
+            outline: "none", lineHeight: 1.7,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function StepSupplies({ survey, update }) {
+  function setStatus(id, status) {
+    update("supplies", { ...survey.supplies, [id]: status });
+  }
+
+  const need = Object.values(survey.supplies).filter(v => v === "need_to_order").length;
+  const have = Object.values(survey.supplies).filter(v => v === "have").length;
+
+  return (
+    <div>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: "#5a7a5a", marginBottom: 14, lineHeight: 1.8 }}>
+        Mark what you have, what you still need, or what you won't use. The AI will reference this in your calendar.
+      </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: "#4ade80" }}>✓ {have} have</div>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: "#fbbf24" }}>⏳ {need} need</div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {SUPPLY_ITEMS.map(item => {
+          const status = survey.supplies[item.id] || "need_to_order";
+          return (
+            <div key={item.id} style={{
+              background: "rgba(255,255,255,0.04)", borderRadius: 10,
+              border: "1px solid rgba(255,255,255,0.08)", padding: "12px 14px",
+            }}>
+              <div style={{ fontFamily: SERIF, fontSize: 13, color: "#c8dcc8", marginBottom: 4 }}>
+                {item.label}
+              </div>
+              {item.example && (
+                <div style={{ fontFamily: MONO, fontSize: 10, color: "#3a5a3a", marginBottom: 8 }}>
+                  {item.example}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 6 }}>
+                {SUPPLY_STATUS.map(s => {
+                  const c = SUPPLY_STATUS_COLOR[s];
+                  const active = status === s;
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setStatus(item.id, s)}
+                      style={{
+                        padding: "6px 12px", borderRadius: 8,
+                        background: active ? c.bg : "rgba(255,255,255,0.04)",
+                        border: active ? `1.5px solid ${c.border}` : "1px solid rgba(255,255,255,0.08)",
+                        color: active ? c.text : "#3a5a3a",
+                        fontFamily: MONO, fontSize: 11, cursor: "pointer",
+                        transition: "all 0.15s",
+                      }}>
+                      {SUPPLY_STATUS_LABEL[s]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function StepReview({ survey }) {
+  const primaryStrain = survey.strains[0];
+  const secondaryStrain = survey.strains[1];
+  const have = Object.values(survey.supplies).filter(v => v === "have").length;
+  const need = Object.values(survey.supplies).filter(v => v === "need_to_order").length;
+
+  const rows = [
+    ["Grow", survey.growName || "(unnamed)"],
+    ["Environment", survey.environment],
+    ["Medium", survey.medium],
+    ["Plants", `${survey.plantCount} × ${survey.containerType !== "ground" ? `${survey.containerGallons}-gal` : "in-ground"}`],
+    ["Primary strain", primaryStrain?.name || "(unnamed)"],
+    secondaryStrain ? ["Secondary strain", secondaryStrain?.name || "(unnamed)"] : null,
+    ["Start type", survey.startType],
+    ["Transplant", survey.transplantDate || "(not set)"],
+    ["Veg plan", `${survey.vegWeeks} weeks`],
+    ["Location", survey.location || "(not set)"],
+    ["Experience", survey.experienceLevel],
+    ["Watering", survey.wateringMethod],
+    ["Supplies", `${have} have · ${need} to order`],
+  ].filter(Boolean);
+
+  return (
+    <div>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: "#5a7a5a", marginBottom: 14, lineHeight: 1.8 }}>
+        Review your answers. The AI will use all of this to build a personalized grow calendar.
+      </div>
+      <div style={{
+        background: "rgba(255,255,255,0.04)", borderRadius: 12,
+        border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden", marginBottom: 20,
+      }}>
+        {rows.map(([k, v], i) => (
+          <div key={k} style={{
+            display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+            padding: "10px 14px",
+            borderTop: i > 0 ? "1px solid rgba(255,255,255,0.05)" : "none",
+          }}>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "#5a8a5a", letterSpacing: 0.5, flexShrink: 0, marginRight: 12 }}>{k}</span>
+            <span style={{ fontFamily: SERIF, fontSize: 13, color: "#c8dcc8", textAlign: "right", wordBreak: "break-word" }}>{v}</span>
+          </div>
+        ))}
+      </div>
+      {survey.extraNotes?.trim() && (
+        <div style={{
+          background: "rgba(250,204,21,0.05)", borderRadius: 10,
+          border: "1px solid rgba(250,204,21,0.15)", padding: "12px 14px",
+          fontFamily: SERIF, fontSize: 13, color: "#b8a870", lineHeight: 1.7, marginBottom: 20,
+        }}>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: "#f59e0b", letterSpacing: 1 }}>NOTES: </span>
+          {survey.extraNotes}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Wizard shell ────────────────────────────────────────────────────────────
+
+const STEPS = [
+  { id: "basics",   title: "Grow Basics" },
+  { id: "strains",  title: "Your Strains" },
+  { id: "timeline", title: "Timeline" },
+  { id: "setup",    title: "Your Setup" },
+  { id: "supplies", title: "Supplies" },
+  { id: "review",   title: "Review & Generate" },
+];
+
+export default function SetupWizard({ onComplete }) {
+  const [step, setStep] = useState(0);
+  const [survey, setSurvey] = useState(defaultSurvey);
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState("");
+
+  function update(field, value) {
+    setSurvey(s => ({ ...s, [field]: value }));
+  }
+
+  function canAdvance() {
+    if (step === 0) return survey.growName.trim().length > 0;
+    if (step === 1) return survey.strains.every(s => s.name.trim().length > 0);
+    if (step === 2) return survey.transplantDate.length > 0;
+    return true;
+  }
+
+  async function generate() {
+    setGenerating(true);
+    setGenError("");
+    try {
+      await api.planSetup(survey);
+      onComplete();
+    } catch (err) {
+      setGenError(err.message || "Generation failed. Please try again.");
+      setGenerating(false);
+    }
+  }
+
+  const isLast = step === STEPS.length - 1;
+
+  return (
+    <div style={{
+      minHeight: "100vh",
+      fontFamily: SERIF,
+      color: "#e8f5e3",
+      background: "linear-gradient(160deg, #0a1a0d, #0e1a12)",
+      display: "flex",
+      flexDirection: "column",
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: "16px 16px 14px",
+        paddingTop: "calc(16px + env(safe-area-inset-top, 0px))",
+        borderBottom: "1px solid rgba(255,255,255,0.07)",
+        background: "rgba(0,0,0,0.2)",
+        flexShrink: 0,
+      }}>
+        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: "#5a8a5a", marginBottom: 4 }}>
+          NEW GROW — STEP {step + 1} OF {STEPS.length}
+        </div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>
+          {STEPS[step].title}
+        </div>
+        {/* Progress bar */}
+        <div style={{
+          height: 3, background: "rgba(255,255,255,0.08)", borderRadius: 2, marginTop: 12,
+        }}>
+          <div style={{
+            height: "100%", borderRadius: 2,
+            background: "linear-gradient(90deg, #22c55e, #4ade80)",
+            width: `${((step + 1) / STEPS.length) * 100}%`,
+            transition: "width 0.3s ease",
+          }} />
+        </div>
+      </div>
+
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px" }}>
+        {generating ? (
+          <GeneratingScreen />
+        ) : (
+          <>
+            {step === 0 && <StepBasics survey={survey} update={update} />}
+            {step === 1 && <StepStrains survey={survey} update={update} />}
+            {step === 2 && <StepTimeline survey={survey} update={update} />}
+            {step === 3 && <StepSetup survey={survey} update={update} />}
+            {step === 4 && <StepSupplies survey={survey} update={update} />}
+            {step === 5 && <StepReview survey={survey} />}
+
+            {genError && (
+              <div style={{
+                marginTop: 16, padding: "10px 14px", borderRadius: 10,
+                background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.3)",
+                fontFamily: MONO, fontSize: 12, color: "#fca5a5",
+              }}>
+                {genError}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Navigation */}
+      {!generating && (
+        <div style={{
+          padding: "16px",
+          paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
+          borderTop: "1px solid rgba(255,255,255,0.07)",
+          display: "flex", gap: 12,
+          background: "rgba(0,0,0,0.3)",
+          flexShrink: 0,
+        }}>
+          {step > 0 && (
+            <button
+              type="button"
+              onClick={() => setStep(s => s - 1)}
+              style={{
+                flex: 1, padding: "14px", borderRadius: 12,
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "#a0d0a0", fontFamily: MONO, fontSize: 12,
+                letterSpacing: 1, cursor: "pointer",
+              }}>
+              ← Back
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={!canAdvance()}
+            onClick={() => isLast ? generate() : setStep(s => s + 1)}
+            style={{
+              flex: 2, padding: "14px", borderRadius: 12,
+              background: canAdvance()
+                ? (isLast ? "rgba(34,197,94,0.25)" : "rgba(34,197,94,0.18)")
+                : "rgba(255,255,255,0.05)",
+              border: canAdvance()
+                ? (isLast ? "1.5px solid rgba(34,197,94,0.6)" : "1.5px solid rgba(34,197,94,0.4)")
+                : "1px solid rgba(255,255,255,0.08)",
+              color: canAdvance() ? "#4ade80" : "#3a5a3a",
+              fontFamily: MONO, fontSize: 13, letterSpacing: 1,
+              cursor: canAdvance() ? "pointer" : "default",
+              fontWeight: isLast ? 800 : 400,
+            }}>
+            {isLast ? "✦ Generate My Calendar" : "Next →"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GeneratingScreen() {
+  return (
+    <div style={{
+      display: "flex", flexDirection: "column", alignItems: "center",
+      justifyContent: "center", minHeight: "50vh", gap: 24, textAlign: "center",
+    }}>
+      <div style={{ fontSize: 48 }}>🌱</div>
+      <div>
+        <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 800, color: "#4ade80", letterSpacing: 2, marginBottom: 8 }}>
+          BUILDING YOUR CALENDAR
+        </div>
+        <div style={{ fontFamily: SERIF, fontSize: 14, color: "#7a9a7a", lineHeight: 1.8, maxWidth: 280 }}>
+          The AI is analyzing your setup and generating a personalized grow schedule. This takes about 30 seconds.
+        </div>
+      </div>
+      <Spinner />
+    </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <div style={{
+      width: 40, height: 40, borderRadius: "50%",
+      border: "3px solid rgba(34,197,94,0.15)",
+      borderTopColor: "#4ade80",
+      animation: "spin 0.9s linear infinite",
+    }} />
+  );
+}

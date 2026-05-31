@@ -6,6 +6,7 @@ import { getNote, putNote } from "./notes.js";
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
 import { getHealth, postClientError } from "./health.js";
 import { getPlan } from "./plan.js";
+import { postPlanSetup } from "./planSetup.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
 import { requireApproved, requireAdmin } from "./guard.js";
 import { logError, logInfo } from "./log.js";
@@ -101,6 +102,7 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (path === "/api/mj/history"      && method === "GET")    return getMjHistory(env, user);
   if (path === "/api/mj/history"      && method === "DELETE") return deleteMjHistory(env, user);
   if (path === "/api/plan"      && method === "GET")  return getPlan(env, user);
+  if (path === "/api/plan/setup" && method === "POST") return postPlanSetup(request, env, user);
   if (path === "/api/errors"    && method === "POST") return postClientError(request, env, user);
 
   if (path === "/api/checkoffs" && method === "GET") {
