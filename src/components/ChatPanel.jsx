@@ -1,18 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { api } from "../lib/api.js";
 
-const SUGGESTIONS = [
-  "What should I be doing today?",
-  "Mark today's watering done",
-  "Add a note to today: lower leaves yellowing",
-];
-
 function fmtContextDate(yyyymmdd) {
   const [y, m, d] = yyyymmdd.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function ChatPanel({ onClose, contextDate }) {
+export default function ChatPanel({ onClose, contextDate, suggestions }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -90,6 +84,12 @@ export default function ChatPanel({ onClose, contextDate }) {
     }
   }
 
+  function handleClear() {
+    setMessages([]);
+    setError("");
+    api.clearMjHistory().catch(() => {});
+  }
+
   function onKeyDown(e) {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   }
@@ -144,6 +144,21 @@ export default function ChatPanel({ onClose, contextDate }) {
             )}
           </div>
         </div>
+        {messages.length > 0 && (
+          <button
+            type="button"
+            onClick={handleClear}
+            style={{
+              background: "none", border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 8, padding: "5px 10px", color: "#5a7a5a",
+              fontFamily: "'Courier New', monospace", fontSize: 10,
+              letterSpacing: 1, cursor: "pointer", textTransform: "uppercase",
+              flexShrink: 0,
+            }}
+          >
+            Clear
+          </button>
+        )}
         <UsageBar usage={usage} />
       </div>
 
@@ -168,7 +183,7 @@ export default function ChatPanel({ onClose, contextDate }) {
               Ask anything about your grow, or tell me to do things — check off today&apos;s tasks, add to your daily notes. I know your full plan.
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {SUGGESTIONS.map(s => (
+              {(suggestions ?? []).map(s => (
                 <button key={s} type="button" onClick={() => setInput(s)} style={{
                   background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
                   borderRadius: 10, padding: "12px 14px", color: "#c8dcc8", fontSize: 13,

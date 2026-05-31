@@ -15,6 +15,7 @@ import { useCheckoffs } from "./lib/useCheckoffs.js";
 import { useMonthCheckoffs } from "./lib/useMonthCheckoffs.js";
 import { useDayNote } from "./lib/useDayNote.js";
 import { ymd } from "./lib/api.js";
+import { buildSuggestions } from "./lib/mjSuggestions.js";
 
 import Header from "./components/Header.jsx";
 import AdminPanel from "./components/AdminPanel.jsx";
@@ -147,10 +148,20 @@ export default function App() {
   const progress   = getGrowProgress(today, config);
   const milestones = buildMilestones(config);
 
-  const selPhase = selected ? getPhase(selected, config) : null;
-  const selStyle = selPhase ? PHASES[selPhase]    : null;
-  const detail   = selected ? getDetail(selected, config, overrides) : null;
-  const threats  = selPhase ? getThreatsForPhase(selPhase) : [];
+  const selPhase    = selected ? getPhase(selected, config) : null;
+  const selStyle    = selPhase ? PHASES[selPhase] : null;
+  const detail      = selected ? getDetail(selected, config, overrides) : null;
+  const threats     = selPhase ? getThreatsForPhase(selPhase) : [];
+  // Threats for today used when chat is opened from the calendar (no day selected).
+  const todayThreats = todayPhase ? getThreatsForPhase(todayPhase) : [];
+
+  const suggestions = buildSuggestions({
+    detail,
+    checked,
+    threats: chatContext ? threats : todayThreats,
+    contextDate: chatContext,
+    today,
+  });
 
   function pickDay(date)       { openDay(date); }
   function pickMilestone(date) { setMonth(date.getMonth()); openDay(date); }
@@ -185,7 +196,7 @@ export default function App() {
           🌿 MJ
         </button>
       )}
-      {chatOpen && <ChatPanel onClose={closeChat} contextDate={chatContext} />}
+      {chatOpen && <ChatPanel onClose={closeChat} contextDate={chatContext} suggestions={suggestions} />}
     </>
   );
 
