@@ -317,7 +317,11 @@ async function executeTool(name, input, env, userId, config, overrides, actions)
       const current = await readCheckoffs(env, userId, date);
       const next = mergeChecked(current, inRange, input.done);
       await writeCheckoffs(env, userId, date, next);
-      actions.push({ type: "set_tasks_done", date, summary: describeChecked(detail, inRange, input.done) });
+      actions.push({
+        type: "set_tasks_done", date,
+        summary: describeChecked(detail, inRange, input.done),
+        undoPayload: { type: "set_tasks_done", date, taskIndices: inRange, done: !input.done },
+      });
       return { date, checked: next, ignored };
     }
 
@@ -329,7 +333,11 @@ async function executeTool(name, input, env, userId, config, overrides, actions)
       const note = appendNoteText(existing, input.text);
       if (note.length > MAX_NOTE_LEN) return { error: "note would exceed the maximum length" };
       await writeNote(env, userId, date, note);
-      actions.push({ type: "append_note", date, summary: `Added to ${date} note` });
+      actions.push({
+        type: "append_note", date,
+        summary: `Added to ${date} note`,
+        undoPayload: { type: "undo_append_note", date, originalNote: existing ?? "" },
+      });
       return { date, note };
     }
 
@@ -349,6 +357,41 @@ async function executeTool(name, input, env, userId, config, overrides, actions)
     logError("mj-tool", { tool: name, message: String(err?.message ?? err) });
     return { error: "tool failed to execute" };
   }
+}
+
+export async function postMjUndo(request, env, user) {
+  const parsed = await safeJsonBounded(request, 4096);
+  if (!parsed.ok) return error(parsed.status, parsed.error);
+  const body = parsed.data;
+  const { type, date } = body ?? {};
+
+  if (typeof date !== "string" || !DATE_RE.test(date)) return error(400, "date must be YYYY-MM-DD");
+
+  if (type === "set_tasks_done") {
+    const { taskIndices, done } = body;
+    if (!Array.isArray(taskIndices) || typeof done !== "boolean") return error(400, "invalid undo payload");
+    const raw = await loadRawPlan(env, user.id);
+    const config = parseConfig(raw.config);
+    const dt = parseDate(date);
+    const phase = getPhase(dt, config);
+    if (!phase) return error(400, `no plan for ${date}`);
+    const detail = getDetail(dt, config, raw.overrides);
+    const inRange = taskIndices.map(Number).filter(i => Number.isInteger(i) && i >= 0 && i < detail.tasks.length);
+    const current = await readCheckoffs(env, user.id, date);
+    const next = mergeChecked(current, inRange, done);
+    await writeCheckoffs(env, user.id, date, next);
+    return json({ ok: true, checked: next });
+  }
+
+  if (type === "undo_append_note") {
+    const { originalNote } = body;
+    if (typeof originalNote !== "string") return error(400, "invalid undo payload");
+    if (originalNote.length > MAX_NOTE_LEN) return error(400, "original note too long");
+    await writeNote(env, user.id, date, originalNote);
+    return json({ ok: true });
+  }
+
+  return error(400, "unknown undo type");
 }
 
 function describeChecked(detail, indices, done) {

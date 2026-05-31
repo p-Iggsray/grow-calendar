@@ -13,6 +13,11 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
   const [error, setError] = useState("");
   const [usage, setUsage] = useState(null);
   const [historyLoading, setHistoryLoading] = useState(true);
+  // undoForMsgId: the _id of the message whose action chips show Undo buttons.
+  // Cleared when a new send starts or when the 60s window expires.
+  const [undoForMsgId, setUndoForMsgId] = useState(null);
+  const msgIdRef    = useRef(0);    // monotonic counter for stable message IDs
+  const undoTimerRef = useRef(null);
 
   const panelRef  = useRef(null); // outer fixed div — resized by visualViewport
   const bottomRef = useRef(null); // scroll anchor at end of message list
@@ -69,12 +74,19 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
     setBusy(true);
     setInput("");
     setError("");
+    // Sending a new message closes the previous undo window.
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setUndoForMsgId(null);
+
+    // Assign a stable ID to the new assistant placeholder so the undo window
+    // can reference it even after the messages array is mutated.
+    const msgId = ++msgIdRef.current;
     // Append user message and an empty assistant placeholder immediately.
     // The placeholder shows "thinking..." until the first token arrives.
     setMessages(prev => [
       ...prev,
       { role: "user", content: text },
-      { role: "assistant", content: "", actions: [] },
+      { role: "assistant", content: "", actions: [], _id: msgId },
     ]);
     try {
       await new Promise((resolve) => {
@@ -99,6 +111,11 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
               return msgs;
             });
             if (u) setUsage(u);
+            // Open the undo window if any action has an undoPayload.
+            if ((actions || []).some(a => a.undoPayload)) {
+              setUndoForMsgId(msgId);
+              undoTimerRef.current = setTimeout(() => setUndoForMsgId(null), 60_000);
+            }
             resolve();
           },
           onError: (err) => {
@@ -119,6 +136,25 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleUndo(msgId, actionIdx, undoPayload) {
+    try {
+      await api.mjUndo(undoPayload);
+    } catch {
+      // Undo failed silently — the chip reverts to normal on next render
+      return;
+    }
+    // Mark the action undone and close the undo window.
+    setMessages(prev => prev.map(m => {
+      if (m._id !== msgId) return m;
+      const updated = (m.actions || []).map((a, i) =>
+        i === actionIdx ? { ...a, undone: true } : a
+      );
+      return { ...m, actions: updated };
+    }));
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setUndoForMsgId(null);
   }
 
   function handleClear() {
@@ -243,6 +279,8 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
               text={isThinking ? "thinking..." : m.content}
               dim={isThinking}
               actions={m.actions}
+              showUndo={m._id != null && m._id === undoForMsgId}
+              onUndo={(actionIdx, payload) => handleUndo(m._id, actionIdx, payload)}
             />
           );
         })}
@@ -343,7 +381,7 @@ function UsageBar({ usage }) {
   );
 }
 
-function Bubble({ role, text, dim, actions }) {
+function Bubble({ role, text, dim, actions, showUndo, onUndo }) {
   const isUser = role === "user";
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: isUser ? "flex-end" : "flex-start" }}>
@@ -359,7 +397,20 @@ function Bubble({ role, text, dim, actions }) {
       {actions && actions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6, maxWidth: "85%" }}>
           {actions.map((a, i) => {
+            if (a.undone) {
+              return (
+                <span key={i} style={{
+                  fontSize: 11, fontFamily: "'Courier New', monospace",
+                  color: "#5a7a5a", background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 8, padding: "4px 9px",
+                }}>
+                  ↩ Undone
+                </span>
+              );
+            }
             const isNote = a.type === "replace_note";
+            const canUndo = showUndo && !!a.undoPayload;
             return (
               <span key={i} style={{
                 fontSize: 11, fontFamily: "'Courier New', monospace",
@@ -367,8 +418,23 @@ function Bubble({ role, text, dim, actions }) {
                 background: isNote ? "rgba(251,191,36,0.1)" : "rgba(34,197,94,0.1)",
                 border: `1px solid ${isNote ? "rgba(251,191,36,0.25)" : "rgba(34,197,94,0.25)"}`,
                 borderRadius: 8, padding: "4px 9px",
+                display: "inline-flex", alignItems: "center", gap: 6,
               }}>
                 {a.type === "replace_note" ? "✏️" : a.type === "append_note" ? "📝" : "✓"} {a.summary}
+                {canUndo && (
+                  <button
+                    type="button"
+                    onClick={() => onUndo(i, a.undoPayload)}
+                    style={{
+                      background: "none", border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: 5, color: "rgba(255,255,255,0.45)", fontSize: 10,
+                      fontFamily: "'Courier New', monospace", letterSpacing: 0.5,
+                      padding: "1px 6px", cursor: "pointer", lineHeight: 1.4,
+                    }}
+                  >
+                    Undo
+                  </button>
+                )}
               </span>
             );
           })}
