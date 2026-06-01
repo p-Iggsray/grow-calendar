@@ -36,10 +36,14 @@ async function request(path, opts = {}) {
 
 export const api = {
   me: () => request("/api/auth/me"),
-  signup: (username, password) =>
-    request("/api/auth/signup", { method: "POST", body: JSON.stringify({ username, password }) }),
+  signup: (username, email, password) =>
+    request("/api/auth/signup", { method: "POST", body: JSON.stringify({ username, email, password }) }),
   login: (username, password) =>
     request("/api/auth/login",  { method: "POST", body: JSON.stringify({ username, password }) }),
+  forgotPassword: (email) =>
+    request("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
+  resetPassword: (token, newPassword) =>
+    request("/api/auth/reset-password",  { method: "POST", body: JSON.stringify({ token, newPassword }) }),
   logout: () => request("/api/auth/logout", { method: "POST" }),
 
   getCheckoffs: (date) => request(`/api/checkoffs/${date}`),
