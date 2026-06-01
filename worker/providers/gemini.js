@@ -2,6 +2,14 @@ import { ProviderError } from "./errors.js";
 
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
+// When CF_AI_GATEWAY_URL is set (e.g. https://gateway.ai.cloudflare.com/v1/{account}/{name})
+// route through the gateway instead of calling Google directly.
+function geminiBase(gatewayBase) {
+  return gatewayBase
+    ? `${gatewayBase}/google-ai-studio/v1beta/models`
+    : GEMINI_BASE;
+}
+
 export function toGeminiContents(messages) {
   return messages.map(m => ({
     role: m.role === "assistant" ? "model" : "user",
@@ -37,12 +45,16 @@ export function parseGeminiResponse(data) {
 // function calls have been seen yet in this response. Gemini never mixes
 // text and function calls in the same turn, so this is always safe.
 // Returns the full { text, functionCalls, parts } for the caller to use.
-async function streamGeminiCall({ apiKey, model, body, onChunk }) {
+async function streamGeminiCall({ apiKey, model, body, onChunk, gatewayBase, userId }) {
+  const base = geminiBase(gatewayBase);
+  const headers = { "x-goog-api-key": apiKey, "content-type": "application/json" };
+  if (userId != null) headers["cf-aig-metadata"] = JSON.stringify({ user_id: String(userId) });
+
   let res;
   try {
-    res = await fetch(`${GEMINI_BASE}/${model}:streamGenerateContent?alt=sse`, {
+    res = await fetch(`${base}/${model}:streamGenerateContent?alt=sse`, {
       method: "POST",
-      headers: { "x-goog-api-key": apiKey, "content-type": "application/json" },
+      headers,
       body: JSON.stringify(body),
     });
   } catch {
@@ -95,7 +107,7 @@ async function streamGeminiCall({ apiKey, model, body, onChunk }) {
 
 // onChunk is forwarded to streaming tool-call iterations too, but Gemini
 // never emits text on the same turn as function calls, so it's a no-op there.
-export async function runGemini({ apiKey, model, systemSegments, tools, messages, executeToolUse, maxIterations, onChunk }) {
+export async function runGemini({ apiKey, model, systemSegments, tools, messages, executeToolUse, maxIterations, onChunk, gatewayBase, userId }) {
   const contents = toGeminiContents(messages);
   let finalText = "";
 
@@ -103,7 +115,7 @@ export async function runGemini({ apiKey, model, systemSegments, tools, messages
     let text, functionCalls, parts;
     try {
       const body = buildGeminiBody({ systemSegments, tools, contents });
-      ({ text, functionCalls, parts } = await streamGeminiCall({ apiKey, model, body, onChunk }));
+      ({ text, functionCalls, parts } = await streamGeminiCall({ apiKey, model, body, onChunk, gatewayBase, userId }));
     } catch (e) {
       if (e instanceof ProviderError) throw e;
       throw new ProviderError("unreachable");

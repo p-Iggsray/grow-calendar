@@ -207,6 +207,8 @@ export async function postMj(request, env, user) {
               apiKey, model, systemSegments, tools: MJ_TOOLS, messages,
               executeToolUse, maxIterations: MAX_TOOL_ITERATIONS,
               onChunk: (delta) => send({ delta }),
+              gatewayBase: env.CF_AI_GATEWAY_URL ?? null,
+              userId: user.id,
             }));
             modelUsed = model;
           } catch (e) {
