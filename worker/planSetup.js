@@ -3,8 +3,14 @@ import { json, error } from "./util.js";
 import { DEFAULT_CONFIG } from "../src/lib/planConfig.js";
 import { logError } from "./log.js";
 
-const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+const GEMINI_DIRECT_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 const SETUP_MODEL = "gemini-2.5-pro";
+
+function geminiBase(gatewayBase) {
+  return gatewayBase
+    ? `${gatewayBase}/google-ai-studio/v1beta/models`
+    : GEMINI_DIRECT_BASE;
+}
 
 const REQUIRED_CONFIG_KEYS = Object.keys(DEFAULT_CONFIG);
 
@@ -137,9 +143,12 @@ export async function postPlanSetup(request, env, user) {
 
   let rawText = "";
   try {
-    const res = await fetch(`${GEMINI_BASE}/${SETUP_MODEL}:generateContent`, {
+    const base = geminiBase(env.CF_AI_GATEWAY_URL ?? null);
+    const headers = { "x-goog-api-key": env.GEMINI_API_KEY, "content-type": "application/json" };
+    if (user?.id != null) headers["cf-aig-metadata"] = JSON.stringify({ user_id: String(user.id) });
+    const res = await fetch(`${base}/${SETUP_MODEL}:generateContent`, {
       method: "POST",
-      headers: { "x-goog-api-key": env.GEMINI_API_KEY, "content-type": "application/json" },
+      headers,
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
