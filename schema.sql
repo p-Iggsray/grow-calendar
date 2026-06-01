@@ -84,6 +84,22 @@ CREATE TABLE IF NOT EXISTS plan_day_overrides (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS grow_log (
+  user_id    INTEGER NOT NULL,
+  date       TEXT NOT NULL,
+  water_gal  REAL,
+  feed       TEXT,
+  temp_high  REAL,
+  temp_low   REAL,
+  humidity   REAL,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, date),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Migration for existing databases (skip on fresh installs):
+-- Run the CREATE TABLE IF NOT EXISTS above directly — it's a new table.
+
 CREATE TABLE IF NOT EXISTS mj_usage (
   user_id INTEGER NOT NULL,
   date    TEXT NOT NULL,

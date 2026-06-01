@@ -102,6 +102,15 @@ export const api = {
   getMjHistory: () => request("/api/mj/history"),
   clearMjHistory: () => request("/api/mj/history", { method: "DELETE" }),
 
+  getGrowLog: (date) => request(`/api/grow-log/${date}`),
+  putGrowLog: (date, entry) =>
+    request(`/api/grow-log/${date}`, { method: "PUT", body: JSON.stringify(entry) }),
+  downloadGrowLogCsv: async () => {
+    const res = await fetch("/api/grow-log/export.csv", { credentials: "same-origin" });
+    if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+    return res.blob();
+  },
+
   reportError: ({ message, stack, url }) =>
     request("/api/errors", { method: "POST", body: JSON.stringify({ message, stack, url }) }).catch(() => {}),
 
