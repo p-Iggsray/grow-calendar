@@ -1,9 +1,10 @@
-import { CalendarDays, Sun, Sparkles, MoreHorizontal } from "lucide-react";
+import { CalendarDays, Sun, Sparkles, ClipboardList, MoreHorizontal } from "lucide-react";
 
 const TABS = [
   { id: "calendar", Icon: CalendarDays,   label: "CALENDAR" },
   { id: "today",    Icon: Sun,             label: "TODAY"    },
   { id: "mj",       Icon: Sparkles,        label: "MJ"       },
+  { id: "plan",     Icon: ClipboardList,   label: "PLAN"     },
   { id: "more",     Icon: MoreHorizontal,  label: "MORE"     },
 ];
 

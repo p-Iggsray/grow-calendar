@@ -123,6 +123,14 @@ export const api = {
   getPlan: () => request("/api/plan"),
   planSetup: (survey) =>
     request("/api/plan/setup", { method: "POST", body: JSON.stringify({ survey }) }),
+  regeneratePlan: () =>
+    request("/api/plan/regenerate", { method: "POST" }),
+  updatePlanConfig: (config) =>
+    request("/api/plan/config", { method: "PATCH", body: JSON.stringify({ config }) }),
+  savePlanPhase: (phase, data) =>
+    request(`/api/plan/phase/${phase}`, { method: "PUT", body: JSON.stringify(data) }),
+  clearPlanPhase: (phase) =>
+    request(`/api/plan/phase/${phase}`, { method: "DELETE" }),
 
   adminListUsers: () => request("/api/admin/users"),
   approveUser: (id) => request(`/api/admin/users/${id}/approve`, { method: "POST" }),

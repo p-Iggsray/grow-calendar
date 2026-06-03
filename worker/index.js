@@ -9,8 +9,8 @@ import { getGrowLog, putGrowLog, exportGrowLogCsv } from "./growLog.js";
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
 import { getHealth, postClientError } from "./health.js";
 import { getWeather } from "./weather.js";
-import { getPlan } from "./plan.js";
-import { postPlanSetup } from "./planSetup.js";
+import { getPlan, patchPlanConfig, putPlanPhase, deletePlanPhase } from "./plan.js";
+import { postPlanSetup, postPlanRegenerate } from "./planSetup.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
 import { requireApproved, requireAdmin } from "./guard.js";
 import { logError, logInfo } from "./log.js";
@@ -108,8 +108,16 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (path === "/api/mj/usage"        && method === "GET")    return getMjUsage(env, user);
   if (path === "/api/mj/history"      && method === "GET")    return getMjHistory(env, user);
   if (path === "/api/mj/history"      && method === "DELETE") return deleteMjHistory(env, user);
-  if (path === "/api/plan"      && method === "GET")  return getPlan(env, user);
-  if (path === "/api/plan/setup" && method === "POST") return postPlanSetup(request, env, user);
+  if (path === "/api/plan"           && method === "GET")   return getPlan(env, user);
+  if (path === "/api/plan/setup"     && method === "POST")  return postPlanSetup(request, env, user);
+  if (path === "/api/plan/regenerate"&& method === "POST")  return postPlanRegenerate(request, env, user);
+  if (path === "/api/plan/config"    && method === "PATCH") return patchPlanConfig(request, env, user);
+  const planPhaseMatch = path.match(/^\/api\/plan\/phase\/([a-z_]+)$/);
+  if (planPhaseMatch) {
+    const phase = planPhaseMatch[1];
+    if (method === "PUT")    return putPlanPhase(request, env, user, phase);
+    if (method === "DELETE") return deletePlanPhase(env, user, phase);
+  }
   if (path === "/api/errors"    && method === "POST") return postClientError(request, env, user);
 
   if (path === "/api/checkoffs" && method === "GET") {
