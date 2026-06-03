@@ -27,6 +27,7 @@ import ChatPanel from "./components/ChatPanel.jsx";
 import TabBar from "./components/TabBar.jsx";
 import MoreScreen from "./components/MoreScreen.jsx";
 import PlanScreen from "./components/PlanScreen.jsx";
+import MjReviewPanel from "./components/MjReviewPanel.jsx";
 
 const SHELL_STYLE = {
   fontFamily: "'Georgia', 'Times New Roman', serif",
@@ -45,9 +46,11 @@ export default function App() {
   const [month,       setMonth]      = useState(() => today.getMonth());
   const [selected,    setSelected]   = useState(null);
   const [activeTab,   setActiveTab]  = useState("calendar");
-  const [chatOpen,    setChatOpen]   = useState(false);
-  const [chatContext, setChatContext] = useState(null); // YYYY-MM-DD of the day open in the app, or null
-  const [showAdmin,   setShowAdmin]  = useState(false);
+  const [chatOpen,      setChatOpen]      = useState(false);
+  const [chatContext,   setChatContext]   = useState(null); // YYYY-MM-DD of the day open in the app, or null
+  const [showAdmin,     setShowAdmin]     = useState(false);
+  // Set to true when SetupWizard completes so MjReviewPanel runs before entering the main app.
+  const [reviewPending, setReviewPending] = useState(false);
 
   const { taskStates, loading: checkoffsLoading, toggle, setTaskState } = useCheckoffs(selected, Boolean(user));
   const { counts: monthCheckoffCounts } = useMonthCheckoffs(today.getFullYear(), month, Boolean(user));
@@ -141,7 +144,21 @@ export default function App() {
   if (needsSetup) {
     return (
       <div style={SHELL_STYLE}>
-        <SetupWizard onComplete={reloadPlan} />
+        <SetupWizard
+          onComplete={() => { setReviewPending(true); reloadPlan(); }}
+        />
+      </div>
+    );
+  }
+
+  // After setup completes, run MJ's quality review before entering the main app.
+  if (reviewPending && config) {
+    return (
+      <div style={SHELL_STYLE}>
+        <MjReviewPanel
+          onComplete={() => { setReviewPending(false); setActiveTab("plan"); reloadPlan(); }}
+          onSkip={() => { setReviewPending(false); setActiveTab("plan"); }}
+        />
       </div>
     );
   }
