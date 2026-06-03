@@ -14,6 +14,7 @@ import { getPushVapidKey, postPushSubscribe, deletePushSubscribe, getPushToday, 
 import { getPlan, patchPlanConfig, putPlanPhase, deletePlanPhase } from "./plan.js";
 import { postPlanSetup, postPlanRegenerate } from "./planSetup.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
+import { postMediaUpload, getMediaList, getMediaItem, deleteMediaItem } from "./media.js";
 import { requireApproved, requireAdmin } from "./guard.js";
 import { logError, logInfo } from "./log.js";
 
@@ -62,7 +63,9 @@ function hasJsonContentType(request) {
 async function route(request, env, path) {
   const method = request.method;
 
-  if (isMutating(method) && !hasJsonContentType(request)) {
+  // Binary media uploads send the file's own content-type, not application/json.
+  const isBinaryUpload = path === "/api/media/upload" && method === "POST";
+  if (isMutating(method) && !isBinaryUpload && !hasJsonContentType(request)) {
     return error(415, "content-type must be application/json");
   }
 
@@ -130,6 +133,15 @@ async function authenticatedRoute(request, env, path, method, user) {
     if (method === "DELETE") return deletePlanPhase(env, user, phase);
   }
   if (path === "/api/errors"    && method === "POST") return postClientError(request, env, user);
+
+  if (path === "/api/media/upload" && method === "POST") return postMediaUpload(request, env, user);
+  if (path === "/api/media"        && method === "GET")  return getMediaList(request, env, user);
+  const mediaItemMatch = path.match(/^\/api\/media\/(\d+)$/);
+  if (mediaItemMatch) {
+    const id = Number(mediaItemMatch[1]);
+    if (method === "GET")    return getMediaItem(request, env, user, id);
+    if (method === "DELETE") return deleteMediaItem(request, env, user, id);
+  }
 
   if (path === "/api/checkoffs" && method === "GET") {
     const url = new URL(request.url);

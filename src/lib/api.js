@@ -179,6 +179,27 @@ export const api = {
   clearPlanPhase: (phase) =>
     request(`/api/plan/phase/${phase}`, { method: "DELETE" }),
 
+  getMedia: (date) => request(`/api/media?date=${date}`),
+  uploadMedia: (date, file, kind) => {
+    return fetch(`/api/media/upload?date=${date}&type=${kind}`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": file.type },
+      body: file,
+    }).then(async (res) => {
+      const text = await res.text();
+      let data = null;
+      try { data = JSON.parse(text); } catch { data = { error: text }; }
+      if (!res.ok) {
+        const err = new Error(data?.error || `upload failed ${res.status}`);
+        err.status = res.status;
+        throw err;
+      }
+      return data;
+    });
+  },
+  deleteMedia: (id) => request(`/api/media/${id}`, { method: "DELETE" }),
+
   adminListUsers: () => request("/api/admin/users"),
   approveUser: (id) => request(`/api/admin/users/${id}/approve`, { method: "POST" }),
   deleteUser: (id) => request(`/api/admin/users/${id}`, { method: "DELETE" }),

@@ -181,3 +181,22 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 -- Migration for existing databases (skip on fresh installs):
 -- CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 -- CREATE TABLE IF NOT EXISTS push_subscriptions (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, endpoint TEXT NOT NULL UNIQUE, p256dh TEXT NOT NULL, auth TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+
+-- R2-backed media attachments (photos + voice notes) per user per day.
+CREATE TABLE IF NOT EXISTS media (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER NOT NULL,
+  date       TEXT NOT NULL,      -- YYYY-MM-DD
+  kind       TEXT NOT NULL CHECK(kind IN ('photo','audio')),
+  r2_key     TEXT NOT NULL UNIQUE,
+  mime_type  TEXT NOT NULL,
+  size_bytes INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_media_user_date ON media(user_id, date);
+
+-- Migration for existing databases (skip on fresh installs):
+-- CREATE TABLE IF NOT EXISTS media (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, date TEXT NOT NULL, kind TEXT NOT NULL CHECK(kind IN ('photo','audio')), r2_key TEXT NOT NULL UNIQUE, mime_type TEXT NOT NULL, size_bytes INTEGER NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+-- CREATE INDEX IF NOT EXISTS idx_media_user_date ON media(user_id, date);
