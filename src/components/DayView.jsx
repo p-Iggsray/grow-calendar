@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { ChevronLeft, Pencil, Check, Minus, X } from "lucide-react";
 import { fmtL } from "../lib/dates.js";
 import { useTaskNotes, MAX_TASK_NOTE_LEN } from "../lib/useTaskNote.js";
+import { useGrowLog } from "../lib/useGrowLog.js";
 
 function renderNote(raw) {
   if (!raw?.trim()) return "";
@@ -209,6 +210,21 @@ function TaskRow({ task, index, state, accentColor, onTap, onLongPress, note, on
   );
 }
 
+const fieldLabelStyle = {
+  display: "flex", flexDirection: "column", gap: 5,
+};
+const fieldNameStyle = {
+  fontFamily: "'Courier New', monospace", fontSize: 10,
+  letterSpacing: 1, color: "#7a9a7a", textTransform: "uppercase",
+};
+const numInputStyle = {
+  background: "rgba(0,0,0,0.25)", color: "#e8f5e3",
+  border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8,
+  padding: "10px 12px", fontSize: 15, outline: "none",
+  fontFamily: "'Courier New', monospace",
+  WebkitAppearance: "none", MozAppearance: "textfield",
+};
+
 export default function DayView({
   selected, detail, selStyle, threats,
   taskStates, checkoffsLoading, onToggle, onSetTaskState,
@@ -221,6 +237,7 @@ export default function DayView({
   const textareaRef = useRef(null);
 
   const { notes: taskNotes, setNote: setTaskNote } = useTaskNotes(selected, true);
+  const { entry: logEntry, setField: setLogField, status: logStatus } = useGrowLog(selected, true);
 
   useEffect(() => {
     if (noteEditing) textareaRef.current?.focus();
@@ -308,7 +325,8 @@ export default function DayView({
 
         <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
           {[
-            { id: "tasks",   label: "Day Tasks" },
+            { id: "tasks",   label: "Tasks" },
+            { id: "log",     label: "Log" },
             { id: "notes",   label: "Notes" },
             { id: "threats", label: `Threats${threats.length > 0 ? ` (${threats.length})` : ""}` },
           ].map(t => (
@@ -365,6 +383,80 @@ export default function DayView({
                 </div>
               )}
             </>
+          )}
+
+          {tab === "log" && (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 2, color: "#7a9a7a", textTransform: "uppercase" }}>
+                  Daily readings
+                </div>
+                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: logStatus === "error" ? "#f87171" : logStatus === "saved" ? "#4ade80" : "#5a7a5a", minHeight: 12 }}>
+                  {logStatus === "saving" ? "Saving..." : logStatus === "saved" ? "Saved" : logStatus === "error" ? "Save failed" : ""}
+                </div>
+              </div>
+
+              {/* Water + Humidity row */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                <label style={fieldLabelStyle}>
+                  <span style={fieldNameStyle}>Water (gal)</span>
+                  <input
+                    type="number" inputMode="decimal" step="0.25" min="0" max="99"
+                    value={logEntry.water_gal}
+                    onChange={e => setLogField("water_gal", e.target.value)}
+                    placeholder="0.00"
+                    style={numInputStyle}
+                  />
+                </label>
+                <label style={fieldLabelStyle}>
+                  <span style={fieldNameStyle}>Humidity (%)</span>
+                  <input
+                    type="number" inputMode="numeric" step="1" min="0" max="100"
+                    value={logEntry.humidity}
+                    onChange={e => setLogField("humidity", e.target.value)}
+                    placeholder="—"
+                    style={numInputStyle}
+                  />
+                </label>
+              </div>
+
+              {/* Temp High + Low row */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                <label style={fieldLabelStyle}>
+                  <span style={fieldNameStyle}>Temp High (°F)</span>
+                  <input
+                    type="number" inputMode="numeric" step="1" min="0" max="130"
+                    value={logEntry.temp_high}
+                    onChange={e => setLogField("temp_high", e.target.value)}
+                    placeholder="—"
+                    style={numInputStyle}
+                  />
+                </label>
+                <label style={fieldLabelStyle}>
+                  <span style={fieldNameStyle}>Temp Low (°F)</span>
+                  <input
+                    type="number" inputMode="numeric" step="1" min="0" max="130"
+                    value={logEntry.temp_low}
+                    onChange={e => setLogField("temp_low", e.target.value)}
+                    placeholder="—"
+                    style={numInputStyle}
+                  />
+                </label>
+              </div>
+
+              {/* Feed / nutrients */}
+              <label style={{ ...fieldLabelStyle, display: "flex" }}>
+                <span style={fieldNameStyle}>Feed / nutrients</span>
+                <input
+                  type="text"
+                  value={logEntry.feed}
+                  onChange={e => setLogField("feed", e.target.value)}
+                  placeholder="e.g. Big Bloom 1 tsp + Tiger Bloom 2 tsp"
+                  maxLength={500}
+                  style={{ ...numInputStyle, width: "100%", boxSizing: "border-box" }}
+                />
+              </label>
+            </div>
           )}
 
           {tab === "notes" && (

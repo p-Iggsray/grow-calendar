@@ -36,10 +36,14 @@ async function request(path, opts = {}) {
 
 export const api = {
   me: () => request("/api/auth/me"),
-  signup: (username, password) =>
-    request("/api/auth/signup", { method: "POST", body: JSON.stringify({ username, password }) }),
+  signup: (username, email, password) =>
+    request("/api/auth/signup", { method: "POST", body: JSON.stringify({ username, email, password }) }),
   login: (username, password) =>
     request("/api/auth/login",  { method: "POST", body: JSON.stringify({ username, password }) }),
+  forgotPassword: (email) =>
+    request("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
+  resetPassword: (token, newPassword) =>
+    request("/api/auth/reset-password",  { method: "POST", body: JSON.stringify({ token, newPassword }) }),
   logout: () => request("/api/auth/logout", { method: "POST" }),
 
   getCheckoffs: (date) => request(`/api/checkoffs/${date}`),
@@ -101,6 +105,15 @@ export const api = {
   getMjUsage: () => request("/api/mj/usage"),
   getMjHistory: () => request("/api/mj/history"),
   clearMjHistory: () => request("/api/mj/history", { method: "DELETE" }),
+
+  getGrowLog: (date) => request(`/api/grow-log/${date}`),
+  putGrowLog: (date, entry) =>
+    request(`/api/grow-log/${date}`, { method: "PUT", body: JSON.stringify(entry) }),
+  downloadGrowLogCsv: async () => {
+    const res = await fetch("/api/grow-log/export.csv", { credentials: "same-origin" });
+    if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+    return res.blob();
+  },
 
   reportError: ({ message, stack, url }) =>
     request("/api/errors", { method: "POST", body: JSON.stringify({ message, stack, url }) }).catch(() => {}),

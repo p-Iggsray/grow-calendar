@@ -13,6 +13,8 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 const MIN_PASSWORD_LENGTH = 8;
 const USERNAME_RE = /^[a-zA-Z0-9_-]{2,32}$/;
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_SECONDS = 15 * 60; // 15 minutes
 
@@ -81,7 +83,7 @@ export function shouldRotate(createdAtIso, nowMs) {
   return nowMs - created >= SESSION_ROTATE_AFTER_MS;
 }
 
-async function hashPassword(password, saltBytes) {
+export async function hashPassword(password, saltBytes) {
   const salt = saltBytes || crypto.getRandomValues(new Uint8Array(16));
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
@@ -109,7 +111,7 @@ function constantTimeEqual(a, b) {
   return diff === 0;
 }
 
-function getClientIp(request) {
+export function getClientIp(request) {
   return (
     request.headers.get("cf-connecting-ip") ||
     request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
@@ -170,10 +172,12 @@ export async function signup(request, env) {
   const body = parsed.data;
   if (!body) return error(400, "invalid json");
   const username = String(body.username || "").trim();
+  const email    = String(body.email    || "").trim().toLowerCase();
   const password = String(body.password || "");
 
   const usernameErr = validateUsername(username);
   if (usernameErr) return error(400, usernameErr);
+  if (!email || !EMAIL_RE.test(email)) return error(400, "valid email required");
   const passwordErr = validatePassword(password);
   if (passwordErr) return error(400, passwordErr);
 
@@ -197,8 +201,8 @@ export async function signup(request, env) {
   const { salt, hash } = await hashPassword(password);
   const createdAt = nowIso();
   const result = await env.DB.prepare(
-    "INSERT INTO users (username, password_hash, password_salt, created_at, role, status) VALUES (?, ?, ?, ?, 'user', 'pending')",
-  ).bind(username, hash, salt, createdAt).run();
+    "INSERT INTO users (username, email, password_hash, password_salt, created_at, role, status) VALUES (?, ?, ?, ?, ?, 'user', 'pending')",
+  ).bind(username, email, hash, salt, createdAt).run();
 
   await clearRateLimit(env, ip, username);
   const userId = result.meta.last_row_id;

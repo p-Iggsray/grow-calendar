@@ -1,9 +1,11 @@
 // @ts-check
 import { error } from "./util.js";
 import { signup, login, logout, getMe, currentUser, attachSessionCookie } from "./auth.js";
+import { postForgotPassword, postResetPassword } from "./authReset.js";
 import { getCheckoffs, putCheckoffs, getMonthCheckoffs } from "./checkoffs.js";
 import { getTaskNotes, putTaskNote } from "./taskNotes.js";
 import { getNote, putNote } from "./notes.js";
+import { getGrowLog, putGrowLog, exportGrowLogCsv } from "./growLog.js";
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
 import { getHealth, postClientError } from "./health.js";
 import { getPlan } from "./plan.js";
@@ -61,10 +63,12 @@ async function route(request, env, path) {
   if (path === "/api/health" && method === "GET") return getHealth(env);
 
   // public auth routes
-  if (path === "/api/auth/signup"  && method === "POST") return signup(request, env);
-  if (path === "/api/auth/login"         && method === "POST") return login(request, env);
-  if (path === "/api/auth/logout"        && method === "POST") return logout(request, env);
-  if (path === "/api/auth/me"            && method === "GET")  return getMe(request, env);
+  if (path === "/api/auth/signup"          && method === "POST") return signup(request, env);
+  if (path === "/api/auth/login"           && method === "POST") return login(request, env);
+  if (path === "/api/auth/logout"          && method === "POST") return logout(request, env);
+  if (path === "/api/auth/me"              && method === "GET")  return getMe(request, env);
+  if (path === "/api/auth/forgot-password" && method === "POST") return postForgotPassword(request, env);
+  if (path === "/api/auth/reset-password"  && method === "POST") return postResetPassword(request, env);
 
   // everything below requires a session
   const user = await currentUser(request, env);
@@ -135,6 +139,15 @@ async function authenticatedRoute(request, env, path, method, user) {
     const date = notesMatch[1];
     if (method === "GET") return getNote(env, user, date);
     if (method === "PUT") return putNote(request, env, user, date);
+  }
+
+  if (path === "/api/grow-log/export.csv" && method === "GET") return exportGrowLogCsv(env, user);
+
+  const growLogMatch = path.match(/^\/api\/grow-log\/(\d{4}-\d{2}-\d{2})$/);
+  if (growLogMatch) {
+    const date = growLogMatch[1];
+    if (method === "GET") return getGrowLog(env, user, date);
+    if (method === "PUT") return putGrowLog(request, env, user, date);
   }
 
   return error(404, "not found");

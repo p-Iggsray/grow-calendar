@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS users (
   password_salt TEXT NOT NULL,
   created_at    TEXT NOT NULL,
   role          TEXT NOT NULL DEFAULT 'user',
-  status        TEXT NOT NULL DEFAULT 'pending'
+  status        TEXT NOT NULL DEFAULT 'pending',
+  email         TEXT
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -83,6 +84,32 @@ CREATE TABLE IF NOT EXISTS plan_day_overrides (
   PRIMARY KEY (user_id, date),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  token      TEXT PRIMARY KEY,
+  user_id    INTEGER NOT NULL,
+  expires_at TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Migration for existing databases:
+-- ALTER TABLE users ADD COLUMN email TEXT;
+
+CREATE TABLE IF NOT EXISTS grow_log (
+  user_id    INTEGER NOT NULL,
+  date       TEXT NOT NULL,
+  water_gal  REAL,
+  feed       TEXT,
+  temp_high  REAL,
+  temp_low   REAL,
+  humidity   REAL,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, date),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Migration for existing databases (skip on fresh installs):
+-- Run the CREATE TABLE IF NOT EXISTS above directly — it's a new table.
 
 CREATE TABLE IF NOT EXISTS mj_usage (
   user_id INTEGER NOT NULL,
