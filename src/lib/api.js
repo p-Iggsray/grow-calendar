@@ -179,6 +179,8 @@ export const api = {
   clearPlanPhase: (phase) =>
     request(`/api/plan/phase/${phase}`, { method: "DELETE" }),
 
+  getStats: () => request("/api/stats"),
+
   getMedia: (date) => request(`/api/media?date=${date}`),
   uploadMedia: (date, file, kind) => {
     return fetch(`/api/media/upload?date=${date}&type=${kind}`, {

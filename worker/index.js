@@ -15,6 +15,7 @@ import { getPlan, patchPlanConfig, putPlanPhase, deletePlanPhase } from "./plan.
 import { postPlanSetup, postPlanRegenerate } from "./planSetup.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
 import { postMediaUpload, getMediaList, getMediaItem, deleteMediaItem } from "./media.js";
+import { getStats } from "./stats.js";
 import { requireApproved, requireAdmin } from "./guard.js";
 import { logError, logInfo } from "./log.js";
 
@@ -133,6 +134,8 @@ async function authenticatedRoute(request, env, path, method, user) {
     if (method === "DELETE") return deletePlanPhase(env, user, phase);
   }
   if (path === "/api/errors"    && method === "POST") return postClientError(request, env, user);
+
+  if (path === "/api/stats"         && method === "GET")  return getStats(env, user);
 
   if (path === "/api/media/upload" && method === "POST") return postMediaUpload(request, env, user);
   if (path === "/api/media"        && method === "GET")  return getMediaList(request, env, user);

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Download, Bell, BellOff } from "lucide-react";
+import { Users, Download, Bell, BellOff, BarChart2 } from "lucide-react";
 import PhaseLegend from "./PhaseLegend.jsx";
 import ThreatsReference from "./ThreatsReference.jsx";
 import AuthFooter from "./AuthFooter.jsx";
@@ -7,7 +7,7 @@ import { LOCATION, STRAIN_1, STRAIN_2 } from "../lib/appConfig.js";
 import { api } from "../lib/api.js";
 import { useNotifications } from "../lib/useNotifications.js";
 
-export default function MoreScreen({ isAdmin, onOpenAdmin, onBeforeSignOut }) {
+export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onBeforeSignOut }) {
   const [exporting, setExporting] = useState(false);
   const { supported: notifSupported, permission, subscribed, busy: notifBusy, error: notifError, subscribe, unsubscribe } = useNotifications();
 
@@ -74,6 +74,25 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onBeforeSignOut }) {
           </button>
         </div>
       )}
+
+      <div style={{ padding: "12px 0 0" }}>
+        <button
+          type="button"
+          onClick={onOpenStats}
+          style={{
+            display: "flex", alignItems: "center", gap: 10,
+            width: "100%", padding: "14px 16px",
+            background: "var(--c-surface-1)",
+            border: "1px solid var(--c-border)",
+            borderRadius: 12, cursor: "pointer",
+            color: "#cbe6cb", fontFamily: "'Courier New', monospace",
+            fontSize: 13, letterSpacing: 1,
+          }}
+        >
+          <BarChart2 size={16} strokeWidth={1.8} />
+          Season Analytics
+        </button>
+      </div>
 
       <div style={{ padding: "12px 0 0" }}>
         <button

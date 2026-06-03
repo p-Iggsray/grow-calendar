@@ -21,6 +21,7 @@ import { flushCheckoffQueue } from "./lib/offlineQueue.js";
 
 import Header from "./components/Header.jsx";
 import AdminPanel from "./components/AdminPanel.jsx";
+import StatsScreen from "./components/StatsScreen.jsx";
 import SetupWizard from "./components/SetupWizard.jsx";
 import MilestoneStrip from "./components/MilestoneStrip.jsx";
 import Calendar from "./components/Calendar.jsx";
@@ -52,6 +53,7 @@ export default function App() {
   const [chatOpen,      setChatOpen]      = useState(false);
   const [chatContext,   setChatContext]   = useState(null); // YYYY-MM-DD of the day open in the app, or null
   const [showAdmin,     setShowAdmin]     = useState(false);
+  const [showStats,     setShowStats]     = useState(false);
   // Set to true when SetupWizard completes so MjReviewPanel runs before entering the main app.
   const [reviewPending, setReviewPending] = useState(false);
 
@@ -249,6 +251,14 @@ export default function App() {
     );
   }
 
+  if (showStats) {
+    return (
+      <div style={SHELL_STYLE}>
+        <StatsScreen config={config} today={today} onClose={() => setShowStats(false)} />
+      </div>
+    );
+  }
+
   return (
     <div style={SHELL_STYLE}>
       {/* Offline banner */}
@@ -287,6 +297,7 @@ export default function App() {
           <MoreScreen
             isAdmin={user?.role === "admin"}
             onOpenAdmin={() => setShowAdmin(true)}
+            onOpenStats={() => setShowStats(true)}
             onBeforeSignOut={flushNote}
           />
         ) : activeTab === "plan" ? (
