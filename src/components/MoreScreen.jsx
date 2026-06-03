@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Users, Download } from "lucide-react";
+import { Users, Download, Bell, BellOff } from "lucide-react";
 import PhaseLegend from "./PhaseLegend.jsx";
 import ThreatsReference from "./ThreatsReference.jsx";
 import AuthFooter from "./AuthFooter.jsx";
 import { LOCATION, STRAIN_1, STRAIN_2 } from "../lib/appConfig.js";
 import { api } from "../lib/api.js";
+import { useNotifications } from "../lib/useNotifications.js";
 
 export default function MoreScreen({ isAdmin, onOpenAdmin, onBeforeSignOut }) {
   const [exporting, setExporting] = useState(false);
+  const { supported: notifSupported, permission, subscribed, busy: notifBusy, error: notifError, subscribe, unsubscribe } = useNotifications();
 
   async function handleCsvExport() {
     if (exporting) return;
@@ -95,6 +97,64 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onBeforeSignOut }) {
           {exporting ? "Exporting..." : "Download grow log CSV"}
         </button>
       </div>
+
+      {notifSupported && (
+        <div style={{ padding: "12px 0 0" }}>
+          <button
+            type="button"
+            onClick={subscribed ? unsubscribe : subscribe}
+            disabled={notifBusy || permission === "denied"}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              width: "100%", padding: "14px 16px",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 12,
+              cursor: notifBusy || permission === "denied" ? "default" : "pointer",
+              color: permission === "denied" ? "#5a8a5a" : "#cbe6cb",
+              fontFamily: "'Courier New', monospace",
+              fontSize: 13, letterSpacing: 1,
+              opacity: notifBusy ? 0.6 : 1,
+              transition: "opacity 0.15s",
+            }}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {subscribed
+                ? <Bell size={16} strokeWidth={1.8} />
+                : <BellOff size={16} strokeWidth={1.8} />}
+              {notifBusy
+                ? "Working..."
+                : subscribed
+                  ? "Daily reminders on"
+                  : permission === "denied"
+                    ? "Notifications blocked"
+                    : "Enable daily reminders"}
+            </span>
+            <span style={{
+              fontSize: 10, letterSpacing: 1,
+              color: subscribed ? "#4ade80" : "#3a5a3a",
+            }}>
+              {subscribed ? "ON" : "OFF"}
+            </span>
+          </button>
+          {permission === "denied" && (
+            <div style={{
+              fontSize: 10, color: "#5a8a5a", marginTop: 4, paddingLeft: 4,
+              fontFamily: "'Courier New', monospace",
+            }}>
+              Notifications are blocked — allow them in your browser settings
+            </div>
+          )}
+          {notifError && (
+            <div style={{
+              fontSize: 10, color: "#fca5a5", marginTop: 4, paddingLeft: 4,
+              fontFamily: "'Courier New', monospace",
+            }}>
+              {notifError}
+            </div>
+          )}
+        </div>
+      )}
 
       <AuthFooter onBeforeSignOut={onBeforeSignOut} />
     </div>
