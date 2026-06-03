@@ -115,6 +115,8 @@ export const api = {
     return res.blob();
   },
 
+  getWeather: () => request("/api/weather"),
+
   reportError: ({ message, stack, url }) =>
     request("/api/errors", { method: "POST", body: JSON.stringify({ message, stack, url }) }).catch(() => {}),
 

@@ -149,3 +149,11 @@ CREATE TABLE IF NOT EXISTS client_errors (
   stack    TEXT,
   url      TEXT
 );
+
+
+-- NWS weather data cache. Keyed by type+coordinates; worker refreshes every 10 min.
+CREATE TABLE IF NOT EXISTS weather_cache (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
