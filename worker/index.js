@@ -10,6 +10,7 @@ import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from ".
 import { postMjReview } from "./mjReview.js";
 import { getHealth, postClientError } from "./health.js";
 import { getWeather } from "./weather.js";
+import { getPushVapidKey, postPushSubscribe, deletePushSubscribe, getPushToday, sendDailyReminders } from "./push.js";
 import { getPlan, patchPlanConfig, putPlanPhase, deletePlanPhase } from "./plan.js";
 import { postPlanSetup, postPlanRegenerate } from "./planSetup.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
@@ -33,12 +34,16 @@ export default {
     }
   },
 
-  async scheduled(_event, env, _ctx) {
-    const now = new Date().toISOString();
-    const { meta } = await env.DB.prepare(
-      "DELETE FROM sessions WHERE expires_at < ?"
-    ).bind(now).run();
-    logInfo("session-cleanup", { deleted: meta.changes });
+  async scheduled(event, env, _ctx) {
+    if (event.cron === "0 3 * * *") {
+      const now = new Date().toISOString();
+      const { meta } = await env.DB.prepare(
+        "DELETE FROM sessions WHERE expires_at < ?"
+      ).bind(now).run();
+      logInfo("session-cleanup", { deleted: meta.changes });
+    } else if (event.cron === "0 12 * * *") {
+      await sendDailyReminders(env);
+    }
   },
 };
 
@@ -104,6 +109,10 @@ async function authenticatedRoute(request, env, path, method, user) {
   const gate = requireApproved(user); if (gate) return gate;
 
   if (path === "/api/weather"          && method === "GET")    return getWeather(env);
+  if (path === "/api/push/vapid-key"   && method === "GET")    return getPushVapidKey(env);
+  if (path === "/api/push/subscribe"   && method === "POST")   return postPushSubscribe(request, env, user);
+  if (path === "/api/push/subscribe"   && method === "DELETE") return deletePushSubscribe(request, env, user);
+  if (path === "/api/push/today"       && method === "GET")    return getPushToday(env, user);
   if (path === "/api/mj"              && method === "POST")   return postMj(request, env, user);
   if (path === "/api/mj/review"       && method === "POST")   return postMjReview(request, env, user);
   if (path === "/api/mj/undo"         && method === "POST")   return postMjUndo(request, env, user);

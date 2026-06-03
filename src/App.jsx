@@ -14,8 +14,10 @@ import { usePlan } from "./lib/usePlan.jsx";
 import { useCheckoffs } from "./lib/useCheckoffs.js";
 import { useMonthCheckoffs } from "./lib/useMonthCheckoffs.js";
 import { useDayNote } from "./lib/useDayNote.js";
-import { ymd } from "./lib/api.js";
+import { api, ymd } from "./lib/api.js";
 import { buildSuggestions } from "./lib/mjSuggestions.js";
+import { useOnlineStatus } from "./lib/useOnlineStatus.js";
+import { flushCheckoffQueue } from "./lib/offlineQueue.js";
 
 import Header from "./components/Header.jsx";
 import AdminPanel from "./components/AdminPanel.jsx";
@@ -42,6 +44,7 @@ const TAB_CLEARANCE = "calc(66px + env(safe-area-inset-bottom, 0px))";
 export default function App() {
   const { user } = useAuth();
   const today    = useToday();
+  const online   = useOnlineStatus();
   const { config, overrides, generatedPlan, phaseOverrides, survey, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
   const [month,       setMonth]      = useState(() => today.getMonth());
   const [selected,    setSelected]   = useState(null);
@@ -121,6 +124,12 @@ export default function App() {
     flushNote();
     window.history.back();
   }, [flushNote]);
+
+  // Replay any offline-queued checkoff writes when connectivity returns.
+  useEffect(() => {
+    if (!online) return;
+    flushCheckoffQueue(api.putCheckoffs).catch(() => {});
+  }, [online]);
 
   if (planError) {
     return (
@@ -242,6 +251,18 @@ export default function App() {
 
   return (
     <div style={SHELL_STYLE}>
+      {/* Offline banner */}
+      {!online && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+          background: "rgba(160,50,50,0.95)", backdropFilter: "blur(8px)",
+          padding: "8px 16px", textAlign: "center",
+          fontFamily: "'Courier New', monospace", fontSize: 10,
+          letterSpacing: 1.5, color: "#fecaca",
+        }}>
+          OFFLINE — changes will sync when reconnected
+        </div>
+      )}
       {/* Main content area — padded so nothing hides behind the tab bar */}
       <div style={{ paddingBottom: TAB_CLEARANCE }}>
         {/* DayView: shown when a day is selected via either calendar or today tab */}

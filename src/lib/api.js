@@ -158,6 +158,12 @@ export const api = {
 
   getWeather: () => request("/api/weather"),
 
+  getPushVapidKey: () => request("/api/push/vapid-key"),
+  pushSubscribe: (sub) =>
+    request("/api/push/subscribe", { method: "POST", body: JSON.stringify(sub) }),
+  pushUnsubscribe: (sub) =>
+    request("/api/push/subscribe", { method: "DELETE", body: JSON.stringify(sub) }),
+
   reportError: ({ message, stack, url }) =>
     request("/api/errors", { method: "POST", body: JSON.stringify({ message, stack, url }) }).catch(() => {}),
 

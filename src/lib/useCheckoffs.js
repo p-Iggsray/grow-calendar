@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ymd } from "./api.js";
 import { useToast } from "./useToast.jsx";
+import { queueCheckoff } from "./offlineQueue.js";
 
 const VALID_STATES = new Set(["done", "skipped", "blocked"]);
 
@@ -53,8 +54,14 @@ export function useCheckoffs(date, enabled) {
       await api.putCheckoffs(dateKey, nextStates);
       window.dispatchEvent(new CustomEvent("checkoffs-mutated"));
     } catch {
-      addToast("Couldn't save. Your change was reversed");
-      fetchNow();
+      if (!navigator.onLine) {
+        // Network is down: keep the optimistic state and queue for later replay.
+        queueCheckoff(dateKey, nextStates);
+        addToast("Saved offline — will sync when reconnected");
+      } else {
+        addToast("Couldn't save. Your change was reversed");
+        fetchNow();
+      }
     }
   }, [dateKey, fetchNow, addToast]);
 
