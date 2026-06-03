@@ -4,6 +4,7 @@ import { fmtL } from "../lib/dates.js";
 import { useTaskNotes, MAX_TASK_NOTE_LEN } from "../lib/useTaskNote.js";
 import { useGrowLog } from "../lib/useGrowLog.js";
 import { useWeather } from "../lib/useWeather.js";
+import MediaTab from "./MediaTab.jsx";
 
 function renderNote(raw) {
   if (!raw?.trim()) return "";
@@ -335,6 +336,7 @@ export default function DayView({
             { id: "log",     label: "Log" },
             { id: "notes",   label: "Notes" },
             { id: "threats", label: `Threats${threats.length > 0 ? ` (${threats.length})` : ""}` },
+            { id: "media",   label: "Media" },
           ].map(t => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
               flex: 1, padding: "10px 0", background: "none",
@@ -561,6 +563,10 @@ export default function DayView({
                 </div>
               ))}
             </div>
+          )}
+
+          {tab === "media" && (
+            <MediaTab date={selected} accentColor={selStyle?.color} />
           )}
         </div>
       </div>

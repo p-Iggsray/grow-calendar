@@ -75,6 +75,10 @@ textarea {
 
 /* Today's calendar cell gets a slow halo pulse. The outline is what animates,
    so the cell's own border stays exactly where it was - no layout shift. */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 @keyframes today-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.45); }
   50%      { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
