@@ -7,6 +7,7 @@ import { getTaskNotes, putTaskNote } from "./taskNotes.js";
 import { getNote, putNote } from "./notes.js";
 import { getGrowLog, putGrowLog, exportGrowLogCsv } from "./growLog.js";
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
+import { postMjReview } from "./mjReview.js";
 import { getHealth, postClientError } from "./health.js";
 import { getWeather } from "./weather.js";
 import { getPlan, patchPlanConfig, putPlanPhase, deletePlanPhase } from "./plan.js";
@@ -104,6 +105,7 @@ async function authenticatedRoute(request, env, path, method, user) {
 
   if (path === "/api/weather"          && method === "GET")    return getWeather(env);
   if (path === "/api/mj"              && method === "POST")   return postMj(request, env, user);
+  if (path === "/api/mj/review"       && method === "POST")   return postMjReview(request, env, user);
   if (path === "/api/mj/undo"         && method === "POST")   return postMjUndo(request, env, user);
   if (path === "/api/mj/usage"        && method === "GET")    return getMjUsage(env, user);
   if (path === "/api/mj/history"      && method === "GET")    return getMjHistory(env, user);

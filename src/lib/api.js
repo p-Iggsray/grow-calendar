@@ -106,6 +106,47 @@ export const api = {
   getMjHistory: () => request("/api/mj/history"),
   clearMjHistory: () => request("/api/mj/history", { method: "DELETE" }),
 
+  // Streams MJ's plan quality review via SSE. Accepts the full conversation
+  // history on every call (stateless server-side). Same callback contract as mj().
+  mjReview: (messages, { onChunk, onDone, onError }) => {
+    fetch("/api/mj/review", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ messages }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        let msg;
+        try { msg = JSON.parse(text).error; } catch { msg = `request failed ${res.status}`; }
+        const err = new Error(msg);
+        err.status = res.status;
+        onError(err);
+        return;
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const raw = line.slice(6).trim();
+          if (!raw) continue;
+          let evt;
+          try { evt = JSON.parse(raw); } catch { continue; }
+          if (evt.delta !== undefined) { onChunk(evt.delta); }
+          else if (evt.done) { onDone(evt); }
+          else if (evt.error) { const e = new Error(evt.error); onError(e); return; }
+        }
+      }
+    }).catch(onError);
+  },
+
   getGrowLog: (date) => request(`/api/grow-log/${date}`),
   putGrowLog: (date, entry) =>
     request(`/api/grow-log/${date}`, { method: "PUT", body: JSON.stringify(entry) }),
