@@ -8,6 +8,7 @@ import { getNote, putNote } from "./notes.js";
 import { getGrowLog, putGrowLog, exportGrowLogCsv } from "./growLog.js";
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
 import { getHealth, postClientError } from "./health.js";
+import { getWeather } from "./weather.js";
 import { getPlan } from "./plan.js";
 import { postPlanSetup } from "./planSetup.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
@@ -101,6 +102,7 @@ async function authenticatedRoute(request, env, path, method, user) {
   // app routes require an approved user
   const gate = requireApproved(user); if (gate) return gate;
 
+  if (path === "/api/weather"          && method === "GET")    return getWeather(env);
   if (path === "/api/mj"              && method === "POST")   return postMj(request, env, user);
   if (path === "/api/mj/undo"         && method === "POST")   return postMjUndo(request, env, user);
   if (path === "/api/mj/usage"        && method === "GET")    return getMjUsage(env, user);
