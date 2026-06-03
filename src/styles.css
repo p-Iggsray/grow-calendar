@@ -1,5 +1,20 @@
 :root {
   color-scheme: dark;
+
+  /* ── Color tokens ───────────────────────────────────────────── */
+  --c-bg:            #0e1a12;   /* app background                 */
+  --c-text:          #e8f5e3;   /* primary text                   */
+  --c-text-dim:      #a0d0a0;   /* dimmed text                    */
+  --c-text-muted:    #7a9a7a;   /* labels / secondary             */
+  --c-text-faint:    #5a8a5a;   /* tertiary                       */
+  --c-text-ghost:    #3a5a3a;   /* ghost / disabled               */
+  --c-accent:        #4ade80;   /* interactive green              */
+  --c-surface-1:     rgba(255,255,255,0.04);   /* card fill       */
+  --c-surface-2:     rgba(255,255,255,0.08);   /* hover / active  */
+  --c-border-faint:  rgba(255,255,255,0.06);   /* hairline        */
+  --c-border-soft:   rgba(255,255,255,0.07);   /* soft border     */
+  --c-border:        rgba(255,255,255,0.10);   /* standard border */
+  --c-border-strong: rgba(255,255,255,0.12);   /* strong border   */
 }
 
 *,

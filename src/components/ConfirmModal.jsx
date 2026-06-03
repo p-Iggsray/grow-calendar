@@ -52,7 +52,7 @@ export default function ConfirmModal({
   const messageId = "confirm-modal-message";
   const confirmTone = tone === "destructive"
     ? { background: "rgba(220,38,38,0.18)", border: "1px solid rgba(220,38,38,0.45)", color: "#fca5a5" }
-    : { background: "rgba(34,197,94,0.18)", border: "1px solid rgba(34,197,94,0.45)", color: "#4ade80" };
+    : { background: "rgba(34,197,94,0.18)", border: "1px solid rgba(34,197,94,0.45)", color: "var(--c-accent)" };
 
   return (
     <div
@@ -71,12 +71,12 @@ export default function ConfirmModal({
         onClick={e => e.stopPropagation()}
         style={{
           background: "#13301a",
-          border: "1px solid rgba(255,255,255,0.12)",
+          border: "1px solid var(--c-border-strong)",
           borderRadius: 14,
           padding: "20px 22px 18px",
           maxWidth: 380, width: "100%",
           fontFamily: "'Georgia', 'Times New Roman', serif",
-          color: "#e8f5e3",
+          color: "var(--c-text)",
           boxShadow: "0 24px 60px rgba(0,0,0,0.6)",
         }}>
         <div id={titleId} style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.3, marginBottom: message ? 8 : 18 }}>
@@ -93,7 +93,7 @@ export default function ConfirmModal({
             type="button"
             onClick={onCancel}
             style={{
-              background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)",
+              background: "var(--c-border-faint)", border: "1px solid rgba(255,255,255,0.14)",
               borderRadius: 10, padding: "8px 14px", color: "#c8dcc8",
               fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1,
               cursor: "pointer",

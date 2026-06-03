@@ -22,7 +22,7 @@ export default class ErrorBoundary extends Component {
         minHeight: "100vh",
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
-        background: "#0e1a12",
+        background: "var(--c-bg)",
         fontFamily: "'Courier New', monospace",
         color: "#f0ebe0",
         padding: 24,
@@ -30,10 +30,10 @@ export default class ErrorBoundary extends Component {
         gap: 20,
       }}>
         <div style={{ fontSize: 36 }}>🌿</div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: "#e8f5e3", letterSpacing: 1 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", letterSpacing: 1 }}>
           Something went wrong
         </div>
-        <div style={{ fontSize: 12, color: "#5a8a5a", maxWidth: 300, lineHeight: 1.7 }}>
+        <div style={{ fontSize: 12, color: "var(--c-text-faint)", maxWidth: 300, lineHeight: 1.7 }}>
           The app hit an unexpected error. Your data is safe. A reload should fix it.
         </div>
         <button
@@ -42,7 +42,7 @@ export default class ErrorBoundary extends Component {
             background: "rgba(34,197,94,0.15)",
             border: "1px solid rgba(34,197,94,0.35)",
             borderRadius: 10, padding: "10px 24px",
-            color: "#4ade80", fontSize: 12,
+            color: "var(--c-accent)", fontSize: 12,
             letterSpacing: 1, cursor: "pointer",
           }}
         >

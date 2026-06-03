@@ -39,20 +39,20 @@ export default function AdminPanel({ onClose }) {
   const members = users.filter(u => u.status === "approved");
 
   return (
-    <div style={{ minHeight: "100vh", fontFamily: "'Courier New', monospace", color: "#e8f5e3" }}>
+    <div style={{ minHeight: "100vh", fontFamily: "'Courier New', monospace", color: "var(--c-text)" }}>
       {/* Header — safe-area-aware so the X button clears the notch */}
       <div style={{
         display: "flex", alignItems: "center", gap: 12,
         padding: "14px 16px",
         paddingTop: "calc(14px + env(safe-area-inset-top, 0px))",
-        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        borderBottom: "1px solid var(--c-surface-2)",
         background: "linear-gradient(160deg, #0a1a0d, #13301a)",
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 10, letterSpacing: 3, color: "#5a8a5a", textTransform: "uppercase", marginBottom: 3 }}>
+          <div style={{ fontSize: 10, letterSpacing: 3, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 3 }}>
             Admin
           </div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>
             Manage Members
           </div>
         </div>
@@ -60,11 +60,11 @@ export default function AdminPanel({ onClose }) {
           onClick={onClose}
           aria-label="Close"
           style={{
-            background: "rgba(255,255,255,0.07)",
+            background: "var(--c-border-soft)",
             border: "1px solid rgba(255,255,255,0.14)",
             borderRadius: 10, width: 40, height: 40,
             display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", color: "#a0d0a0", flexShrink: 0,
+            cursor: "pointer", color: "var(--c-text-dim)", flexShrink: 0,
           }}
         >
           <X size={18} strokeWidth={2} />
@@ -84,7 +84,7 @@ export default function AdminPanel({ onClose }) {
         )}
 
         {loading ? (
-          <div style={{ color: "#3a5a3a", letterSpacing: 3, padding: "24px 0" }}>LOADING...</div>
+          <div style={{ color: "var(--c-text-ghost)", letterSpacing: 3, padding: "24px 0" }}>LOADING...</div>
         ) : (
           <>
             <Section title={`Pending requests (${pending.length})`}>
@@ -118,7 +118,7 @@ function Section({ title, children }) {
     <div style={{ marginBottom: 24 }}>
       <div style={{
         fontSize: 10, letterSpacing: 2, textTransform: "uppercase",
-        color: "#5a8a5a", marginBottom: 10,
+        color: "var(--c-text-faint)", marginBottom: 10,
       }}>
         {title}
       </div>
@@ -132,13 +132,13 @@ function Row({ name, sub, children }) {
     <div style={{
       display: "flex", alignItems: "center", justifyContent: "space-between",
       padding: "12px 14px",
-      background: "rgba(255,255,255,0.04)",
-      border: "1px solid rgba(255,255,255,0.08)",
+      background: "var(--c-surface-1)",
+      border: "1px solid var(--c-surface-2)",
       borderRadius: 12, marginBottom: 8,
     }}>
       <div>
-        <div style={{ fontWeight: 700, fontSize: 13, color: "#e8f5e3" }}>{name}</div>
-        <div style={{ fontSize: 11, color: "#5a8a5a", marginTop: 2 }}>{sub}</div>
+        <div style={{ fontWeight: 700, fontSize: 13, color: "var(--c-text)" }}>{name}</div>
+        <div style={{ fontSize: 11, color: "var(--c-text-faint)", marginTop: 2 }}>{sub}</div>
       </div>
       <div style={{ display: "flex", gap: 8 }}>{children}</div>
     </div>
@@ -147,7 +147,7 @@ function Row({ name, sub, children }) {
 
 function Empty({ children }) {
   return (
-    <div style={{ fontSize: 12, color: "#3a5a3a", fontStyle: "italic", padding: "4px 0" }}>
+    <div style={{ fontSize: 12, color: "var(--c-text-ghost)", fontStyle: "italic", padding: "4px 0" }}>
       {children}
     </div>
   );
@@ -163,7 +163,7 @@ function ActionBtn({ color, onClick, children }) {
         background: green ? "rgba(34,197,94,0.15)" : "rgba(220,38,38,0.15)",
         border: `1px solid ${green ? "rgba(34,197,94,0.35)" : "rgba(220,38,38,0.35)"}`,
         borderRadius: 8,
-        color: green ? "#4ade80" : "#f87171",
+        color: green ? "var(--c-accent)" : "#f87171",
         cursor: "pointer",
         fontSize: 11, letterSpacing: 0.5,
         fontFamily: "'Courier New', monospace",

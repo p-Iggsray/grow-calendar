@@ -18,7 +18,7 @@ export default function TabBar({ activeTab, onTab }) {
         background: "rgba(9, 18, 11, 0.97)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        borderTop: "1px solid rgba(255,255,255,0.08)",
+        borderTop: "1px solid var(--c-surface-2)",
         display: "flex",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
         paddingLeft: "env(safe-area-inset-left, 0px)",
@@ -44,7 +44,7 @@ export default function TabBar({ activeTab, onTab }) {
               background: "none", border: "none",
               cursor: "pointer",
               minHeight: 56,
-              color: active ? "#4ade80" : "#3d6040",
+              color: active ? "var(--c-accent)" : "#3d6040",
               transition: "color 0.18s",
             }}
           >

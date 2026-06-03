@@ -182,7 +182,7 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
       style={{
         // visualViewport effect overrides top and height via ref.
         position: "fixed", top: 0, left: 0, right: 0, height: "100vh",
-        zIndex: 50, background: "#0e1a12",
+        zIndex: 50, background: "var(--c-bg)",
         display: "flex", flexDirection: "column",
         paddingTop: "env(safe-area-inset-top, 0px)",
         paddingLeft: "env(safe-area-inset-left, 0px)",
@@ -193,13 +193,13 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
       {/* Header */}
       <div style={{
         display: "flex", alignItems: "center", gap: 12, padding: "12px 14px",
-        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        borderBottom: "1px solid var(--c-surface-2)",
         background: "linear-gradient(160deg, #0a1a0d, #13301a)",
         flexShrink: 0,
       }}>
         <button type="button" onClick={onClose} style={{
-          background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
-          borderRadius: 10, padding: "10px 14px", color: "#a0d0a0",
+          background: "var(--c-border-faint)", border: "1px solid var(--c-border-strong)",
+          borderRadius: 10, padding: "10px 14px", color: "var(--c-text-dim)",
           cursor: "pointer", minHeight: 44,
           display: "flex", alignItems: "center", gap: 4,
         }}>
@@ -207,13 +207,13 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
           <span style={{ fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1 }}>Back</span>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: "#5a8a5a", textTransform: "uppercase" }}>MJ</div>
+          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: "var(--c-text-faint)", textTransform: "uppercase" }}>MJ</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>Your grow assistant</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>Your grow assistant</div>
             {contextDate && (
               <span style={{
                 fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 1,
-                color: "#4ade80", background: "rgba(34,197,94,0.12)",
+                color: "var(--c-accent)", background: "rgba(34,197,94,0.12)",
                 border: "1px solid rgba(34,197,94,0.25)", borderRadius: 6, padding: "2px 7px",
               }}>
                 📅 {fmtContextDate(contextDate)}
@@ -227,7 +227,7 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
             onClick={handleClear}
             aria-label="Clear conversation"
             style={{
-              background: "none", border: "1px solid rgba(255,255,255,0.1)",
+              background: "none", border: "1px solid var(--c-border)",
               borderRadius: 8, padding: "8px 10px", color: "#5a7a5a",
               cursor: "pointer", flexShrink: 0,
               display: "flex", alignItems: "center",
@@ -249,20 +249,20 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
         WebkitOverflowScrolling: "touch",
       }}>
         {historyLoading && (
-          <div style={{ margin: "auto", fontFamily: "'Courier New', monospace", fontSize: 11, color: "#3a5a3a", letterSpacing: 2 }}>
+          <div style={{ margin: "auto", fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-text-ghost)", letterSpacing: 2 }}>
             LOADING...
           </div>
         )}
         {!historyLoading && messages.length === 0 && (
           <div style={{ margin: "auto", maxWidth: 440, textAlign: "center" }}>
             <div style={{ fontSize: 34, marginBottom: 10 }}>🌿</div>
-            <div style={{ fontSize: 15, color: "#a0d0a0", marginBottom: 14, lineHeight: 1.6 }}>
+            <div style={{ fontSize: 15, color: "var(--c-text-dim)", marginBottom: 14, lineHeight: 1.6 }}>
               Ask anything about your grow, or tell me to do things — check off today&apos;s tasks, add to your daily notes. I know your full plan.
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {(suggestions ?? []).map(s => (
                 <button key={s} type="button" onClick={() => setInput(s)} style={{
-                  background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
+                  background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
                   borderRadius: 10, padding: "12px 14px", color: "#c8dcc8", fontSize: 13,
                   cursor: "pointer", textAlign: "left", fontFamily: "'Courier New', monospace",
                   minHeight: 44,
@@ -299,13 +299,13 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
       <div style={{
         padding: "8px 12px",
         paddingBottom: "calc(10px + env(safe-area-inset-bottom, 0px))",
-        borderTop: "1px solid rgba(255,255,255,0.06)",
+        borderTop: "1px solid var(--c-border-faint)",
         flexShrink: 0,
-        background: "#0e1a12",
+        background: "var(--c-bg)",
       }}>
         <div style={{
           display: "flex", alignItems: "flex-end", gap: 8,
-          background: "rgba(255,255,255,0.06)",
+          background: "var(--c-border-faint)",
           border: "1px solid rgba(255,255,255,0.11)",
           borderRadius: 26, padding: "6px 6px 6px 16px",
         }}>
@@ -319,7 +319,7 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
             style={{
               flex: 1, resize: "none", maxHeight: 120,
               background: "none", border: "none", outline: "none",
-              color: "#e8f5e3", fontSize: 16, lineHeight: 1.5,
+              color: "var(--c-text)", fontSize: 16, lineHeight: 1.5,
               fontFamily: "'Georgia', 'Times New Roman', serif",
               padding: "5px 0",
             }}
@@ -339,9 +339,9 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
             }}
           >
             {busy ? (
-              <Loader size={16} strokeWidth={2} color="#4ade80" style={{ animation: "spin 1s linear infinite" }} />
+              <Loader size={16} strokeWidth={2} color="var(--c-accent)" style={{ animation: "spin 1s linear infinite" }} />
             ) : (
-              <ArrowUp size={17} strokeWidth={2.2} color={input.trim() ? "#0e1a12" : "#2a4a2a"} />
+              <ArrowUp size={17} strokeWidth={2.2} color={input.trim() ? "var(--c-bg)" : "#2a4a2a"} />
             )}
           </button>
         </div>
@@ -359,13 +359,13 @@ function UsageBar({ usage }) {
 
   function bar(count, limit, label, dimLabel) {
     const pct = limit > 0 ? Math.min(100, Math.round((count / limit) * 100)) : 0;
-    const color = pct >= 90 ? "#f87171" : pct >= 70 ? "#fbbf24" : (dimLabel ? "#5a8a5a" : "#4ade80");
+    const color = pct >= 90 ? "#f87171" : pct >= 70 ? "#fbbf24" : (dimLabel ? "var(--c-text-faint)" : "var(--c-accent)");
     return (
       <div title={`${label}: ${count} of ${limit} today`} style={{ display: "flex", alignItems: "center", gap: 5 }}>
         <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color, letterSpacing: 1 }}>
           {count}/{limit}
         </span>
-        <div style={{ width: 48, height: 3, background: "rgba(255,255,255,0.08)", borderRadius: 2, overflow: "hidden" }}>
+        <div style={{ width: 48, height: 3, background: "var(--c-surface-2)", borderRadius: 2, overflow: "hidden" }}>
           <div style={{ width: `${pct}%`, height: "100%", background: color, transition: "width 0.3s, background 0.3s" }} />
         </div>
       </div>
@@ -389,8 +389,8 @@ function Bubble({ role, text, dim, actions, showUndo, onUndo }) {
         maxWidth: "85%", whiteSpace: "pre-wrap", lineHeight: 1.65, fontSize: 15,
         padding: "11px 14px", borderRadius: 18,
         background: isUser ? "rgba(34,197,94,0.16)" : "rgba(255,255,255,0.05)",
-        border: `1px solid ${isUser ? "rgba(34,197,94,0.3)" : "rgba(255,255,255,0.08)"}`,
-        color: dim ? "#5a7a5a" : (isUser ? "#e8f5e3" : "#d6e6d6"),
+        border: `1px solid ${isUser ? "rgba(34,197,94,0.3)" : "var(--c-surface-2)"}`,
+        color: dim ? "#5a7a5a" : (isUser ? "var(--c-text)" : "#d6e6d6"),
         borderBottomRightRadius: isUser ? 4 : 18,
         borderBottomLeftRadius: isUser ? 18 : 4,
       }}>{text}</div>
@@ -401,8 +401,8 @@ function Bubble({ role, text, dim, actions, showUndo, onUndo }) {
               return (
                 <span key={i} style={{
                   fontSize: 11, fontFamily: "'Courier New', monospace",
-                  color: "#5a7a5a", background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  color: "#5a7a5a", background: "var(--c-surface-1)",
+                  border: "1px solid var(--c-border)",
                   borderRadius: 8, padding: "4px 9px",
                 }}>
                   ↩ Undone
@@ -414,7 +414,7 @@ function Bubble({ role, text, dim, actions, showUndo, onUndo }) {
             return (
               <span key={i} style={{
                 fontSize: 11, fontFamily: "'Courier New', monospace",
-                color: isNote ? "#fbbf24" : "#4ade80",
+                color: isNote ? "#fbbf24" : "var(--c-accent)",
                 background: isNote ? "rgba(251,191,36,0.1)" : "rgba(34,197,94,0.1)",
                 border: `1px solid ${isNote ? "rgba(251,191,36,0.25)" : "rgba(34,197,94,0.25)"}`,
                 borderRadius: 8, padding: "4px 9px",

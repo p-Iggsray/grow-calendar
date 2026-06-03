@@ -37,16 +37,16 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onBeforeSignOut }) {
       <div style={{
         paddingBottom: 14,
         marginBottom: 8,
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        borderBottom: "1px solid var(--c-border-faint)",
       }}>
         <div style={{
-          fontSize: 10, letterSpacing: 4, color: "#3a5a3a",
+          fontSize: 10, letterSpacing: 4, color: "var(--c-text-ghost)",
           textTransform: "uppercase", marginBottom: 4,
           fontFamily: "'Courier New', monospace",
         }}>
           Grow Log · {LOCATION}
         </div>
-        <div style={{ fontSize: 11, color: "#5a8a5a", fontFamily: "'Courier New', monospace" }}>
+        <div style={{ fontSize: 11, color: "var(--c-text-faint)", fontFamily: "'Courier New', monospace" }}>
           1× {STRAIN_1} · 2× {STRAIN_2}
         </div>
       </div>
@@ -62,8 +62,8 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onBeforeSignOut }) {
             style={{
               display: "flex", alignItems: "center", gap: 10,
               width: "100%", padding: "14px 16px",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: "var(--c-surface-1)",
+              border: "1px solid var(--c-border)",
               borderRadius: 12, cursor: "pointer",
               color: "#cbe6cb", fontFamily: "'Courier New', monospace",
               fontSize: 13, letterSpacing: 1,
@@ -83,10 +83,10 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onBeforeSignOut }) {
           style={{
             display: "flex", alignItems: "center", gap: 10,
             width: "100%", padding: "14px 16px",
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "var(--c-surface-1)",
+            border: "1px solid var(--c-border)",
             borderRadius: 12, cursor: exporting ? "default" : "pointer",
-            color: exporting ? "#3a5a3a" : "#cbe6cb",
+            color: exporting ? "var(--c-text-ghost)" : "#cbe6cb",
             fontFamily: "'Courier New', monospace",
             fontSize: 13, letterSpacing: 1,
             opacity: exporting ? 0.6 : 1,
@@ -107,11 +107,11 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onBeforeSignOut }) {
             style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
               width: "100%", padding: "14px 16px",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: "var(--c-surface-1)",
+              border: "1px solid var(--c-border)",
               borderRadius: 12,
               cursor: notifBusy || permission === "denied" ? "default" : "pointer",
-              color: permission === "denied" ? "#5a8a5a" : "#cbe6cb",
+              color: permission === "denied" ? "var(--c-text-faint)" : "#cbe6cb",
               fontFamily: "'Courier New', monospace",
               fontSize: 13, letterSpacing: 1,
               opacity: notifBusy ? 0.6 : 1,
@@ -132,14 +132,14 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onBeforeSignOut }) {
             </span>
             <span style={{
               fontSize: 10, letterSpacing: 1,
-              color: subscribed ? "#4ade80" : "#3a5a3a",
+              color: subscribed ? "var(--c-accent)" : "var(--c-text-ghost)",
             }}>
               {subscribed ? "ON" : "OFF"}
             </span>
           </button>
           {permission === "denied" && (
             <div style={{
-              fontSize: 10, color: "#5a8a5a", marginTop: 4, paddingLeft: 4,
+              fontSize: 10, color: "var(--c-text-faint)", marginTop: 4, paddingLeft: 4,
               fontFamily: "'Courier New', monospace",
             }}>
               Notifications are blocked — allow them in your browser settings

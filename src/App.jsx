@@ -33,7 +33,7 @@ import MjReviewPanel from "./components/MjReviewPanel.jsx";
 
 const SHELL_STYLE = {
   fontFamily: "'Georgia', 'Times New Roman', serif",
-  background: "#0e1a12",
+  background: "var(--c-bg)",
   minHeight: "100vh",
   color: "#f0ebe0",
 };
@@ -143,7 +143,7 @@ export default function App() {
   if (planLoading) {
     return (
       <div style={SHELL_STYLE}>
-        <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "#3a5a3a", letterSpacing: 4 }}>
+        <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "var(--c-text-ghost)", letterSpacing: 4 }}>
           LOADING PLAN
         </div>
       </div>
@@ -175,7 +175,7 @@ export default function App() {
   if (!config) {
     return (
       <div style={SHELL_STYLE}>
-        <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "#3a5a3a", letterSpacing: 4 }}>
+        <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "var(--c-text-ghost)", letterSpacing: 4 }}>
           LOADING PLAN
         </div>
       </div>
