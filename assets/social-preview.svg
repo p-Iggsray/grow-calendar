@@ -1,0 +1,235 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" font-family="'Courier New', monospace">
+  <defs>
+    <radialGradient id="bg-glow" cx="0.25" cy="0.5" r="0.65">
+      <stop offset="0%"   stop-color="#122418"/>
+      <stop offset="100%" stop-color="#0a1510"/>
+    </radialGradient>
+    <radialGradient id="accent-glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%"   stop-color="#4ade80" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#4ade80" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="640" fill="url(#bg-glow)"/>
+
+  <!-- Subtle grid dots -->
+  <g fill="rgba(255,255,255,0.04)">
+    <circle cx="60"  cy="60"  r="1.5"/><circle cx="160" cy="60"  r="1.5"/><circle cx="260" cy="60"  r="1.5"/>
+    <circle cx="60"  cy="160" r="1.5"/><circle cx="160" cy="160" r="1.5"/><circle cx="260" cy="160" r="1.5"/>
+    <circle cx="60"  cy="260" r="1.5"/><circle cx="160" cy="260" r="1.5"/><circle cx="260" cy="260" r="1.5"/>
+    <circle cx="60"  cy="360" r="1.5"/><circle cx="160" cy="360" r="1.5"/><circle cx="260" cy="360" r="1.5"/>
+    <circle cx="60"  cy="460" r="1.5"/><circle cx="160" cy="460" r="1.5"/><circle cx="260" cy="460" r="1.5"/>
+    <circle cx="60"  cy="560" r="1.5"/><circle cx="160" cy="560" r="1.5"/><circle cx="260" cy="560" r="1.5"/>
+  </g>
+
+  <!-- ─── LEFT PANEL ─────────────────────────────────────────── -->
+
+  <!-- Season badge -->
+  <rect x="80" y="100" width="120" height="26" rx="13"
+        fill="rgba(74,222,128,0.1)" stroke="rgba(74,222,128,0.3)" stroke-width="1"/>
+  <text x="140" y="118" text-anchor="middle" font-size="11" fill="#4ade80" letter-spacing="2">2026 SEASON</text>
+
+  <!-- App name -->
+  <text x="80" y="210" font-family="Georgia, 'Times New Roman', serif"
+        font-size="68" font-weight="800" fill="#e8f5e3" letter-spacing="-1">The Grow</text>
+  <text x="80" y="290" font-family="Georgia, 'Times New Roman', serif"
+        font-size="68" font-weight="800" fill="#4ade80" letter-spacing="-1">Calendar.</text>
+
+  <!-- Tagline -->
+  <text x="80" y="346" font-size="18" fill="#7a9a7a" letter-spacing="0.5">Your grow plan, anywhere you are.</text>
+
+  <!-- Divider line -->
+  <line x1="80" y1="376" x2="540" y2="376" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+
+  <!-- Feature pills -->
+  <rect x="80"  y="394" width="130" height="28" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="145" y="413" text-anchor="middle" font-size="11" fill="#5a8a5a" letter-spacing="1">147-DAY PLAN</text>
+
+  <rect x="220" y="394" width="130" height="28" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="285" y="413" text-anchor="middle" font-size="11" fill="#5a8a5a" letter-spacing="1">PHASE-AWARE</text>
+
+  <rect x="360" y="394" width="130" height="28" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="425" y="413" text-anchor="middle" font-size="11" fill="#5a8a5a" letter-spacing="1">WORKS OFFLINE</text>
+
+  <rect x="80"  y="432" width="130" height="28" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="145" y="451" text-anchor="middle" font-size="11" fill="#5a8a5a" letter-spacing="1">AI PLANNING</text>
+
+  <rect x="220" y="432" width="130" height="28" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="285" y="451" text-anchor="middle" font-size="11" fill="#5a8a5a" letter-spacing="1">MULTI-USER</text>
+
+  <rect x="360" y="432" width="130" height="28" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="425" y="451" text-anchor="middle" font-size="11" fill="#5a8a5a" letter-spacing="1">PWA + PUSH</text>
+
+  <!-- Location / stack footer -->
+  <text x="80" y="540" font-size="12" fill="#3a5a3a" letter-spacing="1">Athens, Ohio · React + Cloudflare Workers + D1</text>
+
+  <!-- ─── RIGHT PANEL (phone mockup) ────────────────────────── -->
+
+  <!-- Phone frame shadow -->
+  <rect x="736" y="44" width="460" height="560" rx="40" fill="rgba(0,0,0,0.35)"/>
+
+  <!-- Phone frame -->
+  <rect x="730" y="38" width="460" height="560" rx="40"
+        fill="#141f16" stroke="rgba(255,255,255,0.1)" stroke-width="1.5"/>
+
+  <!-- Screen area -->
+  <rect x="744" y="56" width="432" height="526" rx="30" fill="#0e1a12"/>
+
+  <!-- ── Mini app chrome inside the phone ── -->
+
+  <!-- Phase badge -->
+  <text x="764" y="96" font-size="10" fill="#b8e88a" letter-spacing="2.5">PRE-VEG</text>
+
+  <!-- Phase title -->
+  <text x="764" y="118" font-family="Georgia, 'Times New Roman', serif"
+        font-size="20" font-weight="800" fill="#e8f5e3">Establish &amp; Root In</text>
+  <text x="764" y="136" font-size="11" fill="#7a9a7a">Day 14 · First Stretch in 37 days</text>
+
+  <!-- Progress bar -->
+  <rect x="764" y="146" width="392" height="3" rx="1.5" fill="rgba(255,255,255,0.07)"/>
+  <rect x="764" y="146" width="37"  height="3" rx="1.5" fill="#b8e88a"/>
+
+  <!-- Divider -->
+  <line x1="744" y1="160" x2="1176" y2="160" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+
+  <!-- Milestone chips -->
+  <rect x="764" y="167" width="56" height="20" rx="10" fill="rgba(74,222,128,0.06)" stroke="rgba(74,222,128,0.14)" stroke-width="1"/>
+  <text x="792" y="181" text-anchor="middle" font-size="8" fill="#3a5a3a">START ✓</text>
+
+  <rect x="826" y="167" width="72" height="20" rx="10" fill="rgba(184,232,138,0.13)" stroke="#b8e88a" stroke-width="1.2"/>
+  <text x="862" y="181" text-anchor="middle" font-size="8" fill="#b8e88a">PRE-VEG →</text>
+
+  <rect x="904" y="167" width="40" height="20" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="924" y="181" text-anchor="middle" font-size="8" fill="#3a5a3a">VEG</text>
+
+  <rect x="950" y="167" width="78" height="20" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+  <text x="989" y="181" text-anchor="middle" font-size="8" fill="#3a5a3a">PRE-FLOWER</text>
+
+  <!-- Divider -->
+  <line x1="744" y1="197" x2="1176" y2="197" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+
+  <!-- Month nav -->
+  <text x="960" y="218" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif"
+        font-size="14" font-weight="700" fill="#e8f5e3">June 2026</text>
+
+  <!-- Day headers S M T W T F S -->
+  <g font-size="9" fill="#3a5a3a">
+    <text x="784"  y="235" text-anchor="middle">S</text>
+    <text x="841"  y="235" text-anchor="middle">M</text>
+    <text x="898"  y="235" text-anchor="middle">T</text>
+    <text x="955"  y="235" text-anchor="middle">W</text>
+    <text x="1012" y="235" text-anchor="middle">T</text>
+    <text x="1069" y="235" text-anchor="middle">F</text>
+    <text x="1126" y="235" text-anchor="middle">S</text>
+  </g>
+
+  <!-- Calendar cells (mini) — cell w=50, h=50, gap=7 -->
+  <!-- Columns: 759, 816, 873, 930, 987, 1044, 1101 -->
+  <!-- Rows: 242, 296, 350, 404, 458 -->
+
+  <!-- Week 0: blank, 1, 2, 3(today), 4, 5, 6 -->
+  <rect x="759" y="242" width="50" height="48" rx="6" fill="rgba(255,255,255,0.01)"/>
+
+  <rect x="816" y="242" width="50" height="48" rx="6" fill="rgba(184,232,138,0.1)"/>
+  <text x="824" y="257" font-size="11" font-weight="700" fill="#5a7a5a">1</text>
+  <text x="862" y="284" text-anchor="end" font-size="8" fill="#b8e88a">4/5</text>
+
+  <rect x="873" y="242" width="50" height="48" rx="6" fill="rgba(184,232,138,0.1)"/>
+  <text x="881" y="257" font-size="11" font-weight="700" fill="#5a7a5a">2</text>
+  <text x="919" y="284" text-anchor="end" font-size="8" fill="#b8e88a">3/5</text>
+
+  <!-- TODAY = June 3 -->
+  <rect x="930" y="242" width="50" height="48" rx="6" fill="rgba(184,232,138,0.17)" stroke="#b8e88a" stroke-width="1.5"/>
+  <text x="938" y="257" font-size="11" font-weight="800" fill="#b8e88a">3</text>
+  <text x="955" y="282" text-anchor="middle" font-size="7.5" fill="#b8e88a" letter-spacing="0.5">TODAY</text>
+
+  <rect x="987"  y="242" width="50" height="48" rx="6" fill="rgba(74,222,128,0.08)"/>
+  <text x="995"  y="257" font-size="11" font-weight="700" fill="#3a5a3a">4</text>
+  <rect x="1044" y="242" width="50" height="48" rx="6" fill="rgba(74,222,128,0.08)"/>
+  <text x="1052" y="257" font-size="11" font-weight="700" fill="#3a5a3a">5</text>
+  <rect x="1101" y="242" width="50" height="48" rx="6" fill="rgba(74,222,128,0.08)"/>
+  <text x="1109" y="257" font-size="11" font-weight="700" fill="#3a5a3a">6</text>
+
+  <!-- Week 1: 7-13 -->
+  <g fill="rgba(74,222,128,0.08)">
+    <rect x="759"  y="296" width="50" height="48" rx="6"/>
+    <rect x="816"  y="296" width="50" height="48" rx="6"/>
+    <rect x="873"  y="296" width="50" height="48" rx="6"/>
+    <rect x="930"  y="296" width="50" height="48" rx="6"/>
+    <rect x="987"  y="296" width="50" height="48" rx="6"/>
+    <rect x="1044" y="296" width="50" height="48" rx="6"/>
+    <rect x="1101" y="296" width="50" height="48" rx="6"/>
+  </g>
+  <g font-size="11" font-weight="700" fill="#3a5a3a">
+    <text x="767"  y="311">7</text>
+    <text x="824"  y="311">8</text>
+    <text x="881"  y="311">9</text>
+    <text x="935"  y="311">10</text>
+    <text x="992"  y="311">11</text>
+    <text x="1049" y="311">12</text>
+    <text x="1106" y="311">13</text>
+  </g>
+
+  <!-- Week 2: 14-20 -->
+  <g fill="rgba(74,222,128,0.08)">
+    <rect x="759"  y="350" width="50" height="48" rx="6"/>
+    <rect x="816"  y="350" width="50" height="48" rx="6"/>
+    <rect x="873"  y="350" width="50" height="48" rx="6"/>
+    <rect x="930"  y="350" width="50" height="48" rx="6"/>
+    <rect x="987"  y="350" width="50" height="48" rx="6"/>
+    <rect x="1044" y="350" width="50" height="48" rx="6"/>
+    <rect x="1101" y="350" width="50" height="48" rx="6"/>
+  </g>
+  <g font-size="11" font-weight="700" fill="#3a5a3a">
+    <text x="763"  y="365">14</text>
+    <text x="820"  y="365">15</text>
+    <text x="877"  y="365">16</text>
+    <text x="934"  y="365">17</text>
+    <text x="991"  y="365">18</text>
+    <text x="1048" y="365">19</text>
+    <text x="1105" y="365">20</text>
+  </g>
+
+  <!-- Week 3: 21-27 -->
+  <g fill="rgba(74,222,128,0.08)">
+    <rect x="759"  y="404" width="50" height="48" rx="6"/>
+    <rect x="816"  y="404" width="50" height="48" rx="6"/>
+    <rect x="873"  y="404" width="50" height="48" rx="6"/>
+    <rect x="930"  y="404" width="50" height="48" rx="6"/>
+    <rect x="987"  y="404" width="50" height="48" rx="6"/>
+    <rect x="1044" y="404" width="50" height="48" rx="6"/>
+    <rect x="1101" y="404" width="50" height="48" rx="6"/>
+  </g>
+  <g font-size="11" font-weight="700" fill="#3a5a3a">
+    <text x="763"  y="419">21</text>
+    <text x="820"  y="419">22</text>
+    <text x="877"  y="419">23</text>
+    <text x="934"  y="419">24</text>
+    <text x="991"  y="419">25</text>
+    <text x="1048" y="419">26</text>
+    <text x="1105" y="419">27</text>
+  </g>
+
+  <!-- Week 4: 28-30 + blanks -->
+  <rect x="759"  y="458" width="50" height="48" rx="6" fill="rgba(74,222,128,0.08)"/>
+  <text x="763"  y="473" font-size="11" font-weight="700" fill="#3a5a3a">28</text>
+  <rect x="816"  y="458" width="50" height="48" rx="6" fill="rgba(74,222,128,0.08)"/>
+  <text x="820"  y="473" font-size="11" font-weight="700" fill="#3a5a3a">29</text>
+  <rect x="873"  y="458" width="50" height="48" rx="6" fill="rgba(74,222,128,0.08)"/>
+  <text x="877"  y="473" font-size="11" font-weight="700" fill="#3a5a3a">30</text>
+  <rect x="930"  y="458" width="50" height="48" rx="6" fill="rgba(255,255,255,0.01)"/>
+  <rect x="987"  y="458" width="50" height="48" rx="6" fill="rgba(255,255,255,0.01)"/>
+  <rect x="1044" y="458" width="50" height="48" rx="6" fill="rgba(255,255,255,0.01)"/>
+  <rect x="1101" y="458" width="50" height="48" rx="6" fill="rgba(255,255,255,0.01)"/>
+
+  <!-- Mini tab bar -->
+  <rect x="744" y="518" width="432" height="64" rx="0" fill="#141f16"/>
+  <line x1="744" y1="518" x2="1176" y2="518" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+  <text x="818"  y="548" text-anchor="middle" font-size="9" fill="#4ade80" letter-spacing="0.5">CALENDAR</text>
+  <text x="905"  y="548" text-anchor="middle" font-size="9" fill="#3a5a3a" letter-spacing="0.5">TODAY</text>
+  <text x="960"  y="548" text-anchor="middle" font-size="9" fill="#3a5a3a" letter-spacing="0.5">MJ</text>
+  <text x="1015" y="548" text-anchor="middle" font-size="9" fill="#3a5a3a" letter-spacing="0.5">PLAN</text>
+  <text x="1100" y="548" text-anchor="middle" font-size="9" fill="#3a5a3a" letter-spacing="0.5">MORE</text>
+
+</svg>
