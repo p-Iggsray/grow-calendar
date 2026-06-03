@@ -21,14 +21,14 @@ export default function AuthFooter({ onBeforeSignOut }) {
     <>
       <div style={{
         padding: "24px 16px 8px", textAlign: "center",
-        fontFamily: "'Courier New', monospace", fontSize: 11, color: "#3a5a3a",
+        fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-text-ghost)",
       }}>
-        Signed in as <span style={{ color: "#7a9a7a" }}>{user.username}</span>
+        Signed in as <span style={{ color: "var(--c-text-muted)" }}>{user.username}</span>
         <span style={{ margin: "0 8px" }}>·</span>
         <button
           onClick={() => setShowLogoutModal(true)}
           style={{
-            background: "none", border: "none", color: "#5a8a5a",
+            background: "none", border: "none", color: "var(--c-text-faint)",
             cursor: "pointer", fontFamily: "inherit", fontSize: "inherit",
             textDecoration: "underline", padding: 0,
           }}>

@@ -12,13 +12,13 @@ export default function PendingScreen() {
     }}>
       <div style={{
         width: "100%", maxWidth: 420, textAlign: "center",
-        background: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: "var(--c-surface-1)",
+        border: "1px solid var(--c-surface-2)",
         borderRadius: 14, padding: "30px 24px",
         boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
       }}>
         <div style={{ fontSize: 40, marginBottom: 10 }}>🌱</div>
-        <div style={{ fontSize: 22, fontWeight: 900, color: "#e8f5e3", marginBottom: 10 }}>
+        <div style={{ fontSize: 22, fontWeight: 900, color: "var(--c-text)", marginBottom: 10 }}>
           Request received
         </div>
         <p style={{ fontSize: 14, lineHeight: 1.6, color: "#c8d8c8" }}>
@@ -29,7 +29,7 @@ export default function PendingScreen() {
           onClick={logout}
           style={{
             marginTop: 18, padding: "9px 16px",
-            background: "rgba(255,255,255,0.06)",
+            background: "var(--c-border-faint)",
             border: "1px solid rgba(255,255,255,0.15)",
             borderRadius: 10, color: "#cbd5cb",
             fontFamily: "'Courier New', monospace", fontSize: 12,

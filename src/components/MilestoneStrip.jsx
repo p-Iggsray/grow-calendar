@@ -12,8 +12,8 @@ export default function MilestoneStrip({ today, milestones, onPick }) {
               key={m.label}
               onClick={() => onPick(m.date)}
               style={{
-                background: isToday ? `${m.color}22` : passed ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.06)",
-                border: isToday ? `1px solid ${m.color}` : passed ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(255,255,255,0.1)",
+                background: isToday ? `${m.color}22` : passed ? "rgba(255,255,255,0.03)" : "var(--c-border-faint)",
+                border: isToday ? `1px solid ${m.color}` : passed ? "1px solid var(--c-border-faint)" : "1px solid var(--c-border)",
                 borderRadius: 10, padding: "8px 12px", cursor: "pointer",
                 opacity: passed ? 0.45 : 1,
                 transition: "opacity 0.2s",

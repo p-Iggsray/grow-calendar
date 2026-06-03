@@ -26,9 +26,9 @@ const SUPPLY_ITEMS = [
 const SUPPLY_STATUS = ["have", "need_to_order", "not_using"];
 const SUPPLY_STATUS_LABEL = { have: "✓ Have", need_to_order: "⏳ Need", not_using: "— Skip" };
 const SUPPLY_STATUS_COLOR = {
-  have:          { bg: "rgba(34,197,94,0.15)",  border: "rgba(34,197,94,0.4)",  text: "#4ade80" },
+  have:          { bg: "rgba(34,197,94,0.15)",  border: "rgba(34,197,94,0.4)",  text: "var(--c-accent)" },
   need_to_order: { bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.4)", text: "#fbbf24" },
-  not_using:     { bg: "rgba(255,255,255,0.06)",border: "rgba(255,255,255,0.1)","text": "#5a7a5a" },
+  not_using:     { bg: "var(--c-border-faint)",border: "var(--c-border)","text": "#5a7a5a" },
 };
 
 // ─── Default wizard state ───────────────────────────────────────────────────
@@ -63,7 +63,7 @@ const SERIF = "'Georgia', 'Times New Roman', serif";
 
 function Label({ children }) {
   return (
-    <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: "#5a8a5a", marginBottom: 6 }}>
+    <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: "var(--c-text-faint)", marginBottom: 6 }}>
       {children}
     </div>
   );
@@ -78,7 +78,7 @@ function Input({ value, onChange, placeholder, type = "text" }) {
       placeholder={placeholder}
       style={{
         width: "100%", boxSizing: "border-box",
-        background: "rgba(0,0,0,0.3)", color: "#e8f5e3",
+        background: "rgba(0,0,0,0.3)", color: "var(--c-text)",
         border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10,
         padding: "12px 14px", fontSize: 14, fontFamily: SERIF,
         outline: "none",
@@ -100,8 +100,8 @@ function RadioGroup({ options, value, onChange }) {
             style={{
               padding: "9px 16px", borderRadius: 10,
               background: sel ? "rgba(34,197,94,0.18)" : "rgba(255,255,255,0.05)",
-              border: sel ? "1.5px solid rgba(34,197,94,0.5)" : "1px solid rgba(255,255,255,0.12)",
-              color: sel ? "#4ade80" : "#8ab89a",
+              border: sel ? "1.5px solid rgba(34,197,94,0.5)" : "1px solid var(--c-border-strong)",
+              color: sel ? "var(--c-accent)" : "#8ab89a",
               fontFamily: MONO, fontSize: 12, cursor: "pointer",
               letterSpacing: 0.5, whiteSpace: "nowrap",
             }}>
@@ -122,13 +122,13 @@ function NumStepper({ value, onChange, min = 1, max = 10, label }) {
         disabled={value <= min}
         style={{
           width: 40, height: 40, borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)",
-          background: "rgba(255,255,255,0.05)", color: value <= min ? "#3a5a3a" : "#a0d0a0",
+          background: "rgba(255,255,255,0.05)", color: value <= min ? "var(--c-text-ghost)" : "var(--c-text-dim)",
           fontSize: 20, cursor: value <= min ? "default" : "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
         −
       </button>
-      <span style={{ fontFamily: MONO, fontSize: 18, fontWeight: 800, color: "#e8f5e3", minWidth: 32, textAlign: "center" }}>
+      <span style={{ fontFamily: MONO, fontSize: 18, fontWeight: 800, color: "var(--c-text)", minWidth: 32, textAlign: "center" }}>
         {value}
       </span>
       <button
@@ -137,7 +137,7 @@ function NumStepper({ value, onChange, min = 1, max = 10, label }) {
         disabled={value >= max}
         style={{
           width: 40, height: 40, borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)",
-          background: "rgba(255,255,255,0.05)", color: value >= max ? "#3a5a3a" : "#a0d0a0",
+          background: "rgba(255,255,255,0.05)", color: value >= max ? "var(--c-text-ghost)" : "var(--c-text-dim)",
           fontSize: 20, cursor: value >= max ? "default" : "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
@@ -234,10 +234,10 @@ function StepStrains({ survey, update }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {survey.strains.map((strain, i) => (
         <div key={i} style={{
-          background: "rgba(255,255,255,0.04)", borderRadius: 12,
-          border: "1px solid rgba(255,255,255,0.08)", padding: "16px",
+          background: "var(--c-surface-1)", borderRadius: 12,
+          border: "1px solid var(--c-surface-2)", padding: "16px",
         }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 2, color: "#5a8a5a", marginBottom: 12 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 2, color: "var(--c-text-faint)", marginBottom: 12 }}>
             Plant {i + 1} {i === 0 ? "(primary)" : "(secondary)"}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -310,14 +310,14 @@ function StepTimeline({ survey, update }) {
           value={survey.transplantDate}
           onChange={e => update("transplantDate", e.target.value)}
           style={{
-            background: "rgba(0,0,0,0.3)", color: "#e8f5e3",
+            background: "rgba(0,0,0,0.3)", color: "var(--c-text)",
             border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10,
             padding: "12px 14px", fontSize: 14, fontFamily: SERIF,
             outline: "none", width: "100%", boxSizing: "border-box",
             colorScheme: "dark",
           }}
         />
-        <div style={{ fontFamily: MONO, fontSize: 10, color: "#3a5a3a", marginTop: 5, lineHeight: 1.7 }}>
+        <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginTop: 5, lineHeight: 1.7 }}>
           When plants go into their final containers.
         </div>
       </div>
@@ -329,7 +329,7 @@ function StepTimeline({ survey, update }) {
           min={4} max={20}
           label="weeks"
         />
-        <div style={{ fontFamily: MONO, fontSize: 10, color: "#3a5a3a", marginTop: 6, lineHeight: 1.7 }}>
+        <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginTop: 6, lineHeight: 1.7 }}>
           For outdoor photoperiod, the plant decides — estimate how long before pre-flower starts in your area.
         </div>
       </div>
@@ -347,7 +347,7 @@ function StepSetup({ survey, update }) {
           onChange={v => update("location", v)}
           placeholder="e.g. Central Ohio, USA"
         />
-        <div style={{ fontFamily: MONO, fontSize: 10, color: "#3a5a3a", marginTop: 5, lineHeight: 1.7 }}>
+        <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginTop: 5, lineHeight: 1.7 }}>
           Used to tailor weather threats and frost timing.
         </div>
       </div>
@@ -383,7 +383,7 @@ function StepSetup({ survey, update }) {
           rows={5}
           style={{
             width: "100%", boxSizing: "border-box", resize: "vertical",
-            background: "rgba(0,0,0,0.3)", color: "#e8f5e3",
+            background: "rgba(0,0,0,0.3)", color: "var(--c-text)",
             border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10,
             padding: "12px 14px", fontSize: 14, fontFamily: SERIF,
             outline: "none", lineHeight: 1.7,
@@ -408,7 +408,7 @@ function StepSupplies({ survey, update }) {
         Mark what you have, what you still need, or what you won't use. The AI will reference this in your calendar.
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        <div style={{ fontFamily: MONO, fontSize: 11, color: "#4ade80" }}>✓ {have} have</div>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-accent)" }}>✓ {have} have</div>
         <div style={{ fontFamily: MONO, fontSize: 11, color: "#fbbf24" }}>⏳ {need} need</div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -416,14 +416,14 @@ function StepSupplies({ survey, update }) {
           const status = survey.supplies[item.id] || "need_to_order";
           return (
             <div key={item.id} style={{
-              background: "rgba(255,255,255,0.04)", borderRadius: 10,
-              border: "1px solid rgba(255,255,255,0.08)", padding: "12px 14px",
+              background: "var(--c-surface-1)", borderRadius: 10,
+              border: "1px solid var(--c-surface-2)", padding: "12px 14px",
             }}>
               <div style={{ fontFamily: SERIF, fontSize: 13, color: "#c8dcc8", marginBottom: 4 }}>
                 {item.label}
               </div>
               {item.example && (
-                <div style={{ fontFamily: MONO, fontSize: 10, color: "#3a5a3a", marginBottom: 8 }}>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginBottom: 8 }}>
                   {item.example}
                 </div>
               )}
@@ -438,9 +438,9 @@ function StepSupplies({ survey, update }) {
                       onClick={() => setStatus(item.id, s)}
                       style={{
                         padding: "6px 12px", borderRadius: 8,
-                        background: active ? c.bg : "rgba(255,255,255,0.04)",
-                        border: active ? `1.5px solid ${c.border}` : "1px solid rgba(255,255,255,0.08)",
-                        color: active ? c.text : "#3a5a3a",
+                        background: active ? c.bg : "var(--c-surface-1)",
+                        border: active ? `1.5px solid ${c.border}` : "1px solid var(--c-surface-2)",
+                        color: active ? c.text : "var(--c-text-ghost)",
                         fontFamily: MONO, fontSize: 11, cursor: "pointer",
                         transition: "all 0.15s",
                       }}>
@@ -485,8 +485,8 @@ function StepReview({ survey }) {
         Review your answers. The AI will use all of this to build a personalized grow calendar.
       </div>
       <div style={{
-        background: "rgba(255,255,255,0.04)", borderRadius: 12,
-        border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden", marginBottom: 20,
+        background: "var(--c-surface-1)", borderRadius: 12,
+        border: "1px solid var(--c-surface-2)", overflow: "hidden", marginBottom: 20,
       }}>
         {rows.map(([k, v], i) => (
           <div key={k} style={{
@@ -494,7 +494,7 @@ function StepReview({ survey }) {
             padding: "10px 14px",
             borderTop: i > 0 ? "1px solid rgba(255,255,255,0.05)" : "none",
           }}>
-            <span style={{ fontFamily: MONO, fontSize: 11, color: "#5a8a5a", letterSpacing: 0.5, flexShrink: 0, marginRight: 12 }}>{k}</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-faint)", letterSpacing: 0.5, flexShrink: 0, marginRight: 12 }}>{k}</span>
             <span style={{ fontFamily: SERIF, fontSize: 13, color: "#c8dcc8", textAlign: "right", wordBreak: "break-word" }}>{v}</span>
           </div>
         ))}
@@ -561,8 +561,8 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey }) {
     <div style={{
       minHeight: "100vh",
       fontFamily: SERIF,
-      color: "#e8f5e3",
-      background: "linear-gradient(160deg, #0a1a0d, #0e1a12)",
+      color: "var(--c-text)",
+      background: "linear-gradient(160deg, #0a1a0d, var(--c-bg))",
       display: "flex",
       flexDirection: "column",
     }}>
@@ -570,23 +570,23 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey }) {
       <div style={{
         padding: "16px 16px 14px",
         paddingTop: "calc(16px + env(safe-area-inset-top, 0px))",
-        borderBottom: "1px solid rgba(255,255,255,0.07)",
+        borderBottom: "1px solid var(--c-border-soft)",
         background: "rgba(0,0,0,0.2)",
         flexShrink: 0,
       }}>
-        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: "#5a8a5a", marginBottom: 4 }}>
+        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: "var(--c-text-faint)", marginBottom: 4 }}>
           NEW GROW — STEP {step + 1} OF {STEPS.length}
         </div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>
+        <div style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>
           {STEPS[step].title}
         </div>
         {/* Progress bar */}
         <div style={{
-          height: 3, background: "rgba(255,255,255,0.08)", borderRadius: 2, marginTop: 12,
+          height: 3, background: "var(--c-surface-2)", borderRadius: 2, marginTop: 12,
         }}>
           <div style={{
             height: "100%", borderRadius: 2,
-            background: "linear-gradient(90deg, #22c55e, #4ade80)",
+            background: "linear-gradient(90deg, #22c55e, var(--c-accent))",
             width: `${((step + 1) / STEPS.length) * 100}%`,
             transition: "width 0.3s ease",
           }} />
@@ -624,7 +624,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey }) {
         <div style={{
           padding: "16px",
           paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
-          borderTop: "1px solid rgba(255,255,255,0.07)",
+          borderTop: "1px solid var(--c-border-soft)",
           display: "flex", gap: 12,
           background: "rgba(0,0,0,0.3)",
           flexShrink: 0,
@@ -635,9 +635,9 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey }) {
               onClick={onCancel}
               style={{
                 flex: 1, padding: "14px", borderRadius: 12,
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                color: "#a0d0a0", fontFamily: MONO, fontSize: 12,
+                background: "var(--c-border-faint)",
+                border: "1px solid var(--c-border-strong)",
+                color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 12,
                 letterSpacing: 1, cursor: "pointer",
               }}>
               Cancel
@@ -649,9 +649,9 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey }) {
               onClick={() => setStep(s => s - 1)}
               style={{
                 flex: 1, padding: "14px", borderRadius: 12,
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                color: "#a0d0a0", fontFamily: MONO, fontSize: 12,
+                background: "var(--c-border-faint)",
+                border: "1px solid var(--c-border-strong)",
+                color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 12,
                 letterSpacing: 1, cursor: "pointer",
               }}>
               ← Back
@@ -668,8 +668,8 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey }) {
                 : "rgba(255,255,255,0.05)",
               border: canAdvance()
                 ? (isLast ? "1.5px solid rgba(34,197,94,0.6)" : "1.5px solid rgba(34,197,94,0.4)")
-                : "1px solid rgba(255,255,255,0.08)",
-              color: canAdvance() ? "#4ade80" : "#3a5a3a",
+                : "1px solid var(--c-surface-2)",
+              color: canAdvance() ? "var(--c-accent)" : "var(--c-text-ghost)",
               fontFamily: MONO, fontSize: 13, letterSpacing: 1,
               cursor: canAdvance() ? "pointer" : "default",
               fontWeight: isLast ? 800 : 400,
@@ -690,10 +690,10 @@ function GeneratingScreen() {
     }}>
       <div style={{ fontSize: 48 }}>🌱</div>
       <div>
-        <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 800, color: "#4ade80", letterSpacing: 2, marginBottom: 8 }}>
+        <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 800, color: "var(--c-accent)", letterSpacing: 2, marginBottom: 8 }}>
           BUILDING YOUR CALENDAR
         </div>
-        <div style={{ fontFamily: SERIF, fontSize: 14, color: "#7a9a7a", lineHeight: 1.8, maxWidth: 280 }}>
+        <div style={{ fontFamily: SERIF, fontSize: 14, color: "var(--c-text-muted)", lineHeight: 1.8, maxWidth: 280 }}>
           The AI is analyzing your setup and generating a personalized grow schedule. This takes about 30 seconds.
         </div>
       </div>
@@ -707,7 +707,7 @@ function Spinner() {
     <div style={{
       width: 40, height: 40, borderRadius: "50%",
       border: "3px solid rgba(34,197,94,0.15)",
-      borderTopColor: "#4ade80",
+      borderTopColor: "var(--c-accent)",
       animation: "spin 0.9s linear infinite",
     }} />
   );

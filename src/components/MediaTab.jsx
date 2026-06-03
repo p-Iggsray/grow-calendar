@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { Camera, Mic, Trash2, Play, Square, Loader } from "lucide-react";
 import { useMedia } from "../lib/useMedia.js";
 
-const ACCENT = "#4ade80";
+const ACCENT = "var(--c-accent)";
 const RECORD_LIMIT_MS = 10_000;
 
 function detectAudioMime() {
@@ -59,8 +59,8 @@ function VoiceNote({ item, onDelete }) {
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 10,
-      background: "rgba(255,255,255,0.04)", borderRadius: 10,
-      border: "1px solid rgba(255,255,255,0.1)", padding: "10px 12px",
+      background: "var(--c-surface-1)", borderRadius: 10,
+      border: "1px solid var(--c-border)", padding: "10px 12px",
       marginBottom: 10,
     }}>
       <audio
@@ -79,7 +79,7 @@ function VoiceNote({ item, onDelete }) {
         }}>
         {playing ? <Square size={14} strokeWidth={2.5} /> : <Play size={14} strokeWidth={2.5} />}
       </button>
-      <span style={{ flex: 1, fontFamily: "'Courier New', monospace", fontSize: 11, color: "#7a9a7a", letterSpacing: 0.5 }}>
+      <span style={{ flex: 1, fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-text-muted)", letterSpacing: 0.5 }}>
         Voice note · {(item.size_bytes / 1024).toFixed(0)} KB
       </span>
       <button
@@ -148,8 +148,8 @@ function VoiceRecorder({ onRecorded, disabled }) {
       style={{
         display: "flex", alignItems: "center", gap: 8,
         width: "100%", padding: "12px 16px",
-        background: recording ? "rgba(248,113,113,0.12)" : "rgba(255,255,255,0.04)",
-        border: `1px solid ${recording ? "#f87171aa" : "rgba(255,255,255,0.1)"}`,
+        background: recording ? "rgba(248,113,113,0.12)" : "var(--c-surface-1)",
+        border: `1px solid ${recording ? "#f87171aa" : "var(--c-border)"}`,
         borderRadius: 10, cursor: disabled && !recording ? "default" : "pointer",
         color: recording ? "#f87171" : ACCENT,
         fontFamily: "'Courier New', monospace", fontSize: 12, letterSpacing: 1,
@@ -192,7 +192,7 @@ export default function MediaTab({ date, accentColor }) {
     <div>
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: "24px 0" }}>
-          <Loader size={18} strokeWidth={1.5} style={{ color: "#3a5a3a", animation: "spin 1s linear infinite" }} />
+          <Loader size={18} strokeWidth={1.5} style={{ color: "var(--c-text-ghost)", animation: "spin 1s linear infinite" }} />
         </div>
       ) : (
         <>
@@ -208,10 +208,10 @@ export default function MediaTab({ date, accentColor }) {
               style={{
                 display: "flex", alignItems: "center", gap: 8,
                 width: "100%", padding: "12px 16px",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                background: "var(--c-surface-1)",
+                border: "1px solid var(--c-border)",
                 borderRadius: 10, cursor: atPhotoLimit || uploading ? "default" : "pointer",
-                color: atPhotoLimit ? "#3a5a3a" : (accentColor ?? ACCENT),
+                color: atPhotoLimit ? "var(--c-text-ghost)" : (accentColor ?? ACCENT),
                 fontFamily: "'Courier New', monospace", fontSize: 12, letterSpacing: 1,
                 opacity: atPhotoLimit || uploading ? 0.5 : 1,
               }}>

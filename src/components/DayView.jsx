@@ -51,7 +51,7 @@ function useLongPress(onLongPress, ms = 500) {
 }
 
 const STATE_CFG = {
-  done:    { color: "#4ade80", bg: "rgba(74,222,128,0.05)",  label: null,      textColor: "#5a7a5a" },
+  done:    { color: "var(--c-accent)", bg: "rgba(74,222,128,0.05)",  label: null,      textColor: "#5a7a5a" },
   skipped: { color: "#facc15", bg: "rgba(250,204,21,0.05)",  label: "SKIPPED", textColor: "#8a8060" },
   blocked: { color: "#f87171", bg: "rgba(248,113,113,0.05)", label: "BLOCKED", textColor: "#8a6060" },
 };
@@ -68,16 +68,16 @@ function StatePicker({ task, currentState, onPick, onClose }) {
       />
       <div style={{
         position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 51,
-        background: "#141f16", borderTop: "1px solid rgba(255,255,255,0.1)",
+        background: "#141f16", borderTop: "1px solid var(--c-border)",
         borderRadius: "18px 18px 0 0",
         padding: "20px 20px calc(24px + env(safe-area-inset-bottom, 0px))",
       }}>
-        <div style={{ fontSize: 12, color: "#7a9a7a", marginBottom: 16, fontFamily: "'Courier New', monospace", letterSpacing: 0.5, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 12, color: "var(--c-text-muted)", marginBottom: 16, fontFamily: "'Courier New', monospace", letterSpacing: 0.5, lineHeight: 1.5 }}>
           {task}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {[
-            { state: "done",    label: "Done",    icon: <Check size={16} strokeWidth={2.5} />, color: "#4ade80", bg: "rgba(74,222,128,0.1)" },
+            { state: "done",    label: "Done",    icon: <Check size={16} strokeWidth={2.5} />, color: "var(--c-accent)", bg: "rgba(74,222,128,0.1)" },
             { state: "skipped", label: "Skipped", icon: <Minus size={16} strokeWidth={2.5} />, color: "#facc15", bg: "rgba(250,204,21,0.1)" },
             { state: "blocked", label: "Blocked", icon: <X    size={16} strokeWidth={2.5} />, color: "#f87171", bg: "rgba(248,113,113,0.1)" },
           ].map(({ state, label, icon, color, bg }) => (
@@ -88,8 +88,8 @@ function StatePicker({ task, currentState, onPick, onClose }) {
               style={{
                 display: "flex", alignItems: "center", gap: 12,
                 padding: "14px 16px", borderRadius: 12,
-                background: currentState === state ? bg : "rgba(255,255,255,0.04)",
-                border: `1px solid ${currentState === state ? color + "66" : "rgba(255,255,255,0.08)"}`,
+                background: currentState === state ? bg : "var(--c-surface-1)",
+                border: `1px solid ${currentState === state ? color + "66" : "var(--c-surface-2)"}`,
                 color, cursor: "pointer", textAlign: "left",
                 fontSize: 15, fontWeight: 600,
               }}>
@@ -136,7 +136,7 @@ function TaskRow({ task, index, state, accentColor, onTap, onLongPress, note, on
           style={{
             width: 28, height: 28, borderRadius: 7, flexShrink: 0,
             background: cfg ? cfg.color : `${accentColor}22`,
-            color: cfg ? "#0e1a12" : accentColor,
+            color: cfg ? "var(--c-bg)" : accentColor,
             border: `1px solid ${cfg ? cfg.color : accentColor + "44"}`,
             display: "flex", alignItems: "center", justifyContent: "center",
             cursor: "pointer", transition: "background 0.15s, color 0.15s",
@@ -172,7 +172,7 @@ function TaskRow({ task, index, state, accentColor, onTap, onLongPress, note, on
           aria-label="Toggle task note"
           style={{
             background: (noteOpen || note) ? `${accentColor}22` : "none",
-            border: `1px solid ${note ? accentColor + "55" : "rgba(255,255,255,0.1)"}`,
+            border: `1px solid ${note ? accentColor + "55" : "var(--c-border)"}`,
             borderRadius: 6, padding: "5px 7px",
             color: note ? accentColor : "#5a7a5a",
             cursor: "pointer", flexShrink: 0,
@@ -196,14 +196,14 @@ function TaskRow({ task, index, state, accentColor, onTap, onLongPress, note, on
             autoFocus
             style={{
               width: "100%", resize: "vertical",
-              background: "rgba(0,0,0,0.2)", color: "#e8f5e3",
-              border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8,
+              background: "rgba(0,0,0,0.2)", color: "var(--c-text)",
+              border: "1px solid var(--c-border)", borderRadius: 8,
               padding: "8px 10px", fontSize: 13, lineHeight: 1.6,
               fontFamily: "'Georgia', 'Times New Roman', serif", outline: "none",
               boxSizing: "border-box",
             }}
           />
-          <div style={{ textAlign: "right", fontFamily: "'Courier New', monospace", fontSize: 10, color: "#3a5a3a", marginTop: 3 }}>
+          <div style={{ textAlign: "right", fontFamily: "'Courier New', monospace", fontSize: 10, color: "var(--c-text-ghost)", marginTop: 3 }}>
             {(note ?? "").length}/{MAX_TASK_NOTE_LEN}
           </div>
         </div>
@@ -217,11 +217,11 @@ const fieldLabelStyle = {
 };
 const fieldNameStyle = {
   fontFamily: "'Courier New', monospace", fontSize: 10,
-  letterSpacing: 1, color: "#7a9a7a", textTransform: "uppercase",
+  letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase",
 };
 const numInputStyle = {
-  background: "rgba(0,0,0,0.25)", color: "#e8f5e3",
-  border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8,
+  background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
+  border: "1px solid var(--c-border-strong)", borderRadius: 8,
   padding: "10px 12px", fontSize: 15, outline: "none",
   fontFamily: "'Courier New', monospace",
   WebkitAppearance: "none", MozAppearance: "textfield",
@@ -263,7 +263,7 @@ export default function DayView({
     noteStatus === "error"  ? "Save failed. Keep typing to retry." : "";
   const statusColor =
     noteStatus === "error" ? "#f87171" :
-    noteStatus === "saved" ? "#4ade80" : "#5a7a5a";
+    noteStatus === "saved" ? "var(--c-accent)" : "#5a7a5a";
 
   function handlePickState(state) {
     onSetTaskState?.(pickerIdx, state);
@@ -291,8 +291,8 @@ export default function DayView({
           type="button"
           onClick={onBack}
           style={{
-            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: 10, padding: "8px 14px", color: "#a0d0a0",
+            background: "var(--c-border-faint)", border: "1px solid var(--c-border-strong)",
+            borderRadius: 10, padding: "8px 14px", color: "var(--c-text-dim)",
             cursor: "pointer", display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
             minHeight: 44,
           }}>
@@ -303,14 +303,14 @@ export default function DayView({
           <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: selStyle?.color, textTransform: "uppercase" }}>
             {selStyle?.label}
           </div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.4 }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.4 }}>
             {fmtL(selected)}, 2026
           </div>
         </div>
         {totalTasks > 0 && (
           <div style={{
             fontSize: 11, fontFamily: "'Courier New', monospace",
-            color: resolvedCount === totalTasks ? "#4ade80" : selStyle?.color,
+            color: resolvedCount === totalTasks ? "var(--c-accent)" : selStyle?.color,
             background: "rgba(0,0,0,0.25)", padding: "6px 10px", borderRadius: 8,
             whiteSpace: "nowrap", flexShrink: 0,
             opacity: checkoffsLoading ? 0.5 : 1, transition: "opacity 0.15s",
@@ -321,16 +321,16 @@ export default function DayView({
       </div>
 
       <div style={{
-        background: "rgba(255,255,255,0.04)", borderRadius: 14,
+        background: "var(--c-surface-1)", borderRadius: 14,
         border: `1px solid ${selStyle?.color}44`, overflow: "hidden",
       }}>
         <div style={{ background: `${selStyle?.color}22`, padding: "14px 16px 12px", borderBottom: `1px solid ${selStyle?.color}33` }}>
-          <div style={{ fontSize: 17, fontWeight: 800, color: "#e8f5e3", lineHeight: 1.2, letterSpacing: -0.3 }}>
+          <div style={{ fontSize: 17, fontWeight: 800, color: "var(--c-text)", lineHeight: 1.2, letterSpacing: -0.3 }}>
             {detail?.title}
           </div>
         </div>
 
-        <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+        <div style={{ display: "flex", borderBottom: "1px solid var(--c-border-soft)" }}>
           {[
             { id: "tasks",   label: "Tasks" },
             { id: "log",     label: "Log" },
@@ -370,7 +370,7 @@ export default function DayView({
                     index={i}
                     task={task}
                     state={taskStates?.[String(i)] ?? null}
-                    accentColor={selStyle?.color ?? "#4ade80"}
+                    accentColor={selStyle?.color ?? "var(--c-accent)"}
                     onTap={onToggle ?? (() => {})}
                     onLongPress={setPickerIdx}
                     note={taskNotes[String(i)] ?? ""}
@@ -396,10 +396,10 @@ export default function DayView({
           {tab === "log" && (
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 2, color: "#7a9a7a", textTransform: "uppercase" }}>
+                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 2, color: "var(--c-text-muted)", textTransform: "uppercase" }}>
                   Daily readings
                 </div>
-                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: logStatus === "error" ? "#f87171" : logStatus === "saved" ? "#4ade80" : "#5a7a5a", minHeight: 12 }}>
+                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: logStatus === "error" ? "#f87171" : logStatus === "saved" ? "var(--c-accent)" : "#5a7a5a", minHeight: 12 }}>
                   {logStatus === "saving" ? "Saving..." : logStatus === "saved" ? "Saved" : logStatus === "error" ? "Save failed" : ""}
                 </div>
               </div>
@@ -470,7 +470,7 @@ export default function DayView({
           {tab === "notes" && (
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <label htmlFor="day-note" style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1, color: "#7a9a7a", textTransform: "uppercase" }}>
+                <label htmlFor="day-note" style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase" }}>
                   Your notes & concerns
                 </label>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -480,9 +480,9 @@ export default function DayView({
                       onClick={() => setNoteEditing(e => !e)}
                       aria-label={noteEditing ? "Done editing" : "Edit note"}
                       style={{
-                        background: "none", border: "1px solid rgba(255,255,255,0.12)",
+                        background: "none", border: "1px solid var(--c-border-strong)",
                         borderRadius: 6, padding: "5px 8px",
-                        color: "#7a9a7a", cursor: "pointer",
+                        color: "var(--c-text-muted)", cursor: "pointer",
                         display: "flex", alignItems: "center", justifyContent: "center",
                         minHeight: 32,
                       }}>
@@ -508,14 +508,14 @@ export default function DayView({
                     rows={12}
                     style={{
                       width: "100%", resize: "vertical",
-                      background: "rgba(0,0,0,0.25)", color: "#e8f5e3",
-                      border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10,
+                      background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
+                      border: "1px solid var(--c-border-strong)", borderRadius: 10,
                       padding: "12px 14px", fontSize: 14, lineHeight: 1.7,
                       fontFamily: "'Georgia', 'Times New Roman', serif", outline: "none",
                       boxSizing: "border-box",
                     }}
                   />
-                  <div style={{ marginTop: 6, fontFamily: "'Courier New', monospace", fontSize: 10, color: "#3a5a3a", lineHeight: 1.8 }}>
+                  <div style={{ marginTop: 6, fontFamily: "'Courier New', monospace", fontSize: 10, color: "var(--c-text-ghost)", lineHeight: 1.8 }}>
                     **bold** · *italic* · - bullet list
                   </div>
                 </>
@@ -526,7 +526,7 @@ export default function DayView({
                   style={{
                     minHeight: 120, cursor: "text",
                     background: "rgba(0,0,0,0.2)",
-                    border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10,
+                    border: "1px solid var(--c-surface-2)", borderRadius: 10,
                     padding: "12px 14px", fontSize: 14, lineHeight: 1.8,
                     fontFamily: "'Georgia', 'Times New Roman', serif",
                     color: "#c8dcc8",
@@ -542,7 +542,7 @@ export default function DayView({
               {isCurrentOrFuture && <WeatherCard weather={weather} loading={weatherLoading} />}
 
               {threats.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "24px 0", color: "#3a5a3a", fontFamily: "'Courier New', monospace", fontSize: 13, lineHeight: 1.8 }}>
+                <div style={{ textAlign: "center", padding: "24px 0", color: "var(--c-text-ghost)", fontFamily: "'Courier New', monospace", fontSize: 13, lineHeight: 1.8 }}>
                   Smooth sailing for now.<br />
                   <span style={{ opacity: 0.7 }}>No active threats this phase.</span>
                 </div>
@@ -582,7 +582,7 @@ export default function DayView({
             bottom: "calc(72px + env(safe-area-inset-bottom, 0px))",
             background: "rgba(0,0,0,0.7)",
             border: "1px solid rgba(34,197,94,0.35)",
-            color: "#4ade80",
+            color: "var(--c-accent)",
             borderRadius: 999, padding: "10px 16px",
             fontSize: 12, fontWeight: 700, letterSpacing: 1,
             fontFamily: "'Courier New', monospace", cursor: "pointer",

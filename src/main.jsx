@@ -52,9 +52,9 @@ function Splash() {
     <div style={{
       minHeight: "100vh",
       display: "flex", alignItems: "center", justifyContent: "center",
-      background: "#0e1a12",
+      background: "var(--c-bg)",
       fontFamily: "'Courier New', monospace",
-      fontSize: 12, letterSpacing: 4, color: "#3a5a3a",
+      fontSize: 12, letterSpacing: 4, color: "var(--c-text-ghost)",
     }}>
       LOADING
     </div>

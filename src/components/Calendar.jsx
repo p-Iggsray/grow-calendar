@@ -64,8 +64,8 @@ export default function Calendar({
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         style={{
-          background: "rgba(255,255,255,0.04)", borderRadius: 14,
-          border: "1px solid rgba(255,255,255,0.07)", overflow: "hidden",
+          background: "var(--c-surface-1)", borderRadius: 14,
+          border: "1px solid var(--c-border-soft)", overflow: "hidden",
         }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 10px" }}>
           <button
@@ -75,14 +75,14 @@ export default function Calendar({
             aria-label="Previous month"
             style={{
               background: "none", border: "none",
-              color: canPrev ? "#4ade80" : "#2a4a2a",
+              color: canPrev ? "var(--c-accent)" : "#2a4a2a",
               cursor: canPrev ? "pointer" : "default",
               minWidth: 44, minHeight: 44, padding: "8px 12px",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
             <ChevronLeft size={22} strokeWidth={canPrev ? 2 : 1.5} />
           </button>
-          <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.5, color: "#e8f5e3" }}>
+          <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.5, color: "var(--c-text)" }}>
             {MONTH_NAMES[month]} {YEAR}
           </div>
           <button
@@ -92,7 +92,7 @@ export default function Calendar({
             aria-label="Next month"
             style={{
               background: "none", border: "none",
-              color: canNext ? "#4ade80" : "#2a4a2a",
+              color: canNext ? "var(--c-accent)" : "#2a4a2a",
               cursor: canNext ? "pointer" : "default",
               minWidth: 44, minHeight: 44, padding: "8px 12px",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -103,7 +103,7 @@ export default function Calendar({
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", padding: "0 10px" }}>
           {DOW_SHORT.map((l, i) => (
-            <div key={i} style={{ textAlign: "center", fontSize: 11, color: "#3a5a3a", fontFamily: "'Courier New', monospace", fontWeight: 700, padding: "2px 0" }}>
+            <div key={i} style={{ textAlign: "center", fontSize: 11, color: "var(--c-text-ghost)", fontFamily: "'Courier New', monospace", fontWeight: 700, padding: "2px 0" }}>
               {l}
             </div>
           ))}
@@ -168,14 +168,14 @@ export default function Calendar({
                   background: isSel
                     ? pStyle?.color
                     : isToday
-                    ? `${pStyle?.color || "#4ade80"}22`
+                    ? `${pStyle?.color || "var(--c-accent)"}22`
                     : pStyle
                     ? `${pStyle.color}18`
                     : "transparent",
                   border: isSel
                     ? `2px solid ${pStyle?.color}`
                     : isToday
-                    ? `2px solid ${pStyle?.color || "#4ade80"}`
+                    ? `2px solid ${pStyle?.color || "var(--c-accent)"}`
                     : isKey
                     ? `2px dashed ${pStyle?.color || "#aaa"}`
                     : "2px solid transparent",
@@ -221,7 +221,7 @@ export default function Calendar({
         </div>
       </div>
 
-      <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "#3a5a3a", textAlign: "center", marginTop: 8, lineHeight: 1.8 }}>
+      <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "var(--c-text-ghost)", textAlign: "center", marginTop: 8, lineHeight: 1.8 }}>
         Solid border = today · Dashed = key date · Amber dot = active threats · Green ring = day complete
       </div>
     </div>

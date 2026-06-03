@@ -4,15 +4,15 @@ import { api } from "../lib/api.js";
 import { LOCATION } from "../lib/appConfig.js";
 
 const LABEL_STYLE = {
-  fontSize: 10, letterSpacing: 2, color: "#5a8a5a",
+  fontSize: 10, letterSpacing: 2, color: "var(--c-text-faint)",
   textTransform: "uppercase", fontFamily: "'Courier New', monospace",
 };
 const INPUT_STYLE = {
   background: "rgba(0,0,0,0.25)",
-  border: "1px solid rgba(255,255,255,0.1)",
+  border: "1px solid var(--c-border)",
   borderRadius: 8,
   padding: "10px 12px",
-  color: "#e8f5e3",
+  color: "var(--c-text)",
   fontSize: 14,
   fontFamily: "'Courier New', monospace",
   outline: "none",
@@ -103,17 +103,17 @@ export default function LoginGate() {
     }}>
       <div style={{
         width: "100%", maxWidth: 380,
-        background: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: "var(--c-surface-1)",
+        border: "1px solid var(--c-surface-2)",
         borderRadius: 14, padding: "26px 22px 22px",
         boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
       }}>
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 22 }}>
-          <div style={{ fontSize: 10, letterSpacing: 4, color: "#5a8a5a", textTransform: "uppercase", marginBottom: 6, fontFamily: "'Courier New', monospace" }}>
+          <div style={{ fontSize: 10, letterSpacing: 4, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 6, fontFamily: "'Courier New', monospace" }}>
             Grow Log · {LOCATION}
           </div>
-          <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: -1, color: "#e8f5e3" }}>
+          <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: -1, color: "var(--c-text)" }}>
             The Grow Calendar
           </div>
         </div>
@@ -179,7 +179,7 @@ export default function LoginGate() {
                 marginTop: 4, padding: "10px 14px",
                 background: busy ? "rgba(34,197,94,0.08)" : "rgba(34,197,94,0.15)",
                 border: "1px solid rgba(34,197,94,0.35)",
-                borderRadius: 10, color: "#4ade80",
+                borderRadius: 10, color: "var(--c-accent)",
                 fontSize: 13, fontFamily: "'Courier New', monospace",
                 cursor: submitDisabled ? "default" : "pointer",
                 letterSpacing: 1, opacity: submitDisabled ? 0.5 : 1,
@@ -219,7 +219,7 @@ export default function LoginGate() {
 
 const linkBtnStyle = {
   background: "none", border: "none",
-  color: "#5a8a5a", fontFamily: "'Courier New', monospace",
+  color: "var(--c-text-faint)", fontFamily: "'Courier New', monospace",
   fontSize: 11, letterSpacing: 1, cursor: "pointer",
   display: "block", textAlign: "center",
 };
@@ -237,7 +237,7 @@ function Field({ label, value, onChange, type = "text", autoComplete, autoFocus 
         autoFocus={autoFocus}
         style={INPUT_STYLE}
         onFocus={e => { e.target.style.borderColor = "rgba(74,222,128,0.5)"; }}
-        onBlur={e => { e.target.style.borderColor = "rgba(255,255,255,0.1)"; }}
+        onBlur={e => { e.target.style.borderColor = "var(--c-border)"; }}
       />
     </label>
   );
@@ -268,7 +268,7 @@ function PasswordField({ label = "Password", value, onChange, autoComplete, auto
           onChange={e => onChange(e.target.value)}
           onKeyDown={updateCapsLock}
           onKeyUp={updateCapsLock}
-          onBlur={e => { e.target.style.borderColor = "rgba(255,255,255,0.1)"; setCapsLockOn(false); }}
+          onBlur={e => { e.target.style.borderColor = "var(--c-border)"; setCapsLockOn(false); }}
           autoComplete={autoComplete}
           // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus={autoFocus}
@@ -281,7 +281,7 @@ function PasswordField({ label = "Password", value, onChange, autoComplete, auto
           aria-label={reveal ? "Hide password" : "Show password"}
           aria-pressed={reveal}
           tabIndex={-1}
-          style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", padding: 8, cursor: "pointer", color: reveal ? "#4ade80" : "#5a8a5a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", padding: 8, cursor: "pointer", color: reveal ? "var(--c-accent)" : "var(--c-text-faint)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <EyeIcon hidden={reveal} />
         </button>
       </div>

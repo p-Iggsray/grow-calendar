@@ -24,7 +24,7 @@ function PhaseSection({ phase, aiContent, override, onSave, onReset }) {
   const [localTasks, setLocalTasks] = useState(null); // null = use persisted
   const [saving, setSaving] = useState(false);
 
-  const cfg = PHASES[phase] ?? { label: phase, color: "#5a8a5a" };
+  const cfg = PHASES[phase] ?? { label: phase, color: "var(--c-text-faint)" };
   const glyph = phaseGlyph(phase);
   const persistedTasks = override?.tasks ?? aiContent?.tasks ?? [];
   const tasks = localTasks ?? persistedTasks;
@@ -85,7 +85,7 @@ function PhaseSection({ phase, aiContent, override, onSave, onReset }) {
   return (
     <div style={{
       borderRadius: 12, overflow: "hidden",
-      border: `1px solid ${open ? cfg.color + "44" : "rgba(255,255,255,0.08)"}`,
+      border: `1px solid ${open ? cfg.color + "44" : "var(--c-surface-2)"}`,
       marginBottom: 8,
       transition: "border-color 0.2s",
     }}>
@@ -110,10 +110,10 @@ function PhaseSection({ phase, aiContent, override, onSave, onReset }) {
         <span style={{ flex: 1, textAlign: "left", fontFamily: MONO, fontSize: 12, letterSpacing: 0.5, color: "#c8dcc8", fontWeight: open ? 700 : 400 }}>
           {cfg.label}
         </span>
-        <span style={{ fontFamily: MONO, fontSize: 10, color: isOverridden ? cfg.color : "#3a5a3a" }}>
+        <span style={{ fontFamily: MONO, fontSize: 10, color: isOverridden ? cfg.color : "var(--c-text-ghost)" }}>
           {isOverridden ? "EDITED" : aiContent ? "AI" : "DEFAULT"}
         </span>
-        <span style={{ fontSize: 10, fontFamily: MONO, color: "#3a5a3a", marginLeft: 4 }}>
+        <span style={{ fontSize: 10, fontFamily: MONO, color: "var(--c-text-ghost)", marginLeft: 4 }}>
           {tasks.length}t
         </span>
         {open ? <ChevronUp size={14} color="#5a7a5a" /> : <ChevronDown size={14} color="#5a7a5a" />}
@@ -146,14 +146,14 @@ function PhaseSection({ phase, aiContent, override, onSave, onReset }) {
                       autoFocus
                       style={{
                         width: "100%", boxSizing: "border-box", resize: "vertical",
-                        background: "rgba(0,0,0,0.3)", color: "#e8f5e3",
+                        background: "rgba(0,0,0,0.3)", color: "var(--c-text)",
                         border: `1px solid ${cfg.color}55`, borderRadius: 8,
                         padding: "8px 10px", fontSize: 12, lineHeight: 1.6,
                         fontFamily: "'Georgia', 'Times New Roman', serif", outline: "none",
                       }}
                     />
                     <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                      <button type="button" onClick={commitEdit} style={smallBtnStyle("#4ade80")}>Save</button>
+                      <button type="button" onClick={commitEdit} style={smallBtnStyle("var(--c-accent)")}>Save</button>
                       <button type="button" onClick={() => setEditIdx(null)} style={smallBtnStyle("#5a7a5a")}>Cancel</button>
                     </div>
                   </div>
@@ -175,7 +175,7 @@ function PhaseSection({ phase, aiContent, override, onSave, onReset }) {
           {/* Add task */}
           <button type="button" onClick={addTask} style={{
             display: "flex", alignItems: "center", gap: 6,
-            background: "none", border: `1px dashed rgba(255,255,255,0.12)`,
+            background: "none", border: `1px dashed var(--c-border-strong)`,
             borderRadius: 8, padding: "7px 10px", cursor: "pointer",
             color: "#5a7a5a", fontFamily: MONO, fontSize: 11, letterSpacing: 0.5,
             marginBottom: 10,
@@ -190,7 +190,7 @@ function PhaseSection({ phase, aiContent, override, onSave, onReset }) {
               <button type="button" onClick={saveChanges} disabled={saving} style={{
                 flex: 2, padding: "9px 12px", borderRadius: 8, cursor: saving ? "default" : "pointer",
                 background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.35)",
-                color: "#4ade80", fontFamily: MONO, fontSize: 11, letterSpacing: 0.5,
+                color: "var(--c-accent)", fontFamily: MONO, fontSize: 11, letterSpacing: 0.5,
                 opacity: saving ? 0.6 : 1,
               }}>
                 {saving ? "Saving…" : "Save changes"}
@@ -199,8 +199,8 @@ function PhaseSection({ phase, aiContent, override, onSave, onReset }) {
             {isOverridden && !isDirty && (
               <button type="button" onClick={resetToAi} disabled={saving} style={{
                 flex: 1, padding: "9px 12px", borderRadius: 8, cursor: saving ? "default" : "pointer",
-                background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)",
-                color: "#7a9a7a", fontFamily: MONO, fontSize: 11, letterSpacing: 0.5,
+                background: "var(--c-surface-1)", border: "1px solid var(--c-border-strong)",
+                color: "var(--c-text-muted)", fontFamily: MONO, fontSize: 11, letterSpacing: 0.5,
                 opacity: saving ? 0.6 : 1,
               }}>
                 Reset to AI
@@ -221,7 +221,7 @@ const smallBtnStyle = color => ({
 
 const iconBtnStyle = {
   background: "none", border: "none", cursor: "pointer",
-  color: "#3a5a3a", padding: 4, flexShrink: 0,
+  color: "var(--c-text-ghost)", padding: 4, flexShrink: 0,
   display: "flex", alignItems: "center", justifyContent: "center",
 };
 
@@ -236,11 +236,11 @@ function RegenConfirm({ onCancel, onConfirm, loading }) {
       }} />
       <div style={{
         position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 51,
-        background: "#141f16", borderTop: "1px solid rgba(255,255,255,0.1)",
+        background: "#141f16", borderTop: "1px solid var(--c-border)",
         borderRadius: "18px 18px 0 0",
         padding: "24px 20px calc(28px + env(safe-area-inset-bottom, 0px))",
       }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: "#e8f5e3", marginBottom: 8 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", marginBottom: 8 }}>
           Regenerate AI content?
         </div>
         <div style={{ fontSize: 13, color: "#8aaa8a", lineHeight: 1.7, marginBottom: 20 }}>
@@ -249,8 +249,8 @@ function RegenConfirm({ onCancel, onConfirm, loading }) {
         <div style={{ display: "flex", gap: 10 }}>
           <button type="button" onClick={onCancel} style={{
             flex: 1, padding: "13px", borderRadius: 12,
-            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
-            color: "#a0d0a0", fontFamily: MONO, fontSize: 12, letterSpacing: 1, cursor: "pointer",
+            background: "var(--c-border-faint)", border: "1px solid var(--c-border-strong)",
+            color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 12, letterSpacing: 1, cursor: "pointer",
           }}>
             Cancel
           </button>
@@ -258,7 +258,7 @@ function RegenConfirm({ onCancel, onConfirm, loading }) {
             flex: 2, padding: "13px", borderRadius: 12,
             background: loading ? "rgba(74,222,128,0.06)" : "rgba(74,222,128,0.18)",
             border: "1.5px solid rgba(74,222,128,0.4)",
-            color: "#4ade80", fontFamily: MONO, fontSize: 12, letterSpacing: 1,
+            color: "var(--c-accent)", fontFamily: MONO, fontSize: 12, letterSpacing: 1,
             cursor: loading ? "default" : "pointer", opacity: loading ? 0.7 : 1,
           }}>
             {loading ? "Regenerating…" : "Regenerate"}
@@ -325,14 +325,14 @@ export default function PlanScreen({ config, generatedPlan, phaseOverrides, surv
     }}>
       {/* Grow overview */}
       <div style={{ marginBottom: 18 }}>
-        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 4, color: "#3a5a3a", textTransform: "uppercase", marginBottom: 4 }}>
+        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 4, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 4 }}>
           Grow Plan
         </div>
-        <div style={{ fontSize: 22, fontWeight: 900, color: "#e8f5e3", letterSpacing: -0.5, marginBottom: 4 }}>
+        <div style={{ fontSize: 22, fontWeight: 900, color: "var(--c-text)", letterSpacing: -0.5, marginBottom: 4 }}>
           {growName}
         </div>
         {strainNames.length > 0 && (
-          <div style={{ fontFamily: MONO, fontSize: 11, color: "#5a8a5a", letterSpacing: 0.5 }}>
+          <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-faint)", letterSpacing: 0.5 }}>
             {strainNames.join(" · ")}
           </div>
         )}
@@ -346,7 +346,7 @@ export default function PlanScreen({ config, generatedPlan, phaseOverrides, surv
           style={{
             flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
             padding: "11px 14px", borderRadius: 10,
-            background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
+            background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
             color: "#c8dcc8", fontFamily: MONO, fontSize: 11, letterSpacing: 1, cursor: "pointer",
           }}>
           <Settings size={13} strokeWidth={1.8} />
@@ -359,7 +359,7 @@ export default function PlanScreen({ config, generatedPlan, phaseOverrides, surv
             flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
             padding: "11px 14px", borderRadius: 10,
             background: "rgba(74,222,128,0.07)", border: "1px solid rgba(74,222,128,0.2)",
-            color: "#4ade80", fontFamily: MONO, fontSize: 11, letterSpacing: 1, cursor: "pointer",
+            color: "var(--c-accent)", fontFamily: MONO, fontSize: 11, letterSpacing: 1, cursor: "pointer",
           }}>
           <RefreshCw size={13} strokeWidth={1.8} />
           Regenerate AI
@@ -377,7 +377,7 @@ export default function PlanScreen({ config, generatedPlan, phaseOverrides, surv
       )}
 
       {/* Phase library */}
-      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: "#3a5a3a", textTransform: "uppercase", marginBottom: 10 }}>
+      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 10 }}>
         Phase library
       </div>
 
