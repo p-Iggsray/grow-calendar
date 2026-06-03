@@ -54,7 +54,9 @@ DATE CALCULATION RULES:
 - If two strains: secondary strain harvest is based on its own flower time
 
 OUTPUT REQUIREMENTS:
-Respond with ONLY a valid JSON object (no markdown, no code blocks, no explanation):
+Respond with ONLY a valid JSON object (no markdown, no code blocks, no explanation).
+All tasks must be actionable, specific to this grower's actual strains, nutrients, medium, container size, and environment.
+
 {
   "config": {
     "start": "YYYY-MM-DD",
@@ -73,25 +75,66 @@ Respond with ONLY a valid JSON object (no markdown, no code blocks, no explanati
     "hazeFlush": "YYYY-MM-DD",
     "hazeHarvest": "YYYY-MM-DD"
   },
-  "growName": "descriptive name for this grow",
+  "growName": "descriptive name for this grow (strain names + year)",
   "strains": [
     { "name": "strain name", "type": "indica|sativa|hybrid", "photo": true, "slot": "primary" },
     { "name": "strain name", "type": "indica|sativa|hybrid", "photo": true, "slot": "secondary" }
   ],
   "phases": {
-    "early_veg": { "summary": "2-3 sentence overview specific to this grow", "tasks": ["task 1", "task 2", "...up to 8 tasks"], "notes": "optional tip" },
+    "pre": {
+      "days": [
+        { "title": "Pre-Transplant — Prep Day", "summary": "1-2 sentences: what to accomplish today before hardening begins.", "tasks": ["6-8 detailed prep tasks specific to this grow (supplies check, space setup, etc.)"], "notes": "optional tip or reminder" },
+        { "title": "Harden Off — Day 1 of 3", "summary": "1-2 sentences about first outdoor exposure.", "tasks": ["6-8 tasks: temperature check, duration, what to watch for, etc."], "notes": "optional tip" },
+        { "title": "Harden Off — Day 2 of 3", "summary": "1-2 sentences about extended hardening + final transplant prep.", "tasks": ["6-8 tasks: extended sun time, moisture management, pre-transplant checklist"], "notes": "optional tip" }
+      ]
+    },
+    "transplant": {
+      "title": "TRANSPLANT DAY",
+      "summary": "1-2 sentences: the goal of today and what the grower is moving into.",
+      "tasks": ["8-10 ordered transplant steps specific to their medium, container size, number of plants, and whether they are clones or seedlings. Cover: soil mixing, pot setup, transplant technique, first watering, staking, post-transplant care."],
+      "notes": "Critical reminder about no nutrients for the first N days and what to watch for in the first 48 hours."
+    },
+    "early_veg": { "summary": "2-3 sentence overview.", "tasks": ["6-8 tasks"], "notes": "..." },
     "veg_cm": { "summary": "...", "tasks": ["..."], "notes": "..." },
     "veg_half": { "summary": "...", "tasks": ["..."], "notes": "..." },
     "veg_full": { "summary": "...", "tasks": ["..."], "notes": "..." },
     "pre_flower": { "summary": "...", "tasks": ["..."], "notes": "..." },
-    "flower": { "summary": "...", "tasks": ["..."], "notes": "..." }
+    "flower": { "summary": "...", "tasks": ["..."], "notes": "..." },
+    "flush": {
+      "summary": "1-2 sentences: monthly salt-flush purpose specific to their nutrient line.",
+      "tasks": ["6-7 tasks: moisture check first, plain water only, amount to use, visual inspection during flush, when to resume feeding"],
+      "notes": "Why this matters for their specific nutrient brand."
+    },
+    "flush_gdp": {
+      "summary": "1-2 sentences: primary strain pre-harvest flush. Duration: 7 days for indica, 14 days for sativa/hybrid.",
+      "tasks": ["6-7 tasks: plain water only for this strain, trichome inspection schedule, what the other strain(s) are doing during this window, signs of ripeness to watch"],
+      "notes": "Target trichome ratio and harvest window."
+    },
+    "harvest_gdp": {
+      "title": "HARVEST — [Primary strain name]",
+      "summary": "1-2 sentences: the primary strain comes down today.",
+      "tasks": ["8-10 ordered steps: final trichome check, tool prep/sanitation, harvest technique (whole plant vs. branch by branch), fan leaf removal, wet vs. dry trim decision, drying setup with target temp/RH, what the remaining strain(s) need today"],
+      "notes": "Drying duration target and curing overview."
+    }
   },
   "threats": [
-    { "id": "unique_id", "icon": "emoji", "title": "short title", "desc": "detailed description specific to this grow's location/setup", "phases": ["phase_key"] }
+    { "id": "unique_id", "icon": "emoji", "title": "short title", "desc": "2-3 sentence description specific to this grow's location, season, and environment", "phases": ["phase_key_1", "phase_key_2"] }
   ]
 }
 
-IMPORTANT: Use the grower's actual strain names throughout. Make tasks specific to their medium, nutrients, container size, location, and environment. Threats should match their climate and environment (outdoor vs indoor).`;
+For grows with TWO strains, also include these keys inside "phases":
+  "flower_haze": { "summary": "...", "tasks": ["6-7 tasks: secondary strain late flower while primary has been harvested"], "notes": "..." },
+  "flush_haze": { "summary": "...", "tasks": ["6-7 tasks"], "notes": "..." },
+  "harvest_haze": { "title": "HARVEST — [Secondary strain name]", "summary": "...", "tasks": ["8-10 ordered steps"], "notes": "Curing notes." }
+
+QUALITY REQUIREMENTS:
+- Use the grower's exact strain names and product names throughout all tasks
+- Nutrient doses must match their specific brand and products (never use a brand they didn't mention)
+- Container lifting for moisture checks must reference their container size
+- Outdoor grows: reference their location's climate, seasons, and weather risks
+- Indoor grows: reference their tent size, lighting schedule, and HVAC
+- Tasks must be numbered sentences (no bullets), 1-3 sentences each, direct and specific
+- 4-6 threats minimum, each with ≥2 phases listed and specific to their environment`;
 }
 
 function addDays(isoDate, n) {
@@ -212,4 +255,59 @@ export async function postPlanSetup(request, env, user) {
   ).run();
 
   return json({ ok: true, config, generatedPlan });
+}
+
+// POST /api/plan/regenerate — re-run AI with the stored survey (dates unchanged).
+// Overwrites generated_plan but leaves phase_overrides intact.
+export async function postPlanRegenerate(request, env, user) {
+  const row = await env.DB.prepare(
+    "SELECT survey FROM plan_config WHERE user_id = ?"
+  ).bind(user.id).first();
+
+  if (!row?.survey) return error(400, "no survey on file — complete initial setup first");
+
+  let survey;
+  try { survey = JSON.parse(row.survey); }
+  catch { return error(500, "stored survey is corrupt — re-run full setup"); }
+
+  const prompt = buildSetupPrompt(survey);
+  let rawText = "";
+  try {
+    const base = geminiBase(env.CF_AI_GATEWAY_URL ?? null);
+    const headers = { "x-goog-api-key": env.GEMINI_API_KEY, "content-type": "application/json" };
+    if (user?.id != null) headers["cf-aig-metadata"] = JSON.stringify({ user_id: String(user.id) });
+    const res = await fetch(`${base}/${SETUP_MODEL}:generateContent`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.2, thinkingConfig: { thinkingBudget: 8000 } },
+      }),
+    });
+    if (res.status === 429) return error(429, "AI quota reached. Please try again in a few minutes.");
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      logError("plan-regen-gemini-error", { status: res.status, detail: detail.slice(0, 500) });
+      return error(502, "AI generation failed. Please try again.");
+    }
+    const data = await res.json();
+    rawText = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
+  } catch (err) {
+    logError("plan-regen-fetch-error", { message: String(err?.message) });
+    return error(502, "Could not reach AI service. Please try again.");
+  }
+
+  let generatedPlan;
+  try { generatedPlan = JSON.parse(extractJson(rawText)); }
+  catch {
+    logError("plan-regen-json-parse", { raw: rawText.slice(0, 800) });
+    return error(502, "AI returned an unparseable plan. Please try again.");
+  }
+
+  // Only update generated_plan — leave config and phase_overrides as-is.
+  await env.DB.prepare(
+    "UPDATE plan_config SET generated_plan = ?, updated_at = ? WHERE user_id = ?"
+  ).bind(JSON.stringify(generatedPlan), new Date().toISOString(), user.id).run();
+
+  return json({ ok: true, generatedPlan });
 }

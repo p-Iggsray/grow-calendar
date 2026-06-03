@@ -26,6 +26,7 @@ import DayView from "./components/DayView.jsx";
 import ChatPanel from "./components/ChatPanel.jsx";
 import TabBar from "./components/TabBar.jsx";
 import MoreScreen from "./components/MoreScreen.jsx";
+import PlanScreen from "./components/PlanScreen.jsx";
 
 const SHELL_STYLE = {
   fontFamily: "'Georgia', 'Times New Roman', serif",
@@ -40,7 +41,7 @@ const TAB_CLEARANCE = "calc(66px + env(safe-area-inset-bottom, 0px))";
 export default function App() {
   const { user } = useAuth();
   const today    = useToday();
-  const { config, overrides, generatedPlan, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
+  const { config, overrides, generatedPlan, phaseOverrides, survey, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
   const [month,       setMonth]      = useState(() => today.getMonth());
   const [selected,    setSelected]   = useState(null);
   const [activeTab,   setActiveTab]  = useState("calendar");
@@ -164,7 +165,7 @@ export default function App() {
 
   const selPhase    = selected ? getPhase(selected, config) : null;
   const selStyle    = selPhase ? PHASES[selPhase] : null;
-  const detail      = selected ? getDetail(selected, config, overrides, generatedPlan) : null;
+  const detail      = selected ? getDetail(selected, config, overrides, generatedPlan, phaseOverrides) : null;
   const threats     = selPhase ? getThreatsForPhase(selPhase, generatedPlan) : [];
   // Threats for today used when chat is opened from the calendar (no day selected).
   const todayThreats = todayPhase ? getThreatsForPhase(todayPhase, generatedPlan) : [];
@@ -202,6 +203,10 @@ export default function App() {
       // Always return to the calendar grid when tapping this tab.
       setSelected(null);
       setActiveTab("calendar");
+      if (chatOpen) closeChat();
+    } else if (tabId === "plan") {
+      setSelected(null);
+      setActiveTab("plan");
       if (chatOpen) closeChat();
     } else if (tabId === "more") {
       setSelected(null);
@@ -245,6 +250,14 @@ export default function App() {
             isAdmin={user?.role === "admin"}
             onOpenAdmin={() => setShowAdmin(true)}
             onBeforeSignOut={flushNote}
+          />
+        ) : activeTab === "plan" ? (
+          <PlanScreen
+            config={config}
+            generatedPlan={generatedPlan}
+            phaseOverrides={phaseOverrides}
+            survey={survey}
+            onReload={reloadPlan}
           />
         ) : (
           // Calendar grid — default for "calendar" and fallback for "today" with no selection

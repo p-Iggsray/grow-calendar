@@ -66,8 +66,9 @@ CREATE TABLE IF NOT EXISTS day_notes (
 CREATE TABLE IF NOT EXISTS plan_config (
   user_id        INTEGER PRIMARY KEY,
   config         TEXT NOT NULL,
-  survey         TEXT,          -- JSON: grow survey answers submitted by the user
-  generated_plan TEXT,          -- JSON: AI-generated plan metadata (phases, threats, etc.)
+  survey         TEXT,           -- JSON: grow survey answers submitted by the user
+  generated_plan TEXT,           -- JSON: AI-generated plan metadata (phases, threats, etc.)
+  phase_overrides TEXT,          -- JSON: per-phase task overrides that survive AI regeneration
   updated_at     TEXT NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -75,6 +76,7 @@ CREATE TABLE IF NOT EXISTS plan_config (
 -- Migration for existing databases (skip on fresh installs where CREATE TABLE above runs):
 -- ALTER TABLE plan_config ADD COLUMN survey TEXT;
 -- ALTER TABLE plan_config ADD COLUMN generated_plan TEXT;
+-- ALTER TABLE plan_config ADD COLUMN phase_overrides TEXT;
 
 CREATE TABLE IF NOT EXISTS plan_day_overrides (
   user_id    INTEGER NOT NULL,

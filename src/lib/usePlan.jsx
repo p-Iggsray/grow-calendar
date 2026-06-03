@@ -8,6 +8,8 @@ export function PlanProvider({ children }) {
   const [config, setConfig] = useState(null);
   const [overrides, setOverrides] = useState({});
   const [generatedPlan, setGeneratedPlan] = useState(null);
+  const [phaseOverrides, setPhaseOverrides] = useState({});
+  const [survey, setSurvey] = useState(null);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,6 +30,8 @@ export function PlanProvider({ children }) {
         }
         setOverrides(data.overrides || {});
         setGeneratedPlan(data.generatedPlan || null);
+        setPhaseOverrides(data.phaseOverrides || {});
+        setSurvey(data.survey || null);
         setError(null);
         setLoading(false);
       })
@@ -42,7 +46,7 @@ export function PlanProvider({ children }) {
   const reload = useCallback(() => setFetchKey(k => k + 1), []);
 
   return (
-    <PlanContext.Provider value={{ config, overrides, generatedPlan, needsSetup, loading, error, reload }}>
+    <PlanContext.Provider value={{ config, overrides, generatedPlan, phaseOverrides, survey, needsSetup, loading, error, reload }}>
       {children}
     </PlanContext.Provider>
   );

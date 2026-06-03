@@ -487,32 +487,56 @@ function applyDayOverride(detail, override) {
   };
 }
 
-// Phases that use generated static content (not day-specific logic).
-const AI_OVERRIDABLE_PHASES = new Set([
-  "early_veg", "veg_cm", "veg_half", "veg_full",
-  "pre_flower", "flower", "flower_haze",
-]);
+// Apply a phase-level override onto base detail. Phase overrides store the
+// complete task array (full-replace, not diff) so they survive AI regeneration
+// without index drift.
+function applyPhaseOverride(detail, override) {
+  if (!override) return detail;
+  return {
+    ...detail,
+    ...(override.title    != null ? { title:   override.title   } : {}),
+    ...(override.summary  != null ? { summary: override.summary } : {}),
+    ...(override.notes   !== undefined ? { notes: override.notes  } : {}),
+    tasks: Array.isArray(override.tasks) ? override.tasks : detail.tasks,
+  };
+}
 
-export function getDetail(date, config, overrides, generatedPlan) {
+// getDetail now accepts an optional phaseOverrides map so the Plan editor's
+// manual edits layer on top of AI content (and survive regeneration).
+export function getDetail(date, config, overrides, generatedPlan, phaseOverrides) {
   const phase = getPhase(date, config);
-  const aiPhase = phase && AI_OVERRIDABLE_PHASES.has(phase)
-    ? generatedPlan?.phases?.[phase]
-    : null;
+  if (!phase) return null;
 
+  const d = dpt(date, config);
+  const aiPhases = generatedPlan?.phases ?? {};
   let base;
-  if (aiPhase) {
-    const d = dpt(date, config);
+
+  if (phase === "pre" && aiPhases.pre?.days) {
+    const n = daysBetween(date, config.start);
+    const entry = aiPhases.pre.days[Math.min(n, aiPhases.pre.days.length - 1)];
+    base = entry
+      ? { title: entry.title || "Pre-Transplant", summary: entry.summary || "", tasks: Array.isArray(entry.tasks) ? entry.tasks : [], notes: entry.notes || null }
+      : generateDetail(date, config);
+  } else if (aiPhases[phase]) {
+    const ai = aiPhases[phase];
     base = {
-      title: `Day ${d} — ${PHASES[phase].label}`,
-      summary: aiPhase.summary || "",
-      tasks: Array.isArray(aiPhase.tasks) ? aiPhase.tasks : [],
-      notes: aiPhase.notes || null,
+      title: ai.title || `Day ${d} — ${PHASES[phase]?.label ?? phase}`,
+      summary: ai.summary || "",
+      tasks: Array.isArray(ai.tasks) ? ai.tasks : [],
+      notes: ai.notes || null,
     };
   } else {
     base = generateDetail(date, config);
   }
 
   if (!base) return null;
-  const override = overrides ? overrides[ymdLocal(date)] : undefined;
-  return applyDayOverride(base, override);
+
+  // Phase-level override (survives AI regeneration — full task array).
+  if (phaseOverrides?.[phase]) {
+    base = applyPhaseOverride(base, phaseOverrides[phase]);
+  }
+
+  // Day-level override (most specific — from MJ tool-use or user day edits).
+  const dayOverride = overrides ? overrides[ymdLocal(date)] : undefined;
+  return applyDayOverride(base, dayOverride);
 }

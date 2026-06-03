@@ -524,9 +524,11 @@ const STEPS = [
   { id: "review",   title: "Review & Generate" },
 ];
 
-export default function SetupWizard({ onComplete }) {
+export default function SetupWizard({ onComplete, onCancel, initialSurvey }) {
   const [step, setStep] = useState(0);
-  const [survey, setSurvey] = useState(defaultSurvey);
+  const [survey, setSurvey] = useState(() =>
+    initialSurvey ? { ...defaultSurvey(), ...initialSurvey } : defaultSurvey()
+  );
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState("");
 
@@ -627,6 +629,20 @@ export default function SetupWizard({ onComplete }) {
           background: "rgba(0,0,0,0.3)",
           flexShrink: 0,
         }}>
+          {step === 0 && onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              style={{
+                flex: 1, padding: "14px", borderRadius: 12,
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "#a0d0a0", fontFamily: MONO, fontSize: 12,
+                letterSpacing: 1, cursor: "pointer",
+              }}>
+              Cancel
+            </button>
+          )}
           {step > 0 && (
             <button
               type="button"
