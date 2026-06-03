@@ -326,6 +326,7 @@ export default function App() {
               config={config}
               overrides={overrides}
               generatedPlan={generatedPlan}
+              phaseOverrides={phaseOverrides}
               checkoffCounts={monthCheckoffCounts}
               onPickDay={pickDay}
               onClearSelection={() => setSelected(null)}

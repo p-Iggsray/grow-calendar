@@ -171,9 +171,10 @@ export async function postMj(request, env, user) {
   if (raw.needsSetup) return error(400, "Complete your grow setup before using MJ.");
   const config = parseConfig(raw.config);
   const overrides = raw.overrides;
+  const phaseOverrides = raw.phaseOverrides;
 
   const systemSegments = [
-    { text: `${MJ_PERSONA}\n\n${buildPlanText(config, overrides)}`, cache: true },
+    { text: `${MJ_PERSONA}\n\n${buildPlanText(config, overrides, raw.generatedPlan, phaseOverrides)}`, cache: true },
     { text: `Today's date is ${today}.`, cache: false },
   ];
   if (contextDate) {
@@ -194,7 +195,7 @@ export async function postMj(request, env, user) {
 
       const actions = [];
       const executeToolUse = (name, input) =>
-        executeTool(name, input, env, user.id, config, overrides, raw.generatedPlan, actions);
+        executeTool(name, input, env, user.id, config, overrides, raw.generatedPlan, phaseOverrides, actions);
 
       let reply = null;
       let modelUsed = null;
@@ -260,7 +261,7 @@ export async function postMj(request, env, user) {
   });
 }
 
-async function executeTool(name, input, env, userId, config, overrides, generatedPlan, actions) {
+async function executeTool(name, input, env, userId, config, overrides, generatedPlan, phaseOverrides, actions) {
   try {
     // get_week uses start_date (not date) — handle before the shared date validation.
     if (name === "get_week") {
@@ -283,7 +284,7 @@ async function executeTool(name, input, env, userId, config, overrides, generate
           days.push({ date, outside_season: true });
           continue;
         }
-        const detail = getDetail(dt, config, overrides, generatedPlan);
+        const detail = getDetail(dt, config, overrides, generatedPlan, phaseOverrides);
         const checked = checkoffMap.get(date) ?? [];
         const userNote = await readNote(env, userId, date);
         const threats = getThreatsForPhase(phase, generatedPlan);
@@ -303,7 +304,7 @@ async function executeTool(name, input, env, userId, config, overrides, generate
     if (!phase) return { error: `no plan for ${date} (outside the grow season)` };
 
     if (name === "get_day") {
-      const detail = getDetail(dt, config, overrides, generatedPlan);
+      const detail = getDetail(dt, config, overrides, generatedPlan, phaseOverrides);
       const checked = await readCheckoffs(env, userId, date);
       const userNote = await readNote(env, userId, date);
       return buildDayView(date, phase, detail, checked, userNote);
@@ -314,7 +315,7 @@ async function executeTool(name, input, env, userId, config, overrides, generate
         ? input.taskIndices.map(Number).filter(Number.isInteger) : null;
       if (!indices) return { error: "taskIndices must be an array of integers" };
       if (typeof input?.done !== "boolean") return { error: "done must be a boolean" };
-      const detail = getDetail(dt, config, overrides, generatedPlan);
+      const detail = getDetail(dt, config, overrides, generatedPlan, phaseOverrides);
       const inRange = indices.filter(i => i >= 0 && i < detail.tasks.length);
       const ignored = indices.filter(i => i < 0 || i >= detail.tasks.length);
       const current = await readCheckoffs(env, userId, date);
@@ -379,7 +380,7 @@ export async function postMjUndo(request, env, user) {
     const dt = parseDate(date);
     const phase = getPhase(dt, config);
     if (!phase) return error(400, `no plan for ${date}`);
-    const detail = getDetail(dt, config, raw.overrides, raw.generatedPlan);
+    const detail = getDetail(dt, config, raw.overrides, raw.generatedPlan, raw.phaseOverrides);
     const inRange = taskIndices.map(Number).filter(i => Number.isInteger(i) && i >= 0 && i < detail.tasks.length);
     const current = await readCheckoffs(env, user.id, date);
     const next = mergeChecked(current, inRange, done);
