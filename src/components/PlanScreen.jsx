@@ -1,8 +1,9 @@
 import { useState, useCallback } from "react";
-import { ChevronDown, ChevronUp, Pencil, Trash2, Plus, RefreshCw, Settings } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Trash2, Plus, RefreshCw, Settings, FlaskConical } from "lucide-react";
 import { PHASES, phaseGlyph } from "../lib/growData.js";
 import { api } from "../lib/api.js";
 import SetupWizard from "./SetupWizard.jsx";
+import PresetPicker from "./PresetPicker.jsx";
 
 // Phases shown in the editor, in grow-season order.
 const PHASE_ORDER = [
@@ -273,6 +274,8 @@ function RegenConfirm({ onCancel, onConfirm, loading }) {
 
 export default function PlanScreen({ config, generatedPlan, phaseOverrides, survey, onReload }) {
   const [editSetup, setEditSetup] = useState(false);
+  const [showPresets, setShowPresets] = useState(false);
+  const [activePreset, setActivePreset] = useState(null);
   const [confirmRegen, setConfirmRegen] = useState(false);
   const [regenLoading, setRegenLoading] = useState(false);
   const [regenError, setRegenError] = useState("");
@@ -345,26 +348,46 @@ export default function PlanScreen({ config, generatedPlan, phaseOverrides, surv
           onClick={() => setEditSetup(true)}
           style={{
             flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-            padding: "11px 14px", borderRadius: 10,
+            padding: "11px 8px", borderRadius: 10,
             background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
             color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 11, letterSpacing: 1, cursor: "pointer",
           }}>
           <Settings size={13} strokeWidth={1.8} />
-          Edit setup
+          Setup
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowPresets(true)}
+          style={{
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+            padding: "11px 8px", borderRadius: 10,
+            background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
+            color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 11, letterSpacing: 1, cursor: "pointer",
+          }}>
+          <FlaskConical size={13} strokeWidth={1.8} />
+          Feed preset
         </button>
         <button
           type="button"
           onClick={() => { setRegenError(""); setConfirmRegen(true); }}
           style={{
             flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-            padding: "11px 14px", borderRadius: 10,
+            padding: "11px 8px", borderRadius: 10,
             background: "rgba(74,222,128,0.07)", border: "1px solid rgba(74,222,128,0.2)",
             color: "var(--c-accent)", fontFamily: MONO, fontSize: 11, letterSpacing: 1, cursor: "pointer",
           }}>
           <RefreshCw size={13} strokeWidth={1.8} />
-          Regenerate AI
+          Regen AI
         </button>
       </div>
+
+      {showPresets && (
+        <PresetPicker
+          currentPresetId={activePreset}
+          onApplied={(presetId) => { setActivePreset(presetId); setShowPresets(false); onReload(); }}
+          onCancel={() => setShowPresets(false)}
+        />
+      )}
 
       {regenError && (
         <div style={{
