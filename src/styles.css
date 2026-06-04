@@ -22,8 +22,9 @@
   --c-panel-bg:    #141f16;     /* bottom sheets / state picker   */
 }
 
+/* Auto light: follow OS when user hasn't pinned a theme */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme="dark"]) {
     color-scheme: light;
 
     --c-bg:            #faf7f2;
@@ -45,16 +46,31 @@
     --c-panel-bg:    #f0ece6;
   }
 
-  html, body, #root {
-    background: #faf7f2;
-  }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+}
 
-  ::-webkit-scrollbar-thumb {
-    background: rgba(0,0,0,0.15);
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(0,0,0,0.25);
-  }
+/* Manual light — beats OS preference in either direction */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --c-bg:            #faf7f2;
+  --c-text:          #1a2e1a;
+  --c-text-dim:      #2d4a2d;
+  --c-text-muted:    #4a6a4a;
+  --c-text-faint:    #5a7a5a;
+  --c-text-ghost:    #8aaa8a;
+  --c-accent:        #15803d;
+  --c-surface-1:     rgba(0,0,0,0.04);
+  --c-surface-2:     rgba(0,0,0,0.07);
+  --c-border-faint:  rgba(0,0,0,0.05);
+  --c-border-soft:   rgba(0,0,0,0.07);
+  --c-border:        rgba(0,0,0,0.11);
+  --c-border-strong: rgba(0,0,0,0.16);
+
+  --c-header-bg:   linear-gradient(160deg, #e8f4ea 0%, #d9eddf 50%, #e3f1e6 100%);
+  --c-tab-bar-bg:  rgba(244,241,236,0.97);
+  --c-panel-bg:    #f0ece6;
 }
 
 *,
