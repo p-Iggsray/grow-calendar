@@ -15,7 +15,7 @@ export default function TabBar({ activeTab, onTab }) {
       style={{
         position: "fixed", bottom: 0, left: 0, right: 0,
         zIndex: 35,
-        background: "rgba(9, 18, 11, 0.97)",
+        background: "var(--c-tab-bar-bg)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         borderTop: "1px solid var(--c-surface-2)",
@@ -44,7 +44,7 @@ export default function TabBar({ activeTab, onTab }) {
               background: "none", border: "none",
               cursor: "pointer",
               minHeight: 56,
-              color: active ? "var(--c-accent)" : "#3d6040",
+              color: active ? "var(--c-accent)" : "var(--c-text-ghost)",
               transition: "color 0.18s",
             }}
           >

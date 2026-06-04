@@ -187,7 +187,7 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
         paddingTop: "env(safe-area-inset-top, 0px)",
         paddingLeft: "env(safe-area-inset-left, 0px)",
         paddingRight: "env(safe-area-inset-right, 0px)",
-        fontFamily: "'Georgia', 'Times New Roman', serif", color: "#f0ebe0",
+        fontFamily: "'Georgia', 'Times New Roman', serif", color: "var(--c-text)",
       }}
     >
       {/* Header */}
@@ -199,7 +199,7 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
       }}>
         <button type="button" onClick={onClose} style={{
           background: "var(--c-border-faint)", border: "1px solid var(--c-border-strong)",
-          borderRadius: 10, padding: "10px 14px", color: "var(--c-text-dim)",
+          borderRadius: 10, padding: "10px 14px", color: "#c0d4c0",
           cursor: "pointer", minHeight: 44,
           display: "flex", alignItems: "center", gap: 4,
         }}>
@@ -207,9 +207,9 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
           <span style={{ fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1 }}>Back</span>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: "var(--c-text-faint)", textTransform: "uppercase" }}>MJ</div>
+          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: "#6aaa6a", textTransform: "uppercase" }}>MJ</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>Your grow assistant</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>Your grow assistant</div>
             {contextDate && (
               <span style={{
                 fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 1,
@@ -263,7 +263,7 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
               {(suggestions ?? []).map(s => (
                 <button key={s} type="button" onClick={() => setInput(s)} style={{
                   background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
-                  borderRadius: 10, padding: "12px 14px", color: "#c8dcc8", fontSize: 13,
+                  borderRadius: 10, padding: "12px 14px", color: "var(--c-text-dim)", fontSize: 13,
                   cursor: "pointer", textAlign: "left", fontFamily: "'Courier New', monospace",
                   minHeight: 44,
                 }}>{s}</button>
@@ -341,7 +341,7 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
             {busy ? (
               <Loader size={16} strokeWidth={2} color="var(--c-accent)" style={{ animation: "spin 1s linear infinite" }} />
             ) : (
-              <ArrowUp size={17} strokeWidth={2.2} color={input.trim() ? "var(--c-bg)" : "#2a4a2a"} />
+              <ArrowUp size={17} strokeWidth={2.2} color={input.trim() ? "var(--c-bg)" : "var(--c-text-ghost)"} />
             )}
           </button>
         </div>
@@ -390,7 +390,7 @@ function Bubble({ role, text, dim, actions, showUndo, onUndo }) {
         padding: "11px 14px", borderRadius: 18,
         background: isUser ? "rgba(34,197,94,0.16)" : "rgba(255,255,255,0.05)",
         border: `1px solid ${isUser ? "rgba(34,197,94,0.3)" : "var(--c-surface-2)"}`,
-        color: dim ? "#5a7a5a" : (isUser ? "var(--c-text)" : "#d6e6d6"),
+        color: dim ? "var(--c-text-faint)" : (isUser ? "var(--c-text)" : "var(--c-text-dim)"),
         borderBottomRightRadius: isUser ? 4 : 18,
         borderBottomLeftRadius: isUser ? 18 : 4,
       }}>{text}</div>

@@ -21,7 +21,7 @@ function ymdKey(date) {
 }
 
 export default function Calendar({
-  today, month, setMonth, selected, config, overrides, generatedPlan,
+  today, month, setMonth, selected, config, overrides, generatedPlan, phaseOverrides,
   checkoffCounts, onPickDay, onClearSelection,
 }) {
   const touchStart = useRef(null);
@@ -75,7 +75,7 @@ export default function Calendar({
             aria-label="Previous month"
             style={{
               background: "none", border: "none",
-              color: canPrev ? "var(--c-accent)" : "#2a4a2a",
+              color: canPrev ? "var(--c-accent)" : "var(--c-text-ghost)",
               cursor: canPrev ? "pointer" : "default",
               minWidth: 44, minHeight: 44, padding: "8px 12px",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -92,7 +92,7 @@ export default function Calendar({
             aria-label="Next month"
             style={{
               background: "none", border: "none",
-              color: canNext ? "var(--c-accent)" : "#2a4a2a",
+              color: canNext ? "var(--c-accent)" : "var(--c-text-ghost)",
               cursor: canNext ? "pointer" : "default",
               minWidth: 44, minHeight: 44, padding: "8px 12px",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -127,7 +127,7 @@ export default function Calendar({
             let ringRatio = 0;
             let totalTasks = 0;
             if (pStyle) {
-              const dayDetail = getDetail(date, config, overrides, generatedPlan);
+              const dayDetail = getDetail(date, config, overrides, generatedPlan, phaseOverrides);
               totalTasks = dayDetail?.tasks?.length ?? 0;
               const doneCount = checkoffCounts?.[ymdKey(date)] ?? 0;
               if (totalTasks > 0 && doneCount > 0) {
@@ -186,7 +186,7 @@ export default function Calendar({
                 <span style={{
                   fontSize: 13, fontFamily: "'Courier New', monospace",
                   fontWeight: (isSel || isToday || isKey) ? 800 : 400,
-                  color: isSel ? "white" : pStyle ? "#d4edd4" : "#444",
+                  color: isSel ? "white" : pStyle ? "var(--c-text-dim)" : "var(--c-text-ghost)",
                   lineHeight: 1,
                 }} aria-hidden="true">
                   {date.getDate()}

@@ -3,10 +3,10 @@ import { getPhase, getDetail, buildMilestones, THREATS } from "./growData.js";
 // Compact, LIVE season overview for MJ's system prompt. Sampled from the generator
 // at milestone dates so dosing language comes from the generated task text (single
 // source), not hand-authored prose. MJ uses the get_day tool for per-day specifics.
-export function buildPlanText(config, overrides) {
+export function buildPlanText(config, overrides, generatedPlan, phaseOverrides) {
   const lines = ["THE GROW PLAN (live schedule):"];
   for (const m of buildMilestones(config)) {
-    const detail = getDetail(m.date, config, overrides);
+    const detail = getDetail(m.date, config, overrides, generatedPlan, phaseOverrides);
     if (!detail) continue;
     const phase = getPhase(m.date, config);
     lines.push(`\n- ${m.label} (${ymd(m.date)}, phase: ${phase}): ${detail.summary}`);

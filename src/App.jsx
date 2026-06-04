@@ -36,7 +36,7 @@ const SHELL_STYLE = {
   fontFamily: "'Georgia', 'Times New Roman', serif",
   background: "var(--c-bg)",
   minHeight: "100vh",
-  color: "#f0ebe0",
+  color: "var(--c-text)",
 };
 
 // Bottom padding so scrollable content clears the fixed tab bar.
@@ -326,6 +326,7 @@ export default function App() {
               config={config}
               overrides={overrides}
               generatedPlan={generatedPlan}
+              phaseOverrides={phaseOverrides}
               checkoffCounts={monthCheckoffCounts}
               onPickDay={pickDay}
               onClearSelection={() => setSelected(null)}
