@@ -107,7 +107,7 @@ function PhaseSection({ phase, aiContent, override, onSave, onReset }) {
         }}>
           {glyph || "•"}
         </span>
-        <span style={{ flex: 1, textAlign: "left", fontFamily: MONO, fontSize: 12, letterSpacing: 0.5, color: "#c8dcc8", fontWeight: open ? 700 : 400 }}>
+        <span style={{ flex: 1, textAlign: "left", fontFamily: MONO, fontSize: 12, letterSpacing: 0.5, color: "var(--c-text-dim)", fontWeight: open ? 700 : 400 }}>
           {cfg.label}
         </span>
         <span style={{ fontFamily: MONO, fontSize: 10, color: isOverridden ? cfg.color : "var(--c-text-ghost)" }}>
@@ -116,7 +116,7 @@ function PhaseSection({ phase, aiContent, override, onSave, onReset }) {
         <span style={{ fontSize: 10, fontFamily: MONO, color: "var(--c-text-ghost)", marginLeft: 4 }}>
           {tasks.length}t
         </span>
-        {open ? <ChevronUp size={14} color="#5a7a5a" /> : <ChevronDown size={14} color="#5a7a5a" />}
+        {open ? <ChevronUp size={14} color="var(--c-text-faint)" /> : <ChevronDown size={14} color="var(--c-text-faint)" />}
       </button>
 
       {/* Expanded content */}
@@ -124,7 +124,7 @@ function PhaseSection({ phase, aiContent, override, onSave, onReset }) {
         <div style={{ padding: "0 14px 14px", background: "rgba(0,0,0,0.15)" }}>
           {/* Summary */}
           {(aiContent?.summary || override?.summary) && (
-            <div style={{ fontSize: 12, color: "#8aaa8a", lineHeight: 1.6, marginBottom: 12, paddingTop: 10, fontStyle: "italic" }}>
+            <div style={{ fontSize: 12, color: "var(--c-text-muted)", lineHeight: 1.6, marginBottom: 12, paddingTop: 10, fontStyle: "italic" }}>
               {override?.summary ?? aiContent?.summary}
             </div>
           )}
@@ -154,12 +154,12 @@ function PhaseSection({ phase, aiContent, override, onSave, onReset }) {
                     />
                     <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
                       <button type="button" onClick={commitEdit} style={smallBtnStyle("var(--c-accent)")}>Save</button>
-                      <button type="button" onClick={() => setEditIdx(null)} style={smallBtnStyle("#5a7a5a")}>Cancel</button>
+                      <button type="button" onClick={() => setEditIdx(null)} style={smallBtnStyle("var(--c-text-faint)")}>Cancel</button>
                     </div>
                   </div>
                 ) : (
                   <>
-                    <span style={{ flex: 1, fontSize: 12, color: "#c0d8c0", lineHeight: 1.6 }}>{task}</span>
+                    <span style={{ flex: 1, fontSize: 12, color: "var(--c-text-dim)", lineHeight: 1.6 }}>{task}</span>
                     <button type="button" onClick={() => startEdit(idx)} style={iconBtnStyle} aria-label="Edit task">
                       <Pencil size={11} strokeWidth={1.8} />
                     </button>
@@ -177,7 +177,7 @@ function PhaseSection({ phase, aiContent, override, onSave, onReset }) {
             display: "flex", alignItems: "center", gap: 6,
             background: "none", border: `1px dashed var(--c-border-strong)`,
             borderRadius: 8, padding: "7px 10px", cursor: "pointer",
-            color: "#5a7a5a", fontFamily: MONO, fontSize: 11, letterSpacing: 0.5,
+            color: "var(--c-text-faint)", fontFamily: MONO, fontSize: 11, letterSpacing: 0.5,
             marginBottom: 10,
           }}>
             <Plus size={12} strokeWidth={1.8} />
@@ -236,7 +236,7 @@ function RegenConfirm({ onCancel, onConfirm, loading }) {
       }} />
       <div style={{
         position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 51,
-        background: "#141f16", borderTop: "1px solid var(--c-border)",
+        background: "var(--c-panel-bg)", borderTop: "1px solid var(--c-border)",
         borderRadius: "18px 18px 0 0",
         padding: "24px 20px calc(28px + env(safe-area-inset-bottom, 0px))",
       }}>
@@ -347,7 +347,7 @@ export default function PlanScreen({ config, generatedPlan, phaseOverrides, surv
             flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
             padding: "11px 14px", borderRadius: 10,
             background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
-            color: "#c8dcc8", fontFamily: MONO, fontSize: 11, letterSpacing: 1, cursor: "pointer",
+            color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 11, letterSpacing: 1, cursor: "pointer",
           }}>
           <Settings size={13} strokeWidth={1.8} />
           Edit setup

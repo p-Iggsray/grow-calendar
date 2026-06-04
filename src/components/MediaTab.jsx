@@ -87,7 +87,7 @@ function VoiceNote({ item, onDelete }) {
         onClick={() => onDelete(item.id)}
         aria-label="Delete voice note"
         style={{
-          background: "none", border: "none", color: "#5a6a5a", cursor: "pointer",
+          background: "none", border: "none", color: "var(--c-text-faint)", cursor: "pointer",
           padding: 6, display: "flex", alignItems: "center", justifyContent: "center",
         }}>
         <Trash2 size={14} strokeWidth={1.8} />

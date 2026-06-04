@@ -65,7 +65,7 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onBefore
               background: "var(--c-surface-1)",
               border: "1px solid var(--c-border)",
               borderRadius: 12, cursor: "pointer",
-              color: "#cbe6cb", fontFamily: "'Courier New', monospace",
+              color: "var(--c-text-dim)", fontFamily: "'Courier New', monospace",
               fontSize: 13, letterSpacing: 1,
             }}
           >
@@ -85,7 +85,7 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onBefore
             background: "var(--c-surface-1)",
             border: "1px solid var(--c-border)",
             borderRadius: 12, cursor: "pointer",
-            color: "#cbe6cb", fontFamily: "'Courier New', monospace",
+            color: "var(--c-text-dim)", fontFamily: "'Courier New', monospace",
             fontSize: 13, letterSpacing: 1,
           }}
         >
@@ -105,7 +105,7 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onBefore
             background: "var(--c-surface-1)",
             border: "1px solid var(--c-border)",
             borderRadius: 12, cursor: exporting ? "default" : "pointer",
-            color: exporting ? "var(--c-text-ghost)" : "#cbe6cb",
+            color: exporting ? "var(--c-text-ghost)" : "var(--c-text-dim)",
             fontFamily: "'Courier New', monospace",
             fontSize: 13, letterSpacing: 1,
             opacity: exporting ? 0.6 : 1,
@@ -130,7 +130,7 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onBefore
               border: "1px solid var(--c-border)",
               borderRadius: 12,
               cursor: notifBusy || permission === "denied" ? "default" : "pointer",
-              color: permission === "denied" ? "var(--c-text-faint)" : "#cbe6cb",
+              color: permission === "denied" ? "var(--c-text-faint)" : "var(--c-text-dim)",
               fontFamily: "'Courier New', monospace",
               fontSize: 13, letterSpacing: 1,
               opacity: notifBusy ? 0.6 : 1,

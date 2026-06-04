@@ -19,10 +19,10 @@ export default function MilestoneStrip({ today, milestones, onPick }) {
                 transition: "opacity 0.2s",
               }}>
               <div style={{ fontSize: 16, textAlign: "center" }}>{m.icon}</div>
-              <div style={{ fontSize: 10, fontFamily: "'Courier New', monospace", color: isToday ? m.color : "#aaa", marginTop: 4, whiteSpace: "nowrap" }}>
+              <div style={{ fontSize: 10, fontFamily: "'Courier New', monospace", color: isToday ? m.color : "var(--c-text-ghost)", marginTop: 4, whiteSpace: "nowrap" }}>
                 {fmt(m.date)}
               </div>
-              <div style={{ fontSize: 9, color: "#666", marginTop: 2, fontFamily: "'Courier New', monospace", whiteSpace: "nowrap" }}>
+              <div style={{ fontSize: 9, color: "var(--c-text-faint)", marginTop: 2, fontFamily: "'Courier New', monospace", whiteSpace: "nowrap" }}>
                 {m.label}
               </div>
             </div>

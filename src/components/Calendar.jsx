@@ -75,7 +75,7 @@ export default function Calendar({
             aria-label="Previous month"
             style={{
               background: "none", border: "none",
-              color: canPrev ? "var(--c-accent)" : "#2a4a2a",
+              color: canPrev ? "var(--c-accent)" : "var(--c-text-ghost)",
               cursor: canPrev ? "pointer" : "default",
               minWidth: 44, minHeight: 44, padding: "8px 12px",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -92,7 +92,7 @@ export default function Calendar({
             aria-label="Next month"
             style={{
               background: "none", border: "none",
-              color: canNext ? "var(--c-accent)" : "#2a4a2a",
+              color: canNext ? "var(--c-accent)" : "var(--c-text-ghost)",
               cursor: canNext ? "pointer" : "default",
               minWidth: 44, minHeight: 44, padding: "8px 12px",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -186,7 +186,7 @@ export default function Calendar({
                 <span style={{
                   fontSize: 13, fontFamily: "'Courier New', monospace",
                   fontWeight: (isSel || isToday || isKey) ? 800 : 400,
-                  color: isSel ? "white" : pStyle ? "#d4edd4" : "#444",
+                  color: isSel ? "white" : pStyle ? "var(--c-text-dim)" : "var(--c-text-ghost)",
                   lineHeight: 1,
                 }} aria-hidden="true">
                   {date.getDate()}

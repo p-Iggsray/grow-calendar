@@ -68,7 +68,7 @@ function StatePicker({ task, currentState, onPick, onClose }) {
       />
       <div style={{
         position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 51,
-        background: "#141f16", borderTop: "1px solid var(--c-border)",
+        background: "var(--c-panel-bg)", borderTop: "1px solid var(--c-border)",
         borderRadius: "18px 18px 0 0",
         padding: "20px 20px calc(24px + env(safe-area-inset-bottom, 0px))",
       }}>
@@ -152,7 +152,7 @@ function TaskRow({ task, index, state, accentColor, onTap, onLongPress, note, on
         <div style={{ flex: 1, minWidth: 0, paddingTop: 3 }}>
           <div style={{
             fontSize: 13.5, lineHeight: 1.7,
-            color: cfg?.textColor ?? "#c8dcc8",
+            color: cfg?.textColor ?? "var(--c-text-dim)",
             textDecoration: state === "done" ? "line-through" : "none",
             transition: "color 0.15s",
           }}>
@@ -356,7 +356,7 @@ export default function DayView({
             <>
               <div style={{
                 background: `${selStyle?.color}11`, borderRadius: 8,
-                padding: "10px 12px", fontSize: 13, color: "#c0d8c0",
+                padding: "10px 12px", fontSize: 13, color: "var(--c-text-dim)",
                 lineHeight: 1.7, marginBottom: 16,
                 border: `1px solid ${selStyle?.color}22`,
               }}>
@@ -529,7 +529,7 @@ export default function DayView({
                     border: "1px solid var(--c-surface-2)", borderRadius: 10,
                     padding: "12px 14px", fontSize: 14, lineHeight: 1.8,
                     fontFamily: "'Georgia', 'Times New Roman', serif",
-                    color: "#c8dcc8",
+                    color: "var(--c-text-dim)",
                   }}
                   dangerouslySetInnerHTML={{ __html: renderNote(note) }}
                 />
@@ -661,7 +661,7 @@ function WeatherCard({ weather, loading }) {
             )}
           </div>
           {alert.headline && (
-            <div style={{ fontSize: 12, color: "#c0c8d0", lineHeight: 1.6 }}>
+            <div style={{ fontSize: 12, color: "var(--c-text-dim)", lineHeight: 1.6 }}>
               {alert.headline}
             </div>
           )}
@@ -679,7 +679,7 @@ function WeatherCard({ weather, loading }) {
               NWS Forecast · Athens OH
             </span>
             {hasHighLow && (
-              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 12, color: "#bde0f0" }}>
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 12, color: "var(--c-text-dim)" }}>
                 <span style={{ color: "#f97316" }}>↑{highLow.high}°</span>
                 {" "}
                 <span style={{ color: "#38bdf8" }}>↓{highLow.low}°</span>
@@ -700,7 +700,7 @@ function WeatherCard({ weather, loading }) {
                   <span style={{ fontSize: 14 }}>
                     {h.isDaytime ? "☀️" : "🌙"}
                   </span>
-                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 700, color: "#bde0f0" }}>
+                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 700, color: "var(--c-text-dim)" }}>
                     {h.temp}°
                   </span>
                 </div>

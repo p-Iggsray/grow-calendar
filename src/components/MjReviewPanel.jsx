@@ -164,7 +164,7 @@ export default function MjReviewPanel({ onComplete, onSkip }) {
         paddingTop: "env(safe-area-inset-top, 0px)",
         paddingLeft: "env(safe-area-inset-left, 0px)",
         paddingRight: "env(safe-area-inset-right, 0px)",
-        fontFamily: "'Georgia', 'Times New Roman', serif", color: "#f0ebe0",
+        fontFamily: "'Georgia', 'Times New Roman', serif", color: "var(--c-text)",
       }}
     >
       {/* Header */}
@@ -179,7 +179,7 @@ export default function MjReviewPanel({ onComplete, onSkip }) {
           onClick={onSkip}
           style={{
             background: "var(--c-border-faint)", border: "1px solid var(--c-border-strong)",
-            borderRadius: 10, padding: "10px 14px", color: "var(--c-text-dim)",
+            borderRadius: 10, padding: "10px 14px", color: "#c0d4c0",
             cursor: "pointer", minHeight: 44,
             display: "flex", alignItems: "center", gap: 4,
           }}
@@ -188,8 +188,8 @@ export default function MjReviewPanel({ onComplete, onSkip }) {
           <span style={{ fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1 }}>Skip</span>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: "var(--c-text-faint)", textTransform: "uppercase" }}>MJ</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>
+          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: "#6aaa6a", textTransform: "uppercase" }}>MJ</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>
             Plan Quality Review
           </div>
         </div>
@@ -340,7 +340,7 @@ export default function MjReviewPanel({ onComplete, onSkip }) {
               {busy ? (
                 <Loader size={16} strokeWidth={2} color="var(--c-accent)" style={{ animation: "spin 1s linear infinite" }} />
               ) : (
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={input.trim() ? "var(--c-bg)" : "#2a4a2a"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={input.trim() ? "var(--c-bg)" : "var(--c-text-ghost)"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
                 </svg>
               )}
@@ -361,7 +361,7 @@ function ReviewBubble({ role, text, dim }) {
         padding: "11px 14px", borderRadius: 18,
         background: isUser ? "rgba(34,197,94,0.16)" : "rgba(255,255,255,0.05)",
         border: `1px solid ${isUser ? "rgba(34,197,94,0.3)" : "var(--c-surface-2)"}`,
-        color: dim ? "#5a7a5a" : (isUser ? "var(--c-text)" : "#d6e6d6"),
+        color: dim ? "var(--c-text-faint)" : (isUser ? "var(--c-text)" : "var(--c-text-dim)"),
         borderBottomRightRadius: isUser ? 4 : 18,
         borderBottomLeftRadius: isUser ? 18 : 4,
       }}>{text}</div>

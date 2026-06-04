@@ -4,7 +4,7 @@ import { LOCATION, STRAIN_1, STRAIN_2 } from "../lib/appConfig.js";
 export default function Header({ todayStyle, nextMs, daysToNext, progress }) {
   return (
     <div style={{
-      background: "linear-gradient(160deg, #0a1a0d 0%, #1a3a1e 50%, #0d2410 100%)",
+      background: "var(--c-header-bg)",
       paddingTop: "calc(16px + env(safe-area-inset-top, 0px))",
       paddingRight: "calc(16px + env(safe-area-inset-right, 0px))",
       paddingBottom: 12,
@@ -18,7 +18,7 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress }) {
         <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -1, lineHeight: 1.1, color: "var(--c-text)" }}>
           The Grow Calendar
         </div>
-        <div style={{ fontSize: 11, color: "#6aaa6a", marginTop: 3, fontFamily: "'Courier New', monospace" }}>
+        <div style={{ fontSize: 11, color: "var(--c-text-muted)", marginTop: 3, fontFamily: "'Courier New', monospace" }}>
           1× {STRAIN_1} · 2× {STRAIN_2}
         </div>
       </div>
