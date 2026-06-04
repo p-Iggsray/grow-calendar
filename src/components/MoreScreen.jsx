@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Users, Download, Bell, BellOff, BarChart2, Sun, Moon, Monitor, Map } from "lucide-react";
+import { Users, Download, Bell, BellOff, BarChart2, Sun, Moon, Monitor, Map, Share2 } from "lucide-react";
+import ShareSheet from "./ShareSheet.jsx";
 import PhaseLegend from "./PhaseLegend.jsx";
 import ThreatsReference from "./ThreatsReference.jsx";
 import AuthFooter from "./AuthFooter.jsx";
@@ -15,6 +16,7 @@ const THEME_OPTIONS = [
 
 export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMap, onBeforeSignOut, theme, setTheme }) {
   const [exporting, setExporting] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const { supported: notifSupported, permission, subscribed, busy: notifBusy, error: notifError, subscribe, unsubscribe } = useNotifications();
 
   async function handleCsvExport() {
@@ -118,6 +120,27 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
           Garden Map
         </button>
       </div>
+
+      <div style={{ padding: "12px 0 0" }}>
+        <button
+          type="button"
+          onClick={() => setShowShare(true)}
+          style={{
+            display: "flex", alignItems: "center", gap: 10,
+            width: "100%", padding: "14px 16px",
+            background: "var(--c-surface-1)",
+            border: "1px solid var(--c-border)",
+            borderRadius: 12, cursor: "pointer",
+            color: "var(--c-text-dim)", fontFamily: "'Courier New', monospace",
+            fontSize: 13, letterSpacing: 1,
+          }}
+        >
+          <Share2 size={16} strokeWidth={1.8} />
+          Share grow with buddy
+        </button>
+      </div>
+
+      {showShare && <ShareSheet onClose={() => setShowShare(false)} />}
 
       <div style={{ padding: "12px 0 0" }}>
         <button
