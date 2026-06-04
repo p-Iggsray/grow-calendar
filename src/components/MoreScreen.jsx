@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Download, Bell, BellOff, BarChart2, Sun, Moon, Monitor } from "lucide-react";
+import { Users, Download, Bell, BellOff, BarChart2, Sun, Moon, Monitor, Map } from "lucide-react";
 import PhaseLegend from "./PhaseLegend.jsx";
 import ThreatsReference from "./ThreatsReference.jsx";
 import AuthFooter from "./AuthFooter.jsx";
@@ -13,7 +13,7 @@ const THEME_OPTIONS = [
   { value: "dark",  label: "Dark",  Icon: Moon },
 ];
 
-export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onBeforeSignOut, theme, setTheme }) {
+export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMap, onBeforeSignOut, theme, setTheme }) {
   const [exporting, setExporting] = useState(false);
   const { supported: notifSupported, permission, subscribed, busy: notifBusy, error: notifError, subscribe, unsubscribe } = useNotifications();
 
@@ -97,6 +97,25 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onBefore
         >
           <BarChart2 size={16} strokeWidth={1.8} />
           Season Analytics
+        </button>
+      </div>
+
+      <div style={{ padding: "12px 0 0" }}>
+        <button
+          type="button"
+          onClick={onOpenMap}
+          style={{
+            display: "flex", alignItems: "center", gap: 10,
+            width: "100%", padding: "14px 16px",
+            background: "var(--c-surface-1)",
+            border: "1px solid var(--c-border)",
+            borderRadius: 12, cursor: "pointer",
+            color: "var(--c-text-dim)", fontFamily: "'Courier New', monospace",
+            fontSize: 13, letterSpacing: 1,
+          }}
+        >
+          <Map size={16} strokeWidth={1.8} />
+          Garden Map
         </button>
       </div>
 
