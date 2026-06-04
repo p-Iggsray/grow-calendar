@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Download, Bell, BellOff, BarChart2 } from "lucide-react";
+import { Users, Download, Bell, BellOff, BarChart2, Sun, Moon, Monitor } from "lucide-react";
 import PhaseLegend from "./PhaseLegend.jsx";
 import ThreatsReference from "./ThreatsReference.jsx";
 import AuthFooter from "./AuthFooter.jsx";
@@ -7,7 +7,13 @@ import { LOCATION, STRAIN_1, STRAIN_2 } from "../lib/appConfig.js";
 import { api } from "../lib/api.js";
 import { useNotifications } from "../lib/useNotifications.js";
 
-export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onBeforeSignOut }) {
+const THEME_OPTIONS = [
+  { value: "auto",  label: "Auto",  Icon: Monitor },
+  { value: "light", label: "Light", Icon: Sun },
+  { value: "dark",  label: "Dark",  Icon: Moon },
+];
+
+export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onBeforeSignOut, theme, setTheme }) {
   const [exporting, setExporting] = useState(false);
   const { supported: notifSupported, permission, subscribed, busy: notifBusy, error: notifError, subscribe, unsubscribe } = useNotifications();
 
@@ -174,6 +180,46 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onBefore
           )}
         </div>
       )}
+
+      <div style={{ padding: "12px 0 0" }}>
+        <div style={{
+          fontSize: 10, letterSpacing: 2, color: "var(--c-text-ghost)",
+          fontFamily: "'Courier New', monospace", textTransform: "uppercase",
+          marginBottom: 8,
+        }}>
+          Appearance
+        </div>
+        <div style={{
+          display: "flex", borderRadius: 12, overflow: "hidden",
+          border: "1px solid var(--c-border)",
+        }}>
+          {THEME_OPTIONS.map(({ value, label, Icon }) => {
+            const active = theme === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setTheme(value)}
+                style={{
+                  flex: 1, padding: "12px 4px",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+                  background: active ? "var(--c-accent)" : "var(--c-surface-1)",
+                  border: "none",
+                  borderRight: value !== "dark" ? "1px solid var(--c-border)" : "none",
+                  color: active ? "var(--c-bg)" : "var(--c-text-dim)",
+                  fontFamily: "'Courier New', monospace",
+                  fontSize: 11, letterSpacing: 1,
+                  cursor: "pointer",
+                  transition: "background 0.15s, color 0.15s",
+                }}
+              >
+                <Icon size={15} strokeWidth={active ? 2.2 : 1.6} />
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <AuthFooter onBeforeSignOut={onBeforeSignOut} />
     </div>

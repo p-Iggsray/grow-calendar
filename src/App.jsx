@@ -18,6 +18,7 @@ import { api, ymd } from "./lib/api.js";
 import { buildSuggestions } from "./lib/mjSuggestions.js";
 import { useOnlineStatus } from "./lib/useOnlineStatus.js";
 import { flushCheckoffQueue } from "./lib/offlineQueue.js";
+import { useTheme } from "./lib/useTheme.js";
 
 import Header from "./components/Header.jsx";
 import AdminPanel from "./components/AdminPanel.jsx";
@@ -46,6 +47,7 @@ export default function App() {
   const { user } = useAuth();
   const today    = useToday();
   const online   = useOnlineStatus();
+  const { theme, setTheme } = useTheme();
   const { config, overrides, generatedPlan, phaseOverrides, survey, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
   const [month,       setMonth]      = useState(() => today.getMonth());
   const [selected,    setSelected]   = useState(null);
@@ -299,6 +301,8 @@ export default function App() {
             onOpenAdmin={() => setShowAdmin(true)}
             onOpenStats={() => setShowStats(true)}
             onBeforeSignOut={flushNote}
+            theme={theme}
+            setTheme={setTheme}
           />
         ) : activeTab === "plan" ? (
           <PlanScreen
