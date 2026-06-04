@@ -18,6 +18,7 @@ import { postMediaUpload, getMediaList, getMediaItem, deleteMediaItem } from "./
 import { getStats } from "./stats.js";
 import { requireApproved, requireAdmin } from "./guard.js";
 import { logError, logInfo } from "./log.js";
+import { getShareToken, createShareToken, deleteShareToken, getSharedView } from "./share.js";
 
 export default {
   async fetch(request, env, _ctx) {
@@ -72,6 +73,8 @@ async function route(request, env, path) {
 
   // public routes (no auth required)
   if (path === "/api/health" && method === "GET") return getHealth(env);
+  const shareViewMatch = path.match(/^\/api\/share\/([A-Za-z0-9_-]{10,60})$/);
+  if (shareViewMatch && method === "GET") return getSharedView(env, shareViewMatch[1]);
 
   // public auth routes
   if (path === "/api/auth/signup"          && method === "POST") return signup(request, env);
@@ -136,6 +139,10 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (path === "/api/errors"    && method === "POST") return postClientError(request, env, user);
 
   if (path === "/api/stats"         && method === "GET")  return getStats(env, user);
+
+  if (path === "/api/share" && method === "GET")    return getShareToken(env, user);
+  if (path === "/api/share" && method === "POST")   return createShareToken(env, user);
+  if (path === "/api/share" && method === "DELETE") return deleteShareToken(env, user);
 
   if (path === "/api/media/upload" && method === "POST") return postMediaUpload(request, env, user);
   if (path === "/api/media"        && method === "GET")  return getMediaList(request, env, user);

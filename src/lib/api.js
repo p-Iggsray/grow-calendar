@@ -181,6 +181,12 @@ export const api = {
 
   getStats: () => request("/api/stats"),
 
+  getShareToken: () => request("/api/share"),
+  createShareToken: () => request("/api/share", { method: "POST", body: "{}" }),
+  deleteShareToken: () => request("/api/share", { method: "DELETE", body: "{}" }),
+  getSharedView: (token) => fetch(`/api/share/${token}`)
+    .then(r => r.json().then(d => r.ok ? d : Promise.reject(new Error(d.error || "Not found")))),
+
   getMedia: (date) => request(`/api/media?date=${date}`),
   uploadMedia: (date, file, kind) => {
     return fetch(`/api/media/upload?date=${date}&type=${kind}`, {

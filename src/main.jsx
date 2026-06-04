@@ -4,6 +4,7 @@ import LoginGate from "./components/LoginGate.jsx";
 import PendingScreen from "./components/PendingScreen.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import Toast from "./components/Toast.jsx";
+import BuddyView from "./components/BuddyView.jsx";
 import { AuthProvider, useAuth } from "./lib/auth.jsx";
 import { ToastProvider } from "./lib/useToast.jsx";
 import { PlanProvider } from "./lib/usePlan.jsx";
@@ -68,13 +69,20 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+// Detect buddy / share-link routes before mounting the auth stack.
+const _shareMatch = window.location.pathname.match(/^\/share\/([A-Za-z0-9_-]{10,60})$/);
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <ErrorBoundary>
       <ToastProvider>
-        <AuthProvider>
-          <Root />
-        </AuthProvider>
+        {_shareMatch ? (
+          <BuddyView token={_shareMatch[1]} />
+        ) : (
+          <AuthProvider>
+            <Root />
+          </AuthProvider>
+        )}
         <Toast />
       </ToastProvider>
     </ErrorBoundary>
