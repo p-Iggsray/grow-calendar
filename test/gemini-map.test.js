@@ -15,12 +15,12 @@ test("toGeminiContents maps roles assistant->model and wraps text parts", () => 
   ]);
 });
 
-test("buildGeminiBody shapes systemInstruction, functionDeclarations, and disables thinking", () => {
+test("buildGeminiBody shapes systemInstruction and functionDeclarations", () => {
   const body = buildGeminiBody({ systemSegments, tools, contents: toGeminiContents([{ role: "user", content: "hi" }]) });
   assert.deepEqual(body.systemInstruction.parts, [{ text: "persona+plan" }, { text: "Today is 2026-05-27." }]);
   assert.equal(body.tools[0].functionDeclarations[0].name, "get_day");
   assert.deepEqual(body.tools[0].functionDeclarations[0].parameters, tools[0].parameters);
-  assert.equal(body.generationConfig.thinkingConfig.thinkingBudget, 0);
+  assert.equal(body.generationConfig.thinkingConfig, undefined);
 });
 
 test("parseGeminiResponse extracts text and functionCalls", () => {
