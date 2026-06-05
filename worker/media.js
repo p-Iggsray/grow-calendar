@@ -109,10 +109,8 @@ export async function deleteMediaItem(request, env, user, id) {
   ).bind(id, user.id).first();
   if (!row) return error(404, "not found");
 
-  await Promise.all([
-    env.MEDIA.delete(row.r2_key),
-    env.DB.prepare("DELETE FROM media WHERE id = ? AND user_id = ?").bind(id, user.id).run(),
-  ]);
+  await env.DB.prepare("DELETE FROM media WHERE id = ? AND user_id = ?").bind(id, user.id).run();
+  await env.MEDIA.delete(row.r2_key);
 
   return json({ ok: true });
 }
