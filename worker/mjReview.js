@@ -104,10 +104,10 @@ async function executeReviewTool(name, input, env, userId, rawPlan) {
   try {
     if (name === "get_plan_data") {
       let survey = null, config = null, generatedPlan = null, phaseOverrides = {};
-      try { if (rawPlan.survey) survey = rawPlan.survey; } catch {}
-      try { if (rawPlan.config) config = rawPlan.config; } catch {}
-      try { if (rawPlan.generatedPlan) generatedPlan = rawPlan.generatedPlan; } catch {}
-      try { if (rawPlan.phaseOverrides) phaseOverrides = rawPlan.phaseOverrides; } catch {}
+      try { if (rawPlan.survey) survey = rawPlan.survey; } catch { /* swallow */ }
+      try { if (rawPlan.config) config = rawPlan.config; } catch { /* swallow */ }
+      try { if (rawPlan.generatedPlan) generatedPlan = rawPlan.generatedPlan; } catch { /* swallow */ }
+      try { if (rawPlan.phaseOverrides) phaseOverrides = rawPlan.phaseOverrides; } catch { /* swallow */ }
       return { survey, config, generatedPlan, phaseOverrides };
     }
 

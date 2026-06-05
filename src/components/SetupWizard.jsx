@@ -405,7 +405,7 @@ function StepSupplies({ survey, update }) {
   return (
     <div>
       <div style={{ fontFamily: MONO, fontSize: 11, color: "#5a7a5a", marginBottom: 14, lineHeight: 1.8 }}>
-        Mark what you have, what you still need, or what you won't use. The AI will reference this in your calendar.
+        Mark what you have, what you still need, or what you won&apos;t use. The AI will reference this in your calendar.
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-accent)" }}>✓ {have} have</div>

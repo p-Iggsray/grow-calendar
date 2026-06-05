@@ -233,7 +233,6 @@ function Field({ label, value, onChange, type = "text", autoComplete, autoFocus 
         value={value}
         onChange={e => onChange(e.target.value)}
         autoComplete={autoComplete}
-        // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus={autoFocus}
         style={INPUT_STYLE}
         onFocus={e => { e.target.style.borderColor = "rgba(74,222,128,0.5)"; }}
@@ -270,7 +269,6 @@ function PasswordField({ label = "Password", value, onChange, autoComplete, auto
           onKeyUp={updateCapsLock}
           onBlur={e => { e.target.style.borderColor = "var(--c-border)"; setCapsLockOn(false); }}
           autoComplete={autoComplete}
-          // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus={autoFocus}
           style={{ ...INPUT_STYLE, paddingRight: 44 }}
           onFocus={e => { e.target.style.borderColor = "rgba(74,222,128,0.5)"; }}
