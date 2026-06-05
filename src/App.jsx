@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useToday, daysBetween, sameDay } from "./lib/dates.js";
 import {
   PHASES,
@@ -44,6 +45,11 @@ const SHELL_STYLE = {
 // Bottom padding so scrollable content clears the fixed tab bar.
 const TAB_CLEARANCE = "calc(66px + env(safe-area-inset-bottom, 0px))";
 
+// Shared transition configs.
+const SLIDE_SPRING  = { type: "spring", damping: 26, stiffness: 280, restDelta: 0.5 };
+const PUSH_SPRING   = { type: "spring", damping: 30, stiffness: 260, restDelta: 0.5 };
+const FADE_DURATION = { duration: 0.15 };
+
 export default function App() {
   const { user } = useAuth();
   const today    = useToday();
@@ -54,11 +60,10 @@ export default function App() {
   const [selected,    setSelected]   = useState(null);
   const [activeTab,   setActiveTab]  = useState("calendar");
   const [chatOpen,      setChatOpen]      = useState(false);
-  const [chatContext,   setChatContext]   = useState(null); // YYYY-MM-DD of the day open in the app, or null
+  const [chatContext,   setChatContext]   = useState(null);
   const [showAdmin,     setShowAdmin]     = useState(false);
   const [showStats,     setShowStats]     = useState(false);
   const [showMap,       setShowMap]       = useState(false);
-  // Set to true when SetupWizard completes so MjReviewPanel runs before entering the main app.
   const [reviewPending, setReviewPending] = useState(false);
 
   const { taskStates, loading: checkoffsLoading, toggle, setTaskState } = useCheckoffs(selected, Boolean(user));
@@ -66,20 +71,14 @@ export default function App() {
   const { note, setNote, status: noteStatus, flush: flushNote } =
     useDayNote(selected, Boolean(user));
 
-  // Opening a day pushes a history entry so the device/browser back button
-  // returns to the calendar instead of leaving the app. The URL gets ?d= so
-  // the day is shareable via copy-paste (handled by the mount effect below).
   const openDay = useCallback((date) => {
     setSelected(date);
     window.history.pushState({ growDay: ymd(date) }, "", `?d=${ymd(date)}`);
   }, []);
 
   useEffect(() => {
-    // popstate fires on Back; clear selection and strip ?d= from the URL.
     function onPop() {
       setSelected(null);
-      // If the "today" tab was active, revert it to calendar so the tab bar
-      // reflects the new state (no day selected = calendar grid).
       setActiveTab(prev => prev === "today" ? "calendar" : prev);
       const url = new URL(window.location.href);
       if (url.searchParams.has("d")) {
@@ -91,8 +90,6 @@ export default function App() {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
-  // Mount: honor `?d=YYYY-MM-DD` so a shared link opens that day directly.
-  // Run once after the plan has loaded (so getPhase can validate the date).
   const deepLinkApplied = useRef(false);
   useEffect(() => {
     if (deepLinkApplied.current || !config) return;
@@ -102,14 +99,13 @@ export default function App() {
     const [y, m, day] = d.split("-").map(Number);
     const date = new Date(y, m - 1, day);
     if (Number.isNaN(date.getTime())) return;
-    if (!getPhase(date, config)) return; // outside grow season
+    if (!getPhase(date, config)) return;
     deepLinkApplied.current = true;
     setMonth(date.getMonth());
     openDay(date);
   }, [config, openDay]);
 
-  // Lock body scroll while chat is open. iOS Safari ignores overflow:hidden on
-  // the body, so position:fixed + restoring scrollY on close is the reliable fix.
+  // Lock body scroll while chat is open.
   useEffect(() => {
     if (!chatOpen) return;
     const y = window.scrollY;
@@ -131,7 +127,6 @@ export default function App() {
     window.history.back();
   }, [flushNote]);
 
-  // Replay any offline-queued checkoff writes when connectivity returns.
   useEffect(() => {
     if (!online) return;
     flushCheckoffQueue(api.putCheckoffs).catch(() => {});
@@ -166,7 +161,6 @@ export default function App() {
     );
   }
 
-  // After setup completes, run MJ's quality review before entering the main app.
   if (reviewPending && config) {
     return (
       <div style={SHELL_STYLE}>
@@ -199,7 +193,6 @@ export default function App() {
   const selStyle    = selPhase ? PHASES[selPhase] : null;
   const detail      = selected ? getDetail(selected, config, overrides, generatedPlan, phaseOverrides) : null;
   const threats     = selPhase ? getThreatsForPhase(selPhase, generatedPlan) : [];
-  // Threats for today used when chat is opened from the calendar (no day selected).
   const todayThreats = todayPhase ? getThreatsForPhase(todayPhase, generatedPlan) : [];
 
   const resolvedCount = Object.keys(taskStates).length;
@@ -226,13 +219,11 @@ export default function App() {
 
   function handleTab(tabId) {
     if (tabId === "today") {
-      // Keep "today" highlighted while viewing today's DayView.
       setActiveTab("today");
       jumpToday();
     } else if (tabId === "mj") {
       openChat();
     } else if (tabId === "calendar") {
-      // Always return to the calendar grid when tapping this tab.
       setSelected(null);
       setActiveTab("calendar");
       if (chatOpen) closeChat();
@@ -247,29 +238,8 @@ export default function App() {
     }
   }
 
-  if (showAdmin) {
-    return (
-      <div style={SHELL_STYLE}>
-        <AdminPanel onClose={() => setShowAdmin(false)} />
-      </div>
-    );
-  }
-
-  if (showStats) {
-    return (
-      <div style={SHELL_STYLE}>
-        <StatsScreen config={config} today={today} onClose={() => setShowStats(false)} />
-      </div>
-    );
-  }
-
-  if (showMap) {
-    return (
-      <div style={SHELL_STYLE}>
-        <GardenMap config={config} today={today} onClose={() => setShowMap(false)} />
-      </div>
-    );
-  }
+  // Key for the tab content AnimatePresence — drives crossfade between screens.
+  const tabKey = activeTab === "plan" ? "plan" : activeTab === "more" ? "more" : "calendar";
 
   return (
     <div style={SHELL_STYLE}>
@@ -285,75 +255,163 @@ export default function App() {
           OFFLINE — changes will sync when reconnected
         </div>
       )}
-      {/* Main content area — padded so nothing hides behind the tab bar */}
+
+      {/* Tab content — crossfades between Calendar, Plan, and More */}
       <div style={{ paddingBottom: TAB_CLEARANCE }}>
-        {/* DayView: shown when a day is selected via either calendar or today tab */}
-        {(activeTab === "calendar" || activeTab === "today") && selected ? (
-          <DayView
-            selected={selected}
-            detail={detail}
-            selStyle={selStyle}
-            threats={threats}
-            taskStates={taskStates}
-            checkoffsLoading={checkoffsLoading}
-            onToggle={toggle}
-            onSetTaskState={setTaskState}
-            note={note}
-            onChangeNote={setNote}
-            onFlushNote={flushNote}
-            noteStatus={noteStatus}
-            onBack={goBack}
-            onJumpToday={sameDay(selected, today) ? null : jumpToday}
-          />
-        ) : activeTab === "more" ? (
-          <MoreScreen
-            isAdmin={user?.role === "admin"}
-            onOpenAdmin={() => setShowAdmin(true)}
-            onOpenStats={() => setShowStats(true)}
-            onOpenMap={() => setShowMap(true)}
-            onBeforeSignOut={flushNote}
-            theme={theme}
-            setTheme={setTheme}
-          />
-        ) : activeTab === "plan" ? (
-          <PlanScreen
-            config={config}
-            generatedPlan={generatedPlan}
-            phaseOverrides={phaseOverrides}
-            survey={survey}
-            onReload={reloadPlan}
-          />
-        ) : (
-          // Calendar grid — default for "calendar" and fallback for "today" with no selection
-          <>
-            <Header
-              todayStyle={todayStyle}
-              nextMs={nextMs}
-              daysToNext={daysToNext}
-              progress={progress}
-            />
-            <MilestoneStrip today={today} milestones={milestones} onPick={pickMilestone} />
-            <Calendar
-              today={today}
-              month={month}
-              setMonth={setMonth}
-              selected={selected}
-              config={config}
-              overrides={overrides}
-              generatedPlan={generatedPlan}
-              phaseOverrides={phaseOverrides}
-              checkoffCounts={monthCheckoffCounts}
-              onPickDay={pickDay}
-              onClearSelection={() => setSelected(null)}
-            />
-          </>
-        )}
+        <AnimatePresence mode="wait">
+          {tabKey === "more" ? (
+            <motion.div
+              key="more"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={FADE_DURATION}
+            >
+              <MoreScreen
+                isAdmin={user?.role === "admin"}
+                onOpenAdmin={() => setShowAdmin(true)}
+                onOpenStats={() => setShowStats(true)}
+                onOpenMap={() => setShowMap(true)}
+                onBeforeSignOut={flushNote}
+                theme={theme}
+                setTheme={setTheme}
+              />
+            </motion.div>
+          ) : tabKey === "plan" ? (
+            <motion.div
+              key="plan"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={FADE_DURATION}
+            >
+              <PlanScreen
+                config={config}
+                generatedPlan={generatedPlan}
+                phaseOverrides={phaseOverrides}
+                survey={survey}
+                onReload={reloadPlan}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="calendar"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={FADE_DURATION}
+            >
+              <Header
+                todayStyle={todayStyle}
+                nextMs={nextMs}
+                daysToNext={daysToNext}
+                progress={progress}
+              />
+              <MilestoneStrip today={today} milestones={milestones} onPick={pickMilestone} />
+              <Calendar
+                today={today}
+                month={month}
+                setMonth={setMonth}
+                selected={selected}
+                config={config}
+                overrides={overrides}
+                generatedPlan={generatedPlan}
+                phaseOverrides={phaseOverrides}
+                checkoffCounts={monthCheckoffCounts}
+                onPickDay={pickDay}
+                onClearSelection={() => setSelected(null)}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Chat full-screen overlay — hides tab bar */}
-      {chatOpen && (
-        <ChatPanel onClose={closeChat} contextDate={chatContext} suggestions={suggestions} />
-      )}
+      {/* DayView — slides up as a fixed overlay over everything */}
+      <AnimatePresence>
+        {(activeTab === "calendar" || activeTab === "today") && selected && (
+          <motion.div
+            key="dayview"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={SLIDE_SPRING}
+            style={{
+              position: "fixed", inset: 0, zIndex: 20,
+              background: "var(--c-bg)", overflowY: "auto",
+              paddingBottom: TAB_CLEARANCE,
+            }}
+          >
+            <DayView
+              selected={selected}
+              detail={detail}
+              selStyle={selStyle}
+              threats={threats}
+              taskStates={taskStates}
+              checkoffsLoading={checkoffsLoading}
+              onToggle={toggle}
+              onSetTaskState={setTaskState}
+              note={note}
+              onChangeNote={setNote}
+              onFlushNote={flushNote}
+              noteStatus={noteStatus}
+              onBack={goBack}
+              onJumpToday={sameDay(selected, today) ? null : jumpToday}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Chat panel — slides up as a fixed full-screen overlay */}
+      <AnimatePresence>
+        {chatOpen && (
+          <ChatPanel
+            key="chat"
+            onClose={closeChat}
+            contextDate={chatContext}
+            suggestions={suggestions}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Full-screen panels — slide in from the right */}
+      <AnimatePresence>
+        {showAdmin && (
+          <motion.div
+            key="admin"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={PUSH_SPRING}
+            style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--c-bg)", overflowY: "auto" }}
+          >
+            <AdminPanel onClose={() => setShowAdmin(false)} />
+          </motion.div>
+        )}
+        {showStats && (
+          <motion.div
+            key="stats"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={PUSH_SPRING}
+            style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--c-bg)", overflowY: "auto" }}
+          >
+            <StatsScreen config={config} today={today} onClose={() => setShowStats(false)} />
+          </motion.div>
+        )}
+        {showMap && (
+          <motion.div
+            key="map"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={PUSH_SPRING}
+            style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--c-bg)", overflowY: "auto" }}
+          >
+            <GardenMap config={config} today={today} onClose={() => setShowMap(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Tab bar — hidden while chat is open */}
       {!chatOpen && (

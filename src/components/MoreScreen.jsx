@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import { Users, Download, Bell, BellOff, BarChart2, Sun, Moon, Monitor, Map, Share2 } from "lucide-react";
 import ShareSheet from "./ShareSheet.jsx";
 import PhaseLegend from "./PhaseLegend.jsx";
@@ -140,7 +141,9 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
         </button>
       </div>
 
-      {showShare && <ShareSheet onClose={() => setShowShare(false)} />}
+      <AnimatePresence>
+        {showShare && <ShareSheet key="share" onClose={() => setShowShare(false)} />}
+      </AnimatePresence>
 
       <div style={{ padding: "12px 0 0" }}>
         <button

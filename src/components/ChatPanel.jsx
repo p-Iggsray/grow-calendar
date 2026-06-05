@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { motion } from "framer-motion";
 import { ChevronLeft, Trash2, ArrowUp, Loader } from "lucide-react";
 import { api } from "../lib/api.js";
 
@@ -179,8 +180,12 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
   }
 
   return (
-    <div
+    <motion.div
       ref={panelRef}
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      transition={{ type: "spring", damping: 26, stiffness: 280, restDelta: 0.5 }}
       style={{
         // visualViewport effect overrides top and height via ref.
         position: "fixed", top: 0, left: 0, right: 0, height: "100vh",
@@ -375,7 +380,7 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { Copy, Check, RefreshCw, Trash2, Link } from "lucide-react";
 import { api } from "../lib/api.js";
 
@@ -52,17 +53,29 @@ export default function ShareSheet({ onClose }) {
 
   return (
     <>
-      <div onClick={onClose} style={{
-        position: "fixed", inset: 0, zIndex: 50,
-        background: "rgba(0,0,0,0.55)", backdropFilter: "blur(2px)",
-      }} />
-      <div style={{
-        position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 51,
-        background: "var(--c-panel-bg)",
-        borderTop: "1px solid var(--c-border)",
-        borderRadius: "18px 18px 0 0",
-        padding: "20px 18px calc(28px + env(safe-area-inset-bottom, 0px))",
-      }}>
+      <motion.div
+        onClick={onClose}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        style={{
+          position: "fixed", inset: 0, zIndex: 50,
+          background: "rgba(0,0,0,0.55)", backdropFilter: "blur(2px)",
+        }}
+      />
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 28, stiffness: 320, restDelta: 0.5 }}
+        style={{
+          position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 51,
+          background: "var(--c-panel-bg)",
+          borderTop: "1px solid var(--c-border)",
+          borderRadius: "18px 18px 0 0",
+          padding: "20px 18px calc(28px + env(safe-area-inset-bottom, 0px))",
+        }}>
         <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 4 }}>
           Buddy access
         </div>
@@ -184,7 +197,7 @@ export default function ShareSheet({ onClose }) {
         >
           Close
         </button>
-      </div>
+      </motion.div>
     </>
   );
 }
