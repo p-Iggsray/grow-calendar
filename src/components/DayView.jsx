@@ -192,7 +192,6 @@ function TaskRow({ task, index, state, accentColor, onTap, onLongPress, note, on
             onChange={e => onNoteChange(index, e.target.value.slice(0, MAX_TASK_NOTE_LEN))}
             placeholder="Add a note for this task…"
             rows={2}
-            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
             style={{
               width: "100%", resize: "vertical",

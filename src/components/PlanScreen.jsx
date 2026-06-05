@@ -143,7 +143,6 @@ function PhaseSection({ phase, aiContent, override, onSave, onReset }) {
                       value={editValue}
                       onChange={e => setEditValue(e.target.value)}
                       rows={3}
-                      // eslint-disable-next-line jsx-a11y/no-autofocus
                       autoFocus
                       style={{
                         width: "100%", boxSizing: "border-box", resize: "vertical",
@@ -245,7 +244,7 @@ function RegenConfirm({ onCancel, onConfirm, loading }) {
           Regenerate AI content?
         </div>
         <div style={{ fontSize: 13, color: "#8aaa8a", lineHeight: 1.7, marginBottom: 20 }}>
-          This replaces all AI-generated phase summaries and tasks with fresh AI output using your stored grow survey. Your custom task edits are preserved and won't be overwritten.
+          This replaces all AI-generated phase summaries and tasks with fresh AI output using your stored grow survey. Your custom task edits are preserved and won&apos;t be overwritten.
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button type="button" onClick={onCancel} style={{

@@ -7,7 +7,7 @@ export async function getHealth(env) {
   try {
     await env.DB.prepare("SELECT 1").first();
     dbOk = true;
-  } catch {}
+  } catch { /* swallow — health check must never throw */ }
   return json({ ok: dbOk, ts: new Date().toISOString() });
 }
 
@@ -29,6 +29,6 @@ export async function postClientError(request, env, user) {
       typeof stack === "string" ? stack.slice(0, 2000) : null,
       typeof url === "string" ? url.slice(0, 500) : null,
     ).run();
-  } catch {}
+  } catch { /* errors here must never cascade into UI failures */ }
   return json({ ok: true });
 }

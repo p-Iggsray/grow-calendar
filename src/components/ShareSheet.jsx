@@ -70,7 +70,7 @@ export default function ShareSheet({ onClose }) {
           Share your grow
         </div>
         <div style={{ fontSize: 12, color: "var(--c-text-faint)", fontFamily: MONO, marginBottom: 18, lineHeight: 1.7 }}>
-          Anyone with the link can view your calendar and plan — read-only, no account needed. They can't edit, log, or see your notes.
+          Anyone with the link can view your calendar and plan — read-only, no account needed. They can&apos;t edit, log, or see your notes.
         </div>
 
         {error && (

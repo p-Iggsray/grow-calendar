@@ -1,8 +1,9 @@
-// Flat config (ESLint 9). Three layers:
-// 1. Base JS rules + globals for browser code in src/.
-// 2. Worker code in worker/ runs on Cloudflare Workers - browser-ish globals
+// Flat config (ESLint 9). Four layers:
+// 1. Service worker (public/sw.js) — script context, browser + worker globals.
+// 2. Base JS rules + globals for browser code in src/.
+// 3. Worker code in worker/ runs on Cloudflare Workers - browser-ish globals
 //    (crypto, fetch, Response, URL) but no DOM.
-// 3. Test/script files in test/ and scripts/ run on Node, so Node globals.
+// 4. Test/script files in test/ and scripts/ run on Node, so Node globals.
 
 import js from "@eslint/js";
 import globals from "globals";
@@ -13,6 +14,20 @@ export default [
   { ignores: ["dist/**", "node_modules/**", ".wrangler/**"] },
 
   js.configs.recommended,
+
+  // Service worker — script context with browser + worker globals (self, caches, clients, etc.)
+  {
+    files: ["public/sw.js"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "script",
+      globals: {
+        ...globals.browser,
+        ...globals.worker,
+        clients: "readonly", // ServiceWorkerGlobalScope.clients — not in standard globals sets
+      },
+    },
+  },
 
   // Frontend (React)
   {
