@@ -3,6 +3,9 @@
   "name": "grow-calendar",
   "main": "./worker/index.js",
   "compatibility_date": "2026-05-23",
+  "build": {
+    "command": "npm run build"
+  },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
