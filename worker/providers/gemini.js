@@ -26,14 +26,19 @@ export function buildGeminiBody({ systemSegments, tools, contents }) {
         name: t.name, description: t.description, parameters: t.parameters,
       })),
     }],
-    // thinkingBudget 0 keeps tool calls fast and quota-frugal on Flash.
-    generationConfig: { temperature: 0.7, thinkingConfig: { thinkingBudget: 0 } },
+    // Let Gemini 2.5 use its default reasoning budget — this is what makes
+    // the model thoughtful rather than reflexive. Lower temperature keeps
+    // grow advice consistent and grounded.
+    generationConfig: { temperature: 0.5 },
   };
 }
 
 export function parseGeminiResponse(data) {
   const parts = data?.candidates?.[0]?.content?.parts || [];
-  const text = parts.filter(p => typeof p.text === "string").map(p => p.text).join("").trim();
+  // Do NOT trim here — trimming per streaming chunk strips leading/trailing spaces
+  // at word boundaries, causing adjacent words to be joined together in the output.
+  // The final accumulated text is trimmed once in streamGeminiCall.
+  const text = parts.filter(p => typeof p.text === "string").map(p => p.text).join("");
   const functionCalls = parts
     .filter(p => p.functionCall)
     .map(p => ({ name: p.functionCall.name, args: p.functionCall.args || {} }));
@@ -102,7 +107,7 @@ async function streamGeminiCall({ apiKey, model, body, onChunk, gatewayBase, use
   }
   if (buf) processLine(buf);
 
-  return { text: fullText, functionCalls, parts: allParts };
+  return { text: fullText.trim(), functionCalls, parts: allParts };
 }
 
 // onChunk is forwarded to streaming tool-call iterations too, but Gemini

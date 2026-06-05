@@ -102,7 +102,7 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
               return msgs;
             });
           },
-          onDone: ({ actions, usage: u }) => {
+          onDone: ({ actions, usage: u, modelUsed }) => {
             setMessages(prev => {
               const msgs = [...prev];
               const last = msgs[msgs.length - 1];
@@ -111,7 +111,7 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
               }
               return msgs;
             });
-            if (u) setUsage(u);
+            if (u) setUsage({ ...u, modelUsed });
             // Open the undo window if any action has an undoPayload.
             if ((actions || []).some(a => a.undoPayload)) {
               setUndoForMsgId(msgId);
@@ -352,14 +352,17 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
 
 function UsageBar({ usage }) {
   if (!usage) return null;
-  const { proCount, proLimit, flashCount = 0, flashLimit = 1500, userCount, userLimit } = usage;
+  const { proCount, proLimit, flashCount = 0, flashLimit = 1500, userCount, userLimit, modelUsed } = usage;
 
-  const showPro = typeof proCount === "number" && typeof proLimit === "number";
+  // Only show Pro bar if the user actually has access to Pro (non-zero limit and
+  // at least one Pro call has been made, or one was just used).
+  const usingPro = modelUsed?.includes("pro");
+  const showPro = typeof proCount === "number" && typeof proLimit === "number" && (proCount > 0 || usingPro);
   const showUserCap = typeof userCount === "number" && typeof userLimit === "number";
 
-  function bar(count, limit, label, dimLabel) {
+  function bar(count, limit, label, dim) {
     const pct = limit > 0 ? Math.min(100, Math.round((count / limit) * 100)) : 0;
-    const color = pct >= 90 ? "#f87171" : pct >= 70 ? "#fbbf24" : (dimLabel ? "var(--c-text-faint)" : "var(--c-accent)");
+    const color = pct >= 90 ? "#f87171" : pct >= 70 ? "#fbbf24" : (dim ? "var(--c-text-faint)" : "var(--c-accent)");
     return (
       <div title={`${label}: ${count} of ${limit} today`} style={{ display: "flex", alignItems: "center", gap: 5 }}>
         <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color, letterSpacing: 1 }}>
@@ -374,11 +377,50 @@ function UsageBar({ usage }) {
 
   return (
     <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+      {modelUsed && (
+        <span style={{
+          fontFamily: "'Courier New', monospace", fontSize: 9, letterSpacing: 1,
+          color: usingPro ? "#a78bfa" : "#5a8a5a", textTransform: "uppercase",
+        }}>
+          {usingPro ? "◆ Pro" : "Flash"}
+        </span>
+      )}
       {showUserCap && bar(userCount, userLimit, "Your messages today", false)}
-      {showPro && bar(proCount, proLimit, "Gemini Pro calls today", false)}
-      {bar(flashCount, flashLimit, "Gemini Flash calls today", true)}
+      {showPro && bar(proCount, proLimit, "Pro calls today", false)}
+      {bar(flashCount, flashLimit, "Flash calls today", true)}
     </div>
   );
+}
+
+// Lightweight inline markdown renderer — handles **bold**, *italic*, `code`.
+// Works alongside whiteSpace:pre-wrap so newlines are preserved naturally.
+function MdInline({ text }) {
+  const parts = [];
+  let remaining = text;
+  let k = 0;
+  while (remaining.length > 0) {
+    const bold   = /\*\*(.+?)\*\*/s.exec(remaining);
+    const italic = /(?<!\*)\*([^*\n]+?)\*(?!\*)/.exec(remaining);
+    const code   = /`([^`\n]+)`/.exec(remaining);
+    const hits   = [
+      bold   && { idx: bold.index,   match: bold,   type: "b" },
+      italic && { idx: italic.index, match: italic, type: "i" },
+      code   && { idx: code.index,   match: code,   type: "c" },
+    ].filter(Boolean).sort((a, b) => a.idx - b.idx);
+    if (!hits.length) { parts.push(remaining); break; }
+    const { idx, match, type } = hits[0];
+    if (idx > 0) parts.push(remaining.slice(0, idx));
+    if (type === "b") parts.push(<strong key={k++} style={{ fontWeight: 700 }}>{match[1]}</strong>);
+    else if (type === "i") parts.push(<em key={k++}>{match[1]}</em>);
+    else parts.push(
+      <code key={k++} style={{
+        fontFamily: "'Courier New', monospace", fontSize: "0.88em",
+        background: "rgba(255,255,255,0.1)", padding: "1px 5px", borderRadius: 3,
+      }}>{match[1]}</code>
+    );
+    remaining = remaining.slice(idx + match[0].length);
+  }
+  return <>{parts}</>;
 }
 
 function Bubble({ role, text, dim, actions, showUndo, onUndo }) {
@@ -393,7 +435,9 @@ function Bubble({ role, text, dim, actions, showUndo, onUndo }) {
         color: dim ? "var(--c-text-faint)" : (isUser ? "var(--c-text)" : "var(--c-text-dim)"),
         borderBottomRightRadius: isUser ? 4 : 18,
         borderBottomLeftRadius: isUser ? 18 : 4,
-      }}>{text}</div>
+      }}>
+        {isUser || dim ? text : <MdInline text={text} />}
+      </div>
       {actions && actions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6, maxWidth: "85%" }}>
           {actions.map((a, i) => {
