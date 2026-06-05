@@ -63,9 +63,18 @@ function Splash() {
 }
 
 // Register service worker for offline caching and push notifications.
+// updateViaCache:"none" tells the browser to always fetch sw.js from the
+// network (not its HTTP cache) so new deploys are detected immediately.
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
+    navigator.serviceWorker
+      .register("/sw.js", { updateViaCache: "none" })
+      .catch(() => {});
+
+    // When a new SW takes control, reload so the page loads fresh assets.
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      window.location.reload();
+    });
   });
 }
 
