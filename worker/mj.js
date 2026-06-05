@@ -202,7 +202,7 @@ export async function postMj(request, env, user) {
       try {
         for (const model of modelsToTry) {
           actions.length = 0;
-          let quotaHit = false;
+          let tryNext = false;
           try {
             ({ reply } = await runGemini({
               apiKey, model, systemSegments, tools: MJ_TOOLS, messages,
@@ -213,18 +213,17 @@ export async function postMj(request, env, user) {
             }));
             modelUsed = model;
           } catch (e) {
-            if (e instanceof ProviderError && e.kind === "quota") {
-              quotaHit = true;
-            } else if (e instanceof ProviderError && e.kind === "unreachable") {
+            if (e instanceof ProviderError && e.kind === "unreachable") {
               send({ error: "Could not reach the AI service" });
               return;
-            } else {
-              logError("mj-provider", { kind: e?.kind, message: String(e?.message ?? e) });
-              send({ error: "The AI service returned an error" });
-              return;
             }
+            // For quota exhaustion OR any upstream error (e.g. Pro not accessible on
+            // this API key), fall through to the next model in the list if one exists.
+            // This ensures admin users always get a Flash response even if Pro fails.
+            tryNext = true;
+            logError("mj-fallback", { from: model, kind: e?.kind, message: String(e?.message ?? e) });
           }
-          if (!quotaHit) break;
+          if (!tryNext) break;
         }
 
         if (reply === null || modelUsed === null) {
@@ -241,7 +240,7 @@ export async function postMj(request, env, user) {
           readMjUsageForUser(env, user.id, today),
         ]);
         const userLimit = user.role === "admin" ? null : PER_USER_DAILY_CAP;
-        send({ done: true, actions, usage: { date: today, proCount, proLimit: GEMINI_PRO_DAILY_LIMIT, flashCount, flashLimit: GEMINI_DAILY_LIMIT, userCount, userLimit } });
+        send({ done: true, actions, modelUsed, usage: { date: today, proCount, proLimit: GEMINI_PRO_DAILY_LIMIT, flashCount, flashLimit: GEMINI_DAILY_LIMIT, userCount, userLimit } });
       } catch (e) {
         logError("mj-stream", { message: String(e?.message ?? e) });
         send({ error: "Something went wrong" });
