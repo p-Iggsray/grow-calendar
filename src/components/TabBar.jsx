@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { CalendarDays, Sun, Sparkles, ClipboardList, MoreHorizontal } from "lucide-react";
 
 const TABS = [
@@ -37,6 +38,7 @@ export default function TabBar({ activeTab, onTab }) {
             onClick={() => onTab(id)}
             style={{
               flex: 1,
+              position: "relative",
               display: "flex", flexDirection: "column",
               alignItems: "center", justifyContent: "center",
               gap: 4,
@@ -48,6 +50,20 @@ export default function TabBar({ activeTab, onTab }) {
               transition: "color 0.18s",
             }}
           >
+            {active && (
+              <motion.div
+                layoutId="tab-indicator"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: "20%", right: "20%",
+                  height: 2,
+                  background: "var(--c-accent)",
+                  borderRadius: 1,
+                }}
+                transition={{ type: "spring", damping: 26, stiffness: 300 }}
+              />
+            )}
             {isMj ? (
               <div style={{
                 width: 50, height: 28,
