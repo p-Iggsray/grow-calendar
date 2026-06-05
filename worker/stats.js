@@ -2,7 +2,7 @@
 import { json } from "./util.js";
 
 export async function getStats(env, user) {
-  const [logRow, checkoffRow, notesRow, mediaRow] = await Promise.all([
+  const [logRow, checkoffRow, notesRow] = await Promise.all([
     env.DB.prepare(`
       SELECT
         ROUND(COALESCE(SUM(water_gal), 0), 2) AS total_water,
@@ -26,14 +26,6 @@ export async function getStats(env, user) {
       FROM day_notes
       WHERE user_id = ? AND body != ''
     `).bind(user.id).first(),
-    env.DB.prepare(`
-      SELECT
-        COUNT(*) AS total,
-        SUM(CASE WHEN kind = 'photo' THEN 1 ELSE 0 END) AS photos,
-        SUM(CASE WHEN kind = 'audio' THEN 1 ELSE 0 END) AS audio
-      FROM media
-      WHERE user_id = ?
-    `).bind(user.id).first(),
   ]);
 
   return json({
@@ -50,10 +42,5 @@ export async function getStats(env, user) {
       blocked: checkoffRow?.blocked ?? 0,
     },
     notes: { count: notesRow?.count ?? 0 },
-    media: {
-      total:  mediaRow?.total  ?? 0,
-      photos: mediaRow?.photos ?? 0,
-      audio:  mediaRow?.audio  ?? 0,
-    },
   });
 }

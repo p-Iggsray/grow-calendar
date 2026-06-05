@@ -1,4 +1,4 @@
-import { ChevronLeft, Loader, Droplets, Thermometer, CheckSquare, BookOpen, Camera, Mic, BarChart2 } from "lucide-react";
+import { ChevronLeft, Loader, Droplets, Thermometer, CheckSquare, BookOpen, BarChart2 } from "lucide-react";
 import { useStats } from "../lib/useStats.js";
 import { STRAIN_1, STRAIN_2, LOCATION } from "../lib/appConfig.js";
 
@@ -184,8 +184,7 @@ export default function StatsScreen({ config, today, onClose }) {
           <StatRow icon={Thermometer} label="Temp range logged" value={tempVal} iconColor="#60a5fa" />
           <StatRow icon={CheckSquare} label="Tasks completed" value={`${taskDone} / ${taskTotal} (${taskPct}%)`} iconColor="var(--c-accent)" />
           <StatRow icon={BookOpen} label="Journal entries" value={stats.notes.count} iconColor="#f59e0b" />
-          <StatRow icon={Camera} label="Photos" value={stats.media.photos} iconColor="#a78bfa" />
-          <StatRow icon={Mic} label="Voice notes" value={stats.media.audio} iconColor="#a78bfa" />
+
         </div>
       ) : null}
 
