@@ -26,6 +26,14 @@ export default {
     const path = url.pathname;
 
     if (!path.startsWith("/api/")) {
+      // Service worker file must never be cached by the browser so new deploys
+      // are detected on the very next open, not after the HTTP cache expires.
+      if (path === "/sw.js") {
+        const res = await env.ASSETS.fetch(request);
+        const fresh = new Response(res.body, res);
+        fresh.headers.set("Cache-Control", "no-cache, no-store");
+        return fresh;
+      }
       return env.ASSETS.fetch(request);
     }
 

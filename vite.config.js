@@ -14,7 +14,7 @@ function stampSwVersion() {
       if (!fs.existsSync(swPath)) return;
       const buildId = Date.now().toString(36);
       const updated = fs.readFileSync(swPath, "utf-8")
-        .replace("grow-calendar-v1", `grow-calendar-${buildId}`);
+        .replace(/grow-calendar-v\d+/, `grow-calendar-${buildId}`);
       fs.writeFileSync(swPath, updated);
     },
   };

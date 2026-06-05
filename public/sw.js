@@ -1,7 +1,7 @@
 // Service worker: cache-first for static assets, pass-through for API,
 // push notification handler, and offline fallback.
 
-const CACHE = "grow-calendar-v1";
+const CACHE = "grow-calendar-v2";
 // Vite-built JS/CSS files have content-hash suffixes — treat them as immutable.
 const IMMUTABLE_RE = /\.(js|css|woff2?)(\?.*)?$/;
 
