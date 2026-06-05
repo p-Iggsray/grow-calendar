@@ -17,6 +17,7 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
   // undoForMsgId: the _id of the message whose action chips show Undo buttons.
   // Cleared when a new send starts or when the 60s window expires.
   const [undoForMsgId, setUndoForMsgId] = useState(null);
+  const [confirmClear, setConfirmClear] = useState(false);
   const msgIdRef    = useRef(0);    // monotonic counter for stable message IDs
   const undoTimerRef = useRef(null);
 
@@ -161,6 +162,7 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
   function handleClear() {
     setMessages([]);
     setError("");
+    setConfirmClear(false);
     api.clearMjHistory().catch(() => {});
   }
 
@@ -222,19 +224,46 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
           </div>
         </div>
         {messages.length > 0 && (
-          <button
-            type="button"
-            onClick={handleClear}
-            aria-label="Clear conversation"
-            style={{
-              background: "none", border: "1px solid var(--c-border)",
-              borderRadius: 8, padding: "8px 10px", color: "#5a7a5a",
-              cursor: "pointer", flexShrink: 0,
-              display: "flex", alignItems: "center",
-            }}
-          >
-            <Trash2 size={14} strokeWidth={1.8} />
-          </button>
+          confirmClear ? (
+            <div style={{ display: "flex", gap: 5, alignItems: "center", flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={handleClear}
+                style={{
+                  background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)",
+                  borderRadius: 8, padding: "6px 10px", color: "#f87171",
+                  cursor: "pointer", fontSize: 11, fontFamily: "'Courier New', monospace", letterSpacing: 0.5,
+                }}
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmClear(false)}
+                style={{
+                  background: "none", border: "1px solid var(--c-border)",
+                  borderRadius: 8, padding: "6px 10px", color: "var(--c-text-faint)",
+                  cursor: "pointer", fontSize: 11, fontFamily: "'Courier New', monospace", letterSpacing: 0.5,
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmClear(true)}
+              aria-label="Clear conversation"
+              style={{
+                background: "none", border: "1px solid var(--c-border)",
+                borderRadius: 8, padding: "8px 10px", color: "#5a7a5a",
+                cursor: "pointer", flexShrink: 0,
+                display: "flex", alignItems: "center",
+              }}
+            >
+              <Trash2 size={14} strokeWidth={1.8} />
+            </button>
+          )
         )}
         <UsageBar usage={usage} />
       </div>

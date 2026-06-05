@@ -2,6 +2,12 @@
 import { json, error } from "./util.js";
 import { DEFAULT_CONFIG } from "../src/lib/planConfig.js";
 
+const VALID_PHASES = new Set([
+  "transplant", "early_veg", "veg_cm", "veg_half", "veg_full",
+  "pre_flower", "flower", "flush", "flush_gdp", "harvest_gdp",
+  "flower_haze", "flush_haze", "harvest_haze",
+]);
+
 // GET /api/plan — returns { config, overrides, generatedPlan, phaseOverrides, survey, needsSetup }
 export async function loadRawPlan(env, userId) {
   const row = await env.DB.prepare(
@@ -68,6 +74,8 @@ export async function patchPlanConfig(request, env, user) {
 
 // PUT /api/plan/phase/:phase — save a full task-array override for one phase.
 export async function putPlanPhase(request, env, user, phase) {
+  if (!VALID_PHASES.has(phase)) return error(400, "invalid phase");
+
   let body;
   try { body = await request.json(); } catch { return error(400, "invalid json"); }
 
@@ -97,6 +105,8 @@ export async function putPlanPhase(request, env, user, phase) {
 
 // DELETE /api/plan/phase/:phase — clear a phase override, reverting to AI content.
 export async function deletePlanPhase(env, user, phase) {
+  if (!VALID_PHASES.has(phase)) return error(400, "invalid phase");
+
   const row = await env.DB.prepare(
     "SELECT phase_overrides FROM plan_config WHERE user_id = ?"
   ).bind(user.id).first();
