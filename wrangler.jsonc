@@ -18,12 +18,6 @@
       "database_id": "f8a90390-8953-45ee-997d-bf5c17c62c1f"
     }
   ],
-  "r2_buckets": [
-    {
-      "binding": "MEDIA",
-      "bucket_name": "grow-calendar-media"
-    }
-  ],
   "observability": {
     "enabled": true
   },

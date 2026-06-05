@@ -14,7 +14,6 @@ import { getPushVapidKey, postPushSubscribe, deletePushSubscribe, getPushToday, 
 import { getPlan, patchPlanConfig, putPlanPhase, deletePlanPhase } from "./plan.js";
 import { postPlanSetup, postPlanRegenerate } from "./planSetup.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
-import { postMediaUpload, getMediaList, getMediaItem, deleteMediaItem } from "./media.js";
 import { getStats } from "./stats.js";
 import { requireApproved, requireAdmin } from "./guard.js";
 import { logError, logInfo } from "./log.js";
@@ -151,15 +150,6 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (path === "/api/share" && method === "GET")    return getShareToken(env, user);
   if (path === "/api/share" && method === "POST")   return createShareToken(env, user);
   if (path === "/api/share" && method === "DELETE") return deleteShareToken(env, user);
-
-  if (path === "/api/media/upload" && method === "POST") return postMediaUpload(request, env, user);
-  if (path === "/api/media"        && method === "GET")  return getMediaList(request, env, user);
-  const mediaItemMatch = path.match(/^\/api\/media\/(\d+)$/);
-  if (mediaItemMatch) {
-    const id = Number(mediaItemMatch[1]);
-    if (method === "GET")    return getMediaItem(request, env, user, id);
-    if (method === "DELETE") return deleteMediaItem(request, env, user, id);
-  }
 
   if (path === "/api/checkoffs" && method === "GET") {
     const url = new URL(request.url);
