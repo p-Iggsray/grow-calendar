@@ -4,7 +4,7 @@ import { api } from "../lib/api.js";
 
 const TRIGGER_MSG = "Begin your review of my grow plan.";
 
-export default function MjReviewPanel({ onComplete, onSkip }) {
+export default function MjReviewPanel({ activeGrowId, onComplete, onSkip }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -75,6 +75,7 @@ export default function MjReviewPanel({ onComplete, onSkip }) {
 
     await new Promise(resolve => {
       api.mjReview(apiHistory, {
+        activeGrowId: activeGrowId ?? null,
         onChunk: (delta) => {
           setMessages(prev => {
             const msgs = [...prev];
@@ -132,7 +133,7 @@ export default function MjReviewPanel({ onComplete, onSkip }) {
     });
 
     setBusy(false);
-  }, [busy]);
+  }, [busy, activeGrowId]);
 
   // Auto-start on mount.
   useEffect(() => {
