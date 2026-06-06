@@ -1,6 +1,7 @@
 // @ts-check
 import { error } from "./util.js";
 import { loadRawPlan } from "./plan.js";
+import { loadRawGrow } from "./grows.js";
 import { runGemini } from "./providers/gemini.js";
 import { ProviderError } from "./providers/errors.js";
 import { logError } from "./log.js";
@@ -100,7 +101,7 @@ const REVIEW_TOOLS = [
   },
 ];
 
-async function executeReviewTool(name, input, env, userId, rawPlan) {
+async function executeReviewTool(name, input, env, userId, growId, rawPlan) {
   try {
     if (name === "get_plan_data") {
       let survey = null, config = null, generatedPlan = null, phaseOverrides = {};
@@ -119,12 +120,18 @@ async function executeReviewTool(name, input, env, userId, rawPlan) {
       if (!VALID_PHASES.has(phase)) return { error: `unknown phase: ${phase}` };
       if (tasks.length === 0) return { error: "tasks array cannot be empty" };
 
-      const row = await env.DB.prepare(
-        "SELECT phase_overrides FROM plan_config WHERE user_id = ?"
-      ).bind(userId).first();
-      const existing = row?.phase_overrides
-        ? JSON.parse(row.phase_overrides)
-        : {};
+      let existing = {};
+      if (growId) {
+        const row = await env.DB.prepare(
+          "SELECT phase_overrides FROM grows WHERE id = ? AND user_id = ?"
+        ).bind(growId, userId).first();
+        existing = row?.phase_overrides ? JSON.parse(row.phase_overrides) : {};
+      } else {
+        const row = await env.DB.prepare(
+          "SELECT phase_overrides FROM plan_config WHERE user_id = ?"
+        ).bind(userId).first();
+        existing = row?.phase_overrides ? JSON.parse(row.phase_overrides) : {};
+      }
 
       existing[phase] = {
         summary,
@@ -133,9 +140,15 @@ async function executeReviewTool(name, input, env, userId, rawPlan) {
         ...(notes ? { notes } : {}),
       };
 
-      await env.DB.prepare(
-        "UPDATE plan_config SET phase_overrides = ?, updated_at = ? WHERE user_id = ?"
-      ).bind(JSON.stringify(existing), new Date().toISOString(), userId).run();
+      if (growId) {
+        await env.DB.prepare(
+          "UPDATE grows SET phase_overrides = ?, updated_at = ? WHERE id = ? AND user_id = ?"
+        ).bind(JSON.stringify(existing), new Date().toISOString(), growId, userId).run();
+      } else {
+        await env.DB.prepare(
+          "UPDATE plan_config SET phase_overrides = ?, updated_at = ? WHERE user_id = ?"
+        ).bind(JSON.stringify(existing), new Date().toISOString(), userId).run();
+      }
 
       return { ok: true, phase, tasksApplied: tasks.length };
     }
@@ -165,7 +178,16 @@ export async function postMjReview(request, env, user) {
   const apiKey = env.GEMINI_API_KEY;
   if (!apiKey) return error(503, "MJ is not configured yet");
 
-  const rawPlan = await loadRawPlan(env, user.id);
+  const activeGrowId = typeof body?.activeGrowId === "string" ? body.activeGrowId : null;
+  let rawPlan = null;
+  let growId = null;
+  if (activeGrowId) {
+    rawPlan = await loadRawGrow(env, user.id, activeGrowId);
+    if (rawPlan) growId = activeGrowId;
+  }
+  if (!rawPlan) {
+    rawPlan = await loadRawPlan(env, user.id);
+  }
   if (rawPlan.needsSetup) {
     return error(400, "Complete your grow setup before running a plan review.");
   }
@@ -192,7 +214,7 @@ export async function postMjReview(request, env, user) {
           tools: REVIEW_TOOLS,
           messages: clientMessages,
           executeToolUse: async (toolName, input) => {
-            const result = await executeReviewTool(toolName, input, env, user.id, rawPlan);
+            const result = await executeReviewTool(toolName, input, env, user.id, growId, rawPlan);
             if (toolName === "apply_phase_improvement" && result.ok) {
               actions.push({
                 type: "phase_improved",

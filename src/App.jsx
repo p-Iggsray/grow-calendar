@@ -209,6 +209,7 @@ export default function App() {
     return (
       <div style={SHELL_STYLE}>
         <MjReviewPanel
+          activeGrowId={activeGrowId}
           onComplete={() => { setReviewPending(false); setActiveTab("plan"); reloadPlan(); }}
           onSkip={() => { setReviewPending(false); setActiveTab("plan"); }}
         />
@@ -427,6 +428,7 @@ export default function App() {
             key="chat"
             onClose={closeChat}
             contextDate={chatContext}
+            activeGrowId={activeGrowId}
             suggestions={suggestions}
           />
         )}

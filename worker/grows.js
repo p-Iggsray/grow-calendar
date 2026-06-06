@@ -62,6 +62,52 @@ function parseField(raw) {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
+// Returns raw grow data without a Response wrapper — for internal use by other handlers.
+export async function loadRawGrow(env, userId, growId) {
+  const row = await env.DB.prepare(
+    "SELECT * FROM grows WHERE id = ? AND user_id = ?"
+  ).bind(growId, userId).first();
+  if (!row) return null;
+
+  const overridesRes = await env.DB.prepare(
+    "SELECT date, payload FROM plan_day_overrides WHERE user_id = ?"
+  ).bind(userId).all();
+  const overrides = {};
+  for (const r of overridesRes.results ?? []) {
+    try { overrides[r.date] = JSON.parse(r.payload); } catch { /* skip */ }
+  }
+
+  return {
+    config:        parseField(row.config),
+    overrides,
+    generatedPlan: parseField(row.generated_plan),
+    phaseOverrides: parseField(row.phase_overrides) ?? {},
+    survey:        parseField(row.survey),
+    needsSetup:    !row.config,
+    displayName:   row.display_name,
+    status:        row.status,
+    id:            row.id,
+  };
+}
+
+// Returns the grows list as plain objects (for internal use by mj.js).
+export async function loadRawGrows(env, userId) {
+  await ensureMigrated(env, userId);
+  const res = await env.DB.prepare(
+    `SELECT id, display_name, status, config, survey, generated_plan, created_at
+     FROM grows WHERE user_id = ? ORDER BY created_at DESC`
+  ).bind(userId).all();
+  return (res.results ?? []).map(r => ({
+    id:            r.id,
+    displayName:   r.display_name,
+    status:        r.status,
+    config:        parseField(r.config),
+    survey:        parseField(r.survey),
+    generatedPlan: parseField(r.generated_plan),
+    createdAt:     r.created_at,
+  }));
+}
+
 // GET /api/grows
 export async function listGrows(env, user) {
   await ensureMigrated(env, user.id);

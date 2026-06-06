@@ -59,15 +59,18 @@ export const api = {
   putNote: (date, body) =>
     request(`/api/notes/${date}`, { method: "PUT", body: JSON.stringify({ body }) }),
 
-  // Streams MJ's reply via SSE. Calls onChunk(delta) for each text piece,
-  // onDone({ actions, usage }) when the response completes, and onError(err)
-  // on any failure. Never throws — all errors route through onError.
-  mj: (message, contextDate, { onChunk, onDone, onError }) => {
+  // Streams MJ's reply via SSE. Accepts activeGrowId so the worker loads the right grow.
+  // Options: { activeGrowId, onChunk, onDone, onError }. Never throws — errors route through onError.
+  mj: (message, contextDate, { activeGrowId, onChunk, onDone, onError }) => {
     fetch("/api/mj", {
       method: "POST",
       credentials: "same-origin",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ message, ...(contextDate ? { contextDate } : {}) }),
+      body: JSON.stringify({
+        message,
+        ...(contextDate   ? { contextDate }   : {}),
+        ...(activeGrowId  ? { activeGrowId }  : {}),
+      }),
     }).then(async (res) => {
       if (!res.ok) {
         const text = await res.text().catch(() => "");
@@ -108,12 +111,15 @@ export const api = {
 
   // Streams MJ's plan quality review via SSE. Accepts the full conversation
   // history on every call (stateless server-side). Same callback contract as mj().
-  mjReview: (messages, { onChunk, onDone, onError }) => {
+  mjReview: (messages, { activeGrowId, onChunk, onDone, onError }) => {
     fetch("/api/mj/review", {
       method: "POST",
       credentials: "same-origin",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({
+        messages,
+        ...(activeGrowId ? { activeGrowId } : {}),
+      }),
     }).then(async (res) => {
       if (!res.ok) {
         const text = await res.text().catch(() => "");

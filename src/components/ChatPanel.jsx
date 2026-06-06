@@ -8,7 +8,7 @@ function fmtContextDate(yyyymmdd) {
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function ChatPanel({ onClose, contextDate, suggestions }) {
+export default function ChatPanel({ onClose, contextDate, activeGrowId, suggestions }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -93,7 +93,7 @@ export default function ChatPanel({ onClose, contextDate, suggestions }) {
     ]);
     try {
       await new Promise((resolve) => {
-        api.mj(text, contextDate ?? null, {
+        api.mj(text, contextDate ?? null, { activeGrowId: activeGrowId ?? null,
           onChunk: (delta) => {
             setMessages(prev => {
               const msgs = [...prev];
