@@ -3,18 +3,18 @@ import { json, error } from "./util.js";
 import { DEFAULT_CONFIG } from "../src/lib/planConfig.js";
 import { logError } from "./log.js";
 
-const GEMINI_DIRECT_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
-const SETUP_MODEL = "gemini-2.5-pro";
+export const GEMINI_DIRECT_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+export const SETUP_MODEL = "gemini-2.5-pro";
 
-function geminiBase(gatewayBase) {
+export function geminiBase(gatewayBase) {
   return gatewayBase
     ? `${gatewayBase}/google-ai-studio/v1beta/models`
     : GEMINI_DIRECT_BASE;
 }
 
-const REQUIRED_CONFIG_KEYS = Object.keys(DEFAULT_CONFIG);
+export const REQUIRED_CONFIG_KEYS = Object.keys(DEFAULT_CONFIG);
 
-function buildSetupPrompt(survey) {
+export function buildSetupPrompt(survey) {
   const today = new Date().toLocaleDateString("en-CA");
   return `You are an expert cannabis cultivation planner. A grower filled out a new-grow survey. Generate a complete grow calendar JSON tailored to their specific situation.
 
@@ -137,13 +137,13 @@ QUALITY REQUIREMENTS:
 - 4-6 threats minimum, each with ≥2 phases listed and specific to their environment`;
 }
 
-function addDays(isoDate, n) {
+export function addDays(isoDate, n) {
   const d = new Date(isoDate + "T12:00:00Z");
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
 
-function fillMissingConfigKeys(config, survey) {
+export function fillMissingConfigKeys(config, survey) {
   const base = config.transplant || survey.transplantDate;
   if (!config.start)       config.start       = addDays(base, -2);
   if (!config.calMag)      config.calMag      = addDays(base, 14);
@@ -161,7 +161,7 @@ function fillMissingConfigKeys(config, survey) {
   if (!config.hazeHarvest) config.hazeHarvest = config.gdpHarvest;
 }
 
-function extractJson(text) {
+export function extractJson(text) {
   // Strip markdown code fences if present.
   const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenceMatch) return fenceMatch[1].trim();

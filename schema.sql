@@ -201,6 +201,28 @@ CREATE INDEX IF NOT EXISTS idx_media_user_date ON media(user_id, date);
 -- CREATE TABLE IF NOT EXISTS media (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, date TEXT NOT NULL, kind TEXT NOT NULL CHECK(kind IN ('photo','audio')), r2_key TEXT NOT NULL UNIQUE, mime_type TEXT NOT NULL, size_bytes INTEGER NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
 -- CREATE INDEX IF NOT EXISTS idx_media_user_date ON media(user_id, date);
 
+-- Multi-grow support: each user can have multiple grow plans.
+-- Auto-migrated from plan_config on first GET /api/grows.
+CREATE TABLE IF NOT EXISTS grows (
+  id              TEXT PRIMARY KEY,
+  user_id         INTEGER NOT NULL,
+  display_name    TEXT NOT NULL DEFAULT '',
+  status          TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','harvested','abandoned')),
+  config          TEXT,             -- JSON: drive dates
+  survey          TEXT,             -- JSON: grow survey
+  generated_plan  TEXT,            -- JSON: AI-generated plan
+  phase_overrides TEXT,            -- JSON: per-phase task overrides
+  created_at      TEXT NOT NULL,
+  updated_at      TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_grows_user_id ON grows(user_id, created_at DESC);
+
+-- Migration for existing databases (skip on fresh installs):
+-- CREATE TABLE IF NOT EXISTS grows (id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, display_name TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','harvested','abandoned')), config TEXT, survey TEXT, generated_plan TEXT, phase_overrides TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+-- CREATE INDEX IF NOT EXISTS idx_grows_user_id ON grows(user_id, created_at DESC);
+
 -- Buddy / read-only share links. Each user may have at most one active token.
 CREATE TABLE IF NOT EXISTS share_tokens (
   token      TEXT    PRIMARY KEY,

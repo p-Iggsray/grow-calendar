@@ -33,6 +33,7 @@ import ChatPanel from "./components/ChatPanel.jsx";
 import TabBar from "./components/TabBar.jsx";
 import MoreScreen from "./components/MoreScreen.jsx";
 import PlanScreen from "./components/PlanScreen.jsx";
+import GrowsDashboard from "./components/GrowsDashboard.jsx";
 import MjReviewPanel from "./components/MjReviewPanel.jsx";
 
 const SHELL_STYLE = {
@@ -41,6 +42,21 @@ const SHELL_STYLE = {
   minHeight: "100vh",
   color: "var(--c-text)",
 };
+
+// Creates a blank grow on first render and calls onReady(id) so the wizard can open.
+function NewGrowInitializer({ onReady }) {
+  useEffect(() => {
+    api.createGrow({ displayName: "My First Grow" })
+      .then(({ id }) => onReady(id))
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "var(--c-text-ghost)", letterSpacing: 4 }}>
+      SETTING UP…
+    </div>
+  );
+}
 
 // Bottom padding so scrollable content clears the fixed tab bar.
 const TAB_CLEARANCE = "calc(66px + env(safe-area-inset-bottom, 0px))";
@@ -55,7 +71,7 @@ export default function App() {
   const today    = useToday();
   const online   = useOnlineStatus();
   const { theme, setTheme } = useTheme();
-  const { config, overrides, generatedPlan, phaseOverrides, survey, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
+  const { grows, activeGrowId, config, overrides, generatedPlan, phaseOverrides, survey, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
   const [month,       setMonth]      = useState(() => today.getMonth());
   const [selected,    setSelected]   = useState(null);
   const [activeTab,   setActiveTab]  = useState("calendar");
@@ -65,6 +81,10 @@ export default function App() {
   const [showStats,     setShowStats]     = useState(false);
   const [showMap,       setShowMap]       = useState(false);
   const [reviewPending, setReviewPending] = useState(false);
+  // Plan sub-views: "dashboard" | "detail" | "wizard"
+  const [planSubView,   setPlanSubView]   = useState("dashboard");
+  const [planDetailId,  setPlanDetailId]  = useState(null); // growId being viewed in PlanScreen
+  const [wizardGrowId,  setWizardGrowId]  = useState(null); // growId for SetupWizard
 
   const { taskStates, loading: checkoffsLoading, toggle, setTaskState } = useCheckoffs(selected, Boolean(user));
   const { counts: monthCheckoffCounts } = useMonthCheckoffs(today.getFullYear(), month, Boolean(user));
@@ -151,12 +171,36 @@ export default function App() {
     );
   }
 
-  if (needsSetup) {
+  // wizardGrowId is set whenever we want to show SetupWizard (new user or new grow).
+  if (wizardGrowId) {
     return (
       <div style={SHELL_STYLE}>
         <SetupWizard
-          onComplete={() => { setReviewPending(true); reloadPlan(); }}
+          growId={wizardGrowId}
+          onComplete={() => {
+            setWizardGrowId(null);
+            // For a fresh user (needsSetup), show MJ review after wizard.
+            if (needsSetup) {
+              setReviewPending(true);
+            }
+            reloadPlan();
+          }}
+          onCancel={needsSetup ? undefined : () => {
+            setWizardGrowId(null);
+            setPlanSubView("dashboard");
+          }}
         />
+      </div>
+    );
+  }
+
+  if (needsSetup) {
+    // No grows yet — create one and open the wizard.
+    // We trigger this by setting wizardGrowId, but we need a grow to exist first.
+    // Show a transitional state while we create the grow.
+    return (
+      <div style={SHELL_STYLE}>
+        <NewGrowInitializer onReady={(id) => setWizardGrowId(id)} />
       </div>
     );
   }
@@ -230,6 +274,7 @@ export default function App() {
     } else if (tabId === "plan") {
       setSelected(null);
       setActiveTab("plan");
+      setPlanSubView("dashboard");
       if (chatOpen) closeChat();
     } else if (tabId === "more") {
       setSelected(null);
@@ -279,19 +324,33 @@ export default function App() {
             </motion.div>
           ) : tabKey === "plan" ? (
             <motion.div
-              key="plan"
+              key={`plan-${planSubView}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={FADE_DURATION}
             >
-              <PlanScreen
-                config={config}
-                generatedPlan={generatedPlan}
-                phaseOverrides={phaseOverrides}
-                survey={survey}
-                onReload={reloadPlan}
-              />
+              {planSubView === "detail" && planDetailId ? (
+                <PlanScreen
+                  growId={planDetailId}
+                  generatedPlan={planDetailId === activeGrowId ? generatedPlan : grows.find(g => g.id === planDetailId)?.generatedPlan ?? null}
+                  phaseOverrides={planDetailId === activeGrowId ? phaseOverrides : {}}
+                  survey={planDetailId === activeGrowId ? survey : grows.find(g => g.id === planDetailId)?.survey ?? null}
+                  onReload={reloadPlan}
+                  onBack={() => setPlanSubView("dashboard")}
+                />
+              ) : (
+                <GrowsDashboard
+                  today={today}
+                  onViewPlan={(growId) => {
+                    setPlanDetailId(growId);
+                    setPlanSubView("detail");
+                  }}
+                  onStartNewGrow={(growId) => {
+                    setWizardGrowId(growId);
+                  }}
+                />
+              )}
             </motion.div>
           ) : (
             <motion.div

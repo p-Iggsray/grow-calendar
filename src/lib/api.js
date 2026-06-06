@@ -181,6 +181,23 @@ export const api = {
 
   getStats: () => request("/api/stats"),
 
+  listGrows: () => request("/api/grows"),
+  createGrow: (data) =>
+    request("/api/grows", { method: "POST", body: JSON.stringify(data) }),
+  getGrow: (id) => request(`/api/grows/${id}`),
+  patchGrow: (id, data) =>
+    request(`/api/grows/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  deleteGrow: (id) =>
+    request(`/api/grows/${id}`, { method: "DELETE", body: "{}" }),
+  setupGrow: (id, survey) =>
+    request(`/api/grows/${id}/setup`, { method: "POST", body: JSON.stringify({ survey }) }),
+  regenerateGrow: (id) =>
+    request(`/api/grows/${id}/regenerate`, { method: "POST", body: "{}" }),
+  saveGrowPhase: (id, phase, data) =>
+    request(`/api/grows/${id}/phase/${phase}`, { method: "PUT", body: JSON.stringify(data) }),
+  clearGrowPhase: (id, phase) =>
+    request(`/api/grows/${id}/phase/${phase}`, { method: "DELETE", body: "{}" }),
+
   getShareToken: () => request("/api/share"),
   createShareToken: () => request("/api/share", { method: "POST", body: "{}" }),
   deleteShareToken: () => request("/api/share", { method: "DELETE", body: "{}" }),

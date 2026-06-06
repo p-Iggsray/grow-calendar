@@ -524,7 +524,7 @@ const STEPS = [
   { id: "review",   title: "Review & Generate" },
 ];
 
-export default function SetupWizard({ onComplete, onCancel, initialSurvey }) {
+export default function SetupWizard({ onComplete, onCancel, initialSurvey, growId }) {
   const [step, setStep] = useState(0);
   const [survey, setSurvey] = useState(() =>
     initialSurvey ? { ...defaultSurvey(), ...initialSurvey } : defaultSurvey()
@@ -547,7 +547,11 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey }) {
     setGenerating(true);
     setGenError("");
     try {
-      await api.planSetup(survey);
+      if (growId) {
+        await api.setupGrow(growId, survey);
+      } else {
+        await api.planSetup(survey);
+      }
       onComplete();
     } catch (err) {
       setGenError(err.message || "Generation failed. Please try again.");
