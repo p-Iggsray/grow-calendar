@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { ChevronDown, ChevronUp, Pencil, Trash2, Plus, RefreshCw, Settings, FlaskConical } from "lucide-react";
+import { ChevronDown, ChevronUp, ChevronLeft, Pencil, Trash2, Plus, RefreshCw, Settings, FlaskConical } from "lucide-react";
 import { PHASES, phaseGlyph } from "../lib/growData.js";
 import { api } from "../lib/api.js";
 import SetupWizard from "./SetupWizard.jsx";
@@ -271,7 +271,7 @@ function RegenConfirm({ onCancel, onConfirm, loading }) {
 
 // ─── Main PlanScreen ──────────────────────────────────────────────────────────
 
-export default function PlanScreen({ config, generatedPlan, phaseOverrides, survey, onReload }) {
+export default function PlanScreen({ generatedPlan, phaseOverrides, survey, growId, onReload, onBack }) {
   const [editSetup, setEditSetup] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
   const [activePreset, setActivePreset] = useState(null);
@@ -286,20 +286,32 @@ export default function PlanScreen({ config, generatedPlan, phaseOverrides, surv
   const strainNames = generatedPlan?.strains?.map(s => s.name).filter(Boolean) ?? [];
 
   const handleSavePhase = useCallback(async (phase, data) => {
-    await api.savePlanPhase(phase, data);
+    if (growId) {
+      await api.saveGrowPhase(growId, phase, data);
+    } else {
+      await api.savePlanPhase(phase, data);
+    }
     onReload();
-  }, [onReload]);
+  }, [growId, onReload]);
 
   const handleResetPhase = useCallback(async (phase) => {
-    await api.clearPlanPhase(phase);
+    if (growId) {
+      await api.clearGrowPhase(growId, phase);
+    } else {
+      await api.clearPlanPhase(phase);
+    }
     onReload();
-  }, [onReload]);
+  }, [growId, onReload]);
 
   async function handleRegen() {
     setRegenLoading(true);
     setRegenError("");
     try {
-      await api.regeneratePlan();
+      if (growId) {
+        await api.regenerateGrow(growId);
+      } else {
+        await api.regeneratePlan();
+      }
       setConfirmRegen(false);
       onReload();
     } catch (err) {
@@ -312,6 +324,7 @@ export default function PlanScreen({ config, generatedPlan, phaseOverrides, surv
   if (editSetup) {
     return (
       <SetupWizard
+        growId={growId}
         initialSurvey={survey}
         onComplete={() => { setEditSetup(false); onReload(); }}
         onCancel={() => setEditSetup(false)}
@@ -325,8 +338,22 @@ export default function PlanScreen({ config, generatedPlan, phaseOverrides, surv
       paddingLeft: "calc(14px + env(safe-area-inset-left, 0px))",
       paddingRight: "calc(14px + env(safe-area-inset-right, 0px))",
     }}>
-      {/* Grow overview */}
+      {/* Back button + Grow overview */}
       <div style={{ marginBottom: 18 }}>
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            style={{
+              display: "flex", alignItems: "center", gap: 4,
+              background: "none", border: "none", cursor: "pointer",
+              color: "var(--c-text-muted)", padding: "0 0 10px 0",
+              fontFamily: MONO, fontSize: 11, letterSpacing: 0.5,
+            }}>
+            <ChevronLeft size={16} strokeWidth={1.8} />
+            All Grows
+          </button>
+        )}
         <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 4, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 4 }}>
           Grow Plan
         </div>

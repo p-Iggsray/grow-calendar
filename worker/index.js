@@ -13,6 +13,7 @@ import { getWeather } from "./weather.js";
 import { getPushVapidKey, postPushSubscribe, deletePushSubscribe, getPushToday, sendDailyReminders } from "./push.js";
 import { getPlan, patchPlanConfig, putPlanPhase, deletePlanPhase } from "./plan.js";
 import { postPlanSetup, postPlanRegenerate } from "./planSetup.js";
+import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, setupGrow, regenerateGrow, putGrowPhase, deleteGrowPhase } from "./grows.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
 import { getStats } from "./stats.js";
 import { requireApproved, requireAdmin } from "./guard.js";
@@ -146,6 +147,27 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (path === "/api/errors"    && method === "POST") return postClientError(request, env, user);
 
   if (path === "/api/stats"         && method === "GET")  return getStats(env, user);
+
+  if (path === "/api/grows" && method === "GET")  return listGrows(env, user);
+  if (path === "/api/grows" && method === "POST") return createGrow(request, env, user);
+  const growMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)$/);
+  if (growMatch) {
+    const growId = growMatch[1];
+    if (method === "GET")    return getGrow(env, user, growId);
+    if (method === "PATCH")  return patchGrow(request, env, user, growId);
+    if (method === "DELETE") return deleteGrow(env, user, growId);
+  }
+  const growSetupMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/setup$/);
+  if (growSetupMatch && method === "POST") return setupGrow(request, env, user, growSetupMatch[1]);
+  const growRegenMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/regenerate$/);
+  if (growRegenMatch && method === "POST") return regenerateGrow(request, env, user, growRegenMatch[1]);
+  const growPhaseMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/phase\/([a-z_]+)$/);
+  if (growPhaseMatch) {
+    const growId = growPhaseMatch[1];
+    const phase  = growPhaseMatch[2];
+    if (method === "PUT")    return putGrowPhase(request, env, user, growId, phase);
+    if (method === "DELETE") return deleteGrowPhase(env, user, growId, phase);
+  }
 
   if (path === "/api/share" && method === "GET")    return getShareToken(env, user);
   if (path === "/api/share" && method === "POST")   return createShareToken(env, user);
