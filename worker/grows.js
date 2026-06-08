@@ -24,22 +24,26 @@ function newGrowId() {
 async function ensureMigrated(env, userId) {
   // Create the grows table if it doesn't exist yet (handles environments where
   // the SQL migration was never manually run against production D1).
-  await env.DB.exec(`
-    CREATE TABLE IF NOT EXISTS grows (
-      id              TEXT PRIMARY KEY,
-      user_id         INTEGER NOT NULL,
-      display_name    TEXT NOT NULL DEFAULT '',
-      status          TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','harvested','abandoned')),
-      config          TEXT,
-      survey          TEXT,
-      generated_plan  TEXT,
-      phase_overrides TEXT,
-      created_at      TEXT NOT NULL,
-      updated_at      TEXT NOT NULL,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  // D1 exec() only accepts one statement at a time, so split into two calls.
+  try {
+    await env.DB.exec(
+      `CREATE TABLE IF NOT EXISTS grows (
+        id              TEXT PRIMARY KEY,
+        user_id         INTEGER NOT NULL,
+        display_name    TEXT NOT NULL DEFAULT '',
+        status          TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','harvested','abandoned')),
+        config          TEXT,
+        survey          TEXT,
+        generated_plan  TEXT,
+        phase_overrides TEXT,
+        created_at      TEXT NOT NULL,
+        updated_at      TEXT NOT NULL
+      )`
     );
-    CREATE INDEX IF NOT EXISTS idx_grows_user_id ON grows(user_id, created_at DESC);
-  `);
+    await env.DB.exec(
+      `CREATE INDEX IF NOT EXISTS idx_grows_user_id ON grows(user_id, created_at DESC)`
+    );
+  } catch { /* table/index already exists — safe to ignore */ }
 
   const existing = await env.DB.prepare(
     "SELECT id FROM grows WHERE user_id = ? LIMIT 1"
