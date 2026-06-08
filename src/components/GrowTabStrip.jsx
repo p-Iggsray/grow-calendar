@@ -19,11 +19,12 @@ export default function GrowTabStrip({ grows, selectedId, activeGrowId, onSelect
     }}>
       <div style={{
         display: "flex",
-        alignItems: "center",
+        alignItems: "stretch",
         gap: 6,
         overflowX: "auto",
         scrollbarWidth: "none",
-        padding: "10px 14px 0",
+        WebkitOverflowScrolling: "touch",
+        padding: "0 14px",
         paddingLeft: "calc(14px + env(safe-area-inset-left, 0px))",
         paddingRight: "calc(14px + env(safe-area-inset-right, 0px))",
       }}>
@@ -40,8 +41,9 @@ export default function GrowTabStrip({ grows, selectedId, activeGrowId, onSelect
                 display: "flex",
                 alignItems: "center",
                 gap: 5,
-                padding: "7px 12px",
-                paddingBottom: 10,
+                minHeight: 44,
+                padding: "0 12px",
+                paddingBottom: 2,
                 borderRadius: 0,
                 border: "none",
                 borderBottom: isSelected
@@ -83,8 +85,9 @@ export default function GrowTabStrip({ grows, selectedId, activeGrowId, onSelect
             display: "flex",
             alignItems: "center",
             gap: 4,
-            padding: "7px 10px",
-            paddingBottom: 10,
+            minHeight: 44,
+            padding: "0 10px",
+            paddingBottom: 2,
             border: "none",
             borderBottom: "2px solid transparent",
             background: "none",

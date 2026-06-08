@@ -80,7 +80,7 @@ function Input({ value, onChange, placeholder, type = "text" }) {
         width: "100%", boxSizing: "border-box",
         background: "rgba(0,0,0,0.3)", color: "var(--c-text)",
         border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10,
-        padding: "12px 14px", fontSize: 14, fontFamily: SERIF,
+        padding: "12px 14px", fontSize: 16, fontFamily: SERIF,
         outline: "none",
       }}
     />
@@ -312,7 +312,7 @@ function StepTimeline({ survey, update }) {
           style={{
             background: "rgba(0,0,0,0.3)", color: "var(--c-text)",
             border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10,
-            padding: "12px 14px", fontSize: 14, fontFamily: SERIF,
+            padding: "12px 14px", fontSize: 16, fontFamily: SERIF,
             outline: "none", width: "100%", boxSizing: "border-box",
             colorScheme: "dark",
           }}
@@ -385,7 +385,7 @@ function StepSetup({ survey, update }) {
             width: "100%", boxSizing: "border-box", resize: "vertical",
             background: "rgba(0,0,0,0.3)", color: "var(--c-text)",
             border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10,
-            padding: "12px 14px", fontSize: 14, fontFamily: SERIF,
+            padding: "12px 14px", fontSize: 16, fontFamily: SERIF,
             outline: "none", lineHeight: 1.7,
           }}
         />

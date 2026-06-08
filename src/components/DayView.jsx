@@ -133,13 +133,13 @@ function TaskRow({ task, index, state, accentColor, onTap, onLongPress, note, on
           onClick={handleClick}
           {...lpHandlers}
           style={{
-            width: 28, height: 28, borderRadius: 7, flexShrink: 0,
+            width: 36, height: 36, borderRadius: 9, flexShrink: 0,
             background: cfg ? cfg.color : `${accentColor}22`,
             color: cfg ? "var(--c-bg)" : accentColor,
             border: `1px solid ${cfg ? cfg.color : accentColor + "44"}`,
             display: "flex", alignItems: "center", justifyContent: "center",
             cursor: "pointer", transition: "background 0.15s, color 0.15s",
-            fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 800,
+            fontFamily: "'Courier New', monospace", fontSize: 12, fontWeight: 800,
           }}>
           {state === "done"    ? <Check size={14} strokeWidth={2.5} />
            : state === "skipped" ? <Minus size={14} strokeWidth={2.5} />
@@ -196,7 +196,7 @@ function TaskRow({ task, index, state, accentColor, onTap, onLongPress, note, on
               width: "100%", resize: "vertical",
               background: "rgba(0,0,0,0.2)", color: "var(--c-text)",
               border: "1px solid var(--c-border)", borderRadius: 8,
-              padding: "8px 10px", fontSize: 13, lineHeight: 1.6,
+              padding: "8px 10px", fontSize: 16, lineHeight: 1.6,
               fontFamily: "'Georgia', 'Times New Roman', serif", outline: "none",
               boxSizing: "border-box",
             }}
@@ -220,7 +220,7 @@ const fieldNameStyle = {
 const numInputStyle = {
   background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
   border: "1px solid var(--c-border-strong)", borderRadius: 8,
-  padding: "10px 12px", fontSize: 15, outline: "none",
+  padding: "10px 12px", fontSize: 16, outline: "none",
   fontFamily: "'Courier New', monospace",
   WebkitAppearance: "none", MozAppearance: "textfield",
 };
@@ -507,7 +507,7 @@ export default function DayView({
                       width: "100%", resize: "vertical",
                       background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
                       border: "1px solid var(--c-border-strong)", borderRadius: 10,
-                      padding: "12px 14px", fontSize: 14, lineHeight: 1.7,
+                      padding: "12px 14px", fontSize: 16, lineHeight: 1.7,
                       fontFamily: "'Georgia', 'Times New Roman', serif", outline: "none",
                       boxSizing: "border-box",
                     }}

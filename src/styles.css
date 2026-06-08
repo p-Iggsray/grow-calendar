@@ -98,12 +98,14 @@ body {
 button {
   font-family: inherit;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 input,
 textarea {
   font-family: inherit;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 ::-webkit-scrollbar {

@@ -148,7 +148,7 @@ function PhaseSection({ phase, aiContent, override, onSave, onReset }) {
                         width: "100%", boxSizing: "border-box", resize: "vertical",
                         background: "rgba(0,0,0,0.3)", color: "var(--c-text)",
                         border: `1px solid ${cfg.color}55`, borderRadius: 8,
-                        padding: "8px 10px", fontSize: 12, lineHeight: 1.6,
+                        padding: "8px 10px", fontSize: 16, lineHeight: 1.6,
                         fontFamily: "'Georgia', 'Times New Roman', serif", outline: "none",
                       }}
                     />
