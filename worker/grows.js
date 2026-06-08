@@ -22,16 +22,16 @@ function newGrowId() {
 
 // Auto-migrate plan_config → grows table if user has no grows yet.
 async function ensureMigrated(env, userId) {
-  // Create the grows table if it doesn't exist yet (handles environments where
-  // the SQL migration was never manually run against production D1).
-  // D1 exec() only accepts one statement at a time, so split into two calls.
+  // Try to create the grows table via prepare().run() — more reliable than exec() for DDL.
+  // Both calls are wrapped individually; CREATE INDEX may legitimately fail if it already exists.
   try {
-    await env.DB.exec(
+    await env.DB.prepare(
       `CREATE TABLE IF NOT EXISTS grows (
         id              TEXT PRIMARY KEY,
         user_id         INTEGER NOT NULL,
         display_name    TEXT NOT NULL DEFAULT '',
-        status          TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','harvested','abandoned')),
+        status          TEXT NOT NULL DEFAULT 'active'
+          CHECK(status IN ('active','harvested','abandoned')),
         config          TEXT,
         survey          TEXT,
         generated_plan  TEXT,
@@ -39,11 +39,17 @@ async function ensureMigrated(env, userId) {
         created_at      TEXT NOT NULL,
         updated_at      TEXT NOT NULL
       )`
-    );
-    await env.DB.exec(
+    ).run();
+  } catch (e) {
+    logError("grows-ddl-create-table", { message: String(e?.message) });
+    // If table creation failed, nothing below can succeed — bail out.
+    return;
+  }
+  try {
+    await env.DB.prepare(
       `CREATE INDEX IF NOT EXISTS idx_grows_user_id ON grows(user_id, created_at DESC)`
-    );
-  } catch { /* table/index already exists — safe to ignore */ }
+    ).run();
+  } catch { /* index may already exist */ }
 
   const existing = await env.DB.prepare(
     "SELECT id FROM grows WHERE user_id = ? LIMIT 1"
@@ -135,10 +141,18 @@ export async function loadRawGrows(env, userId) {
 export async function listGrows(env, user) {
   await ensureMigrated(env, user.id);
 
-  const res = await env.DB.prepare(
-    `SELECT id, display_name, status, config, survey, generated_plan, created_at, updated_at
-     FROM grows WHERE user_id = ? ORDER BY created_at DESC`
-  ).bind(user.id).all();
+  let res;
+  try {
+    res = await env.DB.prepare(
+      `SELECT id, display_name, status, config, survey, generated_plan, created_at, updated_at
+       FROM grows WHERE user_id = ? ORDER BY created_at DESC`
+    ).bind(user.id).all();
+  } catch (e) {
+    // Table still doesn't exist (ensureMigrated bailed out). Return empty list
+    // so the app shows the setup wizard instead of a hard error.
+    logError("grows-list-query", { message: String(e?.message) });
+    return json([]);
+  }
 
   return json((res.results ?? []).map(r => ({
     id:            r.id,
