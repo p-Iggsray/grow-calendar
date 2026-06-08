@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { ChevronDown, ChevronUp, ChevronLeft, Pencil, Trash2, Plus, RefreshCw, Settings, FlaskConical } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Trash2, Plus, RefreshCw, Settings, FlaskConical } from "lucide-react";
 import { PHASES, phaseGlyph } from "../lib/growData.js";
 import { api } from "../lib/api.js";
 import SetupWizard from "./SetupWizard.jsx";
@@ -271,7 +271,7 @@ function RegenConfirm({ onCancel, onConfirm, loading }) {
 
 // ─── Main PlanScreen ──────────────────────────────────────────────────────────
 
-export default function PlanScreen({ generatedPlan, phaseOverrides, survey, growId, onReload, onBack }) {
+export default function PlanScreen({ generatedPlan, phaseOverrides, survey, growId, onReload }) {
   const [editSetup, setEditSetup] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
   const [activePreset, setActivePreset] = useState(null);
@@ -338,22 +338,8 @@ export default function PlanScreen({ generatedPlan, phaseOverrides, survey, grow
       paddingLeft: "calc(14px + env(safe-area-inset-left, 0px))",
       paddingRight: "calc(14px + env(safe-area-inset-right, 0px))",
     }}>
-      {/* Back button + Grow overview */}
+      {/* Grow overview */}
       <div style={{ marginBottom: 18 }}>
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            style={{
-              display: "flex", alignItems: "center", gap: 4,
-              background: "none", border: "none", cursor: "pointer",
-              color: "var(--c-text-muted)", padding: "0 0 10px 0",
-              fontFamily: MONO, fontSize: 11, letterSpacing: 0.5,
-            }}>
-            <ChevronLeft size={16} strokeWidth={1.8} />
-            All Grows
-          </button>
-        )}
         <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 4, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 4 }}>
           Grow Plan
         </div>

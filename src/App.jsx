@@ -32,8 +32,7 @@ import DayView from "./components/DayView.jsx";
 import ChatPanel from "./components/ChatPanel.jsx";
 import TabBar from "./components/TabBar.jsx";
 import MoreScreen from "./components/MoreScreen.jsx";
-import PlanScreen from "./components/PlanScreen.jsx";
-import GrowsDashboard from "./components/GrowsDashboard.jsx";
+import GrowPlanTab from "./components/GrowPlanTab.jsx";
 import MjReviewPanel from "./components/MjReviewPanel.jsx";
 
 const SHELL_STYLE = {
@@ -81,9 +80,6 @@ export default function App() {
   const [showStats,     setShowStats]     = useState(false);
   const [showMap,       setShowMap]       = useState(false);
   const [reviewPending, setReviewPending] = useState(false);
-  // Plan sub-views: "dashboard" | "detail" | "wizard"
-  const [planSubView,   setPlanSubView]   = useState("dashboard");
-  const [planDetailId,  setPlanDetailId]  = useState(null); // growId being viewed in PlanScreen
   const [wizardGrowId,  setWizardGrowId]  = useState(null); // growId for SetupWizard
 
   const { taskStates, loading: checkoffsLoading, toggle, setTaskState } = useCheckoffs(selected, Boolean(user));
@@ -275,7 +271,6 @@ export default function App() {
     } else if (tabId === "plan") {
       setSelected(null);
       setActiveTab("plan");
-      setPlanSubView("dashboard");
       if (chatOpen) closeChat();
     } else if (tabId === "more") {
       setSelected(null);
@@ -325,33 +320,21 @@ export default function App() {
             </motion.div>
           ) : tabKey === "plan" ? (
             <motion.div
-              key={`plan-${planSubView}`}
+              key="plan"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={FADE_DURATION}
             >
-              {planSubView === "detail" && planDetailId ? (
-                <PlanScreen
-                  growId={planDetailId}
-                  generatedPlan={planDetailId === activeGrowId ? generatedPlan : grows.find(g => g.id === planDetailId)?.generatedPlan ?? null}
-                  phaseOverrides={planDetailId === activeGrowId ? phaseOverrides : {}}
-                  survey={planDetailId === activeGrowId ? survey : grows.find(g => g.id === planDetailId)?.survey ?? null}
-                  onReload={reloadPlan}
-                  onBack={() => setPlanSubView("dashboard")}
-                />
-              ) : (
-                <GrowsDashboard
-                  today={today}
-                  onViewPlan={(growId) => {
-                    setPlanDetailId(growId);
-                    setPlanSubView("detail");
-                  }}
-                  onStartNewGrow={(growId) => {
-                    setWizardGrowId(growId);
-                  }}
-                />
-              )}
+              <GrowPlanTab
+                grows={grows}
+                activeGrowId={activeGrowId}
+                generatedPlan={generatedPlan}
+                phaseOverrides={phaseOverrides}
+                survey={survey}
+                onReload={reloadPlan}
+                onNewGrow={(growId) => setWizardGrowId(growId)}
+              />
             </motion.div>
           ) : (
             <motion.div
