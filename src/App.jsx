@@ -183,7 +183,6 @@ export default function App() {
           }}
           onCancel={needsSetup ? undefined : () => {
             setWizardGrowId(null);
-            setPlanSubView("dashboard");
           }}
         />
       </div>
