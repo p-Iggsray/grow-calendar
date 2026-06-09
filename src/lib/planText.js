@@ -1,4 +1,4 @@
-import { getPhase, getDetail, buildMilestones, THREATS } from "./growData.js";
+import { getPhase, getDetail, buildMilestones, THREATS, hasSecondaryStrain } from "./growData.js";
 
 // Compact, LIVE season overview for MJ's system prompt. Sampled from the generator
 // at milestone dates so dosing language comes from the generated task text (single
@@ -13,16 +13,18 @@ export function buildPlanText(config, overrides, generatedPlan, phaseOverrides) 
     for (const t of detail.tasks.slice(0, 4)) lines.push(`    • ${t}`);
   }
 
-  const keyDates = {
-    fullDose: "Full-dose feeding begins",
-    flush1: "Routine flush #1",
-    flush2: "Routine flush #2",
-    flush3: "Routine flush #3",
-    gdpFlush: "Primary-strain pre-harvest flush begins",
-    hazeFlush: "Later-strain pre-harvest flush begins",
-  };
+  const twoStrain = hasSecondaryStrain(config);
+  const keyDates = [
+    ["fullDose", "Full-dose feeding begins"],
+    ["flush1", "Routine flush #1"],
+    ["flush2", "Routine flush #2"],
+    ["flush3", "Routine flush #3"],
+    ["gdpFlush", twoStrain ? "Primary-strain pre-harvest flush begins" : "Pre-harvest flush begins"],
+  ];
+  // Only a genuine second strain gets its own later flush date.
+  if (twoStrain) keyDates.push(["hazeFlush", "Later-strain pre-harvest flush begins"]);
   lines.push("\nKEY DATES:");
-  for (const [key, label] of Object.entries(keyDates)) {
+  for (const [key, label] of keyDates) {
     lines.push(`- ${label}: ${ymd(config[key])}`);
   }
 

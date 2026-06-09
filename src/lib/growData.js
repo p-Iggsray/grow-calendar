@@ -78,16 +78,24 @@ export const THREATS = [
 ];
 
 export function buildMilestones(config) {
-  return [
-    { label:"Transplant",       date:config.transplant,   icon:"🌱", color:"#7c3aed" },
-    { label:"Cal-Mag Starts",   date:config.calMag,       icon:"💊", color:"#16a34a" },
-    { label:"Feeding Starts",   date:config.feedStart,    icon:"🧪", color:"#15803d" },
-    { label:"Move Outside",     date:config.backyardMove, icon:"🏡", color:"#22c55e" },
-    { label:"Pre-Flower",       date:config.preFlower,    icon:"🌸", color:"#f59e0b" },
-    { label:"Flower",           date:config.flowerStart,  icon:"🌺", color:"#f97316" },
-    { label:"Primary Harvest",  date:config.gdpHarvest,   icon:"✂️", color:"#d97706" },
-    { label:"Final Harvest",    date:config.hazeHarvest,  icon:"🏆", color:"#b45309" },
+  const m = [
+    { label:"Transplant",     date:config.transplant, icon:"🌱", color:"#7c3aed" },
+    { label:"Cal-Mag Starts", date:config.calMag,     icon:"💊", color:"#16a34a" },
+    { label:"Feeding Starts", date:config.feedStart,  icon:"🧪", color:"#15803d" },
   ];
+  // Indoor grows set backyardMove === transplant; only show it when it's a
+  // distinct, later day.
+  if (config.backyardMove > config.transplant)
+    m.push({ label:"Move Outside", date:config.backyardMove, icon:"🏡", color:"#22c55e" });
+  m.push(
+    { label:"Pre-Flower",      date:config.preFlower,   icon:"🌸", color:"#f59e0b" },
+    { label:"Flower",          date:config.flowerStart, icon:"🌺", color:"#f97316" },
+    { label:"Primary Harvest", date:config.gdpHarvest,  icon:"✂️", color:"#d97706" },
+  );
+  // Only genuine two-strain grows get a separate later harvest.
+  if (hasSecondaryStrain(config))
+    m.push({ label:"Final Harvest", date:config.hazeHarvest, icon:"🏆", color:"#b45309" });
+  return m;
 }
 
 export const dpt = (date, config) => daysBetween(date, config.transplant);
@@ -107,16 +115,25 @@ export function getGrowProgress(today, config) {
   return Math.round((done / total) * 100);
 }
 
+// A second strain only exists when it finishes later than the primary. For
+// single-strain grows fillMissingConfigKeys sets hazeFlush/hazeHarvest equal to
+// the primary's, so we must NOT emit the secondary-strain phases — otherwise the
+// primary flush/harvest window renders as phantom "Late Flush"/"Final Harvest".
+export function hasSecondaryStrain(config) {
+  return config.hazeHarvest > config.gdpHarvest;
+}
+
 export function getPhase(date, config) {
   if (date < config.start || date > config.hazeHarvest) return null;
   if (date < config.transplant) return "pre";
   const d = dpt(date, config);
   if (d === 0) return "transplant";
+  const secondary = hasSecondaryStrain(config);
   if (sameDay(date, config.gdpHarvest))  return "harvest_gdp";
-  if (sameDay(date, config.hazeHarvest)) return "harvest_haze";
+  if (secondary && sameDay(date, config.hazeHarvest)) return "harvest_haze";
   if (sameDay(date, config.flush1) || sameDay(date, config.flush2) || sameDay(date, config.flush3)) return "flush";
-  if (date >= config.hazeFlush)   return "flush_haze";
-  if (date >  config.gdpHarvest)  return "flower_haze";
+  if (secondary && date > config.gdpHarvest && date >= config.hazeFlush) return "flush_haze";
+  if (secondary && date > config.gdpHarvest) return "flower_haze";
   if (date >= config.gdpFlush)    return "flush_gdp";
   if (date >= config.flowerStart) return "flower";
   if (date >= config.preFlower)   return "pre_flower";
