@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { ChevronLeft, Pencil, Check, Minus, X } from "lucide-react";
+import { ChevronLeft, Pencil, Check, Minus, X, Plus } from "lucide-react";
 import { fmtL } from "../lib/dates.js";
 import { useGrowLog } from "../lib/useGrowLog.js";
 import { useWeather } from "../lib/useWeather.js";
@@ -327,6 +327,181 @@ function PhaseApplyBanner({ phaseName, onApply, onDismiss }) {
   );
 }
 
+// ── Log tab helpers ────────────────────────────────────────────────────────
+
+function LogSection({ label, first = false, children }) {
+  return (
+    <div style={{ marginTop: first ? 0 : 20 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <span style={{
+          fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2,
+          color: "var(--c-text-muted)", textTransform: "uppercase", whiteSpace: "nowrap",
+        }}>
+          {label}
+        </span>
+        <div style={{ flex: 1, height: 1, background: "var(--c-border)" }} />
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function LogField({ label, name, entry, setField, step, min, max, placeholder = "—", inputMode = "decimal" }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase" }}>
+        {label}
+      </span>
+      <input
+        type="number"
+        inputMode={inputMode}
+        step={step}
+        min={min}
+        max={max}
+        value={entry[name] ?? ""}
+        onChange={e => setField(name, e.target.value)}
+        placeholder={placeholder}
+        style={{
+          background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
+          border: "1px solid var(--c-border-strong)", borderRadius: 8,
+          padding: "10px 12px", fontSize: 16, outline: "none",
+          fontFamily: "'Courier New', monospace",
+          WebkitAppearance: "none", MozAppearance: "textfield",
+          width: "100%", boxSizing: "border-box",
+        }}
+      />
+    </label>
+  );
+}
+
+function AddEntryButton({ onClick, label }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        width: "100%", padding: "11px", borderRadius: 10, marginTop: 6,
+        background: "none", border: "1px dashed var(--c-border)",
+        color: "var(--c-text-ghost)", cursor: "pointer",
+        fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 1.5,
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+        transition: "border-color 0.15s, color 0.15s",
+      }}>
+      <Plus size={11} strokeWidth={2.5} />
+      {label}
+    </button>
+  );
+}
+
+const _entryCard = {
+  background: "rgba(0,0,0,0.2)",
+  border: "1px solid var(--c-surface-2)",
+  borderRadius: 10,
+  padding: "12px",
+  marginBottom: 8,
+};
+const _entryRemove = {
+  background: "none", border: "1px solid var(--c-border)",
+  borderRadius: 6, color: "var(--c-text-ghost)", cursor: "pointer",
+  display: "flex", alignItems: "center", justifyContent: "center",
+  padding: "4px", minWidth: 26, minHeight: 26, flexShrink: 0,
+};
+const _entryInput = {
+  background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
+  border: "1px solid var(--c-border-strong)", borderRadius: 8,
+  padding: "9px 10px", fontSize: 14, outline: "none",
+  fontFamily: "'Courier New', monospace",
+  width: "100%", boxSizing: "border-box",
+};
+const _entryLabel = {
+  fontFamily: "'Courier New', monospace", fontSize: 9,
+  letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase",
+  marginBottom: 5, display: "block",
+};
+
+function TrainingEntry({ entry, onChangeField, onRemove }) {
+  return (
+    <div style={_entryCard}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <span style={{ ..._entryLabel, marginBottom: 0, fontSize: 10 }}>Training</span>
+        <button type="button" onClick={onRemove} style={_entryRemove} aria-label="Remove">
+          <X size={12} strokeWidth={2} />
+        </button>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 8 }}>
+        <div>
+          <span style={_entryLabel}>Plant</span>
+          <input type="text" value={entry.plant} onChange={e => onChangeField("plant", e.target.value)} placeholder="Plant 1" style={_entryInput} />
+        </div>
+        <div>
+          <span style={_entryLabel}>Action</span>
+          <input type="text" value={entry.action} onChange={e => onChangeField("action", e.target.value)} placeholder="LST, topped, defoliated…" style={_entryInput} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const LEAF_COLORS = ["Dark Green", "Green", "Light Green", "Yellow-Green", "Yellow", "Rust / Brown", "Spotted", "Purple"];
+const TRICHOME_STAGES = [
+  { value: "",       label: "— not checked —" },
+  { value: "clear",  label: "Clear (too early)" },
+  { value: "cloudy", label: "Cloudy / Milky (peak THC)" },
+  { value: "mixed",  label: "Mixed Cloudy + Amber" },
+  { value: "amber",  label: "Mostly Amber (max CBN)" },
+];
+const _selectInput = {
+  ..._entryInput,
+  cursor: "pointer",
+  WebkitAppearance: "auto",
+  MozAppearance: "auto",
+  appearance: "auto",
+};
+
+function PlantHealthEntry({ entry, onChangeField, onRemove }) {
+  return (
+    <div style={_entryCard}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <span style={{ ..._entryLabel, marginBottom: 0, fontSize: 10 }}>Health Observation</span>
+        <button type="button" onClick={onRemove} style={_entryRemove} aria-label="Remove">
+          <X size={12} strokeWidth={2} />
+        </button>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+        <div>
+          <span style={_entryLabel}>Plant</span>
+          <input type="text" value={entry.plant} onChange={e => onChangeField("plant", e.target.value)} placeholder="Plant 1" style={_entryInput} />
+        </div>
+        <div>
+          <span style={_entryLabel}>Leaf Color</span>
+          <select value={entry.color ?? ""} onChange={e => onChangeField("color", e.target.value)} style={_selectInput}>
+            <option value="">—</option>
+            {LEAF_COLORS.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+      </div>
+      <div style={{ marginBottom: 8 }}>
+        <span style={_entryLabel}>Trichomes</span>
+        <select value={entry.trichomes ?? ""} onChange={e => onChangeField("trichomes", e.target.value)} style={_selectInput}>
+          {TRICHOME_STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+        </select>
+      </div>
+      <div>
+        <span style={_entryLabel}>Observations</span>
+        <textarea
+          value={entry.notes ?? ""}
+          onChange={e => onChangeField("notes", e.target.value)}
+          rows={2}
+          placeholder="Smell, structure, bud density, leaf curl, any concerns…"
+          style={{ ..._entryInput, resize: "vertical", lineHeight: 1.6, fontFamily: "'Georgia', 'Times New Roman', serif" }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Shared input styles ────────────────────────────────────────────────────
+
 const fieldLabelStyle = {
   display: "flex", flexDirection: "column", gap: 5,
 };
@@ -340,6 +515,7 @@ const numInputStyle = {
   padding: "10px 12px", fontSize: 16, outline: "none",
   fontFamily: "'Courier New', monospace",
   WebkitAppearance: "none", MozAppearance: "textfield",
+  width: "100%", boxSizing: "border-box",
 };
 
 export default function DayView({
@@ -363,6 +539,13 @@ export default function DayView({
   }, [editingIdx, onTaskEditActiveChange]);
 
   const { entry: logEntry, setField: setLogField, status: logStatus } = useGrowLog(selected, true);
+
+  function addTraining()              { setLogField("training", [...(logEntry.training ?? []), { plant: "", action: "" }]); }
+  function updateTraining(i, k, v)    { const a = [...(logEntry.training ?? [])]; a[i] = { ...a[i], [k]: v }; setLogField("training", a); }
+  function removeTraining(i)          { const a = [...(logEntry.training ?? [])]; a.splice(i, 1); setLogField("training", a); }
+  function addHealth()                { setLogField("plant_health", [...(logEntry.plant_health ?? []), { plant: "", color: "", trichomes: "", notes: "" }]); }
+  function updateHealth(i, k, v)      { const a = [...(logEntry.plant_health ?? [])]; a[i] = { ...a[i], [k]: v }; setLogField("plant_health", a); }
+  function removeHealth(i)            { const a = [...(logEntry.plant_health ?? [])]; a.splice(i, 1); setLogField("plant_health", a); }
 
   // Weather: only fetch for today or future dates.
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -552,75 +735,72 @@ export default function DayView({
 
           {tab === "log" && (
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 2, color: "var(--c-text-muted)", textTransform: "uppercase" }}>
-                  Daily readings
+              {/* Save status */}
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4, minHeight: 16 }}>
+                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: logStatus === "error" ? "#f87171" : logStatus === "saved" ? "var(--c-accent)" : "#5a7a5a" }}>
+                  {logStatus === "saving" ? "Saving…" : logStatus === "saved" ? "Saved" : logStatus === "error" ? "Save failed" : ""}
+                </span>
+              </div>
+
+              {/* ── Environment ── */}
+              <LogSection label="Environment" first>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                  <LogField label="Temp High (°F)" name="temp_high" entry={logEntry} setField={setLogField} step={1} min={0} max={130} inputMode="numeric" />
+                  <LogField label="Temp Low (°F)"  name="temp_low"  entry={logEntry} setField={setLogField} step={1} min={0} max={130} inputMode="numeric" />
                 </div>
-                <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: logStatus === "error" ? "#f87171" : logStatus === "saved" ? "var(--c-accent)" : "#5a7a5a", minHeight: 12 }}>
-                  {logStatus === "saving" ? "Saving..." : logStatus === "saved" ? "Saved" : logStatus === "error" ? "Save failed" : ""}
+                <div style={{ maxWidth: "50%", paddingRight: 5 }}>
+                  <LogField label="Humidity (%)" name="humidity" entry={logEntry} setField={setLogField} step={1} min={0} max={100} inputMode="numeric" />
                 </div>
-              </div>
+              </LogSection>
 
-              {/* Water + Humidity row */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+              {/* ── Watering & Nutrients ── */}
+              <LogSection label="Watering & Nutrients">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                  <LogField label="Water (gal)"  name="water_gal" entry={logEntry} setField={setLogField} step={0.25} min={0} max={99}   inputMode="decimal" placeholder="0.00" />
+                  <LogField label="EC / PPM In"  name="ec_in"     entry={logEntry} setField={setLogField} step={0.1}  min={0} max={9999} inputMode="decimal" />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                  <LogField label="EC / PPM Out" name="ec_out" entry={logEntry} setField={setLogField} step={0.1} min={0} max={9999} inputMode="decimal" />
+                  <div />
+                </div>
                 <label style={fieldLabelStyle}>
-                  <span style={fieldNameStyle}>Water (gal)</span>
+                  <span style={fieldNameStyle}>Feed / Nutrients</span>
                   <input
-                    type="number" inputMode="decimal" step="0.25" min="0" max="99"
-                    value={logEntry.water_gal}
-                    onChange={e => setLogField("water_gal", e.target.value)}
-                    placeholder="0.00"
+                    type="text"
+                    value={logEntry.feed ?? ""}
+                    onChange={e => setLogField("feed", e.target.value)}
+                    placeholder="Fox Farm Trio, Cal-Mag, Big Bloom…"
+                    maxLength={500}
                     style={numInputStyle}
                   />
                 </label>
-                <label style={fieldLabelStyle}>
-                  <span style={fieldNameStyle}>Humidity (%)</span>
-                  <input
-                    type="number" inputMode="numeric" step="1" min="0" max="100"
-                    value={logEntry.humidity}
-                    onChange={e => setLogField("humidity", e.target.value)}
-                    placeholder="—"
-                    style={numInputStyle}
-                  />
-                </label>
-              </div>
+              </LogSection>
 
-              {/* Temp High + Low row */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-                <label style={fieldLabelStyle}>
-                  <span style={fieldNameStyle}>Temp High (°F)</span>
-                  <input
-                    type="number" inputMode="numeric" step="1" min="0" max="130"
-                    value={logEntry.temp_high}
-                    onChange={e => setLogField("temp_high", e.target.value)}
-                    placeholder="—"
-                    style={numInputStyle}
+              {/* ── Plant Training ── */}
+              <LogSection label="Plant Training">
+                {(logEntry.training ?? []).map((t, i) => (
+                  <TrainingEntry
+                    key={i}
+                    entry={t}
+                    onChangeField={(k, v) => updateTraining(i, k, v)}
+                    onRemove={() => removeTraining(i)}
                   />
-                </label>
-                <label style={fieldLabelStyle}>
-                  <span style={fieldNameStyle}>Temp Low (°F)</span>
-                  <input
-                    type="number" inputMode="numeric" step="1" min="0" max="130"
-                    value={logEntry.temp_low}
-                    onChange={e => setLogField("temp_low", e.target.value)}
-                    placeholder="—"
-                    style={numInputStyle}
-                  />
-                </label>
-              </div>
+                ))}
+                <AddEntryButton onClick={addTraining} label="ADD TRAINING ENTRY" />
+              </LogSection>
 
-              {/* Feed / nutrients */}
-              <label style={{ ...fieldLabelStyle, display: "flex" }}>
-                <span style={fieldNameStyle}>Feed / nutrients</span>
-                <input
-                  type="text"
-                  value={logEntry.feed}
-                  onChange={e => setLogField("feed", e.target.value)}
-                  placeholder="e.g. Big Bloom 1 tsp + Tiger Bloom 2 tsp"
-                  maxLength={500}
-                  style={{ ...numInputStyle, width: "100%", boxSizing: "border-box" }}
-                />
-              </label>
+              {/* ── Plant Health ── */}
+              <LogSection label="Plant Health">
+                {(logEntry.plant_health ?? []).map((h, i) => (
+                  <PlantHealthEntry
+                    key={i}
+                    entry={h}
+                    onChangeField={(k, v) => updateHealth(i, k, v)}
+                    onRemove={() => removeHealth(i)}
+                  />
+                ))}
+                <AddEntryButton onClick={addHealth} label="ADD HEALTH OBSERVATION" />
+              </LogSection>
             </div>
           )}
 

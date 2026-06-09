@@ -608,19 +608,28 @@ async function executeTool(name, input, env, userId, config, overrides, generate
         ? input.end_date : startDate;
 
       const res = await env.DB.prepare(
-        `SELECT date, water_gal, feed, temp_high, temp_low, humidity
+        `SELECT date, water_gal, feed, temp_high, temp_low, humidity, ec_in, ec_out, training, plant_health
          FROM grow_log
          WHERE user_id = ? AND date >= ? AND date <= ?
          ORDER BY date DESC`
       ).bind(userId, startDate, endDate).all();
 
+      function tryParseArr(s) {
+        if (!s) return [];
+        try { const v = JSON.parse(s); return Array.isArray(v) ? v : []; } catch { return []; }
+      }
+
       const entries = (res.results ?? []).map(r => ({
-        date:      r.date,
-        water_gal: r.water_gal ?? null,
-        temp_high: r.temp_high ?? null,
-        temp_low:  r.temp_low  ?? null,
-        humidity:  r.humidity  ?? null,
-        feed:      r.feed      ?? null,
+        date:         r.date,
+        water_gal:    r.water_gal ?? null,
+        temp_high:    r.temp_high ?? null,
+        temp_low:     r.temp_low  ?? null,
+        humidity:     r.humidity  ?? null,
+        feed:         r.feed      ?? null,
+        ec_in:        r.ec_in     ?? null,
+        ec_out:       r.ec_out    ?? null,
+        training:     tryParseArr(r.training),
+        plant_health: tryParseArr(r.plant_health),
       }));
       return { start_date: startDate, end_date: endDate, entries };
     }
@@ -646,30 +655,42 @@ async function executeTool(name, input, env, userId, config, overrides, generate
       const temp_low  = toNum(input.temp_low);
       const humidity  = toNum(input.humidity);
       const feed      = toStr(input.feed);
+      const ec_in     = toNum(input.ec_in);
+      const ec_out    = toNum(input.ec_out);
+
+      // Lazy DDL for new columns (no-ops if already present)
+      for (const sql of [
+        "ALTER TABLE grow_log ADD COLUMN ec_in REAL",
+        "ALTER TABLE grow_log ADD COLUMN ec_out REAL",
+        "ALTER TABLE grow_log ADD COLUMN training TEXT",
+        "ALTER TABLE grow_log ADD COLUMN plant_health TEXT",
+      ]) { try { await env.DB.prepare(sql).run(); } catch { /* exists */ } }
 
       await env.DB.prepare(`
-        INSERT INTO grow_log (user_id, date, water_gal, feed, temp_high, temp_low, humidity, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        INSERT INTO grow_log (user_id, date, water_gal, feed, temp_high, temp_low, humidity, ec_in, ec_out, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
         ON CONFLICT(user_id, date) DO UPDATE SET
           water_gal  = COALESCE(excluded.water_gal,  grow_log.water_gal),
           feed       = COALESCE(excluded.feed,       grow_log.feed),
           temp_high  = COALESCE(excluded.temp_high,  grow_log.temp_high),
           temp_low   = COALESCE(excluded.temp_low,   grow_log.temp_low),
           humidity   = COALESCE(excluded.humidity,   grow_log.humidity),
+          ec_in      = COALESCE(excluded.ec_in,      grow_log.ec_in),
+          ec_out     = COALESCE(excluded.ec_out,     grow_log.ec_out),
           updated_at = excluded.updated_at
-      `).bind(userId, date, water_gal, feed, temp_high, temp_low, humidity).run();
+      `).bind(userId, date, water_gal, feed, temp_high, temp_low, humidity, ec_in, ec_out).run();
 
       actions.push({
         type: "log_grow_data",
         date,
-        summary: buildLogSummary(date, water_gal, temp_high, temp_low, humidity, feed),
+        summary: buildLogSummary(date, water_gal, temp_high, temp_low, humidity, feed, ec_in, ec_out),
         undoPayload: null, // grow log writes are not undoable via the undo system
       });
 
       return {
         ok: true,
         date,
-        logged: { water_gal, temp_high, temp_low, humidity, feed },
+        logged: { water_gal, temp_high, temp_low, humidity, feed, ec_in, ec_out },
       };
     }
 
@@ -786,11 +807,13 @@ function describeChecked(detail, indices, done) {
   return `${verb} ${indices.length} tasks`;
 }
 
-function buildLogSummary(date, water_gal, temp_high, temp_low, humidity, feed) {
+function buildLogSummary(date, water_gal, temp_high, temp_low, humidity, feed, ec_in, ec_out) {
   const parts = [];
   if (water_gal != null) parts.push(`${water_gal} gal water`);
   if (temp_high != null || temp_low != null) parts.push(`temp ${temp_high ?? "?"}°/${temp_low ?? "?"}°F`);
   if (humidity != null) parts.push(`${humidity}% RH`);
+  if (ec_in  != null) parts.push(`EC/PPM in: ${ec_in}`);
+  if (ec_out != null) parts.push(`EC/PPM out: ${ec_out}`);
   if (feed) parts.push(`fed: ${feed.slice(0, 40)}`);
   return `Logged ${date}: ${parts.join(", ") || "(no fields)"}`;
 }
