@@ -38,6 +38,7 @@ export default class ErrorBoundary extends Component {
         </div>
         <button
           onClick={() => window.location.reload()}
+          className="touch-target"
           style={{
             background: "rgba(34,197,94,0.15)",
             border: "1px solid rgba(34,197,94,0.35)",

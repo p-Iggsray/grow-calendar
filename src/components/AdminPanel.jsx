@@ -59,6 +59,7 @@ export default function AdminPanel({ onClose }) {
         <button
           onClick={onClose}
           aria-label="Close"
+          className="touch-target"
           style={{
             background: "var(--c-border-soft)",
             border: "1px solid rgba(255,255,255,0.14)",
@@ -158,6 +159,7 @@ function ActionBtn({ color, onClick, children }) {
   return (
     <button
       onClick={onClick}
+      className="touch-target"
       style={{
         padding: "7px 14px",
         background: green ? "rgba(34,197,94,0.15)" : "rgba(220,38,38,0.15)",

@@ -27,6 +27,7 @@ export default function AuthFooter({ onBeforeSignOut }) {
         <span style={{ margin: "0 8px" }}>·</span>
         <button
           onClick={() => setShowLogoutModal(true)}
+          className="touch-target"
           style={{
             background: "none", border: "none", color: "var(--c-text-faint)",
             cursor: "pointer", fontFamily: "inherit", fontSize: "inherit",

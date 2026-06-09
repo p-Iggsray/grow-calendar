@@ -27,6 +27,7 @@ export default function PendingScreen() {
         </p>
         <button
           onClick={logout}
+          className="touch-target"
           style={{
             marginTop: 18, padding: "9px 16px",
             background: "var(--c-border-faint)",

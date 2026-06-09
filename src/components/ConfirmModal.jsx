@@ -101,6 +101,7 @@ export default function ConfirmModal({
               <button
                 ref={cancelRef}
                 type="button"
+                className="touch-target"
                 onClick={onCancel}
                 style={{
                   background: "var(--c-border-faint)", border: "1px solid rgba(255,255,255,0.14)",
@@ -113,6 +114,7 @@ export default function ConfirmModal({
               <button
                 ref={confirmRef}
                 type="button"
+                className="touch-target"
                 onClick={onConfirm}
                 style={{
                   ...confirmTone,

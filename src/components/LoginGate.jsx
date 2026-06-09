@@ -176,7 +176,7 @@ export default function LoginGate() {
               type="submit"
               disabled={submitDisabled}
               style={{
-                marginTop: 4, padding: "10px 14px",
+                marginTop: 4, padding: "10px 14px", minHeight: 44,
                 background: busy ? "rgba(34,197,94,0.08)" : "rgba(34,197,94,0.15)",
                 border: "1px solid rgba(34,197,94,0.35)",
                 borderRadius: 10, color: "var(--c-accent)",
@@ -221,7 +221,8 @@ const linkBtnStyle = {
   background: "none", border: "none",
   color: "var(--c-text-faint)", fontFamily: "'Courier New', monospace",
   fontSize: 11, letterSpacing: 1, cursor: "pointer",
-  display: "block", textAlign: "center",
+  display: "flex", alignItems: "center", justifyContent: "center",
+  textAlign: "center", width: "100%", minHeight: 44, padding: "8px",
 };
 
 function Field({ label, value, onChange, type = "text", autoComplete, autoFocus }) {
@@ -275,6 +276,7 @@ function PasswordField({ label = "Password", value, onChange, autoComplete, auto
         />
         <button
           type="button"
+          className="touch-target"
           onClick={() => setReveal(r => !r)}
           aria-label={reveal ? "Hide password" : "Show password"}
           aria-pressed={reveal}

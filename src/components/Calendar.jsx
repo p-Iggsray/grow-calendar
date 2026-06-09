@@ -157,7 +157,7 @@ export default function Calendar({
                 aria-label={ariaParts.join(", ")}
                 aria-pressed={isSel ? true : undefined}
                 aria-current={isToday ? "date" : undefined}
-                className={isToday && !isSel ? "cell-today day-cell" : "day-cell"}
+                className={isToday && !isSel ? "cell-today day-cell touch-target" : "day-cell touch-target"}
                 style={{
                   font: "inherit",
                   borderRadius: 8, minHeight: 40,

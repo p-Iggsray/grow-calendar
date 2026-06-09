@@ -7,7 +7,7 @@ export default function PhaseLegend() {
         background: "rgba(255,255,255,0.03)", borderRadius: 12,
         border: "1px solid var(--c-border-faint)",
       }}>
-        <summary style={{
+        <summary className="touch-target" style={{
           listStyle: "none", padding: "10px 14px",
           cursor: "pointer",
           fontSize: 10, letterSpacing: 2, color: "var(--c-text-faint)",

@@ -96,6 +96,7 @@ function RadioGroup({ options, value, onChange }) {
           <button
             key={opt.value}
             type="button"
+            className="touch-target"
             onClick={() => onChange(opt.value)}
             style={{
               padding: "9px 16px", borderRadius: 10,
@@ -118,6 +119,7 @@ function NumStepper({ value, onChange, min = 1, max = 10, label }) {
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
       <button
         type="button"
+        className="touch-target"
         onClick={() => onChange(Math.max(min, value - 1))}
         disabled={value <= min}
         style={{
@@ -133,6 +135,7 @@ function NumStepper({ value, onChange, min = 1, max = 10, label }) {
       </span>
       <button
         type="button"
+        className="touch-target"
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
         style={{
@@ -435,6 +438,7 @@ function StepSupplies({ survey, update }) {
                     <button
                       key={s}
                       type="button"
+                      className="touch-target"
                       onClick={() => setStatus(item.id, s)}
                       style={{
                         padding: "6px 12px", borderRadius: 8,

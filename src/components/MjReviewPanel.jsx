@@ -326,6 +326,7 @@ export default function MjReviewPanel({ activeGrowId, onComplete, onSkip }) {
             />
             <button
               type="button"
+              className="touch-target"
               onClick={() => doSend(input)}
               disabled={busy || !input.trim()}
               aria-label="Send"

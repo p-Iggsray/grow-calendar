@@ -55,6 +55,7 @@ function ThreadStrip({ grows, threadGrowId, activeGrowId, onSelect }) {
           <button
             key={t.id ?? "__general__"}
             type="button"
+            className="touch-target"
             onClick={() => { if (!isSelected) onSelect(t.id); }}
             style={{
               flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5,
@@ -320,19 +321,19 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
         {messages.length > 0 && (
           confirmClear ? (
             <div style={{ display: "flex", gap: 5, alignItems: "center", flexShrink: 0 }}>
-              <button type="button" onClick={handleClear} style={{
+              <button type="button" className="touch-target" onClick={handleClear} style={{
                 background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)",
                 borderRadius: 8, padding: "6px 10px", color: "#f87171",
                 cursor: "pointer", fontSize: 11, fontFamily: MONO, letterSpacing: 0.5,
               }}>Clear</button>
-              <button type="button" onClick={() => setConfirmClear(false)} style={{
+              <button type="button" className="touch-target" onClick={() => setConfirmClear(false)} style={{
                 background: "none", border: "1px solid var(--c-border)",
                 borderRadius: 8, padding: "6px 10px", color: "var(--c-text-faint)",
                 cursor: "pointer", fontSize: 11, fontFamily: MONO, letterSpacing: 0.5,
               }}>Cancel</button>
             </div>
           ) : (
-            <button type="button" onClick={() => setConfirmClear(true)} aria-label="Clear conversation" style={{
+            <button type="button" className="touch-target" onClick={() => setConfirmClear(true)} aria-label="Clear conversation" style={{
               background: "none", border: "1px solid var(--c-border)",
               borderRadius: 8, padding: "8px 10px", color: "#5a7a5a",
               cursor: "pointer", flexShrink: 0,
@@ -422,6 +423,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
             />
             <button
               type="button"
+              className="touch-target"
               onClick={clearImage}
               aria-label="Remove photo"
               style={{
@@ -464,6 +466,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
           {/* Camera button */}
           <button
             type="button"
+            className="touch-target"
             onClick={handlePhotoClick}
             aria-label="Attach photo"
             style={{
@@ -493,6 +496,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
           />
           <button
             type="button"
+            className="touch-target"
             onClick={send}
             disabled={!canSend}
             aria-label="Send"
@@ -638,6 +642,7 @@ function Bubble({ role, text, dim, imagePreview, actions, showUndo, onUndo }) {
                 {canUndo && (
                   <button
                     type="button"
+                    className="touch-target"
                     onClick={() => onUndo(i, a.undoPayload)}
                     style={{
                       background: "none", border: "1px solid rgba(255,255,255,0.2)",

@@ -127,6 +127,7 @@ function TaskRow({ task, index, state, accentColor, onTap, onLongPress, onEditTa
         {/* Checkbox: tap toggles done, long-press opens state picker */}
         <button
           type="button"
+          className="touch-target"
           onClick={handleClick}
           {...lpHandlers}
           style={{
@@ -169,6 +170,7 @@ function TaskRow({ task, index, state, accentColor, onTap, onLongPress, onEditTa
         {/* Edit task text */}
         <button
           type="button"
+          className="touch-target"
           onClick={() => onEditTask(index)}
           aria-label="Edit task text"
           style={{
@@ -378,6 +380,7 @@ function AddEntryButton({ onClick, label }) {
   return (
     <button
       type="button"
+      className="touch-target"
       onClick={onClick}
       style={{
         width: "100%", padding: "11px", borderRadius: 10, marginTop: 6,
@@ -424,7 +427,7 @@ function TrainingEntry({ entry, onChangeField, onRemove }) {
     <div style={_entryCard}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <span style={{ ..._entryLabel, marginBottom: 0, fontSize: 10 }}>Training</span>
-        <button type="button" onClick={onRemove} style={_entryRemove} aria-label="Remove">
+        <button type="button" className="touch-target" onClick={onRemove} style={_entryRemove} aria-label="Remove">
           <X size={12} strokeWidth={2} />
         </button>
       </div>
@@ -463,7 +466,7 @@ function PlantHealthEntry({ entry, onChangeField, onRemove }) {
     <div style={_entryCard}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <span style={{ ..._entryLabel, marginBottom: 0, fontSize: 10 }}>Health Observation</span>
-        <button type="button" onClick={onRemove} style={_entryRemove} aria-label="Remove">
+        <button type="button" className="touch-target" onClick={onRemove} style={_entryRemove} aria-label="Remove">
           <X size={12} strokeWidth={2} />
         </button>
       </div>
@@ -678,7 +681,7 @@ export default function DayView({
             { id: "notes",   label: "Notes" },
             { id: "threats", label: `Threats${threats.length > 0 ? ` (${threats.length})` : ""}` },
           ].map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{
+            <button key={t.id} className="touch-target" onClick={() => setTab(t.id)} style={{
               flex: 1, padding: "10px 0", background: "none",
               border: "none", borderBottom: tab === t.id ? `2px solid ${selStyle?.color}` : "2px solid transparent",
               color: tab === t.id ? selStyle?.color : "#5a7a5a",
@@ -814,6 +817,7 @@ export default function DayView({
                   {note?.trim() && (
                     <button
                       type="button"
+                      className="touch-target"
                       onClick={() => setNoteEditing(e => !e)}
                       aria-label={noteEditing ? "Done editing" : "Edit note"}
                       style={{
@@ -909,6 +913,7 @@ export default function DayView({
       {onJumpToday && (
         <button
           type="button"
+          className="touch-target"
           onClick={onJumpToday}
           aria-label="Jump to today"
           style={{

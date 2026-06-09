@@ -129,6 +129,7 @@ export default function GrowsListTab({ grows, activeGrowId, setActiveGrowId, onN
         </div>
         <button
           type="button"
+          className="touch-target"
           onClick={handleNewGrow}
           disabled={creating}
           style={{

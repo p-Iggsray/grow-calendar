@@ -105,6 +105,7 @@ export default function StatsScreen({ config, today, onClose }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
         <button
           type="button"
+          className="touch-target"
           onClick={onClose}
           style={{
             background: "none", border: "none", cursor: "pointer",

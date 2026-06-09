@@ -112,6 +112,7 @@ export default function ShareSheet({ onClose }) {
               </span>
               <button
                 type="button"
+                className="touch-target"
                 onClick={copy}
                 style={{
                   display: "flex", alignItems: "center", gap: 5,
@@ -137,6 +138,7 @@ export default function ShareSheet({ onClose }) {
             <div style={{ display: "flex", gap: 8 }}>
               <button
                 type="button"
+                className="touch-target"
                 onClick={generate}
                 disabled={busy}
                 style={{
@@ -152,6 +154,7 @@ export default function ShareSheet({ onClose }) {
               </button>
               <button
                 type="button"
+                className="touch-target"
                 onClick={revoke}
                 disabled={busy}
                 style={{
@@ -188,6 +191,7 @@ export default function ShareSheet({ onClose }) {
 
         <button
           type="button"
+          className="touch-target"
           onClick={onClose}
           style={{
             width: "100%", padding: "13px", borderRadius: 12, marginTop: 10,

@@ -164,7 +164,7 @@ export default function GardenMap({ today, config, onClose }) {
           <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: "#6aaa6a", textTransform: "uppercase" }}>Garden</div>
           <div style={{ fontSize: 16, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>Yard Map</div>
         </div>
-        <button type="button" onClick={resetPositions} style={{
+        <button type="button" className="touch-target" onClick={resetPositions} style={{
           background: "none", border: "none", color: "#6aaa6a",
           cursor: "pointer", padding: 8, display: "flex", alignItems: "center", gap: 5,
           fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1,

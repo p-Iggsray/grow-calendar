@@ -135,6 +135,7 @@ function GrowCard({ grow, isActive, onSetActive, onViewPlan, today }) {
         {!isActive && (
           <button
             type="button"
+            className="touch-target"
             onClick={() => onSetActive(grow.id)}
             style={{
               flex: 1, padding: "9px 12px", borderRadius: 8,
@@ -148,6 +149,7 @@ function GrowCard({ grow, isActive, onSetActive, onViewPlan, today }) {
         )}
         <button
           type="button"
+          className="touch-target"
           onClick={() => onViewPlan(grow.id)}
           style={{
             flex: isActive ? 2 : 1,
@@ -212,6 +214,7 @@ export default function GrowsDashboard({ today, onViewPlan, onStartNewGrow }) {
       {/* Start new grow */}
       <button
         type="button"
+        className="touch-target"
         onClick={handleNewGrow}
         disabled={creating}
         style={{

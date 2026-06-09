@@ -94,6 +94,7 @@ export default function PresetPicker({ currentPresetId, onApplied, onCancel }) {
                   </div>
                   <button
                     type="button"
+                    className="touch-target"
                     onClick={() => applyPreset(preset)}
                     disabled={Boolean(applying) || isActive}
                     style={{
@@ -121,6 +122,7 @@ export default function PresetPicker({ currentPresetId, onApplied, onCancel }) {
 
         <button
           type="button"
+          className="touch-target"
           onClick={onCancel}
           style={{
             width: "100%", padding: "13px", borderRadius: 12,
