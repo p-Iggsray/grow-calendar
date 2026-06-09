@@ -130,6 +130,16 @@ CREATE TABLE IF NOT EXISTS mj_model_usage (
   PRIMARY KEY (model, date)
 );
 
+-- Per-user daily AI plan-generation counts (setup + regenerate). Capped by
+-- PLAN_GEN_DAILY_CAP in worker/limits.js to stay within the Gemini free tier.
+-- Also lazily created at runtime by ensurePlanUsageSchema() in worker/planSetup.js.
+CREATE TABLE IF NOT EXISTS plan_gen_usage (
+  user_id INTEGER NOT NULL,
+  date    TEXT NOT NULL,
+  count   INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, date)
+);
+
 CREATE TABLE IF NOT EXISTS mj_conversations (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

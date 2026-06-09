@@ -3,12 +3,9 @@ import { json, error, safeJsonBounded } from "./util.js";
 import { logError } from "./log.js";
 import { geocode } from "./geocode.js";
 import {
-  buildSetupPrompt,
-  extractJson,
   fillMissingConfigKeys,
   REQUIRED_CONFIG_KEYS,
-  geminiBase,
-  SETUP_MODEL,
+  generatePlanJson,
 } from "./planSetup.js";
 
 const VALID_PHASES = new Set([
@@ -283,46 +280,9 @@ export async function setupGrow(request, env, user, growId) {
   if (!Array.isArray(survey.strains) || survey.strains.length === 0)
     return error(400, "survey.strains required");
 
-  const prompt = buildSetupPrompt(survey);
-
-  let rawText = "";
-  try {
-    const base = geminiBase(env.CF_AI_GATEWAY_URL ?? null);
-    const headers = {
-      "x-goog-api-key": env.GEMINI_API_KEY,
-      "content-type": "application/json",
-    };
-    if (user?.id != null) headers["cf-aig-metadata"] = JSON.stringify({ user_id: String(user.id) });
-    const res = await fetch(`${base}/${SETUP_MODEL}:generateContent`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.2,
-          thinkingConfig: { thinkingBudget: 8000 },
-        },
-      }),
-    });
-    if (res.status === 429) return error(429, "AI quota reached. Please try again in a few minutes.");
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      logError("grows-setup-gemini-error", { status: res.status, detail: detail.slice(0, 500) });
-      return error(502, "AI generation failed. Please try again.");
-    }
-    const data = await res.json();
-    rawText = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
-  } catch (err) {
-    logError("grows-setup-fetch-error", { message: String(err?.message) });
-    return error(502, "Could not reach AI service. Please try again.");
-  }
-
-  let generatedPlan;
-  try { generatedPlan = JSON.parse(extractJson(rawText)); }
-  catch {
-    logError("grows-setup-json-parse", { raw: rawText.slice(0, 800) });
-    return error(502, "AI returned an unparseable plan. Please try again.");
-  }
+  const r = await generatePlanJson(env, user, survey, "grows-setup");
+  if (r.status) return error(r.status, r.message);
+  const generatedPlan = r.generatedPlan;
 
   const config = generatedPlan?.config;
   if (!config || typeof config !== "object")
@@ -377,45 +337,9 @@ export async function regenerateGrow(request, env, user, growId) {
   try { survey = JSON.parse(row.survey); }
   catch { return error(500, "stored survey is corrupt — re-run full setup"); }
 
-  const prompt = buildSetupPrompt(survey);
-  let rawText = "";
-  try {
-    const base = geminiBase(env.CF_AI_GATEWAY_URL ?? null);
-    const headers = {
-      "x-goog-api-key": env.GEMINI_API_KEY,
-      "content-type": "application/json",
-    };
-    if (user?.id != null) headers["cf-aig-metadata"] = JSON.stringify({ user_id: String(user.id) });
-    const res = await fetch(`${base}/${SETUP_MODEL}:generateContent`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.2,
-          thinkingConfig: { thinkingBudget: 8000 },
-        },
-      }),
-    });
-    if (res.status === 429) return error(429, "AI quota reached. Please try again in a few minutes.");
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      logError("grows-regen-gemini-error", { status: res.status, detail: detail.slice(0, 500) });
-      return error(502, "AI generation failed. Please try again.");
-    }
-    const data = await res.json();
-    rawText = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
-  } catch (err) {
-    logError("grows-regen-fetch-error", { message: String(err?.message) });
-    return error(502, "Could not reach AI service. Please try again.");
-  }
-
-  let generatedPlan;
-  try { generatedPlan = JSON.parse(extractJson(rawText)); }
-  catch {
-    logError("grows-regen-json-parse", { raw: rawText.slice(0, 800) });
-    return error(502, "AI returned an unparseable plan. Please try again.");
-  }
+  const r = await generatePlanJson(env, user, survey, "grows-regen");
+  if (r.status) return error(r.status, r.message);
+  const generatedPlan = r.generatedPlan;
 
   await env.DB.prepare(
     "UPDATE grows SET generated_plan = ?, updated_at = ? WHERE id = ? AND user_id = ?"

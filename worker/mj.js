@@ -8,6 +8,7 @@ import { buildPlanText } from "../src/lib/planText.js";
 import { growLocation, strainSummary } from "../src/lib/growProfile.js";
 import { readCheckoffs, writeCheckoffs } from "./checkoffs.js";
 import { ensureGrowLogSchema } from "./growLog.js";
+import { GEMINI_DAILY_LIMIT, GEMINI_PRO_DAILY_LIMIT, PER_USER_DAILY_CAP } from "./limits.js";
 import { readNote, writeNote, MAX_NOTE_LEN } from "./notes.js";
 import { MJ_PERSONA, MJ_TOOLS, mergeChecked, appendNoteText, buildDayView, VALID_GROW_PHASES, VALID_CONFIG_DATE_KEYS } from "./mj-logic.js";
 import { runGemini } from "./providers/gemini.js";
@@ -46,9 +47,7 @@ const MAX_IMAGE_B64_LEN = 3_000_000; // ~2.25 MB actual after decode
 const MAX_HISTORY_ROWS = 40;
 const MAX_CONTEXT_MESSAGES = 20;
 
-export const GEMINI_DAILY_LIMIT = 1500;
-export const GEMINI_PRO_DAILY_LIMIT = 25;
-export const PER_USER_DAILY_CAP = 50;
+export { GEMINI_DAILY_LIMIT, GEMINI_PRO_DAILY_LIMIT, PER_USER_DAILY_CAP };
 
 function todayInET() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });

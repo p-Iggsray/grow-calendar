@@ -3,6 +3,7 @@ import { json, error } from "./util.js";
 import { DEFAULT_CONFIG } from "../src/lib/planConfig.js";
 import { logError } from "./log.js";
 import { geocode } from "./geocode.js";
+import { GEMINI_PRO_DAILY_LIMIT, PLAN_GEN_DAILY_CAP } from "./limits.js";
 
 export const GEMINI_DIRECT_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 export const SETUP_MODEL = "gemini-2.5-pro";
@@ -173,18 +174,75 @@ export function extractJson(text) {
   return text.trim();
 }
 
-export async function postPlanSetup(request, env, user) {
-  let body;
-  try { body = await request.json(); } catch { return error(400, "invalid json"); }
+// ── AI plan-generation usage caps ──────────────────────────────────────────
+// Plan generation uses gemini-2.5-pro. We cap it per-user AND share the global
+// pro budget with the MJ chat (via the mj_model_usage table) so total pro calls
+// stay inside the Gemini free tier.
 
-  const survey = body?.survey;
-  if (!survey || typeof survey !== "object") return error(400, "survey required");
-  if (!survey.transplantDate) return error(400, "survey.transplantDate required");
-  if (!Array.isArray(survey.strains) || survey.strains.length === 0)
-    return error(400, "survey.strains required");
+function todayInET() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+}
+
+let _planUsageReady = false;
+async function ensurePlanUsageSchema(env) {
+  if (_planUsageReady) return;
+  try {
+    await env.DB.prepare(
+      `CREATE TABLE IF NOT EXISTS plan_gen_usage (
+         user_id INTEGER NOT NULL,
+         date    TEXT NOT NULL,
+         count   INTEGER NOT NULL DEFAULT 0,
+         PRIMARY KEY (user_id, date)
+       )`,
+    ).run();
+  } catch { /* already exists */ }
+  _planUsageReady = true;
+}
+
+// Returns null if generation may proceed, or { status, message } if a cap is hit.
+async function checkPlanGenCaps(env, userId) {
+  await ensurePlanUsageSchema(env);
+  const today = todayInET();
+
+  const proRow = await env.DB.prepare(
+    "SELECT COALESCE(count, 0) AS count FROM mj_model_usage WHERE model = ? AND date = ?",
+  ).bind(SETUP_MODEL, today).first();
+  if (Number(proRow?.count ?? 0) >= GEMINI_PRO_DAILY_LIMIT) {
+    return { status: 429, message: "The shared daily AI plan-generation limit has been reached. Please try again after midnight ET." };
+  }
+
+  const userRow = await env.DB.prepare(
+    "SELECT COALESCE(count, 0) AS count FROM plan_gen_usage WHERE user_id = ? AND date = ?",
+  ).bind(userId, today).first();
+  if (Number(userRow?.count ?? 0) >= PLAN_GEN_DAILY_CAP) {
+    return { status: 429, message: `You've used all ${PLAN_GEN_DAILY_CAP} plan generations for today. They reset at midnight ET.` };
+  }
+
+  return null;
+}
+
+async function bumpPlanGenUsage(env, userId) {
+  const today = todayInET();
+  await env.DB.batch([
+    env.DB.prepare(
+      "INSERT INTO plan_gen_usage (user_id, date, count) VALUES (?, ?, 1) " +
+      "ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1",
+    ).bind(userId, today),
+    env.DB.prepare(
+      "INSERT INTO mj_model_usage (model, date, count) VALUES (?, ?, 1) " +
+      "ON CONFLICT(model, date) DO UPDATE SET count = count + 1",
+    ).bind(SETUP_MODEL, today),
+  ]);
+}
+
+// Cap-checked Gemini call shared by all four plan-generation entry points
+// (plan + grow setup and regenerate). Returns { generatedPlan } on success or
+// { status, message } on any failure (cap hit, AI error, or parse failure).
+export async function generatePlanJson(env, user, survey, logPrefix) {
+  const capErr = await checkPlanGenCaps(env, user.id);
+  if (capErr) return capErr;
 
   const prompt = buildSetupPrompt(survey);
-
   let rawText = "";
   try {
     const base = geminiBase(env.CF_AI_GATEWAY_URL ?? null);
@@ -195,34 +253,48 @@ export async function postPlanSetup(request, env, user) {
       headers,
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.2,
-          thinkingConfig: { thinkingBudget: 8000 },
-        },
+        generationConfig: { temperature: 0.2, thinkingConfig: { thinkingBudget: 8000 } },
       }),
     });
-
-    if (res.status === 429) return error(429, "AI quota reached. Please try again in a few minutes.");
+    if (res.status === 429) return { status: 429, message: "AI quota reached. Please try again in a few minutes." };
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
-      logError("plan-setup-gemini-error", { status: res.status, detail: detail.slice(0, 500) });
-      return error(502, "AI generation failed. Please try again.");
+      logError(`${logPrefix}-gemini-error`, { status: res.status, detail: detail.slice(0, 500) });
+      return { status: 502, message: "AI generation failed. Please try again." };
     }
-
     const data = await res.json();
     rawText = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
   } catch (err) {
-    logError("plan-setup-fetch-error", { message: String(err?.message) });
-    return error(502, "Could not reach AI service. Please try again.");
+    logError(`${logPrefix}-fetch-error`, { message: String(err?.message) });
+    return { status: 502, message: "Could not reach AI service. Please try again." };
   }
 
+  // The Gemini request succeeded (and consumed free-tier quota), so count it
+  // before parsing — a parse failure shouldn't let the call go untracked.
+  await bumpPlanGenUsage(env, user.id);
+
   let generatedPlan;
-  try {
-    generatedPlan = JSON.parse(extractJson(rawText));
-  } catch {
-    logError("plan-setup-json-parse", { raw: rawText.slice(0, 800) });
-    return error(502, "AI returned an unparseable plan. Please try again.");
+  try { generatedPlan = JSON.parse(extractJson(rawText)); }
+  catch {
+    logError(`${logPrefix}-json-parse`, { raw: rawText.slice(0, 800) });
+    return { status: 502, message: "AI returned an unparseable plan. Please try again." };
   }
+  return { generatedPlan };
+}
+
+export async function postPlanSetup(request, env, user) {
+  let body;
+  try { body = await request.json(); } catch { return error(400, "invalid json"); }
+
+  const survey = body?.survey;
+  if (!survey || typeof survey !== "object") return error(400, "survey required");
+  if (!survey.transplantDate) return error(400, "survey.transplantDate required");
+  if (!Array.isArray(survey.strains) || survey.strains.length === 0)
+    return error(400, "survey.strains required");
+
+  const r = await generatePlanJson(env, user, survey, "plan-setup");
+  if (r.status) return error(r.status, r.message);
+  const generatedPlan = r.generatedPlan;
 
   const config = generatedPlan?.config;
   if (!config || typeof config !== "object") {
@@ -278,39 +350,9 @@ export async function postPlanRegenerate(request, env, user) {
   try { survey = JSON.parse(row.survey); }
   catch { return error(500, "stored survey is corrupt — re-run full setup"); }
 
-  const prompt = buildSetupPrompt(survey);
-  let rawText = "";
-  try {
-    const base = geminiBase(env.CF_AI_GATEWAY_URL ?? null);
-    const headers = { "x-goog-api-key": env.GEMINI_API_KEY, "content-type": "application/json" };
-    if (user?.id != null) headers["cf-aig-metadata"] = JSON.stringify({ user_id: String(user.id) });
-    const res = await fetch(`${base}/${SETUP_MODEL}:generateContent`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, thinkingConfig: { thinkingBudget: 8000 } },
-      }),
-    });
-    if (res.status === 429) return error(429, "AI quota reached. Please try again in a few minutes.");
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      logError("plan-regen-gemini-error", { status: res.status, detail: detail.slice(0, 500) });
-      return error(502, "AI generation failed. Please try again.");
-    }
-    const data = await res.json();
-    rawText = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
-  } catch (err) {
-    logError("plan-regen-fetch-error", { message: String(err?.message) });
-    return error(502, "Could not reach AI service. Please try again.");
-  }
-
-  let generatedPlan;
-  try { generatedPlan = JSON.parse(extractJson(rawText)); }
-  catch {
-    logError("plan-regen-json-parse", { raw: rawText.slice(0, 800) });
-    return error(502, "AI returned an unparseable plan. Please try again.");
-  }
+  const r = await generatePlanJson(env, user, survey, "plan-regen");
+  if (r.status) return error(r.status, r.message);
+  const generatedPlan = r.generatedPlan;
 
   // Only update generated_plan — leave config and phase_overrides as-is.
   await env.DB.prepare(
