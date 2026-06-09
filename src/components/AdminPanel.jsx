@@ -49,7 +49,7 @@ export default function AdminPanel({ onClose }) {
         background: "linear-gradient(160deg, #0a1a0d, #13301a)",
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 10, letterSpacing: 3, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 3 }}>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 3 }}>
             Admin
           </div>
           <div style={{ fontSize: 18, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>
@@ -118,7 +118,7 @@ function Section({ title, children }) {
   return (
     <div style={{ marginBottom: 24 }}>
       <div style={{
-        fontSize: 10, letterSpacing: 2, textTransform: "uppercase",
+        fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
         color: "var(--c-text-faint)", marginBottom: 10,
       }}>
         {title}

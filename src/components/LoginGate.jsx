@@ -3,7 +3,7 @@ import { useAuth } from "../lib/auth.jsx";
 import { api } from "../lib/api.js";
 
 const LABEL_STYLE = {
-  fontSize: 10, letterSpacing: 2, color: "var(--c-text-faint)",
+  fontSize: 11, letterSpacing: 2, color: "var(--c-text-faint)",
   textTransform: "uppercase", fontFamily: "'Courier New', monospace",
 };
 const INPUT_STYLE = {
@@ -109,7 +109,7 @@ export default function LoginGate() {
       }}>
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 22 }}>
-          <div style={{ fontSize: 10, letterSpacing: 4, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 6, fontFamily: "'Courier New', monospace" }}>
+          <div style={{ fontSize: 11, letterSpacing: 4, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 6, fontFamily: "'Courier New', monospace" }}>
             Grow Log
           </div>
           <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: -1, color: "var(--c-text)" }}>
@@ -255,7 +255,7 @@ function PasswordField({ label = "Password", value, onChange, autoComplete, auto
       <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={LABEL_STYLE}>{label}</span>
         {capsLockOn && (
-          <span role="status" aria-live="polite" style={{ fontSize: 9, letterSpacing: 1.5, fontFamily: "'Courier New', monospace", color: "#facc15", background: "rgba(250,204,21,0.12)", border: "1px solid rgba(250,204,21,0.35)", borderRadius: 6, padding: "1px 6px", textTransform: "uppercase" }}>
+          <span role="status" aria-live="polite" style={{ fontSize: 11, letterSpacing: 1.5, fontFamily: "'Courier New', monospace", color: "#facc15", background: "rgba(250,204,21,0.12)", border: "1px solid rgba(250,204,21,0.35)", borderRadius: 6, padding: "1px 6px", textTransform: "uppercase" }}>
             Caps Lock
           </span>
         )}

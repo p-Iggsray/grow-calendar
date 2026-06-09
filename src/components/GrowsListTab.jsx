@@ -48,7 +48,7 @@ function GrowCard({ grow, isActive, onActivate }) {
         <div style={{
           padding: "4px 9px", borderRadius: 6, flexShrink: 0,
           background: ss.bg, color: ss.color,
-          fontFamily: MONO, fontSize: 9, letterSpacing: 1.5,
+          fontFamily: MONO, fontSize: 11, letterSpacing: 1.5,
         }}>
           {ss.label}
         </div>
@@ -66,13 +66,13 @@ function GrowCard({ grow, isActive, onActivate }) {
         <div style={{ display: "flex", gap: 20, marginBottom: isActive ? 10 : 0 }}>
           {transplantDate && (
             <div>
-              <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 2 }}>Transplant</div>
+              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 2 }}>Transplant</div>
               <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-dim)" }}>{transplantDate}</div>
             </div>
           )}
           {harvestDate && (
             <div>
-              <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 2 }}>Est. Harvest</div>
+              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 2 }}>Est. Harvest</div>
               <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-dim)" }}>{harvestDate}</div>
             </div>
           )}
@@ -90,7 +90,7 @@ function GrowCard({ grow, isActive, onActivate }) {
       {isActive && (
         <div style={{
           display: "inline-flex", alignItems: "center", gap: 5,
-          fontFamily: MONO, fontSize: 9, letterSpacing: 1.5,
+          fontFamily: MONO, fontSize: 11, letterSpacing: 1.5,
           color: "var(--c-accent)", textTransform: "uppercase",
         }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--c-accent)", flexShrink: 0 }} />
@@ -124,7 +124,7 @@ export default function GrowsListTab({ grows, activeGrowId, setActiveGrowId, onN
         paddingLeft: "calc(16px + env(safe-area-inset-left, 0px))",
         paddingRight: "calc(16px + env(safe-area-inset-right, 0px))",
       }}>
-        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>
           My Grows
         </div>
         <button

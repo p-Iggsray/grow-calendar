@@ -63,7 +63,7 @@ function ReadCalendar({ today, month, config, generatedPlan, phaseOverrides }) {
                 {date.getDate()}
               </span>
               {glyph && (
-                <span style={{ fontSize: 8, fontFamily: MONO, fontWeight: 700, color: pStyle?.color, lineHeight: 1 }}>
+                <span style={{ fontSize: 11, fontFamily: MONO, fontWeight: 700, color: pStyle?.color, lineHeight: 1 }}>
                   {glyph}
                 </span>
               )}
@@ -92,7 +92,7 @@ function TodayCard({ today, config, generatedPlan, phaseOverrides }) {
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
         <div style={{ width: 8, height: 8, borderRadius: "50%", background: pStyle?.color, flexShrink: 0 }} />
-        <span style={{ fontFamily: MONO, fontSize: 10, color: pStyle?.color, letterSpacing: 1, textTransform: "uppercase" }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: pStyle?.color, letterSpacing: 1, textTransform: "uppercase" }}>
           {pStyle?.label ?? phase} · Today
         </span>
       </div>
@@ -107,7 +107,7 @@ function TodayCard({ today, config, generatedPlan, phaseOverrides }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {(detail.tasks ?? []).slice(0, 6).map((task, i) => (
           <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: pStyle?.color, paddingTop: 2, minWidth: 16, flexShrink: 0 }}>{i + 1}.</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: pStyle?.color, paddingTop: 2, minWidth: 16, flexShrink: 0 }}>{i + 1}.</span>
             <span style={{ fontSize: 12, color: "var(--c-text-dim)", lineHeight: 1.7 }}>{task}</span>
           </div>
         ))}
@@ -167,7 +167,7 @@ export default function BuddyView({ token }) {
         background: "var(--c-header-bg)",
         padding: "calc(16px + env(safe-area-inset-top, 0px)) 18px 16px",
       }}>
-        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: "#6aaa6a", textTransform: "uppercase", marginBottom: 4 }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "#6aaa6a", textTransform: "uppercase", marginBottom: 4 }}>
           Buddy view · read only
         </div>
         <div style={{ fontSize: 22, fontWeight: 900, color: "#e8f5e3", letterSpacing: -0.5, marginBottom: 2 }}>
@@ -204,7 +204,7 @@ export default function BuddyView({ token }) {
         <PhaseLegend />
       </div>
 
-      <div style={{ textAlign: "center", marginTop: 24, fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", letterSpacing: 1 }}>
+      <div style={{ textAlign: "center", marginTop: 24, fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", letterSpacing: 1 }}>
         Read-only buddy view · no account required
       </div>
     </div>

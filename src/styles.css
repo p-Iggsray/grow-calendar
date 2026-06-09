@@ -6,8 +6,8 @@
   --c-text:          #e8f5e3;   /* primary text                   */
   --c-text-dim:      #a0d0a0;   /* dimmed text                    */
   --c-text-muted:    #7a9a7a;   /* labels / secondary             */
-  --c-text-faint:    #5a8a5a;   /* tertiary                       */
-  --c-text-ghost:    #3a5a3a;   /* ghost / disabled               */
+  --c-text-faint:    #6a986a;   /* tertiary                       */
+  --c-text-ghost:    #5f8f5f;   /* ghost / disabled               */
   --c-accent:        #4ade80;   /* interactive green              */
   --c-surface-1:     rgba(255,255,255,0.04);   /* card fill       */
   --c-surface-2:     rgba(255,255,255,0.08);   /* hover / active  */
@@ -31,8 +31,8 @@
     --c-text:          #1a2e1a;
     --c-text-dim:      #2d4a2d;
     --c-text-muted:    #4a6a4a;
-    --c-text-faint:    #5a7a5a;
-    --c-text-ghost:    #8aaa8a;
+    --c-text-faint:    #4d6d4d;
+    --c-text-ghost:    #587858;
     --c-accent:        #15803d;
     --c-surface-1:     rgba(0,0,0,0.04);
     --c-surface-2:     rgba(0,0,0,0.07);
@@ -58,8 +58,8 @@
   --c-text:          #1a2e1a;
   --c-text-dim:      #2d4a2d;
   --c-text-muted:    #4a6a4a;
-  --c-text-faint:    #5a7a5a;
-  --c-text-ghost:    #8aaa8a;
+  --c-text-faint:    #4d6d4d;
+  --c-text-ghost:    #587858;
   --c-accent:        #15803d;
   --c-surface-1:     rgba(0,0,0,0.04);
   --c-surface-2:     rgba(0,0,0,0.07);

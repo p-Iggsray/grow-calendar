@@ -94,7 +94,7 @@ function StatePicker({ task, currentState, onPick, onClose }) {
               {icon}
               {label}
               {currentState === state && (
-                <span style={{ marginLeft: "auto", fontSize: 10, fontFamily: "'Courier New', monospace", color: "#5a7a5a" }}>
+                <span style={{ marginLeft: "auto", fontSize: 11, fontFamily: "'Courier New', monospace", color: "#5a7a5a" }}>
                   tap to clear
                 </span>
               )}
@@ -156,12 +156,12 @@ function TaskRow({ task, index, state, accentColor, onTap, onLongPress, onEditTa
             {task}
           </div>
           {cfg?.label && (
-            <div style={{ fontSize: 10, fontFamily: "'Courier New', monospace", color: cfg.color, letterSpacing: 1, marginTop: 1 }}>
+            <div style={{ fontSize: 11, fontFamily: "'Courier New', monospace", color: cfg.color, letterSpacing: 1, marginTop: 1 }}>
               {cfg.label}
             </div>
           )}
           {isEdited && (
-            <div style={{ fontSize: 9, fontFamily: "'Courier New', monospace", color: accentColor + "99", letterSpacing: 0.5, marginTop: 1 }}>
+            <div style={{ fontSize: 11, fontFamily: "'Courier New', monospace", color: accentColor + "99", letterSpacing: 0.5, marginTop: 1 }}>
               EDITED
             </div>
           )}
@@ -236,7 +236,7 @@ function TaskEditSheet({ currentText, onSave, onClose }) {
         borderRadius: "18px 18px 0 0",
         padding: `20px 20px ${bottomPad}`,
       }}>
-        <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 1.5, color: "var(--c-text-muted)", textTransform: "uppercase", marginBottom: 12 }}>
+        <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1.5, color: "var(--c-text-muted)", textTransform: "uppercase", marginBottom: 12 }}>
           Edit task text
         </div>
         <textarea
@@ -336,7 +336,7 @@ function LogSection({ label, first = false, children }) {
     <div style={{ marginTop: first ? 0 : 20 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
         <span style={{
-          fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2,
+          fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 2,
           color: "var(--c-text-muted)", textTransform: "uppercase", whiteSpace: "nowrap",
         }}>
           {label}
@@ -351,7 +351,7 @@ function LogSection({ label, first = false, children }) {
 function LogField({ label, name, entry, setField, step, min, max, placeholder = "—", inputMode = "decimal" }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase" }}>
+      <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase" }}>
         {label}
       </span>
       <input
@@ -386,7 +386,7 @@ function AddEntryButton({ onClick, label }) {
         width: "100%", padding: "11px", borderRadius: 10, marginTop: 6,
         background: "none", border: "1px dashed var(--c-border)",
         color: "var(--c-text-ghost)", cursor: "pointer",
-        fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 1.5,
+        fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1.5,
         display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
         transition: "border-color 0.15s, color 0.15s",
       }}>
@@ -417,7 +417,7 @@ const _entryInput = {
   width: "100%", boxSizing: "border-box",
 };
 const _entryLabel = {
-  fontFamily: "'Courier New', monospace", fontSize: 9,
+  fontFamily: "'Courier New', monospace", fontSize: 11,
   letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase",
   marginBottom: 5, display: "block",
 };
@@ -426,7 +426,7 @@ function TrainingEntry({ entry, onChangeField, onRemove }) {
   return (
     <div style={_entryCard}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-        <span style={{ ..._entryLabel, marginBottom: 0, fontSize: 10 }}>Training</span>
+        <span style={{ ..._entryLabel, marginBottom: 0, fontSize: 11 }}>Training</span>
         <button type="button" className="touch-target" onClick={onRemove} style={_entryRemove} aria-label="Remove">
           <X size={12} strokeWidth={2} />
         </button>
@@ -465,7 +465,7 @@ function PlantHealthEntry({ entry, onChangeField, onRemove }) {
   return (
     <div style={_entryCard}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-        <span style={{ ..._entryLabel, marginBottom: 0, fontSize: 10 }}>Health Observation</span>
+        <span style={{ ..._entryLabel, marginBottom: 0, fontSize: 11 }}>Health Observation</span>
         <button type="button" className="touch-target" onClick={onRemove} style={_entryRemove} aria-label="Remove">
           <X size={12} strokeWidth={2} />
         </button>
@@ -509,7 +509,7 @@ const fieldLabelStyle = {
   display: "flex", flexDirection: "column", gap: 5,
 };
 const fieldNameStyle = {
-  fontFamily: "'Courier New', monospace", fontSize: 10,
+  fontFamily: "'Courier New', monospace", fontSize: 11,
   letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase",
 };
 const numInputStyle = {
@@ -645,7 +645,7 @@ export default function DayView({
           <span style={{ fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1 }}>Back</span>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: selStyle?.color, textTransform: "uppercase" }}>
+          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 2, color: selStyle?.color, textTransform: "uppercase" }}>
             {selStyle?.label}
           </div>
           <div style={{ fontSize: 18, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.4 }}>
@@ -741,7 +741,7 @@ export default function DayView({
             <div>
               {/* Save status */}
               <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4, minHeight: 16 }}>
-                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: logStatus === "error" ? "#f87171" : logStatus === "saved" ? "var(--c-accent)" : "#5a7a5a" }}>
+                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: logStatus === "error" ? "#f87171" : logStatus === "saved" ? "var(--c-accent)" : "#5a7a5a" }}>
                   {logStatus === "saving" ? "Saving…" : logStatus === "saved" ? "Saved" : logStatus === "error" ? "Save failed" : ""}
                 </span>
               </div>
@@ -831,7 +831,7 @@ export default function DayView({
                       <Pencil size={13} strokeWidth={1.8} />
                     </button>
                   )}
-                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: statusColor, minHeight: 12 }}>
+                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: statusColor, minHeight: 12 }}>
                     {statusLabel}
                   </span>
                 </div>
@@ -857,7 +857,7 @@ export default function DayView({
                       boxSizing: "border-box",
                     }}
                   />
-                  <div style={{ marginTop: 6, fontFamily: "'Courier New', monospace", fontSize: 10, color: "var(--c-text-ghost)", lineHeight: 1.8 }}>
+                  <div style={{ marginTop: 6, fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-text-ghost)", lineHeight: 1.8 }}>
                     **bold** · *italic* · - bullet list
                   </div>
                 </>
@@ -996,7 +996,7 @@ function WeatherCard({ weather, loading }) {
               {alert.event}
             </span>
             {alert.severity && (
-              <span style={{ fontSize: 9, fontFamily: "'Courier New', monospace", letterSpacing: 1, color: alertSeverityColor(alert.severity), opacity: 0.8 }}>
+              <span style={{ fontSize: 11, fontFamily: "'Courier New', monospace", letterSpacing: 1, color: alertSeverityColor(alert.severity), opacity: 0.8 }}>
                 {alert.severity.toUpperCase()}
               </span>
             )}
@@ -1016,7 +1016,7 @@ function WeatherCard({ weather, loading }) {
           border: "1px solid rgba(56,189,248,0.15)", padding: "10px 12px",
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: hasHourly ? 10 : 0 }}>
-            <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 1.5, color: "#5a8a9a", textTransform: "uppercase" }}>
+            <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1.5, color: "#5a8a9a", textTransform: "uppercase" }}>
               NWS Forecast
             </span>
             {hasHighLow && (
@@ -1035,7 +1035,7 @@ function WeatherCard({ weather, loading }) {
                   display: "flex", flexDirection: "column", alignItems: "center",
                   gap: 3, minWidth: 44, flexShrink: 0,
                 }}>
-                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "#5a8a9a" }}>
+                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "#5a8a9a" }}>
                     {fmt12h(h.startTime)}
                   </span>
                   <span style={{ fontSize: 14 }}>

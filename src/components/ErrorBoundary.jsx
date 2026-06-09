@@ -49,7 +49,7 @@ export default class ErrorBoundary extends Component {
         >
           RELOAD
         </button>
-        <div style={{ fontSize: 10, color: "#2a4a2a", maxWidth: 320, lineHeight: 1.6, marginTop: 8 }}>
+        <div style={{ fontSize: 11, color: "#2a4a2a", maxWidth: 320, lineHeight: 1.6, marginTop: 8 }}>
           {String(this.state.error)}
         </div>
       </div>

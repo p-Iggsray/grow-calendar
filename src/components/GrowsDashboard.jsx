@@ -58,7 +58,7 @@ function GrowCard({ grow, isActive, onSetActive, onViewPlan, today }) {
       {/* Top row: status badge + current chip */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <span style={{
-          fontFamily: MONO, fontSize: 9, letterSpacing: 1.5,
+          fontFamily: MONO, fontSize: 11, letterSpacing: 1.5,
           padding: "3px 7px", borderRadius: 4,
           color: st.color, background: st.bg, border: `1px solid ${st.border}`,
         }}>
@@ -66,7 +66,7 @@ function GrowCard({ grow, isActive, onSetActive, onViewPlan, today }) {
         </span>
         {isActive && (
           <span style={{
-            fontFamily: MONO, fontSize: 9, letterSpacing: 1.5,
+            fontFamily: MONO, fontSize: 11, letterSpacing: 1.5,
             padding: "3px 7px", borderRadius: 4,
             color: "var(--c-accent)", background: "rgba(74,222,128,0.08)",
             border: "1px solid rgba(74,222,128,0.3)",
@@ -83,7 +83,7 @@ function GrowCard({ grow, isActive, onSetActive, onViewPlan, today }) {
 
       {/* Strain names */}
       {strainNames.length > 0 && (
-        <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-faint)", marginBottom: 10, letterSpacing: 0.4 }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-faint)", marginBottom: 10, letterSpacing: 0.4 }}>
           {strainNames.join(" · ")}
         </div>
       )}
@@ -93,7 +93,7 @@ function GrowCard({ grow, isActive, onSetActive, onViewPlan, today }) {
         <div style={{ display: "flex", gap: 12, marginBottom: 10, flexWrap: "wrap" }}>
           {phaseName && (
             <div style={{
-              fontFamily: MONO, fontSize: 10, color: "var(--c-text-muted)",
+              fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)",
               background: "rgba(255,255,255,0.04)", border: "1px solid var(--c-border)",
               borderRadius: 6, padding: "3px 8px", letterSpacing: 0.4,
             }}>
@@ -102,7 +102,7 @@ function GrowCard({ grow, isActive, onSetActive, onViewPlan, today }) {
           )}
           {daysSince !== null && (
             <div style={{
-              fontFamily: MONO, fontSize: 10, color: "var(--c-text-muted)",
+              fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)",
               background: "rgba(255,255,255,0.04)", border: "1px solid var(--c-border)",
               borderRadius: 6, padding: "3px 8px", letterSpacing: 0.4,
             }}>
@@ -125,7 +125,7 @@ function GrowCard({ grow, isActive, onSetActive, onViewPlan, today }) {
             }} />
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 3 }}>
-            <span style={{ fontFamily: MONO, fontSize: 9, color: "var(--c-text-ghost)" }}>{progress}%</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)" }}>{progress}%</span>
           </div>
         </div>
       )}

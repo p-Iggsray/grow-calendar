@@ -11,7 +11,7 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress, locat
       borderBottom: "1px solid var(--c-border-soft)",
     }}>
       <div style={{ marginBottom: 11 }}>
-        <div style={{ fontSize: 10, letterSpacing: 4, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 4, fontFamily: "'Courier New', monospace" }}>
+        <div style={{ fontSize: 11, letterSpacing: 4, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 4, fontFamily: "'Courier New', monospace" }}>
           Grow Log{location ? ` · ${location}` : ""}
         </div>
         <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -1, lineHeight: 1.1, color: "var(--c-text)" }}>

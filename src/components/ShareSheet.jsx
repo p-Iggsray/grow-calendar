@@ -76,7 +76,7 @@ export default function ShareSheet({ onClose }) {
           borderRadius: "18px 18px 0 0",
           padding: "20px 18px calc(28px + env(safe-area-inset-bottom, 0px))",
         }}>
-        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 4 }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 4 }}>
           Buddy access
         </div>
         <div style={{ fontSize: 17, fontWeight: 800, color: "var(--c-text)", marginBottom: 4, letterSpacing: -0.3 }}>
@@ -120,7 +120,7 @@ export default function ShareSheet({ onClose }) {
                   border: `1px solid ${copied ? "rgba(74,222,128,0.4)" : "var(--c-border)"}`,
                   borderRadius: 7, padding: "6px 10px",
                   color: copied ? "var(--c-accent)" : "var(--c-text-dim)",
-                  fontFamily: MONO, fontSize: 10, letterSpacing: 1, cursor: "pointer",
+                  fontFamily: MONO, fontSize: 11, letterSpacing: 1, cursor: "pointer",
                   flexShrink: 0, transition: "all 0.15s",
                 }}
               >
@@ -130,7 +130,7 @@ export default function ShareSheet({ onClose }) {
             </div>
 
             {createdAt && (
-              <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginBottom: 14, letterSpacing: 0.5 }}>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginBottom: 14, letterSpacing: 0.5 }}>
                 Generated {new Date(createdAt).toLocaleDateString()}
               </div>
             )}

@@ -10,7 +10,7 @@ export default function ThreatsReference() {
         <summary className="touch-target" style={{
           listStyle: "none", padding: "10px 14px",
           cursor: "pointer",
-          fontSize: 10, letterSpacing: 2, color: "var(--c-text-faint)",
+          fontSize: 11, letterSpacing: 2, color: "var(--c-text-faint)",
           textTransform: "uppercase", fontFamily: "'Courier New', monospace",
           display: "flex", alignItems: "center", gap: 6,
         }}>

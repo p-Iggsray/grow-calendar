@@ -46,7 +46,7 @@ export default function PresetPicker({ currentPresetId, onApplied, onCancel }) {
         padding: "20px 18px calc(28px + env(safe-area-inset-bottom, 0px))",
         maxHeight: "82vh", overflowY: "auto",
       }}>
-        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 4 }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 4 }}>
           Feed Schedule
         </div>
         <div style={{ fontSize: 17, fontWeight: 800, color: "var(--c-text)", marginBottom: 4, letterSpacing: -0.3 }}>
@@ -81,12 +81,12 @@ export default function PresetPicker({ currentPresetId, onApplied, onCancel }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
                     <span style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)" }}>{preset.name}</span>
                     {isActive && (
-                      <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "var(--c-accent)", background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 5, padding: "1px 6px" }}>
+                      <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: "var(--c-accent)", background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 5, padding: "1px 6px" }}>
                         ACTIVE
                       </span>
                     )}
                   </div>
-                  <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", letterSpacing: 0.5, marginBottom: 6 }}>
+                  <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", letterSpacing: 0.5, marginBottom: 6 }}>
                     {preset.brand}
                   </div>
                   <div style={{ fontSize: 12, color: "var(--c-text-faint)", lineHeight: 1.6, marginBottom: 12 }}>

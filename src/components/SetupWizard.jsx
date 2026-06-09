@@ -63,7 +63,7 @@ const SERIF = "'Georgia', 'Times New Roman', serif";
 
 function Label({ children }) {
   return (
-    <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: "var(--c-text-faint)", marginBottom: 6 }}>
+    <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "var(--c-text-faint)", marginBottom: 6 }}>
       {children}
     </div>
   );
@@ -240,7 +240,7 @@ function StepStrains({ survey, update }) {
           background: "var(--c-surface-1)", borderRadius: 12,
           border: "1px solid var(--c-surface-2)", padding: "16px",
         }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 2, color: "var(--c-text-faint)", marginBottom: 12 }}>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-faint)", marginBottom: 12 }}>
             Plant {i + 1} {i === 0 ? "(primary)" : "(secondary)"}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -320,7 +320,7 @@ function StepTimeline({ survey, update }) {
             colorScheme: "dark",
           }}
         />
-        <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginTop: 5, lineHeight: 1.7 }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 5, lineHeight: 1.7 }}>
           When plants go into their final containers.
         </div>
       </div>
@@ -332,7 +332,7 @@ function StepTimeline({ survey, update }) {
           min={4} max={20}
           label="weeks"
         />
-        <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginTop: 6, lineHeight: 1.7 }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 6, lineHeight: 1.7 }}>
           For outdoor photoperiod, the plant decides — estimate how long before pre-flower starts in your area.
         </div>
       </div>
@@ -401,13 +401,13 @@ function StepSetup({ survey, update }) {
             📍 {geoStatus === "locating" ? "Locating…" : "Use my current location"}
           </button>
           {geoStatus === "done" && (
-            <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-accent)" }}>✓ Location set</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-accent)" }}>✓ Location set</span>
           )}
           {geoStatus === "error" && (
-            <span style={{ fontFamily: MONO, fontSize: 10, color: "#f87171" }}>Couldn&apos;t get location — type it above</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "#f87171" }}>Couldn&apos;t get location — type it above</span>
           )}
         </div>
-        <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginTop: 5, lineHeight: 1.7 }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 5, lineHeight: 1.7 }}>
           Used to tailor weather, frost timing, and threats to your area.
         </div>
       </div>
@@ -483,7 +483,7 @@ function StepSupplies({ survey, update }) {
                 {item.label}
               </div>
               {item.example && (
-                <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginBottom: 8 }}>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginBottom: 8 }}>
                   {item.example}
                 </div>
               )}
@@ -566,7 +566,7 @@ function StepReview({ survey }) {
           border: "1px solid rgba(250,204,21,0.15)", padding: "12px 14px",
           fontFamily: SERIF, fontSize: 13, color: "#b8a870", lineHeight: 1.7, marginBottom: 20,
         }}>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: "#f59e0b", letterSpacing: 1 }}>NOTES: </span>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: "#f59e0b", letterSpacing: 1 }}>NOTES: </span>
           {survey.extraNotes}
         </div>
       )}
@@ -639,7 +639,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
         background: "rgba(0,0,0,0.2)",
         flexShrink: 0,
       }}>
-        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: "var(--c-text-faint)", marginBottom: 4 }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "var(--c-text-faint)", marginBottom: 4 }}>
           NEW GROW — STEP {step + 1} OF {STEPS.length}
         </div>
         <div style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>

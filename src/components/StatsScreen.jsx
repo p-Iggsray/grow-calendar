@@ -13,7 +13,7 @@ function ms(a, b) {
 function SectionTitle({ children }) {
   return (
     <div style={{
-      fontSize: 9, letterSpacing: 3, textTransform: "uppercase",
+      fontSize: 11, letterSpacing: 3, textTransform: "uppercase",
       color: "var(--c-text-ghost)", fontFamily: MONO, marginBottom: 10, marginTop: 26,
     }}>
       {children}
@@ -63,15 +63,15 @@ function StrainCard({ name, harvestDate, today, config }) {
       }}>
         {harvested ? "✓" : daysLeft}
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 9, color: "var(--c-text-ghost)", letterSpacing: 0.5, marginBottom: 12 }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", letterSpacing: 0.5, marginBottom: 12 }}>
         {harvested ? "harvested" : "days left"}
       </div>
       <div style={{ height: 3, background: "var(--c-border)", borderRadius: 2, overflow: "hidden", marginBottom: 5 }}>
         <div style={{ width: `${pct}%`, height: "100%", background: harvested ? "var(--c-text-ghost)" : "var(--c-accent)", borderRadius: 2, transition: "width 0.4s" }} />
       </div>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <span style={{ fontFamily: MONO, fontSize: 9, color: "var(--c-text-ghost)" }}>{pct}%</span>
-        <span style={{ fontFamily: MONO, fontSize: 9, color: "var(--c-text-ghost)" }}>{harvestLabel}</span>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)" }}>{pct}%</span>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)" }}>{harvestLabel}</span>
       </div>
     </div>
   );
@@ -154,8 +154,8 @@ export default function StatsScreen({ config, today, onClose }) {
           }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
-          <span style={{ fontFamily: MONO, fontSize: 9, color: "var(--c-text-ghost)" }}>Transplant · {startLabel}</span>
-          <span style={{ fontFamily: MONO, fontSize: 9, color: "var(--c-text-ghost)" }}>Final harvest · {endLabel}</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)" }}>Transplant · {startLabel}</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)" }}>Final harvest · {endLabel}</span>
         </div>
       </div>
 
@@ -174,7 +174,7 @@ export default function StatsScreen({ config, today, onClose }) {
       </div>
       {strainCards.length > 1 && (
         <div style={{
-          fontFamily: MONO, fontSize: 9, color: "var(--c-text-ghost)", letterSpacing: 0.5,
+          fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", letterSpacing: 0.5,
           marginTop: 8, textAlign: "center",
         }}>
           {strainCards[0].name} harvests {Math.abs(ms(strainCards[0].harvestDate, strainCards[1].harvestDate))} days {ms(strainCards[0].harvestDate, strainCards[1].harvestDate) < 0 ? "before" : "after"} {strainCards[1].name}
@@ -211,12 +211,12 @@ export default function StatsScreen({ config, today, onClose }) {
           <div style={{ fontFamily: SERIF, fontSize: 14, color: "var(--c-text)", marginBottom: 3 }}>
             2026 Season
           </div>
-          <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-muted)", letterSpacing: 0.4 }}>
+          <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)", letterSpacing: 0.4 }}>
             {location ? `${location} · ` : ""}{totalSeasonDays} days
           </div>
         </div>
         <span style={{
-          fontFamily: MONO, fontSize: 9, letterSpacing: 1.5, padding: "3px 7px",
+          fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, padding: "3px 7px",
           color: "var(--c-accent)", borderRadius: 4,
           background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)",
         }}>
@@ -227,10 +227,10 @@ export default function StatsScreen({ config, today, onClose }) {
         background: "var(--c-surface-1)", border: "1px dashed var(--c-border)",
         borderRadius: 12, padding: "16px", textAlign: "center", opacity: 0.45,
       }}>
-        <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", letterSpacing: 0.8 }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", letterSpacing: 0.8 }}>
           Year 2 and beyond
         </div>
-        <div style={{ fontFamily: MONO, fontSize: 9, color: "var(--c-text-ghost)", marginTop: 4, opacity: 0.7 }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 4, opacity: 0.7 }}>
           Season comparisons will appear here
         </div>
       </div>

@@ -79,7 +79,7 @@ export default function TabBar({ activeTab, onTab }) {
               <Icon size={22} strokeWidth={active ? 2.2 : 1.7} />
             )}
             <span style={{
-              fontSize: 9,
+              fontSize: 11,
               fontFamily: "'Courier New', monospace",
               letterSpacing: 0.8,
               fontWeight: active ? 700 : 400,

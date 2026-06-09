@@ -53,7 +53,7 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
         borderBottom: "1px solid var(--c-border-faint)",
       }}>
         <div style={{
-          fontSize: 10, letterSpacing: 4, color: "var(--c-text-ghost)",
+          fontSize: 11, letterSpacing: 4, color: "var(--c-text-ghost)",
           textTransform: "uppercase", marginBottom: 4,
           fontFamily: "'Courier New', monospace",
         }}>
@@ -207,7 +207,7 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
                     : "Enable daily reminders"}
             </span>
             <span style={{
-              fontSize: 10, letterSpacing: 1,
+              fontSize: 11, letterSpacing: 1,
               color: subscribed ? "var(--c-accent)" : "var(--c-text-ghost)",
             }}>
               {subscribed ? "ON" : "OFF"}
@@ -215,7 +215,7 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
           </button>
           {permission === "denied" && (
             <div style={{
-              fontSize: 10, color: "var(--c-text-faint)", marginTop: 4, paddingLeft: 4,
+              fontSize: 11, color: "var(--c-text-faint)", marginTop: 4, paddingLeft: 4,
               fontFamily: "'Courier New', monospace",
             }}>
               Notifications are blocked — allow them in your browser settings
@@ -223,7 +223,7 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
           )}
           {notifError && (
             <div style={{
-              fontSize: 10, color: "#fca5a5", marginTop: 4, paddingLeft: 4,
+              fontSize: 11, color: "#fca5a5", marginTop: 4, paddingLeft: 4,
               fontFamily: "'Courier New', monospace",
             }}>
               {notifError}
@@ -234,7 +234,7 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
 
       <div style={{ padding: "12px 0 0" }}>
         <div style={{
-          fontSize: 10, letterSpacing: 2, color: "var(--c-text-ghost)",
+          fontSize: 11, letterSpacing: 2, color: "var(--c-text-ghost)",
           fontFamily: "'Courier New', monospace", textTransform: "uppercase",
           marginBottom: 8,
         }}>

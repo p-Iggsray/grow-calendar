@@ -195,7 +195,7 @@ export default function Calendar({
                   <span
                     aria-hidden="true"
                     style={{
-                      fontSize: 9, fontFamily: "'Courier New', monospace",
+                      fontSize: 11, fontFamily: "'Courier New', monospace",
                       fontWeight: 700, letterSpacing: 0.5,
                       color: isSel ? "rgba(255,255,255,0.85)" : pStyle.color,
                       lineHeight: 1,
@@ -221,7 +221,7 @@ export default function Calendar({
         </div>
       </div>
 
-      <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "var(--c-text-ghost)", textAlign: "center", marginTop: 8, lineHeight: 1.8 }}>
+      <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-text-ghost)", textAlign: "center", marginTop: 8, lineHeight: 1.8 }}>
         Solid border = today · Dashed = key date · Amber dot = active threats · Green ring = day complete
       </div>
     </div>

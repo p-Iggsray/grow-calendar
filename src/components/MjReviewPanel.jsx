@@ -189,7 +189,7 @@ export default function MjReviewPanel({ activeGrowId, onComplete, onSkip }) {
           <span style={{ fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1 }}>Skip</span>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: "#6aaa6a", textTransform: "uppercase" }}>MJ</div>
+          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 2, color: "#6aaa6a", textTransform: "uppercase" }}>MJ</div>
           <div style={{ fontSize: 16, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>
             Plan Quality Review
           </div>
@@ -266,7 +266,7 @@ export default function MjReviewPanel({ activeGrowId, onComplete, onSkip }) {
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 14 }}>
                 {phaseActions.map((a, i) => (
                   <span key={i} style={{
-                    fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 0.5,
+                    fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 0.5,
                     color: "var(--c-accent)", background: "rgba(34,197,94,0.1)",
                     border: "1px solid rgba(34,197,94,0.25)",
                     borderRadius: 6, padding: "3px 8px",

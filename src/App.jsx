@@ -309,7 +309,7 @@ export default function App() {
           position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
           background: "rgba(160,50,50,0.95)", backdropFilter: "blur(8px)",
           padding: "8px 16px", textAlign: "center",
-          fontFamily: "'Courier New', monospace", fontSize: 10,
+          fontFamily: "'Courier New', monospace", fontSize: 11,
           letterSpacing: 1.5, color: "#fecaca",
         }}>
           OFFLINE — changes will sync when reconnected

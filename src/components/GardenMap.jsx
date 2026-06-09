@@ -183,7 +183,7 @@ export default function GardenMap({ today, config, onClose }) {
           <span style={{ fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1 }}>Back</span>
         </button>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 2, color: "#6aaa6a", textTransform: "uppercase" }}>Garden</div>
+          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 2, color: "#6aaa6a", textTransform: "uppercase" }}>Garden</div>
           <div style={{ fontSize: 16, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>Yard Map</div>
         </div>
         <button type="button" className="touch-target" onClick={resetPositions} style={{
@@ -331,7 +331,7 @@ export default function GardenMap({ today, config, onClose }) {
           return (
             <div key={name} style={{ display: "flex", alignItems: "center", gap: 7 }}>
               <div style={{ width: 9, height: 9, borderRadius: "50%", background: phaseColor, border: `1.5px solid ${phaseColor}` }} />
-              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "var(--c-text-faint)", letterSpacing: 0.5 }}>
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-text-faint)", letterSpacing: 0.5 }}>
                 <span style={{ color: "var(--c-text-dim)", fontWeight: 700 }}>{label}</span> · {name}
               </span>
             </div>
@@ -341,7 +341,7 @@ export default function GardenMap({ today, config, onClose }) {
           <svg width={18} height={8}>
             <line x1={0} y1={4} x2={18} y2={4} stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="3 3" />
           </svg>
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "var(--c-text-faint)", letterSpacing: 0.5 }}>Sun path E→S→W</span>
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-text-faint)", letterSpacing: 0.5 }}>Sun path E→S→W</span>
         </div>
       </div>
     </div>

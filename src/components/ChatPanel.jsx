@@ -63,7 +63,7 @@ function ThreadStrip({ grows, threadGrowId, activeGrowId, onSelect }) {
               background: isSelected ? "rgba(74,222,128,0.18)" : "var(--c-surface-1)",
               border: `1px solid ${isSelected ? "rgba(74,222,128,0.45)" : "var(--c-border)"}`,
               color: isSelected ? "var(--c-accent)" : "var(--c-text-muted)",
-              fontFamily: MONO, fontSize: 10, letterSpacing: 0.8,
+              fontFamily: MONO, fontSize: 11, letterSpacing: 0.8,
               cursor: isSelected ? "default" : "pointer",
               transition: "background 0.15s, border-color 0.15s, color 0.15s",
               whiteSpace: "nowrap",
@@ -306,12 +306,12 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
           <span style={{ fontFamily: MONO, fontSize: 13, letterSpacing: 1 }}>Back</span>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 2, color: "#6aaa6a", textTransform: "uppercase" }}>MJ</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#6aaa6a", textTransform: "uppercase" }}>MJ</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ fontSize: 16, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>Your grow assistant</div>
             {contextDate && (
               <span style={{
-                fontFamily: MONO, fontSize: 10, letterSpacing: 1,
+                fontFamily: MONO, fontSize: 11, letterSpacing: 1,
                 color: "var(--c-accent)", background: "rgba(34,197,94,0.12)",
                 border: "1px solid rgba(34,197,94,0.25)", borderRadius: 6, padding: "2px 7px",
               }}>
@@ -535,7 +535,7 @@ function UsageBar({ usage }) {
     const color = pct >= 90 ? "#f87171" : pct >= 70 ? "#fbbf24" : (dim ? "var(--c-text-faint)" : "var(--c-accent)");
     return (
       <div title={`${label}: ${count} of ${limit} today`} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-        <span style={{ fontFamily: MONO, fontSize: 10, color, letterSpacing: 1 }}>{count}/{limit}</span>
+        <span style={{ fontFamily: MONO, fontSize: 11, color, letterSpacing: 1 }}>{count}/{limit}</span>
         <div style={{ width: 48, height: 3, background: "var(--c-surface-2)", borderRadius: 2, overflow: "hidden" }}>
           <div style={{ width: `${pct}%`, height: "100%", background: color, transition: "width 0.3s, background 0.3s" }} />
         </div>
@@ -546,7 +546,7 @@ function UsageBar({ usage }) {
   return (
     <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
       {modelUsed && (
-        <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: usingPro ? "#a78bfa" : "#5a8a5a", textTransform: "uppercase" }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: usingPro ? "#a78bfa" : "#5a8a5a", textTransform: "uppercase" }}>
           {usingPro ? "◆ Pro" : "Flash"}
         </span>
       )}
@@ -648,7 +648,7 @@ function Bubble({ role, text, dim, imagePreview, actions, showUndo, onUndo }) {
                     onClick={() => onUndo(i, a.undoPayload)}
                     style={{
                       background: "none", border: "1px solid rgba(255,255,255,0.2)",
-                      borderRadius: 5, color: "rgba(255,255,255,0.45)", fontSize: 10,
+                      borderRadius: 5, color: "rgba(255,255,255,0.45)", fontSize: 11,
                       fontFamily: MONO, letterSpacing: 0.5,
                       padding: "1px 6px", cursor: "pointer", lineHeight: 1.4,
                     }}
