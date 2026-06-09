@@ -146,7 +146,7 @@ function NumStepper({ value, onChange, min = 1, max = 10, label }) {
         }}>
         +
       </button>
-      {label && <span style={{ fontFamily: MONO, fontSize: 11, color: "#5a7a5a" }}>{label}</span>}
+      {label && <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-faint)" }}>{label}</span>}
     </div>
   );
 }
@@ -404,7 +404,7 @@ function StepSetup({ survey, update }) {
             <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-accent)" }}>✓ Location set</span>
           )}
           {geoStatus === "error" && (
-            <span style={{ fontFamily: MONO, fontSize: 11, color: "#f87171" }}>Couldn&apos;t get location — type it above</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-danger)" }}>Couldn&apos;t get location — type it above</span>
           )}
         </div>
         <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 5, lineHeight: 1.7 }}>
@@ -464,12 +464,12 @@ function StepSupplies({ survey, update }) {
 
   return (
     <div>
-      <div style={{ fontFamily: MONO, fontSize: 11, color: "#5a7a5a", marginBottom: 14, lineHeight: 1.8 }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-faint)", marginBottom: 14, lineHeight: 1.8 }}>
         Mark what you have, what you still need, or what you won&apos;t use. The AI will reference this in your calendar.
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-accent)" }}>✓ {have} have</div>
-        <div style={{ fontFamily: MONO, fontSize: 11, color: "#fbbf24" }}>⏳ {need} need</div>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-warn)" }}>⏳ {need} need</div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {SUPPLY_ITEMS.map(item => {
@@ -479,7 +479,7 @@ function StepSupplies({ survey, update }) {
               background: "var(--c-surface-1)", borderRadius: 10,
               border: "1px solid var(--c-surface-2)", padding: "12px 14px",
             }}>
-              <div style={{ fontFamily: SERIF, fontSize: 13, color: "#c8dcc8", marginBottom: 4 }}>
+              <div style={{ fontFamily: SERIF, fontSize: 13, color: "var(--c-text-dim)", marginBottom: 4 }}>
                 {item.label}
               </div>
               {item.example && (
@@ -542,7 +542,7 @@ function StepReview({ survey }) {
 
   return (
     <div>
-      <div style={{ fontFamily: MONO, fontSize: 11, color: "#5a7a5a", marginBottom: 14, lineHeight: 1.8 }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-faint)", marginBottom: 14, lineHeight: 1.8 }}>
         Review your answers. The AI will use all of this to build a personalized grow calendar.
       </div>
       <div style={{
@@ -556,7 +556,7 @@ function StepReview({ survey }) {
             borderTop: i > 0 ? "1px solid rgba(255,255,255,0.05)" : "none",
           }}>
             <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-faint)", letterSpacing: 0.5, flexShrink: 0, marginRight: 12 }}>{k}</span>
-            <span style={{ fontFamily: SERIF, fontSize: 13, color: "#c8dcc8", textAlign: "right", wordBreak: "break-word" }}>{v}</span>
+            <span style={{ fontFamily: SERIF, fontSize: 13, color: "var(--c-text-dim)", textAlign: "right", wordBreak: "break-word" }}>{v}</span>
           </div>
         ))}
       </div>
@@ -564,9 +564,9 @@ function StepReview({ survey }) {
         <div style={{
           background: "rgba(250,204,21,0.05)", borderRadius: 10,
           border: "1px solid rgba(250,204,21,0.15)", padding: "12px 14px",
-          fontFamily: SERIF, fontSize: 13, color: "#b8a870", lineHeight: 1.7, marginBottom: 20,
+          fontFamily: SERIF, fontSize: 13, color: "var(--c-amber-dim)", lineHeight: 1.7, marginBottom: 20,
         }}>
-          <span style={{ fontFamily: MONO, fontSize: 11, color: "#f59e0b", letterSpacing: 1 }}>NOTES: </span>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-harvest)", letterSpacing: 1 }}>NOTES: </span>
           {survey.extraNotes}
         </div>
       )}
@@ -675,7 +675,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
               <div style={{
                 marginTop: 16, padding: "10px 14px", borderRadius: 10,
                 background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.3)",
-                fontFamily: MONO, fontSize: 12, color: "#fca5a5",
+                fontFamily: MONO, fontSize: 12, color: "var(--c-danger-soft)",
               }}>
                 {genError}
               </div>

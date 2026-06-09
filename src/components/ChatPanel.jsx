@@ -293,12 +293,12 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
       <div style={{
         display: "flex", alignItems: "center", gap: 12, padding: "12px 14px",
         borderBottom: showStrip ? "none" : "1px solid var(--c-surface-2)",
-        background: "linear-gradient(160deg, #0a1a0d, #13301a)",
+        background: "var(--c-header-bg)",
         flexShrink: 0,
       }}>
         <button type="button" onClick={onClose} style={{
           background: "var(--c-border-faint)", border: "1px solid var(--c-border-strong)",
-          borderRadius: 10, padding: "10px 14px", color: "#c0d4c0",
+          borderRadius: 10, padding: "10px 14px", color: "var(--c-text-dim)",
           cursor: "pointer", minHeight: 44,
           display: "flex", alignItems: "center", gap: 4,
         }}>
@@ -306,9 +306,9 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
           <span style={{ fontFamily: MONO, fontSize: 13, letterSpacing: 1 }}>Back</span>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "#6aaa6a", textTransform: "uppercase" }}>MJ</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-muted)", textTransform: "uppercase" }}>MJ</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>Your grow assistant</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>Your grow assistant</div>
             {contextDate && (
               <span style={{
                 fontFamily: MONO, fontSize: 11, letterSpacing: 1,
@@ -325,7 +325,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
             <div style={{ display: "flex", gap: 5, alignItems: "center", flexShrink: 0 }}>
               <button type="button" className="touch-target" onClick={handleClear} style={{
                 background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)",
-                borderRadius: 8, padding: "6px 10px", color: "#f87171",
+                borderRadius: 8, padding: "6px 10px", color: "var(--c-danger)",
                 cursor: "pointer", fontSize: 11, fontFamily: MONO, letterSpacing: 0.5,
               }}>Clear</button>
               <button type="button" className="touch-target" onClick={() => setConfirmClear(false)} style={{
@@ -337,7 +337,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
           ) : (
             <button type="button" className="touch-target" onClick={() => setConfirmClear(true)} aria-label="Clear conversation" style={{
               background: "none", border: "1px solid var(--c-border)",
-              borderRadius: 8, padding: "8px 10px", color: "#5a7a5a",
+              borderRadius: 8, padding: "8px 10px", color: "var(--c-text-faint)",
               cursor: "pointer", flexShrink: 0,
               display: "flex", alignItems: "center",
             }}>
@@ -409,7 +409,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
           );
         })}
         {error && (
-          <div style={{ fontSize: 12.5, color: "#fca5a5", background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.25)", borderRadius: 8, padding: "8px 10px" }}>{error}</div>
+          <div style={{ fontSize: 12.5, color: "var(--c-danger-soft)", background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.25)", borderRadius: 8, padding: "8px 10px" }}>{error}</div>
         )}
         <div ref={bottomRef} style={{ height: 1, flexShrink: 0 }} />
       </div>
@@ -618,7 +618,7 @@ function Bubble({ role, text, dim, imagePreview, actions, showUndo, onUndo }) {
             if (a.undone) {
               return (
                 <span key={i} style={{
-                  fontSize: 11, fontFamily: MONO, color: "#5a7a5a",
+                  fontSize: 11, fontFamily: MONO, color: "var(--c-text-faint)",
                   background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
                   borderRadius: 8, padding: "4px 9px",
                 }}>↩ Undone</span>

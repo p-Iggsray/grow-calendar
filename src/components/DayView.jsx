@@ -50,8 +50,8 @@ function useLongPress(onLongPress, ms = 500) {
 
 const STATE_CFG = {
   done:    { color: "var(--c-accent)", bg: "rgba(74,222,128,0.05)",  label: null,      textColor: "#5a7a5a" },
-  skipped: { color: "#facc15", bg: "rgba(250,204,21,0.05)",  label: "SKIPPED", textColor: "#8a8060" },
-  blocked: { color: "#f87171", bg: "rgba(248,113,113,0.05)", label: "BLOCKED", textColor: "#8a6060" },
+  skipped: { color: "var(--c-warn)", bg: "rgba(250,204,21,0.05)",  label: "SKIPPED", textColor: "#8a8060" },
+  blocked: { color: "var(--c-danger)", bg: "rgba(248,113,113,0.05)", label: "BLOCKED", textColor: "#8a6060" },
 };
 
 function StatePicker({ task, currentState, onPick, onClose }) {
@@ -76,8 +76,8 @@ function StatePicker({ task, currentState, onPick, onClose }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {[
             { state: "done",    label: "Done",    icon: <Check size={16} strokeWidth={2.5} />, color: "var(--c-accent)", bg: "rgba(74,222,128,0.1)" },
-            { state: "skipped", label: "Skipped", icon: <Minus size={16} strokeWidth={2.5} />, color: "#facc15", bg: "rgba(250,204,21,0.1)" },
-            { state: "blocked", label: "Blocked", icon: <X    size={16} strokeWidth={2.5} />, color: "#f87171", bg: "rgba(248,113,113,0.1)" },
+            { state: "skipped", label: "Skipped", icon: <Minus size={16} strokeWidth={2.5} />, color: "var(--c-warn)", bg: "rgba(250,204,21,0.1)" },
+            { state: "blocked", label: "Blocked", icon: <X    size={16} strokeWidth={2.5} />, color: "var(--c-danger)", bg: "rgba(248,113,113,0.1)" },
           ].map(({ state, label, icon, color, bg }) => (
             <button
               key={state}
@@ -94,7 +94,7 @@ function StatePicker({ task, currentState, onPick, onClose }) {
               {icon}
               {label}
               {currentState === state && (
-                <span style={{ marginLeft: "auto", fontSize: 11, fontFamily: "'Courier New', monospace", color: "#5a7a5a" }}>
+                <span style={{ marginLeft: "auto", fontSize: 11, fontFamily: "'Courier New', monospace", color: "var(--c-text-faint)" }}>
                   tap to clear
                 </span>
               )}
@@ -728,9 +728,9 @@ export default function DayView({
                   marginTop: 16, padding: "10px 14px",
                   background: "rgba(250,204,21,0.06)", borderRadius: 8,
                   borderLeft: "3px solid #f59e0b",
-                  fontSize: 12.5, color: "#b8a870", lineHeight: 1.7,
+                  fontSize: 12.5, color: "var(--c-amber-dim)", lineHeight: 1.7,
                 }}>
-                  <strong style={{ color: "#f59e0b", fontStyle: "normal" }}>Note: </strong>
+                  <strong style={{ color: "var(--c-harvest)", fontStyle: "normal" }}>Note: </strong>
                   {detail.notes}
                 </div>
               )}
@@ -895,11 +895,11 @@ export default function DayView({
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                     <span style={{ fontSize: 18 }}>{threat.icon}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#fbbf24", letterSpacing: -0.2 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-warn)", letterSpacing: -0.2 }}>
                       {threat.title}
                     </span>
                   </div>
-                  <div style={{ fontSize: 13, color: "#c0a87a", lineHeight: 1.7 }}>
+                  <div style={{ fontSize: 13, color: "var(--c-amber-dim)", lineHeight: 1.7 }}>
                     {threat.desc}
                   </div>
                 </div>
@@ -964,7 +964,7 @@ function WeatherCard({ weather, loading }) {
       <div style={{
         background: "rgba(56,189,248,0.06)", borderRadius: 10,
         border: "1px solid rgba(56,189,248,0.15)", padding: "12px 14px",
-        fontFamily: "'Courier New', monospace", fontSize: 11, color: "#5a8a9a",
+        fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-info-dim)",
         letterSpacing: 1, textTransform: "uppercase",
       }}>
         Loading weather…
@@ -1016,14 +1016,14 @@ function WeatherCard({ weather, loading }) {
           border: "1px solid rgba(56,189,248,0.15)", padding: "10px 12px",
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: hasHourly ? 10 : 0 }}>
-            <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1.5, color: "#5a8a9a", textTransform: "uppercase" }}>
+            <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1.5, color: "var(--c-info-dim)", textTransform: "uppercase" }}>
               NWS Forecast
             </span>
             {hasHighLow && (
               <span style={{ fontFamily: "'Courier New', monospace", fontSize: 12, color: "var(--c-text-dim)" }}>
-                <span style={{ color: "#f97316" }}>↑{highLow.high}°</span>
+                <span style={{ color: "var(--c-temp-hot)" }}>↑{highLow.high}°</span>
                 {" "}
-                <span style={{ color: "#38bdf8" }}>↓{highLow.low}°</span>
+                <span style={{ color: "var(--c-info)" }}>↓{highLow.low}°</span>
               </span>
             )}
           </div>
@@ -1035,7 +1035,7 @@ function WeatherCard({ weather, loading }) {
                   display: "flex", flexDirection: "column", alignItems: "center",
                   gap: 3, minWidth: 44, flexShrink: 0,
                 }}>
-                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "#5a8a9a" }}>
+                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-info-dim)" }}>
                     {fmt12h(h.startTime)}
                   </span>
                   <span style={{ fontSize: 14 }}>

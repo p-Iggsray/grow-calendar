@@ -24,7 +24,7 @@ export default class ErrorBoundary extends Component {
         alignItems: "center", justifyContent: "center",
         background: "var(--c-bg)",
         fontFamily: "'Courier New', monospace",
-        color: "#f0ebe0",
+        color: "var(--c-text)",
         padding: 24,
         textAlign: "center",
         gap: 20,
@@ -49,7 +49,7 @@ export default class ErrorBoundary extends Component {
         >
           RELOAD
         </button>
-        <div style={{ fontSize: 11, color: "#2a4a2a", maxWidth: 320, lineHeight: 1.6, marginTop: 8 }}>
+        <div style={{ fontSize: 11, color: "var(--c-text-faint)", maxWidth: 320, lineHeight: 1.6, marginTop: 8 }}>
           {String(this.state.error)}
         </div>
       </div>

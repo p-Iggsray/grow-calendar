@@ -10,7 +10,7 @@ const SERIF = "'Georgia', 'Times New Roman', serif";
 
 const STATUS_META = {
   active:    { label: "ACTIVE",    color: "var(--c-accent)",   bg: "rgba(74,222,128,0.10)",   border: "rgba(74,222,128,0.25)" },
-  harvested: { label: "HARVESTED", color: "#f59e0b",           bg: "rgba(245,158,11,0.10)",   border: "rgba(245,158,11,0.25)" },
+  harvested: { label: "HARVESTED", color: "var(--c-harvest)",           bg: "rgba(245,158,11,0.10)",   border: "rgba(245,158,11,0.25)" },
   abandoned: { label: "ABANDONED", color: "var(--c-text-ghost)", bg: "rgba(100,100,100,0.10)", border: "rgba(100,100,100,0.25)" },
 };
 

@@ -153,7 +153,7 @@ export default function App() {
   if (planError) {
     return (
       <div style={SHELL_STYLE}>
-        <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "#c98a8a" }}>
+        <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "var(--c-danger-soft)" }}>
           Could not load the grow plan. {planError.message}
         </div>
       </div>

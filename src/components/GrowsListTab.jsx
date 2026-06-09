@@ -6,7 +6,7 @@ const SERIF = "'Georgia', 'Times New Roman', serif";
 
 const STATUS_STYLE = {
   active:    { label: "ACTIVE",    color: "var(--c-accent)",     bg: "rgba(74,222,128,0.12)"  },
-  harvested: { label: "HARVESTED", color: "#fbbf24",             bg: "rgba(251,191,36,0.10)"  },
+  harvested: { label: "HARVESTED", color: "var(--c-warn)",             bg: "rgba(251,191,36,0.10)"  },
   abandoned: { label: "ABANDONED", color: "var(--c-text-ghost)", bg: "rgba(255,255,255,0.04)" },
 };
 

@@ -167,14 +167,14 @@ export default function BuddyView({ token }) {
         background: "var(--c-header-bg)",
         padding: "calc(16px + env(safe-area-inset-top, 0px)) 18px 16px",
       }}>
-        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "#6aaa6a", textTransform: "uppercase", marginBottom: 4 }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "var(--c-text-muted)", textTransform: "uppercase", marginBottom: 4 }}>
           Buddy view · read only
         </div>
-        <div style={{ fontSize: 22, fontWeight: 900, color: "#e8f5e3", letterSpacing: -0.5, marginBottom: 2 }}>
+        <div style={{ fontSize: 22, fontWeight: 900, color: "var(--c-text)", letterSpacing: -0.5, marginBottom: 2 }}>
           🌿 {growName}
         </div>
         {data.generatedPlan?.strains?.length > 0 && (
-          <div style={{ fontFamily: MONO, fontSize: 11, color: "#6aaa6a", letterSpacing: 0.5 }}>
+          <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)", letterSpacing: 0.5 }}>
             {data.generatedPlan.strains.map(s => s.name).filter(Boolean).join(" · ")}
           </div>
         )}

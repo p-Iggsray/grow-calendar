@@ -46,7 +46,7 @@ export default function AdminPanel({ onClose }) {
         padding: "14px 16px",
         paddingTop: "calc(14px + env(safe-area-inset-top, 0px))",
         borderBottom: "1px solid var(--c-surface-2)",
-        background: "linear-gradient(160deg, #0a1a0d, #13301a)",
+        background: "var(--c-header-bg)",
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 11, letterSpacing: 3, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 3 }}>
@@ -78,7 +78,7 @@ export default function AdminPanel({ onClose }) {
           <div style={{
             background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.3)",
             borderRadius: 8, padding: "8px 12px", marginBottom: 14,
-            fontSize: 12, color: "#fca5a5",
+            fontSize: 12, color: "var(--c-danger-soft)",
           }}>
             {error}
           </div>

@@ -87,7 +87,7 @@ export default function ShareSheet({ onClose }) {
         </div>
 
         {error && (
-          <div style={{ fontSize: 12, color: "#f87171", fontFamily: MONO, marginBottom: 12, padding: "8px 12px", background: "rgba(248,113,113,0.08)", borderRadius: 8, border: "1px solid rgba(248,113,113,0.2)" }}>
+          <div style={{ fontSize: 12, color: "var(--c-danger)", fontFamily: MONO, marginBottom: 12, padding: "8px 12px", background: "rgba(248,113,113,0.08)", borderRadius: 8, border: "1px solid rgba(248,113,113,0.2)" }}>
             {error}
           </div>
         )}
@@ -161,7 +161,7 @@ export default function ShareSheet({ onClose }) {
                   flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                   padding: "11px", borderRadius: 10,
                   background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.25)",
-                  color: "#f87171", fontFamily: MONO, fontSize: 11, letterSpacing: 1,
+                  color: "var(--c-danger)", fontFamily: MONO, fontSize: 11, letterSpacing: 1,
                   cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1,
                 }}
               >

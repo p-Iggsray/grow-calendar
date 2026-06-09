@@ -67,14 +67,14 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress, locat
             borderRadius: 8, padding: "5px 11px", fontSize: 11, fontFamily: "'Courier New', monospace",
           }}>
             <span style={{ opacity: 0.5 }}>{nextMs.icon} {nextMs.label} in </span>
-            <span style={{ color: "#facc15", fontWeight: 700 }}>{daysToNext}d</span>
+            <span style={{ color: "var(--c-warn)", fontWeight: 700 }}>{daysToNext}d</span>
           </div>
         )}
         {nextMs && !nextMs.done && daysToNext === 0 && (
           <div style={{
             background: "rgba(250,204,21,0.12)", border: "1px solid rgba(250,204,21,0.3)",
             borderRadius: 8, padding: "5px 11px", fontSize: 11, fontFamily: "'Courier New', monospace",
-            color: "#facc15",
+            color: "var(--c-warn)",
           }}>
             {nextMs.icon} {nextMs.label} is TODAY
           </div>

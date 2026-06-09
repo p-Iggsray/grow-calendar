@@ -9,6 +9,14 @@
   --c-text-faint:    #6a986a;   /* tertiary                       */
   --c-text-ghost:    #5f8f5f;   /* ghost / disabled               */
   --c-accent:        #4ade80;   /* interactive green              */
+  --c-warn:          #fbbf24;   /* warning / caution text         */
+  --c-harvest:       #f59e0b;   /* harvest / amber accent         */
+  --c-temp-hot:      #f97316;   /* hot temperature                */
+  --c-amber-dim:     #b8a870;   /* low-key amber detail           */
+  --c-danger:        #f87171;   /* error / destructive            */
+  --c-danger-soft:   #fca5a5;   /* error (softer)                 */
+  --c-info:          #38bdf8;   /* info / cool highlight          */
+  --c-info-dim:      #5a8a9a;   /* info label                     */
   --c-surface-1:     rgba(255,255,255,0.04);   /* card fill       */
   --c-surface-2:     rgba(255,255,255,0.08);   /* hover / active  */
   --c-border-faint:  rgba(255,255,255,0.06);   /* hairline        */
@@ -34,6 +42,14 @@
     --c-text-faint:    #4d6d4d;
     --c-text-ghost:    #587858;
     --c-accent:        #15803d;
+    --c-warn:          #92600a;
+    --c-harvest:       #b45309;
+    --c-temp-hot:      #c2410c;
+    --c-amber-dim:     #7a5e12;
+    --c-danger:        #c0271f;
+    --c-danger-soft:   #c0271f;
+    --c-info:          #0369a1;
+    --c-info-dim:      #2f6377;
     --c-surface-1:     rgba(0,0,0,0.04);
     --c-surface-2:     rgba(0,0,0,0.07);
     --c-border-faint:  rgba(0,0,0,0.05);
@@ -61,6 +77,14 @@
   --c-text-faint:    #4d6d4d;
   --c-text-ghost:    #587858;
   --c-accent:        #15803d;
+  --c-warn:          #92600a;
+  --c-harvest:       #b45309;
+  --c-temp-hot:      #c2410c;
+  --c-amber-dim:     #7a5e12;
+  --c-danger:        #c0271f;
+  --c-danger-soft:   #c0271f;
+  --c-info:          #0369a1;
+  --c-info-dim:      #2f6377;
   --c-surface-1:     rgba(0,0,0,0.04);
   --c-surface-2:     rgba(0,0,0,0.07);
   --c-border-faint:  rgba(0,0,0,0.05);

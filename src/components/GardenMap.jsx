@@ -175,7 +175,7 @@ export default function GardenMap({ today, config, onClose }) {
       }}>
         <button type="button" onClick={onClose} style={{
           background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.12)",
-          borderRadius: 10, padding: "10px 14px", color: "#c0d4c0",
+          borderRadius: 10, padding: "10px 14px", color: "var(--c-text-dim)",
           cursor: "pointer", minHeight: 44,
           display: "flex", alignItems: "center", gap: 4,
         }}>
@@ -183,11 +183,11 @@ export default function GardenMap({ today, config, onClose }) {
           <span style={{ fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1 }}>Back</span>
         </button>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 2, color: "#6aaa6a", textTransform: "uppercase" }}>Garden</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>Yard Map</div>
+          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 2, color: "var(--c-text-muted)", textTransform: "uppercase" }}>Garden</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>Yard Map</div>
         </div>
         <button type="button" className="touch-target" onClick={resetPositions} style={{
-          background: "none", border: "none", color: "#6aaa6a",
+          background: "none", border: "none", color: "var(--c-text-muted)",
           cursor: "pointer", padding: 8, display: "flex", alignItems: "center", gap: 5,
           fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1,
         }}>
@@ -240,14 +240,14 @@ export default function GardenMap({ today, config, onClose }) {
 
           {/* Compass labels */}
           <text x={VW / 2} y={34} textAnchor="middle" fill="var(--c-text-ghost)" fontSize={11} fontFamily="'Courier New', monospace" letterSpacing={2}>N</text>
-          <text x={VW / 2} y={VH - 8} textAnchor="middle" fill="#f59e0b" fontSize={11} fontFamily="'Courier New', monospace" letterSpacing={2} opacity={0.7}>S ☀</text>
-          <text x={14} y={YARD.y + YARD.h / 2 + 4} textAnchor="middle" fill="#f59e0b" fontSize={11} fontFamily="'Courier New', monospace" opacity={0.7}>W</text>
-          <text x={VW - 14} y={YARD.y + YARD.h / 2 + 4} textAnchor="middle" fill="#f59e0b" fontSize={11} fontFamily="'Courier New', monospace" opacity={0.7}>E</text>
+          <text x={VW / 2} y={VH - 8} textAnchor="middle" fill="var(--c-harvest)" fontSize={11} fontFamily="'Courier New', monospace" letterSpacing={2} opacity={0.7}>S ☀</text>
+          <text x={14} y={YARD.y + YARD.h / 2 + 4} textAnchor="middle" fill="var(--c-harvest)" fontSize={11} fontFamily="'Courier New', monospace" opacity={0.7}>W</text>
+          <text x={VW - 14} y={YARD.y + YARD.h / 2 + 4} textAnchor="middle" fill="var(--c-harvest)" fontSize={11} fontFamily="'Courier New', monospace" opacity={0.7}>E</text>
 
           {/* Live sun marker */}
           {sunPos && (
             <g>
-              <circle cx={sunPos.x} cy={sunPos.y} r={9} fill="#fbbf24" opacity={0.85} />
+              <circle cx={sunPos.x} cy={sunPos.y} r={9} fill="var(--c-warn)" opacity={0.85} />
               <circle cx={sunPos.x} cy={sunPos.y} r={13} fill="none" stroke="#fbbf24" strokeWidth={1} opacity={0.35} />
               <text x={sunPos.x} y={sunPos.y + 4} textAnchor="middle" fontSize={10}>☀</text>
             </g>

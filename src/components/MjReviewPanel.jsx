@@ -172,7 +172,7 @@ export default function MjReviewPanel({ activeGrowId, onComplete, onSkip }) {
       <div style={{
         display: "flex", alignItems: "center", gap: 12, padding: "12px 14px",
         borderBottom: "1px solid var(--c-surface-2)",
-        background: "linear-gradient(160deg, #0a1a0d, #13301a)",
+        background: "var(--c-header-bg)",
         flexShrink: 0,
       }}>
         <button
@@ -180,7 +180,7 @@ export default function MjReviewPanel({ activeGrowId, onComplete, onSkip }) {
           onClick={onSkip}
           style={{
             background: "var(--c-border-faint)", border: "1px solid var(--c-border-strong)",
-            borderRadius: 10, padding: "10px 14px", color: "#c0d4c0",
+            borderRadius: 10, padding: "10px 14px", color: "var(--c-text-dim)",
             cursor: "pointer", minHeight: 44,
             display: "flex", alignItems: "center", gap: 4,
           }}
@@ -189,8 +189,8 @@ export default function MjReviewPanel({ activeGrowId, onComplete, onSkip }) {
           <span style={{ fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1 }}>Skip</span>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 2, color: "#6aaa6a", textTransform: "uppercase" }}>MJ</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#e8f5e3", letterSpacing: -0.3 }}>
+          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 2, color: "var(--c-text-muted)", textTransform: "uppercase" }}>MJ</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>
             Plan Quality Review
           </div>
         </div>
@@ -246,7 +246,7 @@ export default function MjReviewPanel({ activeGrowId, onComplete, onSkip }) {
 
         {errorMsg && (
           <div style={{
-            fontSize: 12.5, color: "#fca5a5",
+            fontSize: 12.5, color: "var(--c-danger-soft)",
             background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.25)",
             borderRadius: 8, padding: "8px 10px",
           }}>{errorMsg}</div>

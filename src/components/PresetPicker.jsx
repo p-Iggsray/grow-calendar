@@ -57,7 +57,7 @@ export default function PresetPicker({ currentPresetId, onApplied, onCancel }) {
         </div>
 
         {error && (
-          <div style={{ fontSize: 12, color: "#f87171", fontFamily: MONO, marginBottom: 12, padding: "8px 12px", background: "rgba(248,113,113,0.08)", borderRadius: 8, border: "1px solid rgba(248,113,113,0.2)" }}>
+          <div style={{ fontSize: 12, color: "var(--c-danger)", fontFamily: MONO, marginBottom: 12, padding: "8px 12px", background: "rgba(248,113,113,0.08)", borderRadius: 8, border: "1px solid rgba(248,113,113,0.2)" }}>
             {error}
           </div>
         )}

@@ -223,7 +223,7 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
           )}
           {notifError && (
             <div style={{
-              fontSize: 11, color: "#fca5a5", marginTop: 4, paddingLeft: 4,
+              fontSize: 11, color: "var(--c-danger-soft)", marginTop: 4, paddingLeft: 4,
               fontFamily: "'Courier New', monospace",
             }}>
               {notifError}
