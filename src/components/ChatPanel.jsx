@@ -168,8 +168,10 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
     setImageData(null);
   }, []);
 
-  async function send() {
-    const text = input.trim();
+  // `textOverride` lets suggestion chips send in one tap. The send button's
+  // onClick passes a (non-string) event, so it correctly falls back to `input`.
+  async function send(textOverride) {
+    const text = (typeof textOverride === "string" ? textOverride : input).trim();
     if ((!text && !imageData) || busy) return;
     setBusy(true);
     setInput("");
@@ -382,7 +384,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {(suggestions ?? []).map(s => (
-                <button key={s} type="button" onClick={() => setInput(s)} style={{
+                <button key={s} type="button" onClick={() => send(s)} disabled={busy} style={{
                   background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
                   borderRadius: 10, padding: "12px 14px", color: "var(--c-text-dim)", fontSize: 13,
                   cursor: "pointer", textAlign: "left", fontFamily: MONO, minHeight: 44,
