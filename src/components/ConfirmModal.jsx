@@ -50,7 +50,7 @@ export default function ConfirmModal({
   const titleId = "confirm-modal-title";
   const messageId = "confirm-modal-message";
   const confirmTone = tone === "destructive"
-    ? { background: "rgba(220,38,38,0.18)", border: "1px solid rgba(220,38,38,0.45)", color: "#fca5a5" }
+    ? { background: "rgba(220,38,38,0.18)", border: "1px solid rgba(220,38,38,0.45)", color: "var(--c-danger-soft)" }
     : { background: "rgba(34,197,94,0.18)", border: "1px solid rgba(34,197,94,0.45)", color: "var(--c-accent)" };
 
   return (
@@ -80,7 +80,7 @@ export default function ConfirmModal({
             exit={{ scale: 0.94, opacity: 0 }}
             transition={{ type: "spring", damping: 26, stiffness: 300, restDelta: 0.5 }}
             style={{
-              background: "#13301a",
+              background: "var(--c-panel-bg)",
               border: "1px solid var(--c-border-strong)",
               borderRadius: 14,
               padding: "20px 22px 18px",
@@ -93,7 +93,7 @@ export default function ConfirmModal({
               {title}
             </div>
             {message && (
-              <div id={messageId} style={{ fontSize: 13.5, lineHeight: 1.6, color: "#c8dcc8", marginBottom: 18 }}>
+              <div id={messageId} style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--c-text-dim)", marginBottom: 18 }}>
                 {message}
               </div>
             )}
@@ -104,8 +104,8 @@ export default function ConfirmModal({
                 className="touch-target"
                 onClick={onCancel}
                 style={{
-                  background: "var(--c-border-faint)", border: "1px solid rgba(255,255,255,0.14)",
-                  borderRadius: 10, padding: "8px 14px", color: "#c8dcc8",
+                  background: "var(--c-border-faint)", border: "1px solid var(--c-border-strong)",
+                  borderRadius: 10, padding: "8px 14px", color: "var(--c-text-dim)",
                   fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1,
                   cursor: "pointer",
                 }}>

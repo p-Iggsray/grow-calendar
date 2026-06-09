@@ -7,7 +7,7 @@ const LABEL_STYLE = {
   textTransform: "uppercase", fontFamily: "'Courier New', monospace",
 };
 const INPUT_STYLE = {
-  background: "rgba(0,0,0,0.25)",
+  background: "var(--c-input-bg)",
   border: "1px solid var(--c-border)",
   borderRadius: 8,
   padding: "10px 12px",
@@ -96,9 +96,9 @@ export default function LoginGate() {
     <div style={{
       fontFamily: "'Georgia', 'Times New Roman', serif",
       minHeight: "100vh",
-      background: "linear-gradient(160deg, #0a1a0d 0%, #1a3a1e 50%, #0d2410 100%)",
+      background: "var(--c-header-bg)",
       display: "flex", alignItems: "center", justifyContent: "center",
-      padding: 16, color: "#f0ebe0",
+      padding: 16, color: "var(--c-text)",
     }}>
       <div style={{
         width: "100%", maxWidth: 380,
@@ -119,7 +119,7 @@ export default function LoginGate() {
 
         {/* Success banner */}
         {successMsg && (
-          <div style={{ fontSize: 12, color: "#86efac", lineHeight: 1.5, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 8, padding: "8px 10px", marginBottom: 12 }}>
+          <div style={{ fontSize: 12, color: "var(--c-accent)", lineHeight: 1.5, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 8, padding: "8px 10px", marginBottom: 12 }}>
             {successMsg}
           </div>
         )}
@@ -128,7 +128,7 @@ export default function LoginGate() {
         {isCheckEmail ? (
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 28, marginBottom: 12 }}>📬</div>
-            <div style={{ fontSize: 14, color: "#c0d8c0", lineHeight: 1.7, marginBottom: 20 }}>
+            <div style={{ fontSize: 14, color: "var(--c-text-dim)", lineHeight: 1.7, marginBottom: 20 }}>
               If that email is on file, a reset link is on its way. Check your inbox (and spam folder).
             </div>
             <button type="button" onClick={() => switchMode("login")} style={linkBtnStyle}>
@@ -165,7 +165,7 @@ export default function LoginGate() {
 
             {/* Error */}
             {error && (
-              <div style={{ fontSize: 12, color: "#fca5a5", lineHeight: 1.5, background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.25)", borderRadius: 8, padding: "8px 10px" }}>
+              <div style={{ fontSize: 12, color: "var(--c-danger-soft)", lineHeight: 1.5, background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.25)", borderRadius: 8, padding: "8px 10px" }}>
                 {error}
               </div>
             )}
@@ -255,7 +255,7 @@ function PasswordField({ label = "Password", value, onChange, autoComplete, auto
       <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={LABEL_STYLE}>{label}</span>
         {capsLockOn && (
-          <span role="status" aria-live="polite" style={{ fontSize: 11, letterSpacing: 1.5, fontFamily: "'Courier New', monospace", color: "#facc15", background: "rgba(250,204,21,0.12)", border: "1px solid rgba(250,204,21,0.35)", borderRadius: 6, padding: "1px 6px", textTransform: "uppercase" }}>
+          <span role="status" aria-live="polite" style={{ fontSize: 11, letterSpacing: 1.5, fontFamily: "'Courier New', monospace", color: "var(--c-warn)", background: "rgba(250,204,21,0.12)", border: "1px solid rgba(250,204,21,0.35)", borderRadius: 6, padding: "1px 6px", textTransform: "uppercase" }}>
             Caps Lock
           </span>
         )}

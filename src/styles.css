@@ -19,6 +19,7 @@
   --c-info-dim:      #5a8a9a;   /* info label                     */
   --c-surface-1:     rgba(255,255,255,0.04);   /* card fill       */
   --c-surface-2:     rgba(255,255,255,0.08);   /* hover / active  */
+  --c-input-bg:      rgba(0,0,0,0.25);         /* form field fill */
   --c-border-faint:  rgba(255,255,255,0.06);   /* hairline        */
   --c-border-soft:   rgba(255,255,255,0.07);   /* soft border     */
   --c-border:        rgba(255,255,255,0.10);   /* standard border */
@@ -52,6 +53,7 @@
     --c-info-dim:      #2f6377;
     --c-surface-1:     rgba(0,0,0,0.04);
     --c-surface-2:     rgba(0,0,0,0.07);
+    --c-input-bg:      #ffffff;
     --c-border-faint:  rgba(0,0,0,0.05);
     --c-border-soft:   rgba(0,0,0,0.07);
     --c-border:        rgba(0,0,0,0.11);
@@ -87,6 +89,7 @@
   --c-info-dim:      #2f6377;
   --c-surface-1:     rgba(0,0,0,0.04);
   --c-surface-2:     rgba(0,0,0,0.07);
+  --c-input-bg:      #ffffff;
   --c-border-faint:  rgba(0,0,0,0.05);
   --c-border-soft:   rgba(0,0,0,0.07);
   --c-border:        rgba(0,0,0,0.11);
