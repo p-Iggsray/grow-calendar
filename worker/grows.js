@@ -1,5 +1,5 @@
 // @ts-check
-import { json, error } from "./util.js";
+import { json, error, safeJsonBounded } from "./util.js";
 import { logError } from "./log.js";
 import {
   buildSetupPrompt,
@@ -15,6 +15,7 @@ const VALID_PHASES = new Set([
   "pre_flower", "flower", "flush", "flush_gdp", "harvest_gdp",
   "flower_haze", "flush_haze", "harvest_haze",
 ]);
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function newGrowId() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -455,6 +456,47 @@ export async function deleteGrowPhase(env, user, growId, phase) {
   await env.DB.prepare(
     "UPDATE grows SET phase_overrides = ?, updated_at = ? WHERE id = ? AND user_id = ?"
   ).bind(JSON.stringify(phaseOverrides), new Date().toISOString(), growId, user.id).run();
+
+  return json({ ok: true });
+}
+
+// PATCH /api/grows/:id/day/:date — merge editedTasks into plan_day_overrides for one day
+export async function patchGrowDayOverride(request, env, user, growId, date) {
+  if (!DATE_RE.test(date)) return error(400, "invalid date");
+
+  const growRow = await env.DB.prepare(
+    "SELECT id FROM grows WHERE id = ? AND user_id = ?"
+  ).bind(growId, user.id).first();
+  if (!growRow) return error(404, "grow not found");
+
+  const parsed = await safeJsonBounded(request, 8192);
+  if (!parsed.ok) return error(parsed.status, parsed.error);
+  const { editedTasks } = parsed.data ?? {};
+  if (!editedTasks || typeof editedTasks !== "object" || Array.isArray(editedTasks)) {
+    return error(400, "editedTasks must be an object mapping index → text");
+  }
+
+  const existing = await env.DB.prepare(
+    "SELECT payload FROM plan_day_overrides WHERE user_id = ? AND date = ?"
+  ).bind(user.id, date).first();
+
+  let payload = {};
+  if (existing?.payload) {
+    try { payload = JSON.parse(existing.payload); } catch { /* start fresh */ }
+  }
+
+  const merged = { ...(payload.editedTasks ?? {}), ...editedTasks };
+  for (const k of Object.keys(merged)) {
+    if (merged[k] === null || merged[k] === "") delete merged[k];
+  }
+  if (Object.keys(merged).length > 0) payload.editedTasks = merged;
+  else delete payload.editedTasks;
+
+  await env.DB.prepare(
+    `INSERT INTO plan_day_overrides (user_id, date, payload)
+     VALUES (?, ?, ?)
+     ON CONFLICT(user_id, date) DO UPDATE SET payload = excluded.payload`
+  ).bind(user.id, date, JSON.stringify(payload)).run();
 
   return json({ ok: true });
 }

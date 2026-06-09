@@ -13,7 +13,7 @@ import { getWeather } from "./weather.js";
 import { getPushVapidKey, postPushSubscribe, deletePushSubscribe, getPushToday, sendDailyReminders } from "./push.js";
 import { getPlan, patchPlanConfig, putPlanPhase, deletePlanPhase } from "./plan.js";
 import { postPlanSetup, postPlanRegenerate } from "./planSetup.js";
-import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, setupGrow, regenerateGrow, putGrowPhase, deleteGrowPhase } from "./grows.js";
+import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, setupGrow, regenerateGrow, putGrowPhase, deleteGrowPhase, patchGrowDayOverride } from "./grows.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
 import { getStats } from "./stats.js";
 import { requireApproved, requireAdmin } from "./guard.js";
@@ -168,6 +168,8 @@ async function authenticatedRoute(request, env, path, method, user) {
     if (method === "PUT")    return putGrowPhase(request, env, user, growId, phase);
     if (method === "DELETE") return deleteGrowPhase(env, user, growId, phase);
   }
+  const growDayMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/day\/(\d{4}-\d{2}-\d{2})$/);
+  if (growDayMatch && method === "PATCH") return patchGrowDayOverride(request, env, user, growDayMatch[1], growDayMatch[2]);
 
   if (path === "/api/share" && method === "GET")    return getShareToken(env, user);
   if (path === "/api/share" && method === "POST")   return createShareToken(env, user);

@@ -207,6 +207,8 @@ export const api = {
     request(`/api/grows/${id}/phase/${phase}`, { method: "PUT", body: JSON.stringify(data) }),
   clearGrowPhase: (id, phase) =>
     request(`/api/grows/${id}/phase/${phase}`, { method: "DELETE", body: "{}" }),
+  patchGrowDay: (id, date, patch) =>
+    request(`/api/grows/${id}/day/${date}`, { method: "PATCH", body: JSON.stringify(patch) }),
 
   getShareToken: () => request("/api/share"),
   createShareToken: () => request("/api/share", { method: "POST", body: "{}" }),

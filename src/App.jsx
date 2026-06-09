@@ -232,6 +232,7 @@ export default function App() {
   const selPhase    = selected ? getPhase(selected, config) : null;
   const selStyle    = selPhase ? PHASES[selPhase] : null;
   const detail      = selected ? getDetail(selected, config, overrides, generatedPlan, phaseOverrides) : null;
+  const dayEditedTasks = selected ? (overrides?.[ymd(selected)]?.editedTasks ?? {}) : {};
   const threats     = selPhase ? getThreatsForPhase(selPhase, generatedPlan) : [];
   const todayThreats = todayPhase ? getThreatsForPhase(todayPhase, generatedPlan) : [];
 
@@ -243,6 +244,23 @@ export default function App() {
     contextDate: chatContext,
     today,
   });
+
+  async function handleEditTaskForDay(taskIndex, text) {
+    await api.patchGrowDay(activeGrowId, ymd(selected), { editedTasks: { [taskIndex]: text } });
+    reloadPlan();
+  }
+
+  async function handleEditTaskForPhase(taskIndex, text) {
+    if (!selPhase) return;
+    const currentTasks =
+      phaseOverrides?.[selPhase]?.tasks ??
+      generatedPlan?.phases?.[selPhase]?.tasks ??
+      [];
+    const newTasks = [...currentTasks];
+    newTasks[taskIndex] = text;
+    await api.saveGrowPhase(activeGrowId, selPhase, { tasks: newTasks });
+    reloadPlan();
+  }
 
   function pickDay(date)       { setActiveTab("calendar"); openDay(date); }
   function pickMilestone(date) { setMonth(date.getMonth()); openDay(date); }
@@ -384,6 +402,7 @@ export default function App() {
               selected={selected}
               detail={detail}
               selStyle={selStyle}
+              selPhase={selPhase}
               threats={threats}
               taskStates={taskStates}
               checkoffsLoading={checkoffsLoading}
@@ -395,6 +414,9 @@ export default function App() {
               noteStatus={noteStatus}
               onBack={goBack}
               onJumpToday={sameDay(selected, today) ? null : jumpToday}
+              dayEditedTasks={dayEditedTasks}
+              onEditTaskForDay={handleEditTaskForDay}
+              onEditTaskForPhase={handleEditTaskForPhase}
             />
           </motion.div>
         )}

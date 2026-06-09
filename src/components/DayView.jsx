@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { ChevronLeft, Pencil, Check, Minus, X } from "lucide-react";
 import { fmtL } from "../lib/dates.js";
-import { useTaskNotes, MAX_TASK_NOTE_LEN } from "../lib/useTaskNote.js";
 import { useGrowLog } from "../lib/useGrowLog.js";
 import { useWeather } from "../lib/useWeather.js";
 
@@ -107,9 +106,7 @@ function StatePicker({ task, currentState, onPick, onClose }) {
   );
 }
 
-function TaskRow({ task, index, state, accentColor, onTap, onLongPress, note, onNoteChange }) {
-  const [noteOpen, setNoteOpen] = useState(false);
-
+function TaskRow({ task, index, state, accentColor, onTap, onLongPress, onEditTask, isEdited }) {
   const handleLongPress = useCallback(() => onLongPress(index), [onLongPress, index]);
   const { handlers: lpHandlers, didLongPress } = useLongPress(handleLongPress, 500);
 
@@ -162,18 +159,23 @@ function TaskRow({ task, index, state, accentColor, onTap, onLongPress, note, on
               {cfg.label}
             </div>
           )}
+          {isEdited && (
+            <div style={{ fontSize: 9, fontFamily: "'Courier New', monospace", color: accentColor + "99", letterSpacing: 0.5, marginTop: 1 }}>
+              EDITED
+            </div>
+          )}
         </div>
 
-        {/* Per-task note toggle */}
+        {/* Edit task text */}
         <button
           type="button"
-          onClick={() => setNoteOpen(o => !o)}
-          aria-label="Toggle task note"
+          onClick={() => onEditTask(index)}
+          aria-label="Edit task text"
           style={{
-            background: (noteOpen || note) ? `${accentColor}22` : "none",
-            border: `1px solid ${note ? accentColor + "55" : "var(--c-border)"}`,
+            background: isEdited ? `${accentColor}22` : "none",
+            border: `1px solid ${isEdited ? accentColor + "55" : "var(--c-border)"}`,
             borderRadius: 6, padding: "5px 7px",
-            color: note ? accentColor : "#5a7a5a",
+            color: isEdited ? accentColor : "#5a7a5a",
             cursor: "pointer", flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
             minHeight: 28, minWidth: 28,
@@ -182,31 +184,127 @@ function TaskRow({ task, index, state, accentColor, onTap, onLongPress, note, on
           <Pencil size={12} strokeWidth={1.8} />
         </button>
       </div>
-
-      {/* Inline note */}
-      {noteOpen && (
-        <div style={{ padding: "6px 8px 10px", borderTop: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.15)" }}>
-          <textarea
-            value={note ?? ""}
-            onChange={e => onNoteChange(index, e.target.value.slice(0, MAX_TASK_NOTE_LEN))}
-            placeholder="Add a note for this task…"
-            rows={2}
-            autoFocus
-            style={{
-              width: "100%", resize: "vertical",
-              background: "rgba(0,0,0,0.2)", color: "var(--c-text)",
-              border: "1px solid var(--c-border)", borderRadius: 8,
-              padding: "8px 10px", fontSize: 16, lineHeight: 1.6,
-              fontFamily: "'Georgia', 'Times New Roman', serif", outline: "none",
-              boxSizing: "border-box",
-            }}
-          />
-          <div style={{ textAlign: "right", fontFamily: "'Courier New', monospace", fontSize: 10, color: "var(--c-text-ghost)", marginTop: 3 }}>
-            {(note ?? "").length}/{MAX_TASK_NOTE_LEN}
-          </div>
-        </div>
-      )}
     </div>
+  );
+}
+
+function TaskEditSheet({ currentText, onSave, onClose }) {
+  const [text, setText] = useState(currentText);
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    textareaRef.current?.focus();
+    const len = currentText.length;
+    textareaRef.current?.setSelectionRange(len, len);
+  }, [currentText]);
+
+  const isDirty = text.trim() && text.trim() !== currentText.trim();
+
+  return (
+    <>
+      <div
+        onClick={onClose}
+        style={{
+          position: "fixed", inset: 0, zIndex: 50,
+          background: "rgba(0,0,0,0.55)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)",
+        }}
+      />
+      <div style={{
+        position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 51,
+        background: "var(--c-panel-bg)", borderTop: "1px solid var(--c-border)",
+        borderRadius: "18px 18px 0 0",
+        padding: "20px 20px calc(24px + env(safe-area-inset-bottom, 0px))",
+      }}>
+        <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 1.5, color: "var(--c-text-muted)", textTransform: "uppercase", marginBottom: 12 }}>
+          Edit task text
+        </div>
+        <textarea
+          ref={textareaRef}
+          value={text}
+          onChange={e => setText(e.target.value)}
+          rows={4}
+          style={{
+            width: "100%", resize: "vertical", boxSizing: "border-box",
+            background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
+            border: "1px solid var(--c-border-strong)", borderRadius: 10,
+            padding: "12px 14px", fontSize: 16, lineHeight: 1.7,
+            fontFamily: "'Georgia', 'Times New Roman', serif", outline: "none",
+          }}
+        />
+        <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              flex: 1, padding: "14px 0", borderRadius: 12,
+              background: "var(--c-surface-1)", border: "1px solid var(--c-surface-2)",
+              color: "var(--c-text-dim)", cursor: "pointer", fontSize: 14, fontWeight: 600,
+            }}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => isDirty && onSave(text.trim())}
+            style={{
+              flex: 2, padding: "14px 0", borderRadius: 12,
+              background: "var(--c-accent)", border: "none",
+              color: "#000", cursor: "pointer", fontSize: 14, fontWeight: 700,
+              opacity: isDirty ? 1 : 0.4,
+            }}>
+            Save
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function PhaseApplyBanner({ phaseName, onApply, onDismiss }) {
+  return (
+    <>
+      <div
+        onClick={onDismiss}
+        style={{
+          position: "fixed", inset: 0, zIndex: 50,
+          background: "rgba(0,0,0,0.55)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)",
+        }}
+      />
+      <div style={{
+        position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 51,
+        background: "var(--c-panel-bg)", borderTop: "1px solid var(--c-border)",
+        borderRadius: "18px 18px 0 0",
+        padding: "20px 20px calc(24px + env(safe-area-inset-bottom, 0px))",
+      }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", marginBottom: 8 }}>
+          Apply to all {phaseName} days?
+        </div>
+        <div style={{ fontSize: 13, color: "var(--c-text-dim)", lineHeight: 1.7, marginBottom: 18 }}>
+          This will update this task text across every day in the {phaseName} phase, not just today.
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            type="button"
+            onClick={onDismiss}
+            style={{
+              flex: 1, padding: "14px 0", borderRadius: 12,
+              background: "var(--c-surface-1)", border: "1px solid var(--c-surface-2)",
+              color: "var(--c-text-dim)", cursor: "pointer", fontSize: 14, fontWeight: 600,
+            }}>
+            Just today
+          </button>
+          <button
+            type="button"
+            onClick={onApply}
+            style={{
+              flex: 2, padding: "14px 0", borderRadius: 12,
+              background: "var(--c-accent)", border: "none",
+              color: "#000", cursor: "pointer", fontSize: 14, fontWeight: 700,
+            }}>
+            All {phaseName} days
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -226,17 +324,20 @@ const numInputStyle = {
 };
 
 export default function DayView({
-  selected, detail, selStyle, threats,
+  selected, detail, selStyle, selPhase, threats,
   taskStates, checkoffsLoading, onToggle, onSetTaskState,
   note, onChangeNote, onFlushNote, noteStatus,
   onBack, onJumpToday,
+  dayEditedTasks,
+  onEditTaskForDay, onEditTaskForPhase,
 }) {
   const [tab, setTab] = useState("tasks");
   const [noteEditing, setNoteEditing] = useState(false);
   const [pickerIdx, setPickerIdx] = useState(null);
+  const [editingIdx, setEditingIdx] = useState(null);
+  const [pendingPhaseApply, setPendingPhaseApply] = useState(null);
   const textareaRef = useRef(null);
 
-  const { notes: taskNotes, setNote: setTaskNote } = useTaskNotes(selected, true);
   const { entry: logEntry, setField: setLogField, status: logStatus } = useGrowLog(selected, true);
 
   // Weather: only fetch for today or future dates.
@@ -268,6 +369,25 @@ export default function DayView({
     setPickerIdx(null);
   }
 
+  async function handleSaveTaskEdit(newText) {
+    const idx = editingIdx;
+    setEditingIdx(null);
+    try {
+      await onEditTaskForDay?.(idx, newText);
+      if (selPhase && selStyle?.label) {
+        setPendingPhaseApply({ index: idx, text: newText });
+      }
+    } catch { /* ignored */ }
+  }
+
+  async function handleApplyPhase() {
+    if (!pendingPhaseApply) return;
+    try {
+      await onEditTaskForPhase?.(pendingPhaseApply.index, pendingPhaseApply.text);
+    } catch { /* ignored */ }
+    setPendingPhaseApply(null);
+  }
+
   return (
     <div style={{
       paddingTop: "calc(12px + env(safe-area-inset-top, 0px))",
@@ -281,6 +401,22 @@ export default function DayView({
           currentState={taskStates?.[String(pickerIdx)] ?? null}
           onPick={handlePickState}
           onClose={() => setPickerIdx(null)}
+        />
+      )}
+
+      {editingIdx !== null && detail?.tasks?.[editingIdx] !== undefined && (
+        <TaskEditSheet
+          currentText={detail.tasks[editingIdx]}
+          onSave={handleSaveTaskEdit}
+          onClose={() => setEditingIdx(null)}
+        />
+      )}
+
+      {pendingPhaseApply !== null && selStyle?.label && (
+        <PhaseApplyBanner
+          phaseName={selStyle.label}
+          onApply={handleApplyPhase}
+          onDismiss={() => setPendingPhaseApply(null)}
         />
       )}
 
@@ -370,8 +506,8 @@ export default function DayView({
                     accentColor={selStyle?.color ?? "var(--c-accent)"}
                     onTap={onToggle ?? (() => {})}
                     onLongPress={setPickerIdx}
-                    note={taskNotes[String(i)] ?? ""}
-                    onNoteChange={setTaskNote}
+                    onEditTask={setEditingIdx}
+                    isEdited={!!(dayEditedTasks?.[String(i)])}
                   />
                 ))}
               </div>
