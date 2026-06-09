@@ -32,7 +32,7 @@ import DayView from "./components/DayView.jsx";
 import ChatPanel from "./components/ChatPanel.jsx";
 import TabBar from "./components/TabBar.jsx";
 import MoreScreen from "./components/MoreScreen.jsx";
-import GrowPlanTab from "./components/GrowPlanTab.jsx";
+import GrowsListTab from "./components/GrowsListTab.jsx";
 import MjReviewPanel from "./components/MjReviewPanel.jsx";
 
 const SHELL_STYLE = {
@@ -70,7 +70,7 @@ export default function App() {
   const today    = useToday();
   const online   = useOnlineStatus();
   const { theme, setTheme } = useTheme();
-  const { grows, activeGrowId, config, overrides, generatedPlan, phaseOverrides, survey, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
+  const { grows, activeGrowId, setActiveGrowId, config, overrides, generatedPlan, phaseOverrides, survey, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
   const [month,       setMonth]      = useState(() => today.getMonth());
   const [selected,    setSelected]   = useState(null);
   const [activeTab,   setActiveTab]  = useState("calendar");
@@ -325,13 +325,10 @@ export default function App() {
               exit={{ opacity: 0 }}
               transition={FADE_DURATION}
             >
-              <GrowPlanTab
+              <GrowsListTab
                 grows={grows}
                 activeGrowId={activeGrowId}
-                generatedPlan={generatedPlan}
-                phaseOverrides={phaseOverrides}
-                survey={survey}
-                onReload={reloadPlan}
+                setActiveGrowId={setActiveGrowId}
                 onNewGrow={(growId) => setWizardGrowId(growId)}
               />
             </motion.div>
