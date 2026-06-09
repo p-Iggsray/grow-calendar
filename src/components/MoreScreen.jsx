@@ -17,7 +17,7 @@ const THEME_OPTIONS = [
 ];
 
 export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMap, onBeforeSignOut, theme, setTheme }) {
-  const { survey, generatedPlan } = usePlan();
+  const { survey, generatedPlan, activeGrowId } = usePlan();
   const location = growLocation(survey);
   const strains = strainSummary(survey, generatedPlan);
   const [exporting, setExporting] = useState(false);
@@ -28,7 +28,7 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
     if (exporting) return;
     setExporting(true);
     try {
-      const blob = await api.downloadGrowLogCsv();
+      const blob = await api.downloadGrowLogCsv(activeGrowId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

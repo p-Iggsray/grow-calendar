@@ -3,6 +3,7 @@ import { error } from "./util.js";
 import { signup, login, logout, getMe, currentUser, attachSessionCookie } from "./auth.js";
 import { postForgotPassword, postResetPassword } from "./authReset.js";
 import { getCheckoffs, putCheckoffs, getMonthCheckoffs } from "./checkoffs.js";
+import { ensurePerDayGrowScope, resolveGrowId } from "./perDayScope.js";
 import { getTaskNotes, putTaskNote } from "./taskNotes.js";
 import { getNote, putNote } from "./notes.js";
 import { getGrowLog, putGrowLog, exportGrowLogCsv } from "./growLog.js";
@@ -123,6 +124,9 @@ async function authenticatedRoute(request, env, path, method, user) {
   // app routes require an approved user
   const gate = requireApproved(user); if (gate) return gate;
 
+  // Ensure the per-day tables are grow-scoped before any handler touches them.
+  await ensurePerDayGrowScope(env);
+
   if (path === "/api/weather"          && method === "GET")    return getWeather(request, env, user);
   if (path === "/api/push/vapid-key"   && method === "GET")    return getPushVapidKey(env);
   if (path === "/api/push/subscribe"   && method === "POST")   return postPushSubscribe(request, env, user);
@@ -179,40 +183,46 @@ async function authenticatedRoute(request, env, path, method, user) {
     const url = new URL(request.url);
     const month = url.searchParams.get("month");
     if (!month) return error(400, "month query param required, e.g. ?month=2026-08");
-    return getMonthCheckoffs(env, user, month);
+    return getMonthCheckoffs(env, user, await resolveGrowId(env, user, url), month);
   }
 
   const checkoffsMatch = path.match(/^\/api\/checkoffs\/(\d{4}-\d{2}-\d{2})$/);
   if (checkoffsMatch) {
     const date = checkoffsMatch[1];
-    if (method === "GET") return getCheckoffs(env, user, date);
-    if (method === "PUT") return putCheckoffs(request, env, user, date);
+    const growId = await resolveGrowId(env, user, new URL(request.url));
+    if (method === "GET") return getCheckoffs(env, user, growId, date);
+    if (method === "PUT") return putCheckoffs(request, env, user, growId, date);
   }
 
   const taskNoteMatch = path.match(/^\/api\/task-notes\/(\d{4}-\d{2}-\d{2})\/(\d+)$/);
   if (taskNoteMatch) {
     const date = taskNoteMatch[1];
     const taskIndex = Number(taskNoteMatch[2]);
-    if (method === "GET") return getTaskNotes(env, user, date);
-    if (method === "PUT") return putTaskNote(request, env, user, date, taskIndex);
+    const growId = await resolveGrowId(env, user, new URL(request.url));
+    if (method === "GET") return getTaskNotes(env, user, growId, date);
+    if (method === "PUT") return putTaskNote(request, env, user, growId, date, taskIndex);
   }
   const taskNotesDateMatch = path.match(/^\/api\/task-notes\/(\d{4}-\d{2}-\d{2})$/);
-  if (taskNotesDateMatch && method === "GET") return getTaskNotes(env, user, taskNotesDateMatch[1]);
+  if (taskNotesDateMatch && method === "GET")
+    return getTaskNotes(env, user, await resolveGrowId(env, user, new URL(request.url)), taskNotesDateMatch[1]);
 
   const notesMatch = path.match(/^\/api\/notes\/(\d{4}-\d{2}-\d{2})$/);
   if (notesMatch) {
     const date = notesMatch[1];
-    if (method === "GET") return getNote(env, user, date);
-    if (method === "PUT") return putNote(request, env, user, date);
+    const growId = await resolveGrowId(env, user, new URL(request.url));
+    if (method === "GET") return getNote(env, user, growId, date);
+    if (method === "PUT") return putNote(request, env, user, growId, date);
   }
 
-  if (path === "/api/grow-log/export.csv" && method === "GET") return exportGrowLogCsv(env, user);
+  if (path === "/api/grow-log/export.csv" && method === "GET")
+    return exportGrowLogCsv(env, user, await resolveGrowId(env, user, new URL(request.url)));
 
   const growLogMatch = path.match(/^\/api\/grow-log\/(\d{4}-\d{2}-\d{2})$/);
   if (growLogMatch) {
     const date = growLogMatch[1];
-    if (method === "GET") return getGrowLog(env, user, date);
-    if (method === "PUT") return putGrowLog(request, env, user, date);
+    const growId = await resolveGrowId(env, user, new URL(request.url));
+    if (method === "GET") return getGrowLog(env, user, growId, date);
+    if (method === "PUT") return putGrowLog(request, env, user, growId, date);
   }
 
   return error(404, "not found");

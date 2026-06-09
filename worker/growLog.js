@@ -52,15 +52,15 @@ export async function ensureGrowLogSchema(env) {
   _schemaReady = true;
 }
 
-export async function getGrowLog(env, user, date) {
+export async function getGrowLog(env, user, growId, date) {
   await ensureGrowLogSchema(env);
   const row = await env.DB.prepare(
-    "SELECT * FROM grow_log WHERE user_id = ? AND date = ?"
-  ).bind(user.id, date).first();
+    "SELECT * FROM grow_log WHERE user_id = ? AND grow_id = ? AND date = ?"
+  ).bind(user.id, growId, date).first();
   return json({ date, entry: row ? rowToEntry(row) : null });
 }
 
-export async function putGrowLog(request, env, user, date) {
+export async function putGrowLog(request, env, user, growId, date) {
   let body;
   try { body = await request.json(); } catch { return error(400, "invalid json"); }
 
@@ -73,9 +73,9 @@ export async function putGrowLog(request, env, user, date) {
   const plantHealthJson = Array.isArray(plant_health)  ? JSON.stringify(plant_health)  : null;
 
   await env.DB.prepare(`
-    INSERT INTO grow_log (user_id, date, water_gal, feed, temp_high, temp_low, humidity, water_plants, training, plant_health, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-    ON CONFLICT(user_id, date) DO UPDATE SET
+    INSERT INTO grow_log (user_id, grow_id, date, water_gal, feed, temp_high, temp_low, humidity, water_plants, training, plant_health, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    ON CONFLICT(user_id, grow_id, date) DO UPDATE SET
       water_gal    = excluded.water_gal,
       feed         = excluded.feed,
       temp_high    = excluded.temp_high,
@@ -86,7 +86,7 @@ export async function putGrowLog(request, env, user, date) {
       plant_health = excluded.plant_health,
       updated_at   = excluded.updated_at
   `).bind(
-    user.id, date,
+    user.id, growId, date,
     toNum(water_gal), toStr(feed), toNum(temp_high), toNum(temp_low), toNum(humidity),
     waterPlantsJson, trainingJson, plantHealthJson,
   ).run();
@@ -94,11 +94,11 @@ export async function putGrowLog(request, env, user, date) {
   return json({ ok: true });
 }
 
-export async function exportGrowLogCsv(env, user) {
+export async function exportGrowLogCsv(env, user, growId) {
   await ensureGrowLogSchema(env);
   const { results } = await env.DB.prepare(
-    "SELECT * FROM grow_log WHERE user_id = ? ORDER BY date ASC"
-  ).bind(user.id).all();
+    "SELECT * FROM grow_log WHERE user_id = ? AND grow_id = ? ORDER BY date ASC"
+  ).bind(user.id, growId).all();
 
   const header = "date,water_gal,feed,temp_high,temp_low,humidity,water_plants,training,plant_health\r\n";
   const rows = results.map(r =>

@@ -98,8 +98,8 @@ export async function loadRawGrow(env, userId, growId) {
   if (!row) return null;
 
   const overridesRes = await env.DB.prepare(
-    "SELECT date, payload FROM plan_day_overrides WHERE user_id = ?"
-  ).bind(userId).all();
+    "SELECT date, payload FROM plan_day_overrides WHERE user_id = ? AND grow_id = ?"
+  ).bind(userId, growId).all();
   const overrides = {};
   for (const r of overridesRes.results ?? []) {
     try { overrides[r.date] = JSON.parse(r.payload); } catch { /* skip */ }
@@ -190,8 +190,8 @@ export async function getGrow(env, user, growId) {
   if (!row) return error(404, "grow not found");
 
   const overridesRes = await env.DB.prepare(
-    "SELECT date, payload FROM plan_day_overrides WHERE user_id = ?"
-  ).bind(user.id).all();
+    "SELECT date, payload FROM plan_day_overrides WHERE user_id = ? AND grow_id = ?"
+  ).bind(user.id, growId).all();
 
   const overrides = {};
   for (const r of overridesRes.results ?? []) {
@@ -410,8 +410,8 @@ export async function patchGrowDayOverride(request, env, user, growId, date) {
   }
 
   const existing = await env.DB.prepare(
-    "SELECT payload FROM plan_day_overrides WHERE user_id = ? AND date = ?"
-  ).bind(user.id, date).first();
+    "SELECT payload FROM plan_day_overrides WHERE user_id = ? AND grow_id = ? AND date = ?"
+  ).bind(user.id, growId, date).first();
 
   let payload = {};
   if (existing?.payload) {
@@ -426,10 +426,10 @@ export async function patchGrowDayOverride(request, env, user, growId, date) {
   else delete payload.editedTasks;
 
   await env.DB.prepare(
-    `INSERT INTO plan_day_overrides (user_id, date, payload)
-     VALUES (?, ?, ?)
-     ON CONFLICT(user_id, date) DO UPDATE SET payload = excluded.payload`
-  ).bind(user.id, date, JSON.stringify(payload)).run();
+    `INSERT INTO plan_day_overrides (user_id, grow_id, date, payload, updated_at)
+     VALUES (?, ?, ?, ?, datetime('now'))
+     ON CONFLICT(user_id, grow_id, date) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at`
+  ).bind(user.id, growId, date, JSON.stringify(payload)).run();
 
   return json({ ok: true });
 }

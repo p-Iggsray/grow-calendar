@@ -8,6 +8,7 @@ import { buildPlanText } from "../src/lib/planText.js";
 import { growLocation, strainSummary } from "../src/lib/growProfile.js";
 import { readCheckoffs, writeCheckoffs } from "./checkoffs.js";
 import { ensureGrowLogSchema } from "./growLog.js";
+import { firstGrowId } from "./perDayScope.js";
 import { GEMINI_DAILY_LIMIT, GEMINI_PRO_DAILY_LIMIT, PER_USER_DAILY_CAP } from "./limits.js";
 import { readNote, writeNote, MAX_NOTE_LEN } from "./notes.js";
 import { MJ_PERSONA, MJ_TOOLS, mergeChecked, appendNoteText, buildDayView, VALID_GROW_PHASES, VALID_CONFIG_DATE_KEYS } from "./mj-logic.js";
@@ -24,10 +25,10 @@ function dateToYmd(dt) {
   return `${y}-${m}-${d}`;
 }
 
-async function readCheckoffsInRange(env, userId, startDate, endDate) {
+async function readCheckoffsInRange(env, userId, growId, startDate, endDate) {
   const rows = await env.DB.prepare(
-    "SELECT date, task_index FROM task_checkoffs WHERE user_id = ? AND date >= ? AND date <= ? ORDER BY date, task_index",
-  ).bind(userId, startDate, endDate).all();
+    "SELECT date, task_index FROM task_checkoffs WHERE user_id = ? AND grow_id = ? AND date >= ? AND date <= ? ORDER BY date, task_index",
+  ).bind(userId, growId, startDate, endDate).all();
   const map = new Map();
   for (const r of rows.results ?? []) {
     if (!map.has(r.date)) map.set(r.date, []);
@@ -119,7 +120,7 @@ async function saveConversation(env, userId, growId, userContent, assistantConte
 
 // ─── Context builders ─────────────────────────────────────────────────────────
 
-async function buildGrowLogContext(env, userId) {
+async function buildGrowLogContext(env, userId, growId) {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - 14);
   const cutoffStr = cutoff.toISOString().slice(0, 10);
@@ -127,9 +128,9 @@ async function buildGrowLogContext(env, userId) {
   const res = await env.DB.prepare(
     `SELECT date, water_gal, feed, temp_high, temp_low, humidity
      FROM grow_log
-     WHERE user_id = ? AND date >= ?
+     WHERE user_id = ? AND grow_id = ? AND date >= ?
      ORDER BY date DESC`
-  ).bind(userId, cutoffStr).all();
+  ).bind(userId, growId, cutoffStr).all();
 
   const rows = res.results ?? [];
   if (rows.length === 0) return "RECENT GROW LOG (last 14 days): No entries recorded yet.";
@@ -194,7 +195,7 @@ async function buildWeatherContext(env) {
   }
 }
 
-async function buildStatsContext(env, userId) {
+async function buildStatsContext(env, userId, growId) {
   try {
     const [logRow, checkoffRow] = await Promise.all([
       env.DB.prepare(`
@@ -202,14 +203,14 @@ async function buildStatsContext(env, userId) {
           ROUND(COALESCE(SUM(water_gal), 0), 2) AS total_water,
           COUNT(CASE WHEN feed IS NOT NULL AND feed != '' THEN 1 END) AS feed_days,
           COUNT(*) AS log_days
-        FROM grow_log WHERE user_id = ?
-      `).bind(userId).first(),
+        FROM grow_log WHERE user_id = ? AND grow_id = ?
+      `).bind(userId, growId).first(),
       env.DB.prepare(`
         SELECT
           COUNT(*) AS total,
           SUM(CASE WHEN state = 'done' THEN 1 ELSE 0 END) AS done
-        FROM task_checkoffs WHERE user_id = ?
-      `).bind(userId).first(),
+        FROM task_checkoffs WHERE user_id = ? AND grow_id = ?
+      `).bind(userId, growId).first(),
     ]);
 
     const lines = ["SEASON STATS:"];
@@ -371,12 +372,16 @@ export async function postMj(request, env, user) {
   const overrides = raw.overrides;
   const phaseOverrides = raw.phaseOverrides;
 
+  // Per-day data is grow-scoped; fall back to the user's first grow when the
+  // request didn't carry an explicit active grow.
+  const dayGrowId = activeGrowId ?? await firstGrowId(env, user.id);
+
   // Load all rich context in parallel.
   const [grows, growLogContext, weatherContext, statsContext] = await Promise.all([
     loadRawGrows(env, user.id).catch(() => []),
-    buildGrowLogContext(env, user.id),
+    buildGrowLogContext(env, user.id, dayGrowId),
     buildWeatherContext(env),
-    buildStatsContext(env, user.id),
+    buildStatsContext(env, user.id, dayGrowId),
   ]);
 
   const supplyContext  = buildSupplyContext(raw.survey);
@@ -482,6 +487,10 @@ export async function postMj(request, env, user) {
 }
 
 async function executeTool(name, input, env, userId, config, overrides, generatedPlan, phaseOverrides, actions, growId, rawGrow) {
+  // Per-day reads/writes are grow-scoped; fall back to the user's first grow
+  // when no active grow was supplied. (Grow-editing tools below keep using the
+  // raw `growId` so their "no active grow" guards still apply.)
+  const dayGrowId = growId ?? await firstGrowId(env, userId);
   try {
     if (name === "get_grow_info") {
       if (!growId || !rawGrow) return { error: "No active grow selected. Tap a grow in the Plan tab first." };
@@ -588,7 +597,7 @@ async function executeTool(name, input, env, userId, config, overrides, generate
       const endDt = new Date(startDt);
       endDt.setDate(endDt.getDate() + 6);
       const endDate = dateToYmd(endDt);
-      const checkoffMap = await readCheckoffsInRange(env, userId, startDate, endDate);
+      const checkoffMap = await readCheckoffsInRange(env, userId, dayGrowId, startDate, endDate);
       const days = [];
       for (let i = 0; i < 7; i++) {
         const dt = new Date(startDt);
@@ -601,7 +610,7 @@ async function executeTool(name, input, env, userId, config, overrides, generate
         }
         const detail = getDetail(dt, config, overrides, generatedPlan, phaseOverrides);
         const checked = checkoffMap.get(date) ?? [];
-        const userNote = await readNote(env, userId, date);
+        const userNote = await readNote(env, userId, dayGrowId, date);
         const threats = getThreatsForPhase(phase, generatedPlan);
         const dayView = buildDayView(date, phase, detail, checked, userNote);
         if (threats.length > 0) dayView.threats = threats.map(t => t.title);
@@ -622,9 +631,9 @@ async function executeTool(name, input, env, userId, config, overrides, generate
       const res = await env.DB.prepare(
         `SELECT date, water_gal, feed, temp_high, temp_low, humidity, water_plants, training, plant_health
          FROM grow_log
-         WHERE user_id = ? AND date >= ? AND date <= ?
+         WHERE user_id = ? AND grow_id = ? AND date >= ? AND date <= ?
          ORDER BY date DESC`
-      ).bind(userId, startDate, endDate).all();
+      ).bind(userId, dayGrowId, startDate, endDate).all();
 
       function tryParseArr(s) {
         if (!s) return [];
@@ -669,16 +678,16 @@ async function executeTool(name, input, env, userId, config, overrides, generate
 
       await ensureGrowLogSchema(env);
       await env.DB.prepare(`
-        INSERT INTO grow_log (user_id, date, water_gal, feed, temp_high, temp_low, humidity, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
-        ON CONFLICT(user_id, date) DO UPDATE SET
+        INSERT INTO grow_log (user_id, grow_id, date, water_gal, feed, temp_high, temp_low, humidity, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(user_id, grow_id, date) DO UPDATE SET
           water_gal  = COALESCE(excluded.water_gal,  grow_log.water_gal),
           feed       = COALESCE(excluded.feed,       grow_log.feed),
           temp_high  = COALESCE(excluded.temp_high,  grow_log.temp_high),
           temp_low   = COALESCE(excluded.temp_low,   grow_log.temp_low),
           humidity   = COALESCE(excluded.humidity,   grow_log.humidity),
           updated_at = excluded.updated_at
-      `).bind(userId, date, water_gal, feed, temp_high, temp_low, humidity).run();
+      `).bind(userId, dayGrowId, date, water_gal, feed, temp_high, temp_low, humidity).run();
 
       actions.push({
         type: "log_grow_data",
@@ -703,8 +712,8 @@ async function executeTool(name, input, env, userId, config, overrides, generate
 
     if (name === "get_day") {
       const detail = getDetail(dt, config, overrides, generatedPlan, phaseOverrides);
-      const checked = await readCheckoffs(env, userId, date);
-      const userNote = await readNote(env, userId, date);
+      const checked = await readCheckoffs(env, userId, dayGrowId, date);
+      const userNote = await readNote(env, userId, dayGrowId, date);
       const phaseInfo = PHASES[phase] ?? {};
       return { ...buildDayView(date, phase, detail, checked, userNote), phaseLabel: phaseInfo.label ?? phase };
     }
@@ -717,9 +726,9 @@ async function executeTool(name, input, env, userId, config, overrides, generate
       const detail = getDetail(dt, config, overrides, generatedPlan, phaseOverrides);
       const inRange = indices.filter(i => i >= 0 && i < detail.tasks.length);
       const ignored = indices.filter(i => i < 0 || i >= detail.tasks.length);
-      const current = await readCheckoffs(env, userId, date);
+      const current = await readCheckoffs(env, userId, dayGrowId, date);
       const next = mergeChecked(current, inRange, input.done);
-      await writeCheckoffs(env, userId, date, next);
+      await writeCheckoffs(env, userId, dayGrowId, date, next);
       actions.push({
         type: "set_tasks_done", date,
         summary: describeChecked(detail, inRange, input.done),
@@ -732,10 +741,10 @@ async function executeTool(name, input, env, userId, config, overrides, generate
       if (typeof input?.text !== "string" || input.text.trim() === "") {
         return { error: "text must be a non-empty string" };
       }
-      const existing = await readNote(env, userId, date);
+      const existing = await readNote(env, userId, dayGrowId, date);
       const note = appendNoteText(existing, input.text);
       if (note.length > MAX_NOTE_LEN) return { error: "note would exceed the maximum length" };
-      await writeNote(env, userId, date, note);
+      await writeNote(env, userId, dayGrowId, date, note);
       actions.push({
         type: "append_note", date,
         summary: `Added to ${date} note`,
@@ -750,7 +759,7 @@ async function executeTool(name, input, env, userId, config, overrides, generate
       }
       const text = input.text.trim();
       if (text.length > MAX_NOTE_LEN) return { error: "note text exceeds maximum length" };
-      await writeNote(env, userId, date, text);
+      await writeNote(env, userId, dayGrowId, date, text);
       actions.push({ type: "replace_note", date, summary: `Replaced ${date} note` });
       return { date, note: text };
     }
@@ -770,6 +779,8 @@ export async function postMjUndo(request, env, user) {
 
   if (typeof date !== "string" || !DATE_RE.test(date)) return error(400, "date must be YYYY-MM-DD");
 
+  const growId = new URL(request.url).searchParams.get("growId") || await firstGrowId(env, user.id);
+
   if (type === "set_tasks_done") {
     const { taskIndices, done } = body;
     if (!Array.isArray(taskIndices) || typeof done !== "boolean") return error(400, "invalid undo payload");
@@ -781,9 +792,9 @@ export async function postMjUndo(request, env, user) {
     if (!phase) return error(400, `no plan for ${date}`);
     const detail = getDetail(dt, config, raw.overrides, raw.generatedPlan, raw.phaseOverrides);
     const inRange = taskIndices.map(Number).filter(i => Number.isInteger(i) && i >= 0 && i < detail.tasks.length);
-    const current = await readCheckoffs(env, user.id, date);
+    const current = await readCheckoffs(env, user.id, growId, date);
     const next = mergeChecked(current, inRange, done);
-    await writeCheckoffs(env, user.id, date, next);
+    await writeCheckoffs(env, user.id, growId, date, next);
     return json({ ok: true, checked: next });
   }
 
@@ -791,7 +802,7 @@ export async function postMjUndo(request, env, user) {
     const { originalNote } = body;
     if (typeof originalNote !== "string") return error(400, "invalid undo payload");
     if (originalNote.length > MAX_NOTE_LEN) return error(400, "original note too long");
-    await writeNote(env, user.id, date, originalNote);
+    await writeNote(env, user.id, growId, date, originalNote);
     return json({ ok: true });
   }
 

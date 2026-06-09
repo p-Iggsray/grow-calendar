@@ -8,7 +8,7 @@ const DEBOUNCE_MS = 800;
 //   - keeps live text in state for instant typing
 //   - autosaves DEBOUNCE_MS after the last keystroke; flush() saves immediately
 // status is one of: "idle" | "saving" | "saved" | "error"
-export function useDayNote(date, enabled) {
+export function useDayNote(date, enabled, growId) {
   const [note, setNoteState] = useState("");
   const [status, setStatus] = useState("idle");
   const dateKey = date ? ymd(date) : null;
@@ -27,13 +27,13 @@ export function useDayNote(date, enabled) {
     dirty.current = false;
     setStatus("saving");
     try {
-      await api.putNote(dateKey, text);
+      await api.putNote(dateKey, text, growId);
       setStatus(latest.current === text ? "saved" : "saving");
     } catch {
       dirty.current = true;
       setStatus("error");
     }
-  }, [dateKey, enabled]);
+  }, [dateKey, enabled, growId]);
 
   // Load the note when the selected day (or auth) changes.
   useEffect(() => {
@@ -46,7 +46,7 @@ export function useDayNote(date, enabled) {
     setStatus("idle");
     (async () => {
       try {
-        const data = await api.getNote(dateKey);
+        const data = await api.getNote(dateKey, growId);
         if (myId === requestId.current && !dirty.current) {
           setNoteState(data.body || "");
           latest.current = data.body || "";
@@ -64,7 +64,7 @@ export function useDayNote(date, enabled) {
       if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
       if (dirty.current) doSave();
     };
-  }, [dateKey, enabled, doSave]);
+  }, [dateKey, enabled, growId, doSave]);
 
   const setNote = useCallback((value) => {
     latest.current = value;

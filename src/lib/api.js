@@ -12,6 +12,14 @@ const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
  * @param {RequestInit} [opts]
  * @returns {Promise<any>}
  */
+// Per-day data is grow-scoped; append the active grow id so the worker reads
+// and writes the right grow. Omitted when absent (worker falls back to the
+// user's first grow).
+function withGrow(path, growId) {
+  if (!growId) return path;
+  return path + (path.includes("?") ? "&" : "?") + `growId=${encodeURIComponent(growId)}`;
+}
+
 async function request(path, opts = {}) {
   const isMutating = MUTATING_METHODS.has((opts.method || "GET").toUpperCase());
   const headers = isMutating ? { "content-type": "application/json" } : undefined;
@@ -46,18 +54,18 @@ export const api = {
     request("/api/auth/reset-password",  { method: "POST", body: JSON.stringify({ token, newPassword }) }),
   logout: () => request("/api/auth/logout", { method: "POST" }),
 
-  getCheckoffs: (date) => request(`/api/checkoffs/${date}`),
-  putCheckoffs: (date, taskStates) =>
-    request(`/api/checkoffs/${date}`, { method: "PUT", body: JSON.stringify({ taskStates }) }),
-  getMonthCheckoffs: (month) => request(`/api/checkoffs?month=${month}`),
+  getCheckoffs: (date, growId) => request(withGrow(`/api/checkoffs/${date}`, growId)),
+  putCheckoffs: (date, taskStates, growId) =>
+    request(withGrow(`/api/checkoffs/${date}`, growId), { method: "PUT", body: JSON.stringify({ taskStates }) }),
+  getMonthCheckoffs: (month, growId) => request(withGrow(`/api/checkoffs?month=${month}`, growId)),
 
-  getTaskNotes: (date) => request(`/api/task-notes/${date}`),
-  putTaskNote: (date, taskIndex, note) =>
-    request(`/api/task-notes/${date}/${taskIndex}`, { method: "PUT", body: JSON.stringify({ note }) }),
+  getTaskNotes: (date, growId) => request(withGrow(`/api/task-notes/${date}`, growId)),
+  putTaskNote: (date, taskIndex, note, growId) =>
+    request(withGrow(`/api/task-notes/${date}/${taskIndex}`, growId), { method: "PUT", body: JSON.stringify({ note }) }),
 
-  getNote: (date) => request(`/api/notes/${date}`),
-  putNote: (date, body) =>
-    request(`/api/notes/${date}`, { method: "PUT", body: JSON.stringify({ body }) }),
+  getNote: (date, growId) => request(withGrow(`/api/notes/${date}`, growId)),
+  putNote: (date, body, growId) =>
+    request(withGrow(`/api/notes/${date}`, growId), { method: "PUT", body: JSON.stringify({ body }) }),
 
   // Streams MJ's reply via SSE.
   // Options: { activeGrowId, threadGrowId, imageData, onChunk, onDone, onError }
@@ -105,8 +113,8 @@ export const api = {
       }
     }).catch(onError);
   },
-  mjUndo: (undoPayload) =>
-    request("/api/mj/undo", { method: "POST", body: JSON.stringify(undoPayload) }),
+  mjUndo: (undoPayload, growId) =>
+    request(withGrow("/api/mj/undo", growId), { method: "POST", body: JSON.stringify(undoPayload) }),
   getMjUsage: () => request("/api/mj/usage"),
   getMjHistory: (growId) =>
     request(`/api/mj/history${growId ? `?growId=${encodeURIComponent(growId)}` : ""}`),
@@ -157,11 +165,11 @@ export const api = {
     }).catch(onError);
   },
 
-  getGrowLog: (date) => request(`/api/grow-log/${date}`),
-  putGrowLog: (date, entry) =>
-    request(`/api/grow-log/${date}`, { method: "PUT", body: JSON.stringify(entry) }),
-  downloadGrowLogCsv: async () => {
-    const res = await fetch("/api/grow-log/export.csv", { credentials: "same-origin" });
+  getGrowLog: (date, growId) => request(withGrow(`/api/grow-log/${date}`, growId)),
+  putGrowLog: (date, entry, growId) =>
+    request(withGrow(`/api/grow-log/${date}`, growId), { method: "PUT", body: JSON.stringify(entry) }),
+  downloadGrowLogCsv: async (growId) => {
+    const res = await fetch(withGrow("/api/grow-log/export.csv", growId), { credentials: "same-origin" });
     if (!res.ok) throw new Error(`Export failed: ${res.status}`);
     return res.blob();
   },

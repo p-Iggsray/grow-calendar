@@ -9,18 +9,18 @@ const VALID_STATES = new Set(["done", "skipped", "blocked"]);
 // ─── Internal read helpers ───────────────────────────────────────────────────
 
 /** Returns { taskIndex: state } for all resolved tasks on a day. */
-export async function readTaskStates(env, userId, date) {
+export async function readTaskStates(env, userId, growId, date) {
   const result = await env.DB.prepare(
-    "SELECT task_index, state FROM task_checkoffs WHERE user_id = ? AND date = ?",
-  ).bind(userId, date).all();
+    "SELECT task_index, state FROM task_checkoffs WHERE user_id = ? AND grow_id = ? AND date = ?",
+  ).bind(userId, growId, date).all();
   const states = {};
   for (const r of result.results || []) states[String(r.task_index)] = r.state;
   return states;
 }
 
 /** Returns sorted int[] of task indices that are specifically "done". Used by MJ. */
-export async function readCheckoffs(env, userId, date) {
-  const states = await readTaskStates(env, userId, date);
+export async function readCheckoffs(env, userId, growId, date) {
+  const states = await readTaskStates(env, userId, growId, date);
   return Object.entries(states)
     .filter(([, s]) => s === "done")
     .map(([k]) => Number(k))
@@ -30,17 +30,17 @@ export async function readCheckoffs(env, userId, date) {
 // ─── Internal write helpers ──────────────────────────────────────────────────
 
 /** Replaces ALL task states for a date with the provided map. */
-export async function writeTaskStates(env, userId, date, taskStates) {
+export async function writeTaskStates(env, userId, growId, date, taskStates) {
   const now = nowIso();
   const stmts = [
-    env.DB.prepare("DELETE FROM task_checkoffs WHERE user_id = ? AND date = ?").bind(userId, date),
+    env.DB.prepare("DELETE FROM task_checkoffs WHERE user_id = ? AND grow_id = ? AND date = ?").bind(userId, growId, date),
   ];
   for (const [idx, state] of Object.entries(taskStates)) {
     if (VALID_STATES.has(state)) {
       stmts.push(
         env.DB.prepare(
-          "INSERT INTO task_checkoffs (user_id, date, task_index, state, checked_at) VALUES (?, ?, ?, ?, ?)",
-        ).bind(userId, date, Number(idx), state, now),
+          "INSERT INTO task_checkoffs (user_id, grow_id, date, task_index, state, checked_at) VALUES (?, ?, ?, ?, ?, ?)",
+        ).bind(userId, growId, date, Number(idx), state, now),
       );
     }
   }
@@ -51,19 +51,19 @@ export async function writeTaskStates(env, userId, date, taskStates) {
  * Updates only the "done" states for a date, preserving any "skipped"/"blocked" rows.
  * Used by MJ's set_tasks_done tool so it doesn't clobber states set by the user in the UI.
  */
-export async function writeCheckoffs(env, userId, date, doneIndices) {
+export async function writeCheckoffs(env, userId, growId, date, doneIndices) {
   const now = nowIso();
   const stmts = [
     // Delete only "done" rows; skipped/blocked rows are untouched.
     env.DB.prepare(
-      "DELETE FROM task_checkoffs WHERE user_id = ? AND date = ? AND state = 'done'",
-    ).bind(userId, date),
+      "DELETE FROM task_checkoffs WHERE user_id = ? AND grow_id = ? AND date = ? AND state = 'done'",
+    ).bind(userId, growId, date),
   ];
   for (const idx of doneIndices) {
     stmts.push(
       env.DB.prepare(
-        "INSERT INTO task_checkoffs (user_id, date, task_index, state, checked_at) VALUES (?, ?, ?, 'done', ?)",
-      ).bind(userId, date, idx, now),
+        "INSERT INTO task_checkoffs (user_id, grow_id, date, task_index, state, checked_at) VALUES (?, ?, ?, ?, 'done', ?)",
+      ).bind(userId, growId, date, idx, now),
     );
   }
   await env.DB.batch(stmts);
@@ -71,9 +71,9 @@ export async function writeCheckoffs(env, userId, date, doneIndices) {
 
 // ─── Route handlers ──────────────────────────────────────────────────────────
 
-export async function getCheckoffs(env, user, date) {
+export async function getCheckoffs(env, user, growId, date) {
   if (!DATE_RE.test(date)) return error(400, "invalid date format, expected YYYY-MM-DD");
-  const taskStates = await readTaskStates(env, user.id, date);
+  const taskStates = await readTaskStates(env, user.id, growId, date);
   const checked = Object.entries(taskStates)
     .filter(([, s]) => s === "done")
     .map(([k]) => Number(k))
@@ -85,12 +85,12 @@ export async function getCheckoffs(env, user, date) {
  * Returns checkoff *counts* per date inside a month, for the calendar ring.
  * All resolved states (done + skipped + blocked) count toward the total.
  */
-export async function getMonthCheckoffs(env, user, month) {
+export async function getMonthCheckoffs(env, user, growId, month) {
   if (!MONTH_RE.test(month)) return error(400, "invalid month format, expected YYYY-MM");
   const result = await env.DB.prepare(
     "SELECT date, COUNT(*) AS n FROM task_checkoffs " +
-    "WHERE user_id = ? AND substr(date, 1, 7) = ? GROUP BY date",
-  ).bind(user.id, month).all();
+    "WHERE user_id = ? AND grow_id = ? AND substr(date, 1, 7) = ? GROUP BY date",
+  ).bind(user.id, growId, month).all();
   const counts = {};
   for (const row of (result.results || [])) counts[row.date] = Number(row.n);
   return json({ month, counts });
@@ -101,7 +101,7 @@ export async function getMonthCheckoffs(env, user, month) {
  * Body: { taskStates: { "0": "done", "1": "skipped" } }
  *   — or legacy — { checked: [0, 1] }  (treated as all "done")
  */
-export async function putCheckoffs(request, env, user, date) {
+export async function putCheckoffs(request, env, user, growId, date) {
   if (!DATE_RE.test(date)) return error(400, "invalid date format, expected YYYY-MM-DD");
   const parsed = await safeJsonBounded(request, MAX_CHECKOFFS_REQUEST_BYTES);
   if (!parsed.ok) return error(parsed.status, parsed.error);
@@ -124,7 +124,7 @@ export async function putCheckoffs(request, env, user, date) {
     }
   }
 
-  await writeTaskStates(env, user.id, date, valid);
+  await writeTaskStates(env, user.id, growId, date, valid);
   const checked = Object.entries(valid).filter(([, s]) => s === "done").map(([k]) => Number(k)).sort((a, b) => a - b);
   return json({ date, checked, taskStates: valid });
 }

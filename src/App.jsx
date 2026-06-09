@@ -84,10 +84,10 @@ export default function App() {
   const [reviewPending, setReviewPending] = useState(false);
   const [wizardGrowId,  setWizardGrowId]  = useState(null); // growId for SetupWizard
 
-  const { taskStates, loading: checkoffsLoading, toggle, setTaskState } = useCheckoffs(selected, Boolean(user));
-  const { counts: monthCheckoffCounts } = useMonthCheckoffs(today.getFullYear(), month, Boolean(user));
+  const { taskStates, loading: checkoffsLoading, toggle, setTaskState } = useCheckoffs(selected, Boolean(user), activeGrowId);
+  const { counts: monthCheckoffCounts } = useMonthCheckoffs(today.getFullYear(), month, Boolean(user), activeGrowId);
   const { note, setNote, status: noteStatus, flush: flushNote } =
-    useDayNote(selected, Boolean(user));
+    useDayNote(selected, Boolean(user), activeGrowId);
 
   const openDay = useCallback((date) => {
     setSelected(date);

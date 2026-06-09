@@ -17,7 +17,7 @@ import { api } from "./api.js";
  * @param {boolean} enabled
  * @returns {{ counts: Record<string, number> }}
  */
-export function useMonthCheckoffs(year, month, enabled) {
+export function useMonthCheckoffs(year, month, enabled, growId) {
   const [counts, setCounts] = useState(/** @type {Record<string, number>} */ ({}));
   const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
   const requestId = useRef(0);
@@ -26,10 +26,10 @@ export function useMonthCheckoffs(year, month, enabled) {
     if (!enabled) { setCounts({}); return; }
     const myId = ++requestId.current;
     try {
-      const data = await api.getMonthCheckoffs(monthKey);
+      const data = await api.getMonthCheckoffs(monthKey, growId);
       if (myId === requestId.current) setCounts(data.counts || {});
     } catch { /* leave previous counts; calendar still works without rings */ }
-  }, [monthKey, enabled]);
+  }, [monthKey, enabled, growId]);
 
   useEffect(() => { fetchNow(); }, [fetchNow]);
 

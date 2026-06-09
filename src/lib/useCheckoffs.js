@@ -5,7 +5,7 @@ import { queueCheckoff } from "./offlineQueue.js";
 
 const VALID_STATES = new Set(["done", "skipped", "blocked"]);
 
-export function useCheckoffs(date, enabled) {
+export function useCheckoffs(date, enabled, growId) {
   // taskStates: { "0": "done", "2": "skipped" } — keyed by string task index
   const [taskStates, setTaskStates] = useState({});
   const [loading, setLoading] = useState(false);
@@ -18,7 +18,7 @@ export function useCheckoffs(date, enabled) {
     const myId = ++requestId.current;
     setLoading(true);
     try {
-      const data = await api.getCheckoffs(dateKey);
+      const data = await api.getCheckoffs(dateKey, growId);
       if (myId === requestId.current) {
         // Prefer taskStates (new format); fall back to legacy checked array.
         if (data.taskStates && typeof data.taskStates === "object") {
@@ -34,7 +34,7 @@ export function useCheckoffs(date, enabled) {
     } finally {
       if (myId === requestId.current) setLoading(false);
     }
-  }, [dateKey, enabled, addToast]);
+  }, [dateKey, enabled, growId, addToast]);
 
   useEffect(() => { fetchNow(); }, [fetchNow]);
 
@@ -51,19 +51,19 @@ export function useCheckoffs(date, enabled) {
       navigator.vibrate(10);
     }
     try {
-      await api.putCheckoffs(dateKey, nextStates);
+      await api.putCheckoffs(dateKey, nextStates, growId);
       window.dispatchEvent(new CustomEvent("checkoffs-mutated"));
     } catch {
       if (!navigator.onLine) {
         // Network is down: keep the optimistic state and queue for later replay.
-        queueCheckoff(dateKey, nextStates);
+        queueCheckoff(dateKey, nextStates, growId);
         addToast("Saved offline — will sync when reconnected");
       } else {
         addToast("Couldn't save. Your change was reversed");
         fetchNow();
       }
     }
-  }, [dateKey, fetchNow, addToast]);
+  }, [dateKey, fetchNow, growId, addToast]);
 
   /** Tap: toggle between "done" and unset. Any other state → unset. */
   const toggle = useCallback(async (idx) => {

@@ -4,17 +4,17 @@ import { json, error, nowIso, safeJsonBounded } from "./util.js";
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export const MAX_TASK_NOTE_LEN = 280;
 
-export async function getTaskNotes(env, user, date) {
+export async function getTaskNotes(env, user, growId, date) {
   if (!DATE_RE.test(date)) return error(400, "invalid date format, expected YYYY-MM-DD");
   const result = await env.DB.prepare(
-    "SELECT task_index, note FROM task_notes WHERE user_id = ? AND date = ?",
-  ).bind(user.id, date).all();
+    "SELECT task_index, note FROM task_notes WHERE user_id = ? AND grow_id = ? AND date = ?",
+  ).bind(user.id, growId, date).all();
   const notes = {};
   for (const r of result.results || []) notes[String(r.task_index)] = r.note;
   return json({ date, notes });
 }
 
-export async function putTaskNote(request, env, user, date, taskIndex) {
+export async function putTaskNote(request, env, user, growId, date, taskIndex) {
   if (!DATE_RE.test(date)) return error(400, "invalid date format, expected YYYY-MM-DD");
   if (!Number.isInteger(taskIndex) || taskIndex < 0 || taskIndex > 99)
     return error(400, "invalid task index");
@@ -29,13 +29,13 @@ export async function putTaskNote(request, env, user, date, taskIndex) {
 
   if (!note) {
     await env.DB.prepare(
-      "DELETE FROM task_notes WHERE user_id = ? AND date = ? AND task_index = ?",
-    ).bind(user.id, date, taskIndex).run();
+      "DELETE FROM task_notes WHERE user_id = ? AND grow_id = ? AND date = ? AND task_index = ?",
+    ).bind(user.id, growId, date, taskIndex).run();
   } else {
     await env.DB.prepare(
-      `INSERT INTO task_notes (user_id, date, task_index, note, updated_at) VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT(user_id, date, task_index) DO UPDATE SET note = excluded.note, updated_at = excluded.updated_at`,
-    ).bind(user.id, date, taskIndex, note, now).run();
+      `INSERT INTO task_notes (user_id, grow_id, date, task_index, note, updated_at) VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(user_id, grow_id, date, task_index) DO UPDATE SET note = excluded.note, updated_at = excluded.updated_at`,
+    ).bind(user.id, growId, date, taskIndex, note, now).run();
   }
   return json({ ok: true, note });
 }

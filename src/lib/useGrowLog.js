@@ -34,7 +34,7 @@ function entryFromApi(e) {
  * setField(name, value) works for both scalar (string/number) and array values.
  * status: null | "saving" | "saved" | "error"
  */
-export function useGrowLog(date, enabled) {
+export function useGrowLog(date, enabled, growId) {
   const [entry, setEntry] = useState(EMPTY);
   const [status, setStatus] = useState(null);
   const dateKey = date ? ymd(date) : null;
@@ -43,10 +43,10 @@ export function useGrowLog(date, enabled) {
 
   useEffect(() => {
     if (!dateKey || !enabled) { setEntry(EMPTY); return; }
-    api.getGrowLog(dateKey)
+    api.getGrowLog(dateKey, growId)
       .then(data => setEntry(data.entry ? entryFromApi(data.entry) : EMPTY))
       .catch(() => {});
-  }, [dateKey, enabled]);
+  }, [dateKey, enabled, growId]);
 
   // Merge one or more fields and schedule a single debounced save.
   const setFields = useCallback((partial) => {
@@ -61,14 +61,14 @@ export function useGrowLog(date, enabled) {
     saveTimer.current = setTimeout(async () => {
       if (!dateKey) return;
       try {
-        await api.putGrowLog(dateKey, pendingEntry.current);
+        await api.putGrowLog(dateKey, pendingEntry.current, growId);
         setStatus("saved");
         setTimeout(() => setStatus(s => s === "saved" ? null : s), 2000);
       } catch {
         setStatus("error");
       }
     }, 800);
-  }, [dateKey]);
+  }, [dateKey, growId]);
 
   const setField = useCallback((name, value) => setFields({ [name]: value }), [setFields]);
 

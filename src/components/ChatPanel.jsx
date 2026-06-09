@@ -238,7 +238,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
 
   async function handleUndo(msgId, actionIdx, undoPayload) {
     try {
-      await api.mjUndo(undoPayload);
+      await api.mjUndo(undoPayload, activeGrowId);
     } catch { return; }
     setMessages(prev => prev.map(m => {
       if (m._id !== msgId) return m;

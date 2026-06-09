@@ -29,37 +29,43 @@ CREATE TABLE IF NOT EXISTS login_attempts (
   updated_at   TEXT NOT NULL
 );
 
+-- Per-day data is grow-scoped (grow_id in the primary key) so a user running
+-- multiple concurrent grows doesn't share checkoffs/notes/log across them.
+-- Existing databases are migrated in code by ensurePerDayGrowScope().
 CREATE TABLE IF NOT EXISTS task_checkoffs (
   user_id    INTEGER NOT NULL,
+  grow_id    TEXT NOT NULL,
   date       TEXT NOT NULL,
   task_index INTEGER NOT NULL,
   state      TEXT NOT NULL DEFAULT 'done' CHECK(state IN ('done','skipped','blocked')),
   checked_at TEXT NOT NULL,
-  PRIMARY KEY (user_id, date, task_index),
+  PRIMARY KEY (user_id, grow_id, date, task_index),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS task_notes (
   user_id    INTEGER NOT NULL,
+  grow_id    TEXT NOT NULL,
   date       TEXT NOT NULL,
   task_index INTEGER NOT NULL,
   note       TEXT NOT NULL,
   updated_at TEXT NOT NULL,
-  PRIMARY KEY (user_id, date, task_index),
+  PRIMARY KEY (user_id, grow_id, date, task_index),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Migrations for existing databases (skip on fresh installs):
 -- ALTER TABLE task_checkoffs ADD COLUMN state TEXT NOT NULL DEFAULT 'done';
 
-CREATE INDEX IF NOT EXISTS idx_checkoffs_user_date ON task_checkoffs(user_id, date);
+CREATE INDEX IF NOT EXISTS idx_checkoffs_user_date ON task_checkoffs(user_id, grow_id, date);
 
 CREATE TABLE IF NOT EXISTS day_notes (
   user_id    INTEGER NOT NULL,
+  grow_id    TEXT NOT NULL,
   date       TEXT NOT NULL,
   body       TEXT NOT NULL,
   updated_at TEXT NOT NULL,
-  PRIMARY KEY (user_id, date),
+  PRIMARY KEY (user_id, grow_id, date),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -80,10 +86,11 @@ CREATE TABLE IF NOT EXISTS plan_config (
 
 CREATE TABLE IF NOT EXISTS plan_day_overrides (
   user_id    INTEGER NOT NULL,
+  grow_id    TEXT NOT NULL,
   date       TEXT NOT NULL,      -- YYYY-MM-DD
   payload    TEXT NOT NULL,      -- JSON: addedTasks/editedTasks/removedTasks/note/warning
   updated_at TEXT NOT NULL,
-  PRIMARY KEY (user_id, date),
+  PRIMARY KEY (user_id, grow_id, date),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -98,15 +105,19 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 -- ALTER TABLE users ADD COLUMN email TEXT;
 
 CREATE TABLE IF NOT EXISTS grow_log (
-  user_id    INTEGER NOT NULL,
-  date       TEXT NOT NULL,
-  water_gal  REAL,
-  feed       TEXT,
-  temp_high  REAL,
-  temp_low   REAL,
-  humidity   REAL,
-  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-  PRIMARY KEY (user_id, date),
+  user_id      INTEGER NOT NULL,
+  grow_id      TEXT NOT NULL,
+  date         TEXT NOT NULL,
+  water_gal    REAL,
+  feed         TEXT,
+  temp_high    REAL,
+  temp_low     REAL,
+  humidity     REAL,
+  water_plants TEXT,
+  training     TEXT,
+  plant_health TEXT,
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, grow_id, date),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

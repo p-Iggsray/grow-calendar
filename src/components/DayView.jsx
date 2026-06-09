@@ -590,7 +590,7 @@ export default function DayView({
     onTaskEditActiveChange?.(editingIdx !== null);
   }, [editingIdx, onTaskEditActiveChange]);
 
-  const { entry: logEntry, setField: setLogField, setFields: setLogFields, status: logStatus } = useGrowLog(selected, true);
+  const { entry: logEntry, setField: setLogField, setFields: setLogFields, status: logStatus } = useGrowLog(selected, true, activeGrowId);
 
   // Per-plant watering. water_gal is kept as the day's total (sum of all
   // plants) so the stats "total water" aggregation keeps working.

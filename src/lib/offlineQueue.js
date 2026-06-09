@@ -15,9 +15,9 @@ function writeQueue(q) {
 }
 
 /** Queue or update a checkoff write for `date`. */
-export function queueCheckoff(date, taskStates) {
+export function queueCheckoff(date, taskStates, growId) {
   const q = readQueue();
-  q[date] = taskStates;
+  q[date] = { taskStates, growId: growId ?? null };
   writeQueue(q);
 }
 
@@ -38,8 +38,11 @@ export async function flushCheckoffQueue(putFn) {
 
   const remaining = { ...q };
   await Promise.allSettled(
-    entries.map(async ([date, taskStates]) => {
-      await putFn(date, taskStates);
+    entries.map(async ([date, val]) => {
+      // Back-compat: older queued items stored the bare taskStates object.
+      const taskStates = val && val.taskStates ? val.taskStates : val;
+      const growId = val && val.growId ? val.growId : undefined;
+      await putFn(date, taskStates, growId);
       delete remaining[date];
     })
   );
