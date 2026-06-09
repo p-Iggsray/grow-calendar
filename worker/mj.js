@@ -37,7 +37,9 @@ const MAX_TOOL_ITERATIONS = 8;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const GEMINI_MODEL = "gemini-2.5-flash";
 export const GEMINI_PRO_MODEL = "gemini-2.5-pro";
-const MAX_MJ_REQUEST_BYTES = MAX_MSG_LEN * 1.5 + 512;
+// 4 MB to accommodate base64-encoded photos (~1.5 MB compressed image ≈ 2 MB base64)
+const MAX_MJ_REQUEST_BYTES = 4 * 1024 * 1024;
+const MAX_IMAGE_B64_LEN = 3_000_000; // ~2.25 MB actual after decode
 
 const MAX_HISTORY_ROWS = 40;
 const MAX_CONTEXT_MESSAGES = 20;
@@ -77,10 +79,25 @@ async function readMjUsageForUser(env, userId, today) {
   return Number(row?.count ?? 0);
 }
 
-async function loadHistory(env, userId, limit) {
+// Lazily add grow_id column + index so existing deployments migrate automatically.
+async function ensureMjThreadSchema(env) {
+  try {
+    await env.DB.prepare("ALTER TABLE mj_conversations ADD COLUMN grow_id TEXT").run();
+  } catch { /* column already exists — normal */ }
+  try {
+    await env.DB.prepare(
+      "CREATE INDEX IF NOT EXISTS idx_mj_conv_user_grow ON mj_conversations(user_id, grow_id, id DESC)"
+    ).run();
+  } catch { /* index already exists */ }
+}
+
+// growId = null → general thread (grow_id IS NULL); string → grow-specific thread
+async function loadHistory(env, userId, limit, growId) {
   const rows = await env.DB.prepare(
-    "SELECT role, content, actions FROM mj_conversations WHERE user_id = ? ORDER BY id DESC LIMIT ?",
-  ).bind(userId, limit).all();
+    growId
+      ? "SELECT role, content, actions FROM mj_conversations WHERE user_id = ? AND grow_id = ? ORDER BY id DESC LIMIT ?"
+      : "SELECT role, content, actions FROM mj_conversations WHERE user_id = ? AND grow_id IS NULL ORDER BY id DESC LIMIT ?",
+  ).bind(...(growId ? [userId, growId, limit] : [userId, limit])).all();
   return (rows.results ?? []).reverse().map(r => ({
     role: r.role,
     content: r.content,
@@ -88,14 +105,14 @@ async function loadHistory(env, userId, limit) {
   }));
 }
 
-async function saveConversation(env, userId, userContent, assistantContent, actions) {
+async function saveConversation(env, userId, growId, userContent, assistantContent, actions) {
   await env.DB.batch([
     env.DB.prepare(
-      "INSERT INTO mj_conversations (user_id, role, content) VALUES (?, 'user', ?)",
-    ).bind(userId, userContent),
+      "INSERT INTO mj_conversations (user_id, grow_id, role, content) VALUES (?, ?, 'user', ?)",
+    ).bind(userId, growId ?? null, userContent),
     env.DB.prepare(
-      "INSERT INTO mj_conversations (user_id, role, content, actions) VALUES (?, 'assistant', ?, ?)",
-    ).bind(userId, assistantContent, actions.length > 0 ? JSON.stringify(actions) : null),
+      "INSERT INTO mj_conversations (user_id, grow_id, role, content, actions) VALUES (?, ?, 'assistant', ?, ?)",
+    ).bind(userId, growId ?? null, assistantContent, actions.length > 0 ? JSON.stringify(actions) : null),
   ]);
 }
 
@@ -261,13 +278,23 @@ export async function getMjUsage(env, user) {
   return json({ date: today, proCount, proLimit: GEMINI_PRO_DAILY_LIMIT, flashCount, flashLimit: GEMINI_DAILY_LIMIT, userCount, userLimit });
 }
 
-export async function getMjHistory(env, user) {
-  const history = await loadHistory(env, user.id, MAX_HISTORY_ROWS);
+export async function getMjHistory(request, env, user) {
+  await ensureMjThreadSchema(env);
+  const growId = new URL(request.url).searchParams.get("growId") || null;
+  const history = await loadHistory(env, user.id, MAX_HISTORY_ROWS, growId);
   return json({ history });
 }
 
-export async function deleteMjHistory(env, user) {
-  await env.DB.prepare("DELETE FROM mj_conversations WHERE user_id = ?").bind(user.id).run();
+export async function deleteMjHistory(request, env, user) {
+  await ensureMjThreadSchema(env);
+  const growId = new URL(request.url).searchParams.get("growId") || null;
+  if (growId) {
+    await env.DB.prepare("DELETE FROM mj_conversations WHERE user_id = ? AND grow_id = ?")
+      .bind(user.id, growId).run();
+  } else {
+    await env.DB.prepare("DELETE FROM mj_conversations WHERE user_id = ? AND grow_id IS NULL")
+      .bind(user.id).run();
+  }
   return json({ ok: true });
 }
 
@@ -277,8 +304,20 @@ export async function postMj(request, env, user) {
   const body = parsed.data;
 
   const userContent = typeof body?.message === "string" ? body.message.trim() : "";
-  if (!userContent) return error(400, "message must be a non-empty string");
+  const hasImage = body?.imageData?.data && typeof body.imageData.data === "string";
+  if (!userContent && !hasImage) return error(400, "message or imageData required");
   if (userContent.length > MAX_MSG_LEN) return error(400, "message too long");
+
+  // Validate image if provided.
+  let imageData = null;
+  if (hasImage) {
+    const { data, mimeType } = body.imageData;
+    if (typeof mimeType !== "string" || !mimeType.startsWith("image/"))
+      return error(400, "imageData.mimeType must be an image/* type");
+    if (data.length > MAX_IMAGE_B64_LEN)
+      return error(413, "image too large — please use a smaller photo");
+    imageData = { data, mimeType };
+  }
 
   const contextDate =
     typeof body?.contextDate === "string" && DATE_RE.test(body.contextDate)
@@ -287,6 +326,11 @@ export async function postMj(request, env, user) {
   const activeGrowId =
     typeof body?.activeGrowId === "string" && body.activeGrowId.length > 0
       ? body.activeGrowId : null;
+
+  // threadGrowId scopes the conversation history (null = general thread).
+  const threadGrowId =
+    typeof body?.threadGrowId === "string" && body.threadGrowId.length > 0
+      ? body.threadGrowId : null;
 
   const apiKey = env.GEMINI_API_KEY;
   if (!apiKey) return error(503, "MJ is not configured yet");
@@ -300,12 +344,17 @@ export async function postMj(request, env, user) {
     }
   }
 
-  const history = await loadHistory(env, user.id, MAX_CONTEXT_MESSAGES - 1);
+  await ensureMjThreadSchema(env);
+  const history = await loadHistory(env, user.id, MAX_CONTEXT_MESSAGES - 1, threadGrowId);
   const contextMessages = history.map(m => ({
     role: m.role,
     content: m.content.slice(0, MAX_MSG_LEN),
   }));
-  const messages = [...contextMessages, { role: "user", content: userContent }];
+  const currentMsg = { role: "user", content: userContent };
+  if (imageData) {
+    currentMsg.imageParts = [{ inlineData: { mimeType: imageData.mimeType, data: imageData.data } }];
+  }
+  const messages = [...contextMessages, currentMsg];
 
   // Load the active grow — prefer the grows table, fall back to plan_config.
   let raw;
@@ -396,7 +445,7 @@ export async function postMj(request, env, user) {
         }
 
         await bumpMjUsage(env, user.id, today, modelUsed);
-        await saveConversation(env, user.id, userContent, reply, actions);
+        await saveConversation(env, user.id, threadGrowId, userContent, reply, actions);
         const [proCount, flashCount, userCount] = await Promise.all([
           readMjModelUsage(env, today, GEMINI_PRO_MODEL),
           readMjModelUsage(env, today, GEMINI_MODEL),

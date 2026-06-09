@@ -59,17 +59,19 @@ export const api = {
   putNote: (date, body) =>
     request(`/api/notes/${date}`, { method: "PUT", body: JSON.stringify({ body }) }),
 
-  // Streams MJ's reply via SSE. Accepts activeGrowId so the worker loads the right grow.
-  // Options: { activeGrowId, onChunk, onDone, onError }. Never throws — errors route through onError.
-  mj: (message, contextDate, { activeGrowId, onChunk, onDone, onError }) => {
+  // Streams MJ's reply via SSE.
+  // Options: { activeGrowId, threadGrowId, imageData, onChunk, onDone, onError }
+  mj: (message, contextDate, { activeGrowId, threadGrowId, imageData, onChunk, onDone, onError }) => {
     fetch("/api/mj", {
       method: "POST",
       credentials: "same-origin",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         message,
-        ...(contextDate   ? { contextDate }   : {}),
-        ...(activeGrowId  ? { activeGrowId }  : {}),
+        ...(contextDate  ? { contextDate }  : {}),
+        ...(activeGrowId ? { activeGrowId } : {}),
+        ...(threadGrowId ? { threadGrowId } : {}),
+        ...(imageData    ? { imageData }    : {}),
       }),
     }).then(async (res) => {
       if (!res.ok) {
@@ -106,8 +108,10 @@ export const api = {
   mjUndo: (undoPayload) =>
     request("/api/mj/undo", { method: "POST", body: JSON.stringify(undoPayload) }),
   getMjUsage: () => request("/api/mj/usage"),
-  getMjHistory: () => request("/api/mj/history"),
-  clearMjHistory: () => request("/api/mj/history", { method: "DELETE" }),
+  getMjHistory: (growId) =>
+    request(`/api/mj/history${growId ? `?growId=${encodeURIComponent(growId)}` : ""}`),
+  clearMjHistory: (growId) =>
+    request(`/api/mj/history${growId ? `?growId=${encodeURIComponent(growId)}` : ""}`, { method: "DELETE" }),
 
   // Streams MJ's plan quality review via SSE. Accepts the full conversation
   // history on every call (stateless server-side). Same callback contract as mj().

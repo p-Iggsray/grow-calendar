@@ -408,6 +408,7 @@ export default function App() {
             onClose={closeChat}
             contextDate={chatContext}
             activeGrowId={activeGrowId}
+            grows={grows}
             suggestions={suggestions}
           />
         )}

@@ -132,8 +132,8 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (path === "/api/mj/review"       && method === "POST")   return postMjReview(request, env, user);
   if (path === "/api/mj/undo"         && method === "POST")   return postMjUndo(request, env, user);
   if (path === "/api/mj/usage"        && method === "GET")    return getMjUsage(env, user);
-  if (path === "/api/mj/history"      && method === "GET")    return getMjHistory(env, user);
-  if (path === "/api/mj/history"      && method === "DELETE") return deleteMjHistory(env, user);
+  if (path === "/api/mj/history"      && method === "GET")    return getMjHistory(request, env, user);
+  if (path === "/api/mj/history"      && method === "DELETE") return deleteMjHistory(request, env, user);
   if (path === "/api/plan"           && method === "GET")   return getPlan(env, user);
   if (path === "/api/plan/setup"     && method === "POST")  return postPlanSetup(request, env, user);
   if (path === "/api/plan/regenerate"&& method === "POST")  return postPlanRegenerate(request, env, user);

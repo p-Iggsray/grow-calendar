@@ -11,10 +11,12 @@ function geminiBase(gatewayBase) {
 }
 
 export function toGeminiContents(messages) {
-  return messages.map(m => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }],
-  }));
+  return messages.map(m => {
+    const parts = m.content ? [{ text: m.content }] : [];
+    if (m.imageParts) parts.push(...m.imageParts);
+    if (parts.length === 0) parts.push({ text: "" });
+    return { role: m.role === "assistant" ? "model" : "user", parts };
+  });
 }
 
 export function buildGeminiBody({ systemSegments, tools, contents }) {
