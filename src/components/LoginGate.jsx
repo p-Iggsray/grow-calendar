@@ -191,6 +191,19 @@ export default function LoginGate() {
             Back to login
           </button>
         )}
+
+        {/* Legal / privacy disclaimer — public entry screen */}
+        <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--c-surface-2)", fontFamily: "'Courier New', monospace" }}>
+          <p style={{ fontSize: 10, lineHeight: 1.6, color: "var(--c-text-faint)", margin: 0 }}>
+            For educational and personal record-keeping only — not medical, legal, or professional cultivation advice. Intended for adults of legal age. You are responsible for complying with the cannabis laws in your area.
+          </p>
+          <details style={{ marginTop: 8 }}>
+            <summary style={{ fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", cursor: "pointer", textTransform: "uppercase" }}>Privacy</summary>
+            <p style={{ fontSize: 10, lineHeight: 1.6, color: "var(--c-text-faint)", margin: "6px 0 0" }}>
+              Your account and grow data are stored privately to run the app and are never sold. AI features send your grow details to Google&apos;s Gemini API to generate replies. Ask the admin to delete your account and data at any time.
+            </p>
+          </details>
+        </div>
       </div>
     </div>
   );

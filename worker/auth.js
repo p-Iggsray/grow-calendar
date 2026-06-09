@@ -104,6 +104,14 @@ function newSessionToken() {
   return bytesToBase64Url(crypto.getRandomValues(new Uint8Array(32)));
 }
 
+// Session and reset tokens are stored hashed at rest, so a database read can't
+// be used to impersonate a user or hijack a reset. The high-entropy token only
+// ever lives in the cookie / reset URL; we look up by its SHA-256.
+export async function hashToken(token) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
 function constantTimeEqual(a, b) {
   if (a.length !== b.length) return false;
   let diff = 0;
@@ -255,7 +263,7 @@ export async function logout(request, env) {
   const cookies = parseCookies(request.headers.get("cookie"));
   const token = cookies.session;
   if (token) {
-    await env.DB.prepare("DELETE FROM sessions WHERE token = ?").bind(token).run();
+    await env.DB.prepare("DELETE FROM sessions WHERE token = ?").bind(await hashToken(token)).run();
   }
   return json({ ok: true }, {
     headers: { "set-cookie": clearSessionCookie(isHttps(request)) },
@@ -266,18 +274,19 @@ export async function currentUser(request, env) {
   const cookies = parseCookies(request.headers.get("cookie"));
   const token = cookies.session;
   if (!token) return null;
+  const tokenHash = await hashToken(token);
 
   const row = await env.DB.prepare(`
     SELECT u.id, u.username, u.role, u.status, s.expires_at, s.created_at
     FROM sessions s
     JOIN users u ON u.id = s.user_id
     WHERE s.token = ?
-  `).bind(token).first();
+  `).bind(tokenHash).first();
 
   if (!row) return null;
   const nowMs = Date.now();
   if (new Date(row.expires_at).getTime() < nowMs) {
-    await env.DB.prepare("DELETE FROM sessions WHERE token = ?").bind(token).run();
+    await env.DB.prepare("DELETE FROM sessions WHERE token = ?").bind(tokenHash).run();
     return null;
   }
 
@@ -293,10 +302,10 @@ export async function currentUser(request, env) {
   await env.DB.batch([
     env.DB.prepare(
       "INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
-    ).bind(newToken, row.id, createdAt, expiresAt),
+    ).bind(await hashToken(newToken), row.id, createdAt, expiresAt),
     env.DB.prepare(
       "UPDATE sessions SET expires_at = ? WHERE token = ? AND expires_at > ?",
-    ).bind(oldGraceEnd, token, oldGraceEnd),
+    ).bind(oldGraceEnd, tokenHash, oldGraceEnd),
   ]);
   return { ...base, rotateTo: newToken };
 }
@@ -316,7 +325,7 @@ async function finishLogin(request, env, user) {
   const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000).toISOString();
   await env.DB.prepare(
     "INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
-  ).bind(token, user.id, createdAt, expiresAt).run();
+  ).bind(await hashToken(token), user.id, createdAt, expiresAt).run();
 
   return json({ user: { id: user.id, username: user.username, role: user.role, status: user.status } }, {
     headers: { "set-cookie": sessionCookie(token, SESSION_TTL_SECONDS, isHttps(request)) },

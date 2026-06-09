@@ -272,6 +272,12 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
         </div>
       </div>
 
+      <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--c-surface-2)", fontFamily: "'Courier New', monospace" }}>
+        <p style={{ fontSize: 10, lineHeight: 1.6, color: "var(--c-text-faint)", margin: 0 }}>
+          For educational and personal record-keeping only — not medical, legal, or professional cultivation advice. You are responsible for complying with the cannabis laws in your area. Your data is stored privately and never sold; AI features send your grow details to Google&apos;s Gemini API. Contact the admin to delete your account and data.
+        </p>
+      </div>
+
       <AuthFooter onBeforeSignOut={onBeforeSignOut} />
     </div>
   );
