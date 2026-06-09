@@ -168,7 +168,7 @@ export async function listGrows(env, user) {
 // POST /api/grows
 export async function createGrow(request, env, user) {
   let body = {};
-  try { body = await request.json(); } catch { /* body is optional */ }
+  { const p = await safeJsonBounded(request, 65536); if (!p.ok) return error(p.status, p.error); body = p.data; }
 
   const id = newGrowId();
   const now = new Date().toISOString();
@@ -226,7 +226,7 @@ export async function patchGrow(request, env, user, growId) {
   if (!row) return error(404, "grow not found");
 
   let body;
-  try { body = await request.json(); } catch { return error(400, "invalid json"); }
+  { const p = await safeJsonBounded(request, 65536); if (!p.ok) return error(p.status, p.error); body = p.data; }
 
   const fields = [];
   const binds = [];
@@ -272,7 +272,7 @@ export async function setupGrow(request, env, user, growId) {
   if (!row) return error(404, "grow not found");
 
   let body;
-  try { body = await request.json(); } catch { return error(400, "invalid json"); }
+  { const p = await safeJsonBounded(request, 65536); if (!p.ok) return error(p.status, p.error); body = p.data; }
 
   const survey = body?.survey;
   if (!survey || typeof survey !== "object") return error(400, "survey required");
@@ -358,7 +358,7 @@ export async function putGrowPhase(request, env, user, growId, phase) {
   if (!row) return error(404, "grow not found");
 
   let body;
-  try { body = await request.json(); } catch { return error(400, "invalid json"); }
+  { const p = await safeJsonBounded(request, 65536); if (!p.ok) return error(p.status, p.error); body = p.data; }
 
   const phaseOverrides = parseField(row.phase_overrides) ?? {};
   if (body === null) {

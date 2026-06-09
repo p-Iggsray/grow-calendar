@@ -1,7 +1,7 @@
 // @ts-check
 // Push notification backend: VAPID key management, subscription CRUD,
 // daily cron sender, and the /api/push/today endpoint consumed by the SW.
-import { json, error } from "./util.js";
+import { json, error, safeJsonBounded } from "./util.js";
 import { loadRawPlan } from "./plan.js";
 import { parseConfig, parseDate } from "../src/lib/planConfig.js";
 import { getPhase, getDetail } from "../src/lib/growData.js";
@@ -107,7 +107,7 @@ export async function getPushVapidKey(env) {
 
 export async function postPushSubscribe(request, env, user) {
   let body;
-  try { body = await request.json(); } catch { return error(400, "invalid json"); }
+  { const p = await safeJsonBounded(request, 8192); if (!p.ok) return error(p.status, p.error); body = p.data; }
 
   const { endpoint, keys } = body ?? {};
   if (!endpoint || typeof endpoint !== "string") return error(400, "endpoint required");
@@ -127,7 +127,7 @@ export async function postPushSubscribe(request, env, user) {
 
 export async function deletePushSubscribe(request, env, user) {
   let body;
-  try { body = await request.json(); } catch { return error(400, "invalid json"); }
+  { const p = await safeJsonBounded(request, 8192); if (!p.ok) return error(p.status, p.error); body = p.data; }
 
   const { endpoint } = body ?? {};
   if (!endpoint) return error(400, "endpoint required");

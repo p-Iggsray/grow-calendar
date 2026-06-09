@@ -1,5 +1,5 @@
 // @ts-check
-import { json, error } from "./util.js";
+import { json, error, safeJsonBounded } from "./util.js";
 import { DEFAULT_CONFIG } from "../src/lib/planConfig.js";
 
 const VALID_PHASES = new Set([
@@ -60,7 +60,7 @@ export async function getPlan(env, user) {
 // PATCH /api/plan/config — update driving dates without regenerating AI content.
 export async function patchPlanConfig(request, env, user) {
   let body;
-  try { body = await request.json(); } catch { return error(400, "invalid json"); }
+  { const p = await safeJsonBounded(request, 65536); if (!p.ok) return error(p.status, p.error); body = p.data; }
   const config = body?.config;
   if (!config || typeof config !== "object") return error(400, "config required");
 
@@ -77,7 +77,7 @@ export async function putPlanPhase(request, env, user, phase) {
   if (!VALID_PHASES.has(phase)) return error(400, "invalid phase");
 
   let body;
-  try { body = await request.json(); } catch { return error(400, "invalid json"); }
+  { const p = await safeJsonBounded(request, 65536); if (!p.ok) return error(p.status, p.error); body = p.data; }
 
   const row = await env.DB.prepare(
     "SELECT phase_overrides FROM plan_config WHERE user_id = ?"

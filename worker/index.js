@@ -47,14 +47,18 @@ export default {
   },
 
   async scheduled(event, env, _ctx) {
-    if (event.cron === "0 3 * * *") {
-      const now = new Date().toISOString();
-      const { meta } = await env.DB.prepare(
-        "DELETE FROM sessions WHERE expires_at < ?"
-      ).bind(now).run();
-      logInfo("session-cleanup", { deleted: meta.changes });
-    } else if (event.cron === "0 12 * * *") {
-      await sendDailyReminders(env);
+    try {
+      if (event.cron === "0 3 * * *") {
+        const now = new Date().toISOString();
+        const { meta } = await env.DB.prepare(
+          "DELETE FROM sessions WHERE expires_at < ?"
+        ).bind(now).run();
+        logInfo("session-cleanup", { deleted: meta.changes });
+      } else if (event.cron === "0 12 * * *") {
+        await sendDailyReminders(env);
+      }
+    } catch (err) {
+      logError("scheduled-uncaught", { cron: event.cron, message: String(err?.message ?? err), stack: err?.stack });
     }
   },
 };
@@ -74,9 +78,7 @@ function hasJsonContentType(request) {
 async function route(request, env, path) {
   const method = request.method;
 
-  // Binary media uploads send the file's own content-type, not application/json.
-  const isBinaryUpload = path === "/api/media/upload" && method === "POST";
-  if (isMutating(method) && !isBinaryUpload && !hasJsonContentType(request)) {
+  if (isMutating(method) && !hasJsonContentType(request)) {
     return error(415, "content-type must be application/json");
   }
 

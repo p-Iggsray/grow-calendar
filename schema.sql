@@ -113,6 +113,8 @@ CREATE TABLE IF NOT EXISTS grow_log (
   temp_high    REAL,
   temp_low     REAL,
   humidity     REAL,
+  ec_in        REAL,
+  ec_out       REAL,
   water_plants TEXT,
   training     TEXT,
   plant_health TEXT,

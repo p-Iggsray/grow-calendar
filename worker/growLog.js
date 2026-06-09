@@ -1,4 +1,4 @@
-import { json, error } from "./util.js";
+import { json, error, safeJsonBounded } from "./util.js";
 
 function toNum(v) {
   if (v === null || v === undefined || v === "") return null;
@@ -30,7 +30,10 @@ function rowToEntry(row) {
 }
 
 function csvEscape(s) {
-  const str = s == null ? "" : String(s);
+  let str = s == null ? "" : String(s);
+  // Neutralize spreadsheet formula injection: a cell beginning with one of
+  // these is executed as a formula by Excel/Sheets. Prefix a single quote.
+  if (/^[=+\-@\t\r]/.test(str)) str = `'${str}`;
   if (/[",\r\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
   return str;
 }
@@ -62,7 +65,7 @@ export async function getGrowLog(env, user, growId, date) {
 
 export async function putGrowLog(request, env, user, growId, date) {
   let body;
-  try { body = await request.json(); } catch { return error(400, "invalid json"); }
+  { const p = await safeJsonBounded(request, 16384); if (!p.ok) return error(p.status, p.error); body = p.data; }
 
   await ensureGrowLogSchema(env);
 

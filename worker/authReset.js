@@ -1,4 +1,4 @@
-import { json, error, bytesToBase64Url } from "./util.js";
+import { json, error, bytesToBase64Url, safeJsonBounded } from "./util.js";
 import { hashPassword } from "./auth.js";
 
 // Admin-generated reset links are sent to the user out-of-band (text/DM), so
@@ -30,7 +30,7 @@ export async function postAdminResetLink(request, env, targetUserId) {
 
 export async function postResetPassword(request, env) {
   let body;
-  try { body = await request.json(); } catch { return error(400, "invalid json"); }
+  { const p = await safeJsonBounded(request, 1024); if (!p.ok) return error(p.status, p.error); body = p.data; }
 
   const token       = typeof body?.token       === "string" ? body.token.trim() : "";
   const newPassword = typeof body?.newPassword === "string" ? body.newPassword  : "";
