@@ -5,6 +5,7 @@ import { loadRawGrow, loadRawGrows } from "./grows.js";
 import { parseConfig, parseDate } from "../src/lib/planConfig.js";
 import { getPhase, getDetail, getThreatsForPhase, PHASES } from "../src/lib/growData.js";
 import { buildPlanText } from "../src/lib/planText.js";
+import { growLocation, strainSummary } from "../src/lib/growProfile.js";
 import { readCheckoffs, writeCheckoffs } from "./checkoffs.js";
 import { readNote, writeNote, MAX_NOTE_LEN } from "./notes.js";
 import { MJ_PERSONA, MJ_TOOLS, mergeChecked, appendNoteText, buildDayView, VALID_GROW_PHASES, VALID_CONFIG_DATE_KEYS } from "./mj-logic.js";
@@ -381,11 +382,20 @@ export async function postMj(request, env, user) {
   const supplyContext  = buildSupplyContext(raw.survey);
   const growsContext   = buildGrowsContext(grows, activeGrowId);
 
+  // Per-grow profile (location + plant counts) so MJ tailors advice without
+  // a tool call. Replaces the old hardcoded location in the persona.
+  const profileParts = [
+    growLocation(raw.survey) ? `Location: ${growLocation(raw.survey)}` : "",
+    strainSummary(raw.survey, raw.generatedPlan) ? `Plants: ${strainSummary(raw.survey, raw.generatedPlan)}` : "",
+  ].filter(Boolean);
+  const growProfile = profileParts.length ? `Active grow profile — ${profileParts.join(" · ")}.` : "";
+
   // Assemble system prompt segments.
   const planText  = buildPlanText(config, overrides, raw.generatedPlan, phaseOverrides);
   const baseBlock = [MJ_PERSONA, "", planText, "", supplyContext].filter(s => s !== "").join("\n");
 
   const dynamicParts = [
+    growProfile,
     growsContext,
     growLogContext,
     weatherContext,
@@ -483,6 +493,7 @@ async function executeTool(name, input, env, userId, config, overrides, generate
         displayName: rawGrow.displayName,
         status: rawGrow.status,
         strains,
+        location: rawGrow.survey?.location ?? null,
         configDates: rawGrow.config ?? {},
         phasesWithOverrides,
         growId,

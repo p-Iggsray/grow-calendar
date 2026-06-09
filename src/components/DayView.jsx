@@ -522,6 +522,7 @@ const numInputStyle = {
 };
 
 export default function DayView({
+  activeGrowId,
   selected, detail, selStyle, selPhase, threats,
   taskStates, checkoffsLoading, onToggle, onSetTaskState,
   note, onChangeNote, onFlushNote, noteStatus,
@@ -553,7 +554,7 @@ export default function DayView({
   // Weather: only fetch for today or future dates.
   const todayStr = new Date().toISOString().slice(0, 10);
   const isCurrentOrFuture = selected >= todayStr;
-  const { data: weather, loading: weatherLoading } = useWeather(isCurrentOrFuture && tab === "threats");
+  const { data: weather, loading: weatherLoading } = useWeather(isCurrentOrFuture && tab === "threats", activeGrowId);
 
   useEffect(() => {
     if (noteEditing) textareaRef.current?.focus();
@@ -1016,7 +1017,7 @@ function WeatherCard({ weather, loading }) {
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: hasHourly ? 10 : 0 }}>
             <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 1.5, color: "#5a8a9a", textTransform: "uppercase" }}>
-              NWS Forecast · Athens OH
+              NWS Forecast
             </span>
             {hasHighLow && (
               <span style={{ fontFamily: "'Courier New', monospace", fontSize: 12, color: "var(--c-text-dim)" }}>

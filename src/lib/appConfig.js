@@ -1,11 +1,6 @@
-// App-wide static constants. Sub-project B (#92) will move location and strain
-// data into per-user plan data; until then this is the single source of truth,
-// shared by the worker (MJ persona) and the React app (header, login, calendar).
-export const LOCATION = "Athens, Ohio";
-
-// Strain names — update here if you change what you're growing next season.
-export const STRAIN_1 = "Grandaddy Purp";
-export const STRAIN_2 = "Strawberry Haze";
+// App-wide static constants. Location and strain data are now per-grow (stored
+// in each grow's survey / generated plan — see src/lib/growProfile.js), so they
+// no longer live here. What remains is genuinely app-wide configuration.
 
 // Calendar month bounds (0-indexed: 4 = May, 9 = October).
 // Tighten or widen when your grow season shifts.

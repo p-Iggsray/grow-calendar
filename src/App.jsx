@@ -20,6 +20,7 @@ import { buildSuggestions } from "./lib/mjSuggestions.js";
 import { useOnlineStatus } from "./lib/useOnlineStatus.js";
 import { flushCheckoffQueue } from "./lib/offlineQueue.js";
 import { useTheme } from "./lib/useTheme.js";
+import { growLocation, strainSummary } from "./lib/growProfile.js";
 
 import Header from "./components/Header.jsx";
 import AdminPanel from "./components/AdminPanel.jsx";
@@ -364,6 +365,8 @@ export default function App() {
                 nextMs={nextMs}
                 daysToNext={daysToNext}
                 progress={progress}
+                location={growLocation(survey)}
+                strains={strainSummary(survey, generatedPlan)}
               />
               <MilestoneStrip today={today} milestones={milestones} onPick={pickMilestone} />
               <Calendar
@@ -400,6 +403,7 @@ export default function App() {
             }}
           >
             <DayView
+              activeGrowId={activeGrowId}
               selected={selected}
               detail={detail}
               selStyle={selStyle}

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../lib/auth.jsx";
 import { api } from "../lib/api.js";
-import { LOCATION } from "../lib/appConfig.js";
 
 const LABEL_STYLE = {
   fontSize: 10, letterSpacing: 2, color: "var(--c-text-faint)",
@@ -111,7 +110,7 @@ export default function LoginGate() {
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 22 }}>
           <div style={{ fontSize: 10, letterSpacing: 4, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 6, fontFamily: "'Courier New', monospace" }}>
-            Grow Log · {LOCATION}
+            Grow Log
           </div>
           <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: -1, color: "var(--c-text)" }}>
             The Grow Calendar

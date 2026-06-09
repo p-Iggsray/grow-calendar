@@ -5,8 +5,9 @@ import ShareSheet from "./ShareSheet.jsx";
 import PhaseLegend from "./PhaseLegend.jsx";
 import ThreatsReference from "./ThreatsReference.jsx";
 import AuthFooter from "./AuthFooter.jsx";
-import { LOCATION, STRAIN_1, STRAIN_2 } from "../lib/appConfig.js";
 import { api } from "../lib/api.js";
+import { usePlan } from "../lib/usePlan.jsx";
+import { growLocation, strainSummary } from "../lib/growProfile.js";
 import { useNotifications } from "../lib/useNotifications.js";
 
 const THEME_OPTIONS = [
@@ -16,6 +17,9 @@ const THEME_OPTIONS = [
 ];
 
 export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMap, onBeforeSignOut, theme, setTheme }) {
+  const { survey, generatedPlan } = usePlan();
+  const location = growLocation(survey);
+  const strains = strainSummary(survey, generatedPlan);
   const [exporting, setExporting] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const { supported: notifSupported, permission, subscribed, busy: notifBusy, error: notifError, subscribe, unsubscribe } = useNotifications();
@@ -53,11 +57,13 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
           textTransform: "uppercase", marginBottom: 4,
           fontFamily: "'Courier New', monospace",
         }}>
-          Grow Log · {LOCATION}
+          Grow Log{location ? ` · ${location}` : ""}
         </div>
-        <div style={{ fontSize: 11, color: "var(--c-text-faint)", fontFamily: "'Courier New', monospace" }}>
-          1× {STRAIN_1} · 2× {STRAIN_2}
-        </div>
+        {strains && (
+          <div style={{ fontSize: 11, color: "var(--c-text-faint)", fontFamily: "'Courier New', monospace" }}>
+            {strains}
+          </div>
+        )}
       </div>
 
       <PhaseLegend />

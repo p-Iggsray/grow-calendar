@@ -3,13 +3,14 @@ import { api } from "./api.js";
 
 const CACHE_MS = 10 * 60 * 1000; // match worker cache TTL
 
-// Module-level cache so data persists across tab switches.
-let _cached = null;
-let _fetchedAt = 0;
+// Module-level cache, keyed by grow id, so data persists across tab switches
+// without leaking one grow's forecast into another.
+const _cache = new Map(); // growId -> { data, fetchedAt }
 
-export function useWeather(enabled) {
-  const [data, setData] = useState(_cached);
-  const [loading, setLoading] = useState(!_cached && enabled);
+export function useWeather(enabled, growId = null) {
+  const cacheKey = growId ?? "__active__";
+  const [data, setData] = useState(() => _cache.get(cacheKey)?.data ?? null);
+  const [loading, setLoading] = useState(!_cache.has(cacheKey) && enabled);
   const [error, setError] = useState(null);
   const aborted = useRef(false);
 
@@ -17,18 +18,18 @@ export function useWeather(enabled) {
     if (!enabled) return;
     aborted.current = false;
 
-    if (_cached && Date.now() - _fetchedAt < CACHE_MS) {
-      setData(_cached);
+    const hit = _cache.get(cacheKey);
+    if (hit && Date.now() - hit.fetchedAt < CACHE_MS) {
+      setData(hit.data);
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    api.getWeather()
+    api.getWeather(growId)
       .then(d => {
         if (aborted.current) return;
-        _cached = d;
-        _fetchedAt = Date.now();
+        _cache.set(cacheKey, { data: d, fetchedAt: Date.now() });
         setData(d);
         setError(null);
       })
@@ -41,7 +42,7 @@ export function useWeather(enabled) {
       });
 
     return () => { aborted.current = true; };
-  }, [enabled]);
+  }, [enabled, growId, cacheKey]);
 
   return { data, loading, error };
 }

@@ -1,5 +1,4 @@
 import { sameDay, daysBetween, fmt, fmtL } from "./dates-core.js";
-import { LOCATION } from "./appConfig.js";
 
 // Single-character glyph per phase so the calendar is readable without color
 // (WCAG 1.4.1). Same-color/different-strain phases share a glyph and rely on
@@ -45,7 +44,7 @@ export const THREATS = [
   },
   {
     id:"frost", icon:"❄️", title:"Frost Warning",
-    desc:`Any frost warning for ${LOCATION.split(",")[0]} County — bring every pot inside immediately. One hard frost is fatal. Your Haze harvest window (Oct 18) is right on the edge of average first frost for ${LOCATION.split(",")[0]}. Check the forecast every single night from October 1 onward.`,
+    desc:`Any frost warning for your area — bring every pot inside immediately. One hard frost is fatal. Your late harvest window sits right on the edge of average first frost in many climates. Check the forecast every single night once fall begins.`,
     phases:["flush_haze","harvest_haze","flower_haze"],
   },
   {
@@ -406,7 +405,7 @@ function generateDetail(date, config) {
         "PLAIN WATER DAYS: Cal-Mag 5ml/gal in distilled water.",
         "TRICHOME CHECK on both Haze plants: Clear = not ready. You want mostly milky/cloudy with amber beginning before flushing. Haze flush starts October 4.",
         "BUD ROT WATCH: October in Ohio brings cooler and sometimes wet weather — this is peak bud rot risk for Haze. Check inside dense Haze colas daily.",
-        `FROST FORECAST: Check ${LOCATION} forecast every night now. First frost in ${LOCATION.split(",")[0]} typically falls October 15 to 20. If frost is predicted before October 18, be prepared to move pots inside overnight. Haze flush starts ${fmt(config.hazeFlush)}.`,
+        `FROST FORECAST: Check your local forecast every night now. First frost in many regions falls in mid-to-late October. If frost is predicted before your harvest date, be prepared to move pots inside overnight. Haze flush starts ${fmt(config.hazeFlush)}.`,
       ],
       notes: "Strawberry Haze finishes in 10 to 12 weeks of flower. Flush begins October 4, harvest October 18. Watch the frost calendar closely from here on.",
     };
@@ -420,7 +419,7 @@ function generateDetail(date, config) {
       tasks: [
         "PLAIN WATER ONLY for both Haze plants: Use tap water. No nutrients. No Cal-Mag. Water to runoff.",
         "TRICHOME CHECK: Looking for mostly milky/cloudy trichomes with 10 to 20% amber across multiple bud sites. Check both plants — they may not be at the exact same stage.",
-        `FROST WATCH: Check the 10-day forecast for ${LOCATION} every single night. A hard frost kills the plants. If frost is predicted before October 18, harvest immediately — partial or full.`,
+        `FROST WATCH: Check your local 10-day forecast every single night. A hard frost kills the plants. If frost is predicted before your harvest date, harvest immediately — partial or full.`,
         "LEAF YELLOWING: Fan leaves will yellow and drop. This is expected and correct.",
         "BUD ROT: Continue checking inside colas daily. October humidity and cool nights are the main risk.",
         fd >= 10

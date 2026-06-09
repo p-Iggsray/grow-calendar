@@ -1,9 +1,8 @@
 import { useRef, useState } from "react";
 import { ChevronLeft, RotateCcw } from "lucide-react";
-import { STRAIN_1, STRAIN_2 } from "../lib/appConfig.js";
 import { getPhase, PHASES } from "../lib/growData.js";
-
-const STORAGE_KEY = "grow-garden-map-v1";
+import { usePlan } from "../lib/usePlan.jsx";
+import { growStrains, distinctStrains, strainShortLabel } from "../lib/growProfile.js";
 
 // SVG coordinate space
 const VW = 400;
@@ -12,29 +11,50 @@ const VH = 420;
 const YARD = { x: 52, y: 52, w: 296, h: 248 };
 const POT_R = 22;
 
-const DEFAULT_POTS = [
-  { id: "gdp",   short: "GDP", strain: STRAIN_1, cx: 0.26, cy: 0.48 },
-  { id: "haze1", short: "SH 1", strain: STRAIN_2, cx: 0.56, cy: 0.28 },
-  { id: "haze2", short: "SH 2", strain: STRAIN_2, cx: 0.68, cy: 0.72 },
-];
-
-function loadPots() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
-    return DEFAULT_POTS.map(p => ({
-      ...p,
-      cx: saved[p.id]?.cx ?? p.cx,
-      cy: saved[p.id]?.cy ?? p.cy,
-    }));
-  } catch {
-    return DEFAULT_POTS.map(p => ({ ...p }));
-  }
+// Pot positions are saved per grow so different grows keep their own layout.
+function storageKey(growId) {
+  return `grow-garden-map-${growId || "default"}-v2`;
 }
 
-function savePots(pots) {
+function loadSaved(growId) {
+  try { return JSON.parse(localStorage.getItem(storageKey(growId)) ?? "{}"); }
+  catch { return {}; }
+}
+
+function savePots(growId, pots) {
   const out = {};
   pots.forEach(p => { out[p.id] = { cx: p.cx, cy: p.cy }; });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(out));
+  localStorage.setItem(storageKey(growId), JSON.stringify(out));
+}
+
+// Evenly arrange n pots in a loose grid inside the yard (normalized 0..1).
+function defaultPos(i, n) {
+  const cols = Math.max(1, Math.ceil(Math.sqrt(n)));
+  const rows = Math.max(1, Math.ceil(n / cols));
+  const col = i % cols;
+  const row = Math.floor(i / cols);
+  return clamp((col + 0.5) / cols, (row + 0.5) / rows);
+}
+
+// Build one pot per plant from the grow's strain list. Labels mirror the old
+// "SH 1 / SH 2" style: a short code per strain, numbered when a strain repeats.
+function buildPots(strainNames, saved) {
+  const totalByName = {};
+  strainNames.forEach(nm => { totalByName[nm] = (totalByName[nm] ?? 0) + 1; });
+  const seen = {};
+  const n = strainNames.length;
+  return strainNames.map((name, i) => {
+    seen[name] = (seen[name] ?? 0) + 1;
+    const base = strainShortLabel(name);
+    const short = totalByName[name] > 1 ? `${base} ${seen[name]}` : base;
+    const id = `pot${i}`;
+    const def = defaultPos(i, n);
+    return {
+      id, short, strain: name,
+      cx: saved[id]?.cx ?? def.cx,
+      cy: saved[id]?.cy ?? def.cy,
+    };
+  });
 }
 
 // Normalize yard-relative coords to [0,1], clamped so pot stays inside
@@ -73,9 +93,11 @@ function sunT(hour) {
 }
 
 export default function GardenMap({ today, config, onClose }) {
+  const { survey, generatedPlan, activeGrowId } = usePlan();
+  const plantNames = growStrains(survey, generatedPlan);
   const svgRef = useRef(null);
-  const [pots, setPots] = useState(loadPots);
-  const [dragging, setDragging] = useState(null); // { id, originCx, originCy, originPx, originPy }
+  const [pots, setPots] = useState(() => buildPots(plantNames, loadSaved(activeGrowId)));
+  const [dragging, setDragging] = useState(null); // { id, offsetCx, offsetCy }
   const [selected, setSelected] = useState(null);
 
   const phase = config ? getPhase(today, config) : null;
@@ -118,13 +140,13 @@ export default function GardenMap({ today, config, onClose }) {
   function onSVGPointerUp(e) {
     if (!dragging) return;
     svgRef.current?.releasePointerCapture(e.pointerId);
-    savePots(pots);
+    savePots(activeGrowId, pots);
     setDragging(null);
   }
 
   function resetPositions() {
-    localStorage.removeItem(STORAGE_KEY);
-    setPots(DEFAULT_POTS.map(p => ({ ...p })));
+    localStorage.removeItem(storageKey(activeGrowId));
+    setPots(buildPots(plantNames, {}));
     setSelected(null);
   }
 
@@ -302,17 +324,19 @@ export default function GardenMap({ today, config, onClose }) {
         paddingBottom: "calc(10px + env(safe-area-inset-bottom, 0px))",
         display: "flex", gap: 20, flexWrap: "wrap",
       }}>
-        {[
-          { label: "GDP", name: STRAIN_1 },
-          { label: "SH 1 / SH 2", name: STRAIN_2 },
-        ].map(({ label, name }) => (
-          <div key={label} style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <div style={{ width: 9, height: 9, borderRadius: "50%", background: phaseColor, border: `1.5px solid ${phaseColor}` }} />
-            <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "var(--c-text-faint)", letterSpacing: 0.5 }}>
-              <span style={{ color: "var(--c-text-dim)", fontWeight: 700 }}>{label}</span> · {name}
-            </span>
-          </div>
-        ))}
+        {distinctStrains(survey, generatedPlan).map(name => {
+          const count = plantNames.filter(p => p === name).length;
+          const base = strainShortLabel(name);
+          const label = count > 1 ? `${base} 1-${count}` : base;
+          return (
+            <div key={name} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <div style={{ width: 9, height: 9, borderRadius: "50%", background: phaseColor, border: `1.5px solid ${phaseColor}` }} />
+              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 10, color: "var(--c-text-faint)", letterSpacing: 0.5 }}>
+                <span style={{ color: "var(--c-text-dim)", fontWeight: 700 }}>{label}</span> · {name}
+              </span>
+            </div>
+          );
+        })}
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
           <svg width={18} height={8}>
             <line x1={0} y1={4} x2={18} y2={4} stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="3 3" />

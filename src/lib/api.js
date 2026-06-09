@@ -166,7 +166,8 @@ export const api = {
     return res.blob();
   },
 
-  getWeather: () => request("/api/weather"),
+  getWeather: (growId) =>
+    request(`/api/weather${growId ? `?growId=${encodeURIComponent(growId)}` : ""}`),
 
   getPushVapidKey: () => request("/api/push/vapid-key"),
   pushSubscribe: (sub) =>

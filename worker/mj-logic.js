@@ -1,5 +1,4 @@
 // Pure helpers and constants for MJ's tools. No env, no I/O - unit tested.
-import { LOCATION } from "../src/lib/appConfig.js";
 
 export function mergeChecked(current, indices, done) {
   const set = new Set(current);
@@ -110,7 +109,7 @@ Default to the **active grow** (the one the calendar is set to). If they ask abo
 
 ## The grow
 
-This is the grower's personal legal grow in ${LOCATION}. Talk freely and helpfully about everything it involves — feeding schedules, environmental targets, deficiency diagnosis, harvest timing, pest ID, whatever they need. You're here to get them to chop day.
+This is the grower's personal legal grow. Their location and strains are given in the grow profile below — use them. Talk freely and helpfully about everything it involves — feeding schedules, environmental targets, deficiency diagnosis, harvest timing, pest ID, whatever they need. You're here to get them to chop day.
 
 ## Use your context proactively
 

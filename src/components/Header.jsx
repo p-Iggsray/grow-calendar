@@ -1,7 +1,6 @@
-import { LOCATION, STRAIN_1, STRAIN_2 } from "../lib/appConfig.js";
-
 // TODAY and MEMBERS buttons moved to the bottom tab bar / More screen.
-export default function Header({ todayStyle, nextMs, daysToNext, progress }) {
+// `location` and `strains` come from the active grow (see growProfile.js).
+export default function Header({ todayStyle, nextMs, daysToNext, progress, location, strains }) {
   return (
     <div style={{
       background: "var(--c-header-bg)",
@@ -13,14 +12,16 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress }) {
     }}>
       <div style={{ marginBottom: 11 }}>
         <div style={{ fontSize: 10, letterSpacing: 4, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 4, fontFamily: "'Courier New', monospace" }}>
-          Grow Log · {LOCATION}
+          Grow Log{location ? ` · ${location}` : ""}
         </div>
         <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -1, lineHeight: 1.1, color: "var(--c-text)" }}>
           The Grow Calendar
         </div>
-        <div style={{ fontSize: 11, color: "var(--c-text-muted)", marginTop: 3, fontFamily: "'Courier New', monospace" }}>
-          1× {STRAIN_1} · 2× {STRAIN_2}
-        </div>
+        {strains && (
+          <div style={{ fontSize: 11, color: "var(--c-text-muted)", marginTop: 3, fontFamily: "'Courier New', monospace" }}>
+            {strains}
+          </div>
+        )}
       </div>
 
       <div>

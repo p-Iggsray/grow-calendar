@@ -1,6 +1,7 @@
 import { ChevronLeft, Loader, Droplets, Thermometer, CheckSquare, BookOpen, BarChart2 } from "lucide-react";
 import { useStats } from "../lib/useStats.js";
-import { STRAIN_1, STRAIN_2, LOCATION } from "../lib/appConfig.js";
+import { usePlan } from "../lib/usePlan.jsx";
+import { distinctStrains, growLocation } from "../lib/growProfile.js";
 
 const MONO  = "'Courier New', monospace";
 const SERIF = "'Georgia', 'Times New Roman', serif";
@@ -78,6 +79,17 @@ function StrainCard({ name, harvestDate, today, config }) {
 
 export default function StatsScreen({ config, today, onClose }) {
   const { stats, loading } = useStats(Boolean(config));
+  const { survey, generatedPlan } = usePlan();
+  const location = growLocation(survey);
+
+  // Up to two strain cards: primary maps to gdpHarvest, secondary to hazeHarvest.
+  const strainList = distinctStrains(survey, generatedPlan);
+  const strainCards = [
+    { name: strainList[0] || "Primary strain", harvestDate: config.gdpHarvest },
+    strainList[1] && config.hazeHarvest
+      ? { name: strainList[1], harvestDate: config.hazeHarvest }
+      : null,
+  ].filter(Boolean);
 
   const totalSeasonDays = ms(config.hazeHarvest, config.transplant);
   const seasonElapsed   = Math.max(0, ms(today, config.transplant));
@@ -148,27 +160,26 @@ export default function StatsScreen({ config, today, onClose }) {
       </div>
 
       {/* Strain Comparison */}
-      <SectionTitle>Strain Comparison</SectionTitle>
+      <SectionTitle>{strainCards.length > 1 ? "Strain Comparison" : "Strain"}</SectionTitle>
       <div style={{ display: "flex", gap: 10 }}>
-        <StrainCard
-          name={STRAIN_1}
-          harvestDate={config.gdpHarvest}
-          today={today}
-          config={config}
-        />
-        <StrainCard
-          name={STRAIN_2}
-          harvestDate={config.hazeHarvest}
-          today={today}
-          config={config}
-        />
+        {strainCards.map(card => (
+          <StrainCard
+            key={card.name}
+            name={card.name}
+            harvestDate={card.harvestDate}
+            today={today}
+            config={config}
+          />
+        ))}
       </div>
-      <div style={{
-        fontFamily: MONO, fontSize: 9, color: "var(--c-text-ghost)", letterSpacing: 0.5,
-        marginTop: 8, textAlign: "center",
-      }}>
-        GDP harvests {ms(config.gdpHarvest, config.hazeHarvest) < 0 ? Math.abs(ms(config.gdpHarvest, config.hazeHarvest)) : ms(config.hazeHarvest, config.gdpHarvest)} days {ms(config.gdpHarvest, config.hazeHarvest) < 0 ? "after" : "before"} Haze
-      </div>
+      {strainCards.length > 1 && (
+        <div style={{
+          fontFamily: MONO, fontSize: 9, color: "var(--c-text-ghost)", letterSpacing: 0.5,
+          marginTop: 8, textAlign: "center",
+        }}>
+          {strainCards[0].name} harvests {Math.abs(ms(strainCards[0].harvestDate, strainCards[1].harvestDate))} days {ms(strainCards[0].harvestDate, strainCards[1].harvestDate) < 0 ? "before" : "after"} {strainCards[1].name}
+        </div>
+      )}
 
       {/* By the Numbers */}
       <SectionTitle>By the Numbers</SectionTitle>
@@ -201,7 +212,7 @@ export default function StatsScreen({ config, today, onClose }) {
             2026 Season
           </div>
           <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-muted)", letterSpacing: 0.4 }}>
-            {LOCATION} · {totalSeasonDays} days
+            {location ? `${location} · ` : ""}{totalSeasonDays} days
           </div>
         </div>
         <span style={{

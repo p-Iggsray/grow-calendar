@@ -2,6 +2,7 @@
 import { json, error } from "./util.js";
 import { DEFAULT_CONFIG } from "../src/lib/planConfig.js";
 import { logError } from "./log.js";
+import { geocode } from "./geocode.js";
 
 export const GEMINI_DIRECT_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 export const SETUP_MODEL = "gemini-2.5-pro";
@@ -236,6 +237,13 @@ export async function postPlanSetup(request, env, user) {
   if (missing.length > 0) {
     logError("plan-setup-missing-keys", { missing, config });
     return error(502, "Generated plan is incomplete. Please try again.");
+  }
+
+  // Resolve coordinates for weather/frost if the GPS button didn't provide
+  // them. Best-effort — a failure never blocks setup.
+  if ((survey.lat == null || survey.lon == null) && survey.location) {
+    const geo = await geocode(survey.location);
+    if (geo) { survey.lat = geo.lat; survey.lon = geo.lon; }
   }
 
   const now = new Date().toISOString();

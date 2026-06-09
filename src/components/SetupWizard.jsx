@@ -341,17 +341,74 @@ function StepTimeline({ survey, update }) {
 }
 
 function StepSetup({ survey, update }) {
+  const [geoStatus, setGeoStatus] = useState(""); // "" | "locating" | "done" | "error"
+
+  function useMyLocation() {
+    if (!navigator.geolocation) { setGeoStatus("error"); return; }
+    setGeoStatus("locating");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        update("lat", lat);
+        update("lon", lon);
+        // Best-effort reverse geocode to fill a readable label when blank.
+        if (!survey.location?.trim()) {
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&lat=${lat}&lon=${lon}`,
+              { headers: { Accept: "application/json" } },
+            );
+            if (res.ok) {
+              const d = await res.json();
+              const a = d.address || {};
+              const place = [a.city || a.town || a.village || a.county, a.state]
+                .filter(Boolean).join(", ");
+              if (place) update("location", place);
+            }
+          } catch { /* keep coordinates even if the label lookup fails */ }
+        }
+        setGeoStatus("done");
+      },
+      () => setGeoStatus("error"),
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 },
+    );
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
         <Label>Location / region</Label>
         <Input
           value={survey.location}
-          onChange={v => update("location", v)}
+          onChange={v => { update("location", v); update("lat", null); update("lon", null); }}
           placeholder="e.g. Central Ohio, USA"
         />
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className="touch-target"
+            onClick={useMyLocation}
+            disabled={geoStatus === "locating"}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "8px 14px", borderRadius: 10,
+              background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.3)",
+              color: "var(--c-accent)", fontFamily: MONO, fontSize: 11, letterSpacing: 0.5,
+              cursor: geoStatus === "locating" ? "default" : "pointer",
+            }}
+          >
+            📍 {geoStatus === "locating" ? "Locating…" : "Use my current location"}
+          </button>
+          {geoStatus === "done" && (
+            <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-accent)" }}>✓ Location set</span>
+          )}
+          {geoStatus === "error" && (
+            <span style={{ fontFamily: MONO, fontSize: 10, color: "#f87171" }}>Couldn&apos;t get location — type it above</span>
+          )}
+        </div>
         <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginTop: 5, lineHeight: 1.7 }}>
-          Used to tailor weather threats and frost timing.
+          Used to tailor weather, frost timing, and threats to your area.
         </div>
       </div>
       <div>

@@ -123,7 +123,7 @@ async function authenticatedRoute(request, env, path, method, user) {
   // app routes require an approved user
   const gate = requireApproved(user); if (gate) return gate;
 
-  if (path === "/api/weather"          && method === "GET")    return getWeather(env);
+  if (path === "/api/weather"          && method === "GET")    return getWeather(request, env, user);
   if (path === "/api/push/vapid-key"   && method === "GET")    return getPushVapidKey(env);
   if (path === "/api/push/subscribe"   && method === "POST")   return postPushSubscribe(request, env, user);
   if (path === "/api/push/subscribe"   && method === "DELETE") return deletePushSubscribe(request, env, user);

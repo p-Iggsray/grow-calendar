@@ -1,6 +1,7 @@
 // @ts-check
 import { json, error, safeJsonBounded } from "./util.js";
 import { logError } from "./log.js";
+import { geocode } from "./geocode.js";
 import {
   buildSetupPrompt,
   extractJson,
@@ -333,6 +334,14 @@ export async function setupGrow(request, env, user, growId) {
   if (missing.length > 0) {
     logError("grows-setup-missing-keys", { missing, config });
     return error(502, "Generated plan is incomplete. Please try again.");
+  }
+
+  // Resolve coordinates for weather/frost if the GPS button didn't already
+  // provide them. Geocoding the typed location is best-effort — a failure just
+  // means no weather until it's set, never a failed setup.
+  if ((survey.lat == null || survey.lon == null) && survey.location) {
+    const geo = await geocode(survey.location);
+    if (geo) { survey.lat = geo.lat; survey.lon = geo.lon; }
   }
 
   // Use the AI-generated grow name as the display name if available.
