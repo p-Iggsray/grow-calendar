@@ -1,13 +1,17 @@
 // @ts-check
-import { error } from "./util.js";
+import { error, safeJsonBounded } from "./util.js";
 import { loadRawPlan } from "./plan.js";
 import { loadRawGrow } from "./grows.js";
+import { checkPlanGenCaps, bumpPlanGenUsage } from "./planSetup.js";
 import { runGemini } from "./providers/gemini.js";
 import { ProviderError } from "./providers/errors.js";
 import { logError } from "./log.js";
 
 const REVIEW_MODEL = "gemini-2.5-pro";
 const MAX_ITERATIONS = 14;
+const MAX_MSG_LEN = 4000;
+const MAX_REVIEW_MESSAGES = 40;
+const MAX_REVIEW_REQUEST_BYTES = 256 * 1024;
 
 const VALID_PHASES = new Set([
   "transplant", "early_veg", "veg_cm", "veg_half", "veg_full",
@@ -169,11 +173,18 @@ async function executeReviewTool(name, input, env, userId, growId, rawPlan) {
 }
 
 export async function postMjReview(request, env, user) {
-  let body;
-  try { body = await request.json(); } catch { return error(400, "invalid json"); }
+  const parsed = await safeJsonBounded(request, MAX_REVIEW_REQUEST_BYTES);
+  if (!parsed.ok) return error(parsed.status, parsed.error);
+  const body = parsed.data;
 
-  const clientMessages = Array.isArray(body?.messages) ? body.messages : [];
-  if (clientMessages.length === 0) return error(400, "messages array required");
+  const rawMessages = Array.isArray(body?.messages) ? body.messages : [];
+  if (rawMessages.length === 0) return error(400, "messages array required");
+  // Cap conversation length and per-message size so a crafted request can't
+  // inflate token cost on the expensive Pro model.
+  const clientMessages = rawMessages.slice(-MAX_REVIEW_MESSAGES).map(m => ({
+    ...m,
+    content: typeof m?.content === "string" ? m.content.slice(0, MAX_MSG_LEN) : "",
+  }));
 
   const apiKey = env.GEMINI_API_KEY;
   if (!apiKey) return error(503, "MJ is not configured yet");
@@ -191,6 +202,11 @@ export async function postMjReview(request, env, user) {
   if (rawPlan.needsSetup) {
     return error(400, "Complete your grow setup before running a plan review.");
   }
+
+  // Plan review runs the expensive Pro model — gate it on the same shared
+  // (global Pro) and per-user daily caps as plan generation.
+  const capErr = await checkPlanGenCaps(env, user.id);
+  if (capErr) return error(capErr.status, capErr.message);
 
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
   const systemSegments = [
@@ -237,6 +253,7 @@ export async function postMjReview(request, env, user) {
           userId: user.id,
         });
 
+        await bumpPlanGenUsage(env, user.id);
         send({ done: true, reply, actions });
       } catch (e) {
         if (e instanceof ProviderError) {

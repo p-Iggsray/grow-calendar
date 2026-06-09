@@ -1,5 +1,5 @@
 // @ts-check
-import { json, error } from "./util.js";
+import { json, error, safeJsonBounded } from "./util.js";
 import { DEFAULT_CONFIG } from "../src/lib/planConfig.js";
 import { logError } from "./log.js";
 import { geocode } from "./geocode.js";
@@ -200,7 +200,7 @@ async function ensurePlanUsageSchema(env) {
 }
 
 // Returns null if generation may proceed, or { status, message } if a cap is hit.
-async function checkPlanGenCaps(env, userId) {
+export async function checkPlanGenCaps(env, userId) {
   await ensurePlanUsageSchema(env);
   const today = todayInET();
 
@@ -221,7 +221,7 @@ async function checkPlanGenCaps(env, userId) {
   return null;
 }
 
-async function bumpPlanGenUsage(env, userId) {
+export async function bumpPlanGenUsage(env, userId) {
   const today = todayInET();
   await env.DB.batch([
     env.DB.prepare(
@@ -284,7 +284,7 @@ export async function generatePlanJson(env, user, survey, logPrefix) {
 
 export async function postPlanSetup(request, env, user) {
   let body;
-  try { body = await request.json(); } catch { return error(400, "invalid json"); }
+  { const p = await safeJsonBounded(request, 32768); if (!p.ok) return error(p.status, p.error); body = p.data; }
 
   const survey = body?.survey;
   if (!survey || typeof survey !== "object") return error(400, "survey required");

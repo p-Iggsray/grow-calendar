@@ -54,17 +54,22 @@ function todayInET() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 }
 
-async function bumpMjUsage(env, userId, today, model) {
-  await env.DB.batch([
-    env.DB.prepare(
-      "INSERT INTO mj_usage (user_id, date, count) VALUES (?, ?, 1) " +
-      "ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1",
-    ).bind(userId, today),
-    env.DB.prepare(
-      "INSERT INTO mj_model_usage (model, date, count) VALUES (?, ?, 1) " +
-      "ON CONFLICT(model, date) DO UPDATE SET count = count + 1",
-    ).bind(model, today),
-  ]);
+// Increment the per-user daily counter and return the new value, so a cap can
+// be enforced atomically (reserve-before-call) rather than racily.
+async function bumpUserUsage(env, userId, today) {
+  const row = await env.DB.prepare(
+    "INSERT INTO mj_usage (user_id, date, count) VALUES (?, ?, 1) " +
+    "ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1 RETURNING count",
+  ).bind(userId, today).first();
+  return Number(row?.count ?? 1);
+}
+
+// Increment the global per-model counter (shared across all users).
+async function bumpModelUsage(env, model, today) {
+  await env.DB.prepare(
+    "INSERT INTO mj_model_usage (model, date, count) VALUES (?, ?, 1) " +
+    "ON CONFLICT(model, date) DO UPDATE SET count = count + 1",
+  ).bind(model, today).run();
 }
 
 async function readMjModelUsage(env, today, model) {
@@ -339,8 +344,17 @@ export async function postMj(request, env, user) {
 
   const today = todayInET();
 
+  // Fail fast (no increment) so a capped user doesn't trigger context-building
+  // work. The shared global flash ceiling is enforced here too — previously it
+  // relied entirely on Google returning 429.
   if (user.role !== "admin") {
-    const userCount = await readMjUsageForUser(env, user.id, today);
+    const [flashGlobal, userCount] = await Promise.all([
+      readMjModelUsage(env, today, GEMINI_MODEL),
+      readMjUsageForUser(env, user.id, today),
+    ]);
+    if (flashGlobal >= GEMINI_DAILY_LIMIT) {
+      return error(429, "MJ has reached today's shared limit. Try again after midnight ET.");
+    }
     if (userCount >= PER_USER_DAILY_CAP) {
       return error(429, `You've used all ${PER_USER_DAILY_CAP} MJ messages for today. Resets at midnight ET.`);
     }
@@ -414,6 +428,16 @@ export async function postMj(request, env, user) {
     { text: dynamicParts,  cache: false },
   ];
 
+  // Reserve the per-user slot atomically right before the (expensive) model
+  // call so concurrent requests can't all slip past the cap, and so a failed
+  // call still counts against abuse rather than being free to retry.
+  if (user.role !== "admin") {
+    const reserved = await bumpUserUsage(env, user.id, today);
+    if (reserved > PER_USER_DAILY_CAP) {
+      return error(429, `You've used all ${PER_USER_DAILY_CAP} MJ messages for today. Resets at midnight ET.`);
+    }
+  }
+
   const modelsToTry = user.role === "admin" ? [GEMINI_PRO_MODEL, GEMINI_MODEL] : [GEMINI_MODEL];
 
   const encoder = new TextEncoder();
@@ -459,7 +483,7 @@ export async function postMj(request, env, user) {
           return;
         }
 
-        await bumpMjUsage(env, user.id, today, modelUsed);
+        await bumpModelUsage(env, modelUsed, today);
         await saveConversation(env, user.id, threadGrowId, userContent, reply, actions);
         const [proCount, flashCount, userCount] = await Promise.all([
           readMjModelUsage(env, today, GEMINI_PRO_MODEL),
