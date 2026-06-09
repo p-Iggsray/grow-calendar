@@ -498,7 +498,12 @@ function Bubble({ role, text, dim, actions, showUndo, onUndo }) {
                 borderRadius: 8, padding: "4px 9px",
                 display: "inline-flex", alignItems: "center", gap: 6,
               }}>
-                {a.type === "replace_note" ? "✏️" : a.type === "append_note" ? "📝" : "✓"} {a.summary}
+                {a.type === "replace_note" ? "✏️"
+                  : a.type === "append_note" ? "📝"
+                  : a.type === "update_grow_info" ? "🌿"
+                  : a.type === "update_grow_dates" ? "📅"
+                  : a.type === "update_phase_tasks" ? "📋"
+                  : "✓"} {a.summary}
                 {canUndo && (
                   <button
                     type="button"

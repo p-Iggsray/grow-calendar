@@ -7,7 +7,7 @@ import { getPhase, getDetail, getThreatsForPhase, PHASES } from "../src/lib/grow
 import { buildPlanText } from "../src/lib/planText.js";
 import { readCheckoffs, writeCheckoffs } from "./checkoffs.js";
 import { readNote, writeNote, MAX_NOTE_LEN } from "./notes.js";
-import { MJ_PERSONA, MJ_TOOLS, mergeChecked, appendNoteText, buildDayView } from "./mj-logic.js";
+import { MJ_PERSONA, MJ_TOOLS, mergeChecked, appendNoteText, buildDayView, VALID_GROW_PHASES, VALID_CONFIG_DATE_KEYS } from "./mj-logic.js";
 import { runGemini } from "./providers/gemini.js";
 import { ProviderError } from "./providers/errors.js";
 import { logError } from "./log.js";
@@ -362,7 +362,7 @@ export async function postMj(request, env, user) {
 
       const actions = [];
       const executeToolUse = (name, input) =>
-        executeTool(name, input, env, user.id, config, overrides, raw.generatedPlan, phaseOverrides, actions);
+        executeTool(name, input, env, user.id, config, overrides, raw.generatedPlan, phaseOverrides, actions, activeGrowId, raw);
 
       let reply = null;
       let modelUsed = null;
@@ -422,8 +422,103 @@ export async function postMj(request, env, user) {
   });
 }
 
-async function executeTool(name, input, env, userId, config, overrides, generatedPlan, phaseOverrides, actions) {
+async function executeTool(name, input, env, userId, config, overrides, generatedPlan, phaseOverrides, actions, growId, rawGrow) {
   try {
+    if (name === "get_grow_info") {
+      if (!growId || !rawGrow) return { error: "No active grow selected. Tap a grow in the Plan tab first." };
+      const strains =
+        rawGrow.generatedPlan?.strains?.map(s => s.name).filter(Boolean) ??
+        rawGrow.survey?.strains?.map(s => s.name).filter(Boolean) ?? [];
+      const phasesWithOverrides = Object.keys(rawGrow.phaseOverrides ?? {});
+      return {
+        displayName: rawGrow.displayName,
+        status: rawGrow.status,
+        strains,
+        configDates: rawGrow.config ?? {},
+        phasesWithOverrides,
+        growId,
+      };
+    }
+
+    if (name === "update_grow_info") {
+      if (!growId) return { error: "No active grow selected." };
+      const fields = [];
+      const binds = [];
+      if (typeof input.display_name === "string" && input.display_name.trim()) {
+        fields.push("display_name = ?");
+        binds.push(input.display_name.trim().slice(0, 100));
+      }
+      if (["active", "harvested", "abandoned"].includes(input.status)) {
+        fields.push("status = ?");
+        binds.push(input.status);
+      }
+      if (fields.length === 0) return { error: "No valid fields to update." };
+      fields.push("updated_at = ?");
+      binds.push(new Date().toISOString(), growId, userId);
+      await env.DB.prepare(
+        `UPDATE grows SET ${fields.join(", ")} WHERE id = ? AND user_id = ?`
+      ).bind(...binds).run();
+      const parts = [];
+      if (input.display_name) parts.push(`renamed to "${input.display_name.trim()}"`);
+      if (input.status) parts.push(`status → ${input.status}`);
+      actions.push({ type: "update_grow_info", summary: `Grow ${parts.join(", ")}`, undoPayload: null });
+      return { ok: true };
+    }
+
+    if (name === "update_grow_dates") {
+      if (!growId || !rawGrow?.config) return { error: "No active grow or config found." };
+      const patches = input?.patches;
+      if (!patches || typeof patches !== "object" || Array.isArray(patches)) {
+        return { error: "patches must be an object mapping config key → YYYY-MM-DD date string." };
+      }
+      const updated = {};
+      for (const [key, val] of Object.entries(patches)) {
+        if (!VALID_CONFIG_DATE_KEYS.has(key)) return { error: `Unknown config key: "${key}"` };
+        if (typeof val !== "string" || !DATE_RE.test(val)) return { error: `${key}: value must be YYYY-MM-DD` };
+        updated[key] = val;
+      }
+      const newConfig = { ...rawGrow.config, ...updated };
+      await env.DB.prepare(
+        "UPDATE grows SET config = ?, updated_at = ? WHERE id = ? AND user_id = ?"
+      ).bind(JSON.stringify(newConfig), new Date().toISOString(), growId, userId).run();
+      const changeList = Object.entries(updated)
+        .map(([k, v]) => `${k}: ${rawGrow.config[k] ?? "none"} → ${v}`)
+        .join(", ");
+      actions.push({ type: "update_grow_dates", summary: `Updated: ${changeList}`, undoPayload: null });
+      return { ok: true, updated };
+    }
+
+    if (name === "update_phase_tasks") {
+      if (!growId) return { error: "No active grow selected." };
+      const phase = input?.phase;
+      if (typeof phase !== "string" || !VALID_GROW_PHASES.has(phase)) {
+        return { error: `Invalid phase "${phase}". Valid: ${[...VALID_GROW_PHASES].join(", ")}` };
+      }
+      const tasks = input?.tasks ?? null;
+      const phaseRow = await env.DB.prepare(
+        "SELECT phase_overrides FROM grows WHERE id = ? AND user_id = ?"
+      ).bind(growId, userId).first();
+      if (!phaseRow) return { error: "Grow not found." };
+      let currentOverrides = {};
+      try { currentOverrides = phaseRow.phase_overrides ? JSON.parse(phaseRow.phase_overrides) : {}; } catch { /* start clean */ }
+      if (tasks === null || (Array.isArray(tasks) && tasks.length === 0)) {
+        delete currentOverrides[phase];
+      } else if (Array.isArray(tasks)) {
+        const cleaned = tasks.map(t => String(t).trim()).filter(Boolean);
+        currentOverrides[phase] = { ...(currentOverrides[phase] ?? {}), tasks: cleaned };
+      } else {
+        return { error: "tasks must be an array of strings or null to clear." };
+      }
+      await env.DB.prepare(
+        "UPDATE grows SET phase_overrides = ?, updated_at = ? WHERE id = ? AND user_id = ?"
+      ).bind(JSON.stringify(currentOverrides), new Date().toISOString(), growId, userId).run();
+      const summary = tasks?.length
+        ? `Updated ${phase} tasks (${tasks.length} task${tasks.length === 1 ? "" : "s"})`
+        : `Cleared ${phase} task overrides — defaults restored`;
+      actions.push({ type: "update_phase_tasks", summary, undoPayload: null });
+      return { ok: true, phase, taskCount: tasks?.length ?? 0 };
+    }
+
     if (name === "get_week") {
       const startDate = input?.start_date;
       if (typeof startDate !== "string" || !DATE_RE.test(startDate)) {
