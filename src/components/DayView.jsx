@@ -838,7 +838,7 @@ export default function DayView({
                       type="text"
                       value={logEntry.feed ?? ""}
                       onChange={e => setLogField("feed", e.target.value)}
-                      placeholder="Fox Farm Trio, Cal-Mag, Big Bloom…"
+                      placeholder="Nutrient mix, dose, supplements…"
                       maxLength={500}
                       style={numInputStyle}
                     />

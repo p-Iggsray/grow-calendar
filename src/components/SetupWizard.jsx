@@ -249,7 +249,7 @@ function StepStrains({ survey, update }) {
               <Input
                 value={strain.name}
                 onChange={v => updateStrain(i, "name", v)}
-                placeholder={i === 0 ? "e.g. Grandaddy Purp" : "e.g. Strawberry Haze"}
+                placeholder={i === 0 ? "e.g. Blue Dream" : "e.g. OG Kush"}
               />
             </div>
             <div>
@@ -382,7 +382,7 @@ function StepSetup({ survey, update }) {
         <Input
           value={survey.location}
           onChange={v => { update("location", v); update("lat", null); update("lon", null); }}
-          placeholder="e.g. Central Ohio, USA"
+          placeholder="e.g. City, State or Country"
         />
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
           <button
@@ -439,7 +439,7 @@ function StepSetup({ survey, update }) {
         <textarea
           value={survey.extraNotes}
           onChange={e => update("extraNotes", e.target.value)}
-          placeholder="e.g. I have a covered porch for the first half, moving to the backyard in late July. No tent — fully outdoor."
+          placeholder="e.g. Fully outdoor in containers, hot and dry summers. I'm away for a week in August, so I need low-maintenance stretches."
           rows={5}
           style={{
             width: "100%", boxSizing: "border-box", resize: "vertical",

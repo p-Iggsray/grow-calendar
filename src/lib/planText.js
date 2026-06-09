@@ -18,8 +18,8 @@ export function buildPlanText(config, overrides, generatedPlan, phaseOverrides) 
     flush1: "Routine flush #1",
     flush2: "Routine flush #2",
     flush3: "Routine flush #3",
-    gdpFlush: "GDP pre-harvest flush begins",
-    hazeFlush: "Haze pre-harvest flush begins",
+    gdpFlush: "Primary-strain pre-harvest flush begins",
+    hazeFlush: "Later-strain pre-harvest flush begins",
   };
   lines.push("\nKEY DATES:");
   for (const [key, label] of Object.entries(keyDates)) {
