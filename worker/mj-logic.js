@@ -201,7 +201,7 @@ export const MJ_TOOLS = [
   },
   {
     name: "get_grow_log",
-    description: "Retrieve grow log entries for a date or date range. Each entry includes: water amount, high/low temperature, humidity, EC/PPM input & runoff, feed description, plant training actions (what was done and on which plant), and plant health observations (leaf color, trichome stage, notes per plant). Use this to check what was logged, spot patterns, diagnose issues from real data, or answer questions about recent grows.",
+    description: "Retrieve grow log entries for a date or date range. Each entry includes: total water amount, per-plant water amounts (water_plants: how much water each plant received), high/low temperature, humidity, feed description, plant training actions (what was done and on which plant), and plant health observations (leaf color, trichome stage, notes per plant). Use this to check what was logged, spot patterns, diagnose issues from real data, or answer questions about recent grows.",
     parameters: {
       type: "object",
       properties: {
@@ -250,18 +250,16 @@ export const MJ_TOOLS = [
   },
   {
     name: "log_grow_data",
-    description: "Record grow data for a specific date. Supports: water amount, temperatures, humidity, EC/PPM readings, and feed description. IMPORTANT: Before calling this, always confirm the values with the grower — e.g. 'Should I log 2 gal water, EC in 1.4, high 82°F for today?' — and wait for their confirmation or correction. Never log without explicit grower approval.",
+    description: "Record grow data for a specific date. Supports: total water amount, temperatures, humidity, and feed description. IMPORTANT: Before calling this, always confirm the values with the grower — e.g. 'Should I log 2 gal water, high 82°F for today?' — and wait for their confirmation or correction. Never log without explicit grower approval.",
     parameters: {
       type: "object",
       properties: {
         date:      { type: "string",  description: "Date to log as YYYY-MM-DD" },
-        water_gal: { type: "number",  description: "Water applied in gallons (omit if not mentioned)" },
+        water_gal: { type: "number",  description: "Total water applied in gallons across all plants (omit if not mentioned)" },
         temp_high: { type: "number",  description: "Day's high temperature in °F (omit if not mentioned)" },
         temp_low:  { type: "number",  description: "Day's low temperature in °F (omit if not mentioned)" },
         humidity:  { type: "number",  description: "Relative humidity percentage (omit if not mentioned)" },
         feed:      { type: "string",  description: "Free-text feed description e.g. 'Fox Farm Trio at half dose' (omit if not mentioned)" },
-        ec_in:     { type: "number",  description: "Input EC or PPM reading (nutrient solution going in). Omit if not mentioned." },
-        ec_out:    { type: "number",  description: "Runoff EC or PPM reading. Omit if not mentioned." },
       },
       required: ["date"],
     },

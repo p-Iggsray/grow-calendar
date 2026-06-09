@@ -422,6 +422,54 @@ const _entryLabel = {
   marginBottom: 5, display: "block",
 };
 
+// Sum the per-plant water amounts into a day total (string, or "" if none).
+function sumWater(arr) {
+  const total = (arr ?? []).reduce((s, w) => {
+    const n = parseFloat(w?.gal);
+    return Number.isFinite(n) ? s + n : s;
+  }, 0);
+  return total > 0 ? String(Math.round(total * 100) / 100) : "";
+}
+
+function WaterEntry({ entry, onChangeField, onRemove }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-end", marginBottom: 8 }}>
+      <label style={{ flex: 2, display: "flex", flexDirection: "column" }}>
+        <span style={_entryLabel}>Plant</span>
+        <input
+          type="text"
+          value={entry.plant ?? ""}
+          onChange={e => onChangeField("plant", e.target.value)}
+          placeholder="Plant 1"
+          style={_entryInput}
+        />
+      </label>
+      <label style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <span style={_entryLabel}>Water (gal)</span>
+        <input
+          type="number"
+          inputMode="decimal"
+          step={0.25}
+          min={0}
+          max={99}
+          value={entry.gal ?? ""}
+          onChange={e => onChangeField("gal", e.target.value)}
+          placeholder="0.00"
+          style={{ ..._entryInput, WebkitAppearance: "none", MozAppearance: "textfield" }}
+        />
+      </label>
+      <button
+        type="button"
+        className="touch-target"
+        onClick={onRemove}
+        style={{ ..._entryRemove, height: 38, minHeight: 38 }}
+        aria-label="Remove plant watering">
+        <X size={12} strokeWidth={2} />
+      </button>
+    </div>
+  );
+}
+
 function TrainingEntry({ entry, onChangeField, onRemove }) {
   return (
     <div style={_entryCard}>
@@ -542,7 +590,13 @@ export default function DayView({
     onTaskEditActiveChange?.(editingIdx !== null);
   }, [editingIdx, onTaskEditActiveChange]);
 
-  const { entry: logEntry, setField: setLogField, status: logStatus } = useGrowLog(selected, true);
+  const { entry: logEntry, setField: setLogField, setFields: setLogFields, status: logStatus } = useGrowLog(selected, true);
+
+  // Per-plant watering. water_gal is kept as the day's total (sum of all
+  // plants) so the stats "total water" aggregation keeps working.
+  function addWater()                 { const a = [...(logEntry.water_plants ?? []), { plant: "", gal: "" }]; setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
+  function updateWater(i, k, v)       { const a = [...(logEntry.water_plants ?? [])]; a[i] = { ...a[i], [k]: v }; setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
+  function removeWater(i)             { const a = [...(logEntry.water_plants ?? [])]; a.splice(i, 1); setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
 
   function addTraining()              { setLogField("training", [...(logEntry.training ?? []), { plant: "", action: "" }]); }
   function updateTraining(i, k, v)    { const a = [...(logEntry.training ?? [])]; a[i] = { ...a[i], [k]: v }; setLogField("training", a); }
@@ -759,25 +813,37 @@ export default function DayView({
 
               {/* ── Watering & Nutrients ── */}
               <LogSection label="Watering & Nutrients">
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-                  <LogField label="Water (gal)"  name="water_gal" entry={logEntry} setField={setLogField} step={0.25} min={0} max={99}   inputMode="decimal" placeholder="0.00" />
-                  <LogField label="EC / PPM In"  name="ec_in"     entry={logEntry} setField={setLogField} step={0.1}  min={0} max={9999} inputMode="decimal" />
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-                  <LogField label="EC / PPM Out" name="ec_out" entry={logEntry} setField={setLogField} step={0.1} min={0} max={9999} inputMode="decimal" />
-                  <div />
-                </div>
-                <label style={fieldLabelStyle}>
-                  <span style={fieldNameStyle}>Feed / Nutrients</span>
-                  <input
-                    type="text"
-                    value={logEntry.feed ?? ""}
-                    onChange={e => setLogField("feed", e.target.value)}
-                    placeholder="Fox Farm Trio, Cal-Mag, Big Bloom…"
-                    maxLength={500}
-                    style={numInputStyle}
+                {(logEntry.water_plants ?? []).map((w, i) => (
+                  <WaterEntry
+                    key={i}
+                    entry={w}
+                    onChangeField={(k, v) => updateWater(i, k, v)}
+                    onRemove={() => removeWater(i)}
                   />
-                </label>
+                ))}
+                <AddEntryButton onClick={addWater} label="ADD PLANT WATERING" />
+                {sumWater(logEntry.water_plants) && (
+                  <div style={{
+                    marginTop: 10, textAlign: "right",
+                    fontFamily: "'Courier New', monospace", fontSize: 12,
+                    letterSpacing: 0.5, color: "var(--c-text-faint)",
+                  }}>
+                    Total: {sumWater(logEntry.water_plants)} gal
+                  </div>
+                )}
+                <div style={{ marginTop: 14 }}>
+                  <label style={fieldLabelStyle}>
+                    <span style={fieldNameStyle}>Feed / Nutrients</span>
+                    <input
+                      type="text"
+                      value={logEntry.feed ?? ""}
+                      onChange={e => setLogField("feed", e.target.value)}
+                      placeholder="Fox Farm Trio, Cal-Mag, Big Bloom…"
+                      maxLength={500}
+                      style={numInputStyle}
+                    />
+                  </label>
+                </div>
               </LogSection>
 
               {/* ── Plant Training ── */}

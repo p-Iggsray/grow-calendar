@@ -23,8 +23,7 @@ function rowToEntry(row) {
     temp_high:    row.temp_high    ?? null,
     temp_low:     row.temp_low     ?? null,
     humidity:     row.humidity     ?? null,
-    ec_in:        row.ec_in        ?? null,
-    ec_out:       row.ec_out       ?? null,
+    water_plants: tryParseArray(row.water_plants),
     training:     tryParseArray(row.training),
     plant_health: tryParseArray(row.plant_health),
   };
@@ -45,6 +44,7 @@ export async function ensureGrowLogSchema(env) {
     "ALTER TABLE grow_log ADD COLUMN ec_out REAL",
     "ALTER TABLE grow_log ADD COLUMN training TEXT",
     "ALTER TABLE grow_log ADD COLUMN plant_health TEXT",
+    "ALTER TABLE grow_log ADD COLUMN water_plants TEXT",
   ];
   for (const sql of cols) {
     try { await env.DB.prepare(sql).run(); } catch { /* column exists */ }
@@ -66,29 +66,29 @@ export async function putGrowLog(request, env, user, date) {
 
   await ensureGrowLogSchema(env);
 
-  const { water_gal, feed, temp_high, temp_low, humidity, ec_in, ec_out, training, plant_health } = body ?? {};
+  const { water_gal, feed, temp_high, temp_low, humidity, water_plants, training, plant_health } = body ?? {};
 
-  const trainingJson    = Array.isArray(training)    ? JSON.stringify(training)    : null;
-  const plantHealthJson = Array.isArray(plant_health) ? JSON.stringify(plant_health) : null;
+  const waterPlantsJson = Array.isArray(water_plants)  ? JSON.stringify(water_plants)  : null;
+  const trainingJson    = Array.isArray(training)      ? JSON.stringify(training)      : null;
+  const plantHealthJson = Array.isArray(plant_health)  ? JSON.stringify(plant_health)  : null;
 
   await env.DB.prepare(`
-    INSERT INTO grow_log (user_id, date, water_gal, feed, temp_high, temp_low, humidity, ec_in, ec_out, training, plant_health, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    INSERT INTO grow_log (user_id, date, water_gal, feed, temp_high, temp_low, humidity, water_plants, training, plant_health, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
     ON CONFLICT(user_id, date) DO UPDATE SET
       water_gal    = excluded.water_gal,
       feed         = excluded.feed,
       temp_high    = excluded.temp_high,
       temp_low     = excluded.temp_low,
       humidity     = excluded.humidity,
-      ec_in        = excluded.ec_in,
-      ec_out       = excluded.ec_out,
+      water_plants = excluded.water_plants,
       training     = excluded.training,
       plant_health = excluded.plant_health,
       updated_at   = excluded.updated_at
   `).bind(
     user.id, date,
     toNum(water_gal), toStr(feed), toNum(temp_high), toNum(temp_low), toNum(humidity),
-    toNum(ec_in), toNum(ec_out), trainingJson, plantHealthJson,
+    waterPlantsJson, trainingJson, plantHealthJson,
   ).run();
 
   return json({ ok: true });
@@ -100,7 +100,7 @@ export async function exportGrowLogCsv(env, user) {
     "SELECT * FROM grow_log WHERE user_id = ? ORDER BY date ASC"
   ).bind(user.id).all();
 
-  const header = "date,water_gal,feed,temp_high,temp_low,humidity,ec_in,ec_out,training,plant_health\r\n";
+  const header = "date,water_gal,feed,temp_high,temp_low,humidity,water_plants,training,plant_health\r\n";
   const rows = results.map(r =>
     [
       r.date,
@@ -109,8 +109,7 @@ export async function exportGrowLogCsv(env, user) {
       r.temp_high  ?? "",
       r.temp_low   ?? "",
       r.humidity   ?? "",
-      r.ec_in      ?? "",
-      r.ec_out     ?? "",
+      csvEscape(r.water_plants),
       csvEscape(r.training),
       csvEscape(r.plant_health),
     ].join(",")

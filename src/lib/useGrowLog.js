@@ -3,7 +3,7 @@ import { api, ymd } from "./api.js";
 
 const EMPTY = {
   water_gal: "", feed: "", temp_high: "", temp_low: "", humidity: "",
-  ec_in: "", ec_out: "",
+  water_plants: [],
   training: [],
   plant_health: [],
 };
@@ -23,8 +23,7 @@ function entryFromApi(e) {
     temp_high:    e.temp_high    != null ? String(e.temp_high)    : "",
     temp_low:     e.temp_low     != null ? String(e.temp_low)     : "",
     humidity:     e.humidity     != null ? String(e.humidity)     : "",
-    ec_in:        e.ec_in        != null ? String(e.ec_in)        : "",
-    ec_out:       e.ec_out       != null ? String(e.ec_out)       : "",
+    water_plants: tryParseArray(e.water_plants),
     training:     tryParseArray(e.training),
     plant_health: tryParseArray(e.plant_health),
   };
@@ -49,9 +48,10 @@ export function useGrowLog(date, enabled) {
       .catch(() => {});
   }, [dateKey, enabled]);
 
-  const setField = useCallback((name, value) => {
+  // Merge one or more fields and schedule a single debounced save.
+  const setFields = useCallback((partial) => {
     setEntry(prev => {
-      const next = { ...prev, [name]: value };
+      const next = { ...prev, ...partial };
       pendingEntry.current = next;
       return next;
     });
@@ -70,5 +70,7 @@ export function useGrowLog(date, enabled) {
     }, 800);
   }, [dateKey]);
 
-  return { entry, setField, status };
+  const setField = useCallback((name, value) => setFields({ [name]: value }), [setFields]);
+
+  return { entry, setField, setFields, status };
 }
