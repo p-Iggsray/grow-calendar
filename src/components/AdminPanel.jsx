@@ -8,6 +8,8 @@ export default function AdminPanel({ onClose }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [resetLink, setResetLink] = useState(null); // { username, url }
+  const [copied, setCopied] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -32,6 +34,19 @@ export default function AdminPanel({ onClose }) {
   function confirmDelete(u) {
     if (window.confirm(`Permanently delete "${u.username}" and all of their data? This cannot be undone.`)) {
       act(api.deleteUser, u.id);
+    }
+  }
+
+  async function genResetLink(u) {
+    setError("");
+    try {
+      const { resetUrl } = await api.adminResetLink(u.id);
+      setResetLink({ username: u.username, url: resetUrl });
+      setCopied(false);
+      // Best-effort auto-copy; if the browser blocks it the admin can still copy manually.
+      try { await navigator.clipboard?.writeText(resetUrl); setCopied(true); } catch { /* ignore */ }
+    } catch (err) {
+      setError(err.message || "could not create reset link");
     }
   }
 
@@ -84,6 +99,39 @@ export default function AdminPanel({ onClose }) {
           </div>
         )}
 
+        {resetLink && (
+          <div style={{
+            background: "var(--c-surface-1)", border: "1px solid rgba(59,130,246,0.35)",
+            borderRadius: 10, padding: 12, marginBottom: 14,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <div style={{ fontSize: 11, letterSpacing: 1, textTransform: "uppercase", color: "var(--c-text-faint)" }}>
+                Reset link for {resetLink.username}
+              </div>
+              <button onClick={() => setResetLink(null)} aria-label="Dismiss"
+                style={{ background: "none", border: "none", color: "var(--c-text-dim)", cursor: "pointer", padding: 2, display: "flex" }}>
+                <X size={16} strokeWidth={2} />
+              </button>
+            </div>
+            <input readOnly value={resetLink.url} onFocus={e => e.target.select()}
+              style={{
+                width: "100%", boxSizing: "border-box", fontFamily: "'Courier New', monospace",
+                fontSize: 12, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--c-border)",
+                background: "var(--c-input-bg)", color: "var(--c-text)", marginBottom: 10,
+              }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <ActionBtn color="blue" onClick={async () => {
+                try { await navigator.clipboard.writeText(resetLink.url); setCopied(true); } catch { /* ignore */ }
+              }}>
+                {copied ? "Copied!" : "Copy link"}
+              </ActionBtn>
+              <span style={{ fontSize: 11, color: "var(--c-text-faint)", lineHeight: 1.5 }}>
+                Send this to {resetLink.username}. Expires in 24h; only the newest link works.
+              </span>
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div style={{ color: "var(--c-text-ghost)", letterSpacing: 3, padding: "24px 0" }}>LOADING...</div>
         ) : (
@@ -101,6 +149,9 @@ export default function AdminPanel({ onClose }) {
             <Section title={`Members (${members.length})`}>
               {members.map(u => (
                 <Row key={u.id} name={u.username} sub={u.role === "admin" ? "admin" : "member"}>
+                  {u.id !== user.id && (
+                    <ActionBtn color="blue" onClick={() => genResetLink(u)}>Reset link</ActionBtn>
+                  )}
                   {u.id !== user.id && u.role !== "admin" && (
                     <ActionBtn color="red" onClick={() => confirmDelete(u)}>Remove</ActionBtn>
                   )}
@@ -155,17 +206,21 @@ function Empty({ children }) {
 }
 
 function ActionBtn({ color, onClick, children }) {
-  const green = color === "green";
+  const palette = {
+    green: { bg: "rgba(34,197,94,0.15)", bd: "rgba(34,197,94,0.35)", fg: "var(--c-accent)" },
+    red:   { bg: "rgba(220,38,38,0.15)", bd: "rgba(220,38,38,0.35)", fg: "#f87171" },
+    blue:  { bg: "rgba(59,130,246,0.15)", bd: "rgba(59,130,246,0.4)", fg: "#60a5fa" },
+  }[color] || { bg: "rgba(34,197,94,0.15)", bd: "rgba(34,197,94,0.35)", fg: "var(--c-accent)" };
   return (
     <button
       onClick={onClick}
       className="touch-target"
       style={{
         padding: "7px 14px",
-        background: green ? "rgba(34,197,94,0.15)" : "rgba(220,38,38,0.15)",
-        border: `1px solid ${green ? "rgba(34,197,94,0.35)" : "rgba(220,38,38,0.35)"}`,
+        background: palette.bg,
+        border: `1px solid ${palette.bd}`,
         borderRadius: 8,
-        color: green ? "var(--c-accent)" : "#f87171",
+        color: palette.fg,
         cursor: "pointer",
         fontSize: 11, letterSpacing: 0.5,
         fontFamily: "'Courier New', monospace",

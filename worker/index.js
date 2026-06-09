@@ -1,7 +1,7 @@
 // @ts-check
 import { error } from "./util.js";
 import { signup, login, logout, getMe, currentUser, attachSessionCookie } from "./auth.js";
-import { postForgotPassword, postResetPassword } from "./authReset.js";
+import { postResetPassword, postAdminResetLink } from "./authReset.js";
 import { getCheckoffs, putCheckoffs, getMonthCheckoffs } from "./checkoffs.js";
 import { ensurePerDayGrowScope, resolveGrowId } from "./perDayScope.js";
 import { getTaskNotes, putTaskNote } from "./taskNotes.js";
@@ -90,7 +90,6 @@ async function route(request, env, path) {
   if (path === "/api/auth/login"           && method === "POST") return login(request, env);
   if (path === "/api/auth/logout"          && method === "POST") return logout(request, env);
   if (path === "/api/auth/me"              && method === "GET")  return getMe(request, env);
-  if (path === "/api/auth/forgot-password" && method === "POST") return postForgotPassword(request, env);
   if (path === "/api/auth/reset-password"  && method === "POST") return postResetPassword(request, env);
 
   // everything below requires a session
@@ -119,6 +118,11 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (adminUserMatch && method === "DELETE") {
     const gate = requireAdmin(user); if (gate) return gate;
     return deleteUser(env, user, Number(adminUserMatch[1]));
+  }
+  const resetLinkMatch = path.match(/^\/api\/admin\/users\/(\d+)\/reset-link$/);
+  if (resetLinkMatch && method === "POST") {
+    const gate = requireAdmin(user); if (gate) return gate;
+    return postAdminResetLink(request, env, Number(resetLinkMatch[1]));
   }
 
   // app routes require an approved user

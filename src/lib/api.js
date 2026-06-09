@@ -48,8 +48,6 @@ export const api = {
     request("/api/auth/signup", { method: "POST", body: JSON.stringify({ username, email, password }) }),
   login: (username, password) =>
     request("/api/auth/login",  { method: "POST", body: JSON.stringify({ username, password }) }),
-  forgotPassword: (email) =>
-    request("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
   resetPassword: (token, newPassword) =>
     request("/api/auth/reset-password",  { method: "POST", body: JSON.stringify({ token, newPassword }) }),
   logout: () => request("/api/auth/logout", { method: "POST" }),
@@ -230,6 +228,7 @@ export const api = {
   adminListUsers: () => request("/api/admin/users"),
   approveUser: (id) => request(`/api/admin/users/${id}/approve`, { method: "POST" }),
   deleteUser: (id) => request(`/api/admin/users/${id}`, { method: "DELETE" }),
+  adminResetLink: (id) => request(`/api/admin/users/${id}/reset-link`, { method: "POST" }),
 };
 
 /**

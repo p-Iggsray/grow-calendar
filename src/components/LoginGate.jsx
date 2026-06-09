@@ -20,7 +20,7 @@ const INPUT_STYLE = {
 
 export default function LoginGate() {
   const { login, signup } = useAuth();
-  const [mode, setMode] = useState("login"); // login | signup | forgot | check-email | reset
+  const [mode, setMode] = useState("login"); // login | signup | reset
   const [username,        setUsername]        = useState("");
   const [email,           setEmail]           = useState("");
   const [password,        setPassword]        = useState("");
@@ -57,9 +57,6 @@ export default function LoginGate() {
         await login(username.trim(), password);
       } else if (mode === "signup") {
         await signup(username.trim(), email.trim(), password);
-      } else if (mode === "forgot") {
-        await api.forgotPassword(email.trim());
-        switchMode("check-email");
       } else if (mode === "reset") {
         if (password !== confirmPassword) { setError("Passwords don't match"); return; }
         await api.resetPassword(resetToken, password);
@@ -75,19 +72,15 @@ export default function LoginGate() {
     }
   }
 
-  const isCheckEmail = mode === "check-email";
-
   const submitLabel = {
     login:   busy ? "..." : "LOG IN",
     signup:  busy ? "..." : "REQUEST ACCOUNT",
-    forgot:  busy ? "..." : "SEND RESET LINK",
     reset:   busy ? "..." : "SET NEW PASSWORD",
   }[mode];
 
   const submitDisabled = busy || (
     mode === "login"  ? (!username || !password) :
     mode === "signup" ? (!username || !email || !password) :
-    mode === "forgot" ? !email :
     mode === "reset"  ? (!password || !confirmPassword) :
     false
   );
@@ -124,27 +117,15 @@ export default function LoginGate() {
           </div>
         )}
 
-        {/* Check-email confirmation */}
-        {isCheckEmail ? (
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 28, marginBottom: 12 }}>📬</div>
-            <div style={{ fontSize: 14, color: "var(--c-text-dim)", lineHeight: 1.7, marginBottom: 20 }}>
-              If that email is on file, a reset link is on its way. Check your inbox (and spam folder).
-            </div>
-            <button type="button" onClick={() => switchMode("login")} style={linkBtnStyle}>
-              Back to login
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {/* Username — login / signup only */}
             {(mode === "login" || mode === "signup") && (
               <Field label="Username" value={username} onChange={setUsername} autoComplete="username" autoFocus={mode === "login"} />
             )}
 
-            {/* Email — signup + forgot */}
-            {(mode === "signup" || mode === "forgot") && (
-              <Field label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" autoFocus={mode === "forgot"} />
+            {/* Email — signup only */}
+            {mode === "signup" && (
+              <Field label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" />
             )}
 
             {/* Password — login / signup / reset */}
@@ -186,14 +167,13 @@ export default function LoginGate() {
               {submitLabel}
             </button>
 
-            {/* Forgot password link — login mode only */}
+            {/* No self-service reset — the admin issues reset links by hand */}
             {mode === "login" && (
-              <button type="button" onClick={() => switchMode("forgot")} style={{ ...linkBtnStyle, fontSize: 11, marginTop: -2 }}>
-                Forgot password?
-              </button>
+              <div style={{ fontSize: 11, letterSpacing: 0.5, color: "var(--c-text-faint)", fontFamily: "'Courier New', monospace", textAlign: "center", lineHeight: 1.6, marginTop: 2 }}>
+                Forgot your password? Contact the admin to get a reset link.
+              </div>
             )}
           </form>
-        )}
 
         {/* Mode toggle — login ↔ signup */}
         {(mode === "login" || mode === "signup") && (
@@ -205,8 +185,8 @@ export default function LoginGate() {
           </button>
         )}
 
-        {/* Back to login — forgot / reset */}
-        {(mode === "forgot" || mode === "reset") && (
+        {/* Back to login — reset */}
+        {mode === "reset" && (
           <button type="button" onClick={() => switchMode("login")} style={{ ...linkBtnStyle, marginTop: 14, width: "100%" }}>
             Back to login
           </button>
