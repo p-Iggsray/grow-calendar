@@ -190,7 +190,24 @@ function TaskRow({ task, index, state, accentColor, onTap, onLongPress, onEditTa
 
 function TaskEditSheet({ currentText, onSave, onClose }) {
   const [text, setText] = useState(currentText);
+  const [kbOffset, setKbOffset] = useState(0);
   const textareaRef = useRef(null);
+
+  // Track keyboard height via Visual Viewport API so the sheet always sits
+  // flush above the keyboard on iOS and Android.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    function update() {
+      setKbOffset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+    }
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
 
   useEffect(() => {
     textareaRef.current?.focus();
@@ -199,6 +216,8 @@ function TaskEditSheet({ currentText, onSave, onClose }) {
   }, [currentText]);
 
   const isDirty = text.trim() && text.trim() !== currentText.trim();
+  // When the keyboard is up, safe-area-inset-bottom is 0, so use flat padding.
+  const bottomPad = kbOffset > 0 ? "20px" : "calc(24px + env(safe-area-inset-bottom, 0px))";
 
   return (
     <>
@@ -210,10 +229,10 @@ function TaskEditSheet({ currentText, onSave, onClose }) {
         }}
       />
       <div style={{
-        position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 51,
+        position: "fixed", left: 0, right: 0, bottom: kbOffset, zIndex: 51,
         background: "var(--c-panel-bg)", borderTop: "1px solid var(--c-border)",
         borderRadius: "18px 18px 0 0",
-        padding: "20px 20px calc(24px + env(safe-area-inset-bottom, 0px))",
+        padding: `20px 20px ${bottomPad}`,
       }}>
         <div style={{ fontFamily: "'Courier New', monospace", fontSize: 10, letterSpacing: 1.5, color: "var(--c-text-muted)", textTransform: "uppercase", marginBottom: 12 }}>
           Edit task text
@@ -224,7 +243,7 @@ function TaskEditSheet({ currentText, onSave, onClose }) {
           onChange={e => setText(e.target.value)}
           rows={4}
           style={{
-            width: "100%", resize: "vertical", boxSizing: "border-box",
+            width: "100%", resize: "none", boxSizing: "border-box",
             background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
             border: "1px solid var(--c-border-strong)", borderRadius: 10,
             padding: "12px 14px", fontSize: 16, lineHeight: 1.7,
@@ -330,6 +349,7 @@ export default function DayView({
   onBack, onJumpToday,
   dayEditedTasks,
   onEditTaskForDay, onEditTaskForPhase,
+  onTaskEditActiveChange,
 }) {
   const [tab, setTab] = useState("tasks");
   const [noteEditing, setNoteEditing] = useState(false);
@@ -337,6 +357,10 @@ export default function DayView({
   const [editingIdx, setEditingIdx] = useState(null);
   const [pendingPhaseApply, setPendingPhaseApply] = useState(null);
   const textareaRef = useRef(null);
+
+  useEffect(() => {
+    onTaskEditActiveChange?.(editingIdx !== null);
+  }, [editingIdx, onTaskEditActiveChange]);
 
   const { entry: logEntry, setField: setLogField, status: logStatus } = useGrowLog(selected, true);
 
