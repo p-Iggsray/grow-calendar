@@ -70,11 +70,6 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker
       .register("/sw.js", { updateViaCache: "none" })
       .catch(() => {});
-
-    // When a new SW takes control, reload so the page loads fresh assets.
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      window.location.reload();
-    });
   });
 }
 

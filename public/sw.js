@@ -6,11 +6,18 @@ const CACHE = "grow-calendar-v2";
 const IMMUTABLE_RE = /\.(js|css|woff2?)(\?.*)?$/;
 
 // ── Install: seed the cache with the app shell ──────────────────────────────
+// NOTE: self.skipWaiting() is intentionally absent. Calling it causes the new
+// SW to immediately claim active clients and delete the old cache mid-session.
+// If the page had already loaded HTML referencing old chunk filenames, those
+// chunks are now gone from cache and must be re-fetched from network — which
+// fails on a flaky mobile connection and produces a blank screen. Without
+// skipWaiting the new SW waits until all tabs close, then takes over on the
+// next navigation when its pre-cached assets are ready.
+// The stampSwVersion build plugin injects the actual JS/CSS bundle URLs below.
 self.addEventListener("install", evt => {
-  self.skipWaiting();
   evt.waitUntil(
     caches.open(CACHE).then(c =>
-      // Best-effort — failure here doesn't abort install
+      // Best-effort — failure here doesn't abort install.
       c.addAll(["/", "/index.html", "/manifest.webmanifest"]).catch(() => {})
     )
   );
