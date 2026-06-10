@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useToday, daysBetween, sameDay } from "./lib/dates.js";
 import {
@@ -23,18 +23,21 @@ import { useTheme } from "./lib/useTheme.js";
 import { growLocation, strainSummary } from "./lib/growProfile.js";
 
 import Header from "./components/Header.jsx";
-import AdminPanel from "./components/AdminPanel.jsx";
-import StatsScreen from "./components/StatsScreen.jsx";
-import GardenMap from "./components/GardenMap.jsx";
-import SetupWizard from "./components/SetupWizard.jsx";
 import MilestoneStrip from "./components/MilestoneStrip.jsx";
 import Calendar from "./components/Calendar.jsx";
-import DayView from "./components/DayView.jsx";
-import ChatPanel from "./components/ChatPanel.jsx";
+import DayView from "./components/DayView/DayView.jsx";
 import TabBar from "./components/TabBar.jsx";
 import MoreScreen from "./components/MoreScreen.jsx";
 import GrowsListTab from "./components/GrowsListTab.jsx";
-import MjReviewPanel from "./components/MjReviewPanel.jsx";
+
+// Heavy, rarely-on-screen panels load on demand so they stay out of the
+// initial bundle. The service worker runtime-caches each chunk on first use.
+const SetupWizard   = lazy(() => import("./components/SetupWizard/SetupWizard.jsx"));
+const ChatPanel     = lazy(() => import("./components/ChatPanel/ChatPanel.jsx"));
+const MjReviewPanel = lazy(() => import("./components/MjReviewPanel.jsx"));
+const AdminPanel    = lazy(() => import("./components/AdminPanel.jsx"));
+const StatsScreen   = lazy(() => import("./components/StatsScreen.jsx"));
+const GardenMap     = lazy(() => import("./components/GardenMap.jsx"));
 
 const SHELL_STYLE = {
   fontFamily: "'Georgia', 'Times New Roman', serif",
@@ -54,6 +57,15 @@ function NewGrowInitializer({ onReady }) {
   return (
     <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "var(--c-text-ghost)", letterSpacing: 4 }}>
       SETTING UP…
+    </div>
+  );
+}
+
+// Monospace status line used for plan loading and lazy-chunk fallbacks.
+function LoadingPane({ label = "LOADING PLAN" }) {
+  return (
+    <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "var(--c-text-ghost)", letterSpacing: 4 }}>
+      {label}
     </div>
   );
 }
@@ -162,9 +174,7 @@ export default function App() {
   if (planLoading) {
     return (
       <div style={SHELL_STYLE}>
-        <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "var(--c-text-ghost)", letterSpacing: 4 }}>
-          LOADING PLAN
-        </div>
+        <LoadingPane />
       </div>
     );
   }
@@ -173,6 +183,7 @@ export default function App() {
   if (wizardGrowId) {
     return (
       <div style={SHELL_STYLE}>
+        <Suspense fallback={<LoadingPane />}>
         <SetupWizard
           growId={wizardGrowId}
           onComplete={() => {
@@ -187,6 +198,7 @@ export default function App() {
             setWizardGrowId(null);
           }}
         />
+        </Suspense>
       </div>
     );
   }
@@ -205,11 +217,13 @@ export default function App() {
   if (reviewPending && config) {
     return (
       <div style={SHELL_STYLE}>
+        <Suspense fallback={<LoadingPane />}>
         <MjReviewPanel
           activeGrowId={activeGrowId}
           onComplete={() => { setReviewPending(false); setActiveTab("plan"); reloadPlan(); }}
           onSkip={() => { setReviewPending(false); setActiveTab("plan"); }}
         />
+        </Suspense>
       </div>
     );
   }
@@ -217,9 +231,7 @@ export default function App() {
   if (!config) {
     return (
       <div style={SHELL_STYLE}>
-        <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "var(--c-text-ghost)", letterSpacing: 4 }}>
-          LOADING PLAN
-        </div>
+        <LoadingPane />
       </div>
     );
   }
@@ -431,14 +443,15 @@ export default function App() {
       {/* Chat panel — slides up as a fixed full-screen overlay */}
       <AnimatePresence>
         {chatOpen && (
-          <ChatPanel
-            key="chat"
-            onClose={closeChat}
-            contextDate={chatContext}
-            activeGrowId={activeGrowId}
-            grows={grows}
-            suggestions={suggestions}
-          />
+          <Suspense key="chat" fallback={null}>
+            <ChatPanel
+              onClose={closeChat}
+              contextDate={chatContext}
+              activeGrowId={activeGrowId}
+              grows={grows}
+              suggestions={suggestions}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
 
@@ -453,7 +466,9 @@ export default function App() {
             transition={PUSH_SPRING}
             style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--c-bg)", overflowY: "auto" }}
           >
-            <AdminPanel onClose={() => setShowAdmin(false)} />
+            <Suspense fallback={null}>
+              <AdminPanel onClose={() => setShowAdmin(false)} />
+            </Suspense>
           </motion.div>
         )}
         {showStats && (
@@ -465,7 +480,9 @@ export default function App() {
             transition={PUSH_SPRING}
             style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--c-bg)", overflowY: "auto" }}
           >
-            <StatsScreen config={config} today={today} onClose={() => setShowStats(false)} />
+            <Suspense fallback={null}>
+              <StatsScreen config={config} today={today} onClose={() => setShowStats(false)} />
+            </Suspense>
           </motion.div>
         )}
         {showMap && (
@@ -477,7 +494,9 @@ export default function App() {
             transition={PUSH_SPRING}
             style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--c-bg)", overflowY: "auto" }}
           >
-            <GardenMap config={config} today={today} onClose={() => setShowMap(false)} />
+            <Suspense fallback={null}>
+              <GardenMap config={config} today={today} onClose={() => setShowMap(false)} />
+            </Suspense>
           </motion.div>
         )}
       </AnimatePresence>

@@ -2,22 +2,15 @@ import { useState, useEffect } from "react";
 import { api } from "../lib/api.js";
 import { parseConfig } from "../lib/planConfig.js";
 import { useToday, MONTH_NAMES, DOW_SHORT, sameDay } from "../lib/dates.js";
-import { PHASES, getPhase, getDetail, phaseGlyph, buildMilestones } from "../lib/growData.js";
+import { PHASES, getPhase, getDetail, phaseGlyph } from "../lib/growData.js";
 import PhaseLegend from "./PhaseLegend.jsx";
 
 const MONO = "'Courier New', monospace";
 const SERIF = "'Georgia', 'Times New Roman', serif";
 const YEAR = 2026;
 
-function ymdKey(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
 // Tiny read-only calendar (no click handlers, no selection)
-function ReadCalendar({ today, month, config, generatedPlan, phaseOverrides }) {
+function ReadCalendar({ today, month, config }) {
   const firstDow = new Date(YEAR, month, 1).getDay();
   const daysInMonth = new Date(YEAR, month + 1, 0).getDate();
   const cells = [];

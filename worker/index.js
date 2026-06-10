@@ -4,7 +4,6 @@ import { signup, login, logout, getMe, currentUser, attachSessionCookie } from "
 import { postResetPassword, postAdminResetLink } from "./authReset.js";
 import { getCheckoffs, putCheckoffs, getMonthCheckoffs } from "./checkoffs.js";
 import { ensurePerDayGrowScope, resolveGrowId } from "./perDayScope.js";
-import { getTaskNotes, putTaskNote } from "./taskNotes.js";
 import { getNote, putNote } from "./notes.js";
 import { getGrowLog, putGrowLog, exportGrowLogCsv } from "./growLog.js";
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
@@ -199,18 +198,6 @@ async function authenticatedRoute(request, env, path, method, user) {
     if (method === "GET") return getCheckoffs(env, user, growId, date);
     if (method === "PUT") return putCheckoffs(request, env, user, growId, date);
   }
-
-  const taskNoteMatch = path.match(/^\/api\/task-notes\/(\d{4}-\d{2}-\d{2})\/(\d+)$/);
-  if (taskNoteMatch) {
-    const date = taskNoteMatch[1];
-    const taskIndex = Number(taskNoteMatch[2]);
-    const growId = await resolveGrowId(env, user, new URL(request.url));
-    if (method === "GET") return getTaskNotes(env, user, growId, date);
-    if (method === "PUT") return putTaskNote(request, env, user, growId, date, taskIndex);
-  }
-  const taskNotesDateMatch = path.match(/^\/api\/task-notes\/(\d{4}-\d{2}-\d{2})$/);
-  if (taskNotesDateMatch && method === "GET")
-    return getTaskNotes(env, user, await resolveGrowId(env, user, new URL(request.url)), taskNotesDateMatch[1]);
 
   const notesMatch = path.match(/^\/api\/notes\/(\d{4}-\d{2}-\d{2})$/);
   if (notesMatch) {

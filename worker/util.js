@@ -100,7 +100,3 @@ export async function safeJsonBounded(request, maxBytes) {
   catch { return { ok: false, status: 400, error: "invalid json" }; }
   return { ok: true, data };
 }
-
-export function isOverBytes(text, maxBytes) {
-  return typeof text === "string" && text.length > maxBytes;
-}

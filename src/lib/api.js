@@ -57,10 +57,6 @@ export const api = {
     request(withGrow(`/api/checkoffs/${date}`, growId), { method: "PUT", body: JSON.stringify({ taskStates }) }),
   getMonthCheckoffs: (month, growId) => request(withGrow(`/api/checkoffs?month=${month}`, growId)),
 
-  getTaskNotes: (date, growId) => request(withGrow(`/api/task-notes/${date}`, growId)),
-  putTaskNote: (date, taskIndex, note, growId) =>
-    request(withGrow(`/api/task-notes/${date}/${taskIndex}`, growId), { method: "PUT", body: JSON.stringify({ note }) }),
-
   getNote: (date, growId) => request(withGrow(`/api/notes/${date}`, growId)),
   putNote: (date, body, growId) =>
     request(withGrow(`/api/notes/${date}`, growId), { method: "PUT", body: JSON.stringify({ body }) }),

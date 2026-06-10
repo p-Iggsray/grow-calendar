@@ -172,7 +172,7 @@ npx wrangler d1 execute grow-calendar-db --remote --file=./migrations/0001_multi
 
 `0001_multi_tenant.sql` adds `role` and `status` to `users`, makes `plan_config` and `plan_day_overrides` per-user (keyed by `user_id`), adds the `mj_usage` table, and promotes the original owner (lowest `user_id`) to `role='admin'`, `status='approved'`.
 
-**Note on `login_attempts`:** This table was originally added to existing databases via the root-level `migrate-login-attempts.sql` file (applied in production before the migrations/ system existed). It is now included directly in `schema.sql` so fresh environments get it automatically. Existing databases already have it - do not re-apply `migrate-login-attempts.sql`.
+**Note on `login_attempts`:** This table was originally added to existing databases via a one-off root-level SQL file (applied in production before the migrations/ system existed; the file has since been deleted). It is now included directly in `schema.sql` so fresh environments get it automatically. Existing databases already have it.
 
 ## Account management
 
@@ -208,39 +208,47 @@ npx wrangler d1 execute grow-calendar-db --remote --command="UPDATE users SET ro
 ```
 src/                              Frontend (React)
   main.jsx                        Entry. AuthProvider + Root → LoginGate or App.
-  App.jsx                         Authenticated app shell.
+  App.jsx                         Authenticated app shell. Lazy-loads heavy panels (chat, wizard, admin, stats, map).
   styles.css                      Responsive layout breakpoints + scrollbar styling.
   lib/
-    dates.js                      TODAY, sameDay, daysBetween, formatters.
-    growData.js                   Phase dates, PHASES, THREATS, MILESTONES, getPhase, getDetail.
+    dates-core.js / dates.js      Pure date helpers; dates.js adds the useToday hook.
+    growData.js                   Barrel for lib/growdata/ — PHASES, THREATS, getPhase, getDetail, milestones.
+    growdata/                     Plan engine modules: phases, threats, phase math, milestones, detail generator.
     api.js                        fetch wrappers for /api/*.
     auth.jsx                      AuthProvider context + useAuth hook.
-    useCheckoffs.js               Per-day check-off state hook with focus refetch.
-    useDayNote.js                 Per-day note state hook with debounced autosave.
+    use*.js                       Per-concern data hooks (checkoffs, notes, plan, stats, weather, theme, ...).
   components/
-    Header.jsx, MilestoneStrip.jsx, Calendar.jsx, PhaseLegend.jsx, DayView.jsx,
-    ChatPanel.jsx, ThreatsReference.jsx, LoginGate.jsx, AuthFooter.jsx
+    ChatPanel/                    MJ chat: panel shell, bubbles, thread strip, usage bar, helpers.
+    DayView/                      Day overlay: task rows, state picker, edit sheets, log entries, weather card.
+    SetupWizard/                  New-grow wizard: one file per step + shared controls.
+    Header.jsx, Calendar.jsx, MilestoneStrip.jsx, TabBar.jsx, MoreScreen.jsx,
+    GrowsListTab.jsx, MjReviewPanel.jsx, AdminPanel.jsx, StatsScreen.jsx,
+    GardenMap.jsx, BuddyView.jsx, ShareSheet.jsx, LoginGate.jsx, ...
 
 worker/                           Backend (Cloudflare Worker)
   index.js                        Router. /api/* hits worker, everything else serves assets.
-  auth.js                         Signup, login, logout, me, PBKDF2 hashing, session cookies.
-  checkoffs.js                    GET/PUT /api/checkoffs/:date + readCheckoffs/writeCheckoffs helpers.
-  notes.js                        GET/PUT /api/notes/:date + readNote/writeNote helpers.
-  plan.js                         GET /api/plan + loadRawPlan helper.
-  mj.js                           POST /api/mj + GET /api/mj/usage - Gemini-only, tool-use loop, tool executor, aggregate usage counter.
+  auth.js / authReset.js          Signup, login, sessions, PBKDF2 hashing, admin reset links.
+  checkoffs.js, notes.js,         One module per resource: GET/PUT handlers + helpers.
+  growLog.js, grows.js, plan.js,
+  planSetup.js, stats.js, share.js
+  mj.js                           Barrel for worker/mj/ — POST /api/mj, usage, history, undo.
+  mj/                             MJ modules: chat handler, context builders, tool executor, usage, history, undo.
   mj-logic.js                     Pure MJ helpers (merge checkoffs, append note, day view) + tool schemas.
-  util.js                         JSON helpers, cookie helpers.
+  providers/gemini.js             Gemini API adapter (request shaping, SSE parsing).
+  util.js                         JSON helpers, cookie helpers, bounded JSON body reader.
 
 public/
   icon.svg                        App icon (PWA, favicon, apple-touch-icon).
   manifest.webmanifest            PWA manifest.
+  sw.js                           Service worker: runtime caching + push notifications.
 assets/
   banner.svg                      Animated README hero banner.
   divider.svg                     Animated README section divider.
 
-schema.sql                        D1 schema. Apply with wrangler d1 execute.
+schema.sql                        D1 schema for fresh environments. Apply with wrangler d1 execute.
+migrations/                       One-time numbered migrations for existing databases.
 wrangler.jsonc                    Worker + D1 + assets config.
-launch.bat                        Windows one-click dev launcher.
+launch.bat / launch.sh            One-click local dev launchers (Windows / WSL).
 ```
 
 ## How sync works
