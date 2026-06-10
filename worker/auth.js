@@ -13,7 +13,6 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 const MIN_PASSWORD_LENGTH = 8;
 const USERNAME_RE = /^[a-zA-Z0-9_-]{2,32}$/;
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_SECONDS = 15 * 60; // 15 minutes
@@ -41,6 +40,17 @@ export function validatePassword(password) {
   if (password.length < MIN_PASSWORD_LENGTH) {
     return `password must be at least ${MIN_PASSWORD_LENGTH} characters`;
   }
+  return null;
+}
+
+/**
+ * @param {unknown} value
+ * @param {string} label  e.g. "first name" or "last name"
+ * @returns {string | null}
+ */
+export function validateName(value, label) {
+  if (typeof value !== "string" || !value.trim()) return `${label} required`;
+  if (value.trim().length > 50) return `${label} must be 50 characters or fewer`;
   return null;
 }
 
@@ -179,13 +189,17 @@ export async function signup(request, env) {
   if (!parsed.ok) return error(parsed.status, parsed.error);
   const body = parsed.data;
   if (!body) return error(400, "invalid json");
-  const username = String(body.username || "").trim();
-  const email    = String(body.email    || "").trim().toLowerCase();
-  const password = String(body.password || "");
+  const username  = String(body.username  || "").trim();
+  const firstName = String(body.firstName || "").trim();
+  const lastName  = String(body.lastName  || "").trim();
+  const password  = String(body.password  || "");
 
   const usernameErr = validateUsername(username);
   if (usernameErr) return error(400, usernameErr);
-  if (!email || !EMAIL_RE.test(email)) return error(400, "valid email required");
+  const firstNameErr = validateName(firstName, "first name");
+  if (firstNameErr) return error(400, firstNameErr);
+  const lastNameErr = validateName(lastName, "last name");
+  if (lastNameErr) return error(400, lastNameErr);
   const passwordErr = validatePassword(password);
   if (passwordErr) return error(400, passwordErr);
 
@@ -200,8 +214,6 @@ export async function signup(request, env) {
 
   const existing = await env.DB.prepare("SELECT id FROM users WHERE username = ?").bind(username).first();
   if (existing) {
-    // Don't volunteer that the username exists. Rate-limit (above) caps bulk
-    // enumeration. Generic phrasing slows targeted probing without breaking UX.
     await recordFailedAttempt(env, ip, username);
     return error(409, "username unavailable");
   }
@@ -209,8 +221,8 @@ export async function signup(request, env) {
   const { salt, hash } = await hashPassword(password);
   const createdAt = nowIso();
   const result = await env.DB.prepare(
-    "INSERT INTO users (username, email, password_hash, password_salt, created_at, role, status) VALUES (?, ?, ?, ?, ?, 'user', 'pending')",
-  ).bind(username, email, hash, salt, createdAt).run();
+    "INSERT INTO users (username, first_name, last_name, password_hash, password_salt, created_at, role, status) VALUES (?, ?, ?, ?, ?, ?, 'user', 'pending')",
+  ).bind(username, firstName, lastName, hash, salt, createdAt).run();
 
   await clearRateLimit(env, ip, username);
   const userId = result.meta.last_row_id;

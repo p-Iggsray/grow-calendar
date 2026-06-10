@@ -22,7 +22,8 @@ export default function LoginGate() {
   const { login, signup } = useAuth();
   const [mode, setMode] = useState("login"); // login | signup | reset
   const [username,        setUsername]        = useState("");
-  const [email,           setEmail]           = useState("");
+  const [firstName,       setFirstName]       = useState("");
+  const [lastName,        setLastName]        = useState("");
   const [password,        setPassword]        = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [resetToken,      setResetToken]      = useState(null);
@@ -56,7 +57,7 @@ export default function LoginGate() {
       if (mode === "login") {
         await login(username.trim(), password);
       } else if (mode === "signup") {
-        await signup(username.trim(), email.trim(), password);
+        await signup(username.trim(), firstName.trim(), lastName.trim(), password);
       } else if (mode === "reset") {
         if (password !== confirmPassword) { setError("Passwords don't match"); return; }
         await api.resetPassword(resetToken, password);
@@ -80,7 +81,7 @@ export default function LoginGate() {
 
   const submitDisabled = busy || (
     mode === "login"  ? (!username || !password) :
-    mode === "signup" ? (!username || !email || !password) :
+    mode === "signup" ? (!username || !firstName || !lastName || !password) :
     mode === "reset"  ? (!password || !confirmPassword) :
     false
   );
@@ -123,9 +124,12 @@ export default function LoginGate() {
               <Field label="Username" value={username} onChange={setUsername} autoComplete="username" autoFocus={mode === "login"} />
             )}
 
-            {/* Email — signup only */}
+            {/* Name fields — signup only */}
             {mode === "signup" && (
-              <Field label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" />
+              <>
+                <Field label="First name" value={firstName} onChange={setFirstName} autoComplete="given-name" />
+                <Field label="Last name"  value={lastName}  onChange={setLastName}  autoComplete="family-name" />
+              </>
             )}
 
             {/* Password — login / signup / reset */}
@@ -192,18 +196,20 @@ export default function LoginGate() {
           </button>
         )}
 
-        {/* Legal / privacy disclaimer — public entry screen */}
-        <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--c-surface-2)", fontFamily: "'Courier New', monospace" }}>
-          <p style={{ fontSize: 10, lineHeight: 1.6, color: "var(--c-text-faint)", margin: 0 }}>
-            For educational and personal record-keeping only — not medical, legal, or professional cultivation advice. Intended for adults of legal age. You are responsible for complying with the cannabis laws in your area.
-          </p>
-          <details style={{ marginTop: 8 }}>
-            <summary style={{ fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", cursor: "pointer", textTransform: "uppercase" }}>Privacy</summary>
-            <p style={{ fontSize: 10, lineHeight: 1.6, color: "var(--c-text-faint)", margin: "6px 0 0" }}>
-              Your account and grow data are stored privately to run the app and are never sold. AI features send your grow details to Google&apos;s Gemini API to generate replies. Ask the admin to delete your account and data at any time.
+        {/* Legal / privacy disclaimer — signup screen only */}
+        {mode === "signup" && (
+          <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--c-surface-2)", fontFamily: "'Courier New', monospace" }}>
+            <p style={{ fontSize: 10, lineHeight: 1.6, color: "var(--c-text-faint)", margin: 0 }}>
+              For educational and personal record-keeping only — not medical, legal, or professional cultivation advice. Intended for adults of legal age. You are responsible for complying with the cannabis laws in your area.
             </p>
-          </details>
-        </div>
+            <details style={{ marginTop: 8 }}>
+              <summary style={{ fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", cursor: "pointer", textTransform: "uppercase" }}>Privacy</summary>
+              <p style={{ fontSize: 10, lineHeight: 1.6, color: "var(--c-text-faint)", margin: "6px 0 0" }}>
+                Your account and grow data are stored privately to run the app and are never sold. AI features send your grow details to Google&apos;s Gemini API to generate replies. Ask the admin to delete your account and data at any time.
+              </p>
+            </details>
+          </div>
+        )}
       </div>
     </div>
   );

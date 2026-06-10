@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   validateUsername,
   validatePassword,
+  validateName,
   loginAttemptKey,
   retryAfterSeconds,
 } from "../worker/auth.js";
@@ -75,4 +76,24 @@ test("retryAfterSeconds rounds up the remaining seconds", () => {
 
 test("retryAfterSeconds ignores garbage input safely", () => {
   assert.equal(retryAfterSeconds("not-a-date", Date.now()), null);
+});
+
+// --- validateName -------------------------------------------------------------
+
+test("validateName accepts normal first and last names", () => {
+  assert.equal(validateName("Parker", "first name"), null);
+  assert.equal(validateName("O'Brien", "last name"), null);
+  assert.equal(validateName("A".repeat(50), "first name"), null);
+});
+
+test("validateName rejects empty or whitespace-only values", () => {
+  assert.match(validateName("", "first name"), /first name required/);
+  assert.match(validateName("   ", "last name"), /last name required/);
+  assert.match(validateName(null, "first name"), /first name required/);
+  assert.match(validateName(undefined, "last name"), /last name required/);
+});
+
+test("validateName rejects values over 50 characters", () => {
+  assert.match(validateName("A".repeat(51), "first name"), /50 characters/);
+  assert.match(validateName("B".repeat(51), "last name"), /50 characters/);
 });

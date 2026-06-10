@@ -3,6 +3,8 @@
 CREATE TABLE IF NOT EXISTS users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   username      TEXT NOT NULL UNIQUE,
+  first_name    TEXT,
+  last_name     TEXT,
   password_hash TEXT NOT NULL,
   password_salt TEXT NOT NULL,
   created_at    TEXT NOT NULL,
@@ -103,6 +105,7 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 
 -- Migration for existing databases:
 -- ALTER TABLE users ADD COLUMN email TEXT;
+-- ALTER TABLE users ADD COLUMN first_name TEXT; ALTER TABLE users ADD COLUMN last_name TEXT;
 
 CREATE TABLE IF NOT EXISTS grow_log (
   user_id      INTEGER NOT NULL,
