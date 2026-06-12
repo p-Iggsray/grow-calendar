@@ -171,6 +171,7 @@ export async function postMj(request, env, user) {
 
       let reply = null;
       let modelUsed = null;
+      let lastErr = null;
       try {
         for (const model of modelsToTry) {
           actions.length = 0;
@@ -189,14 +190,30 @@ export async function postMj(request, env, user) {
               send({ error: "Could not reach the AI service" });
               return;
             }
+            lastErr = e;
             tryNext = true;
-            logError("mj-fallback", { from: model, kind: e?.kind, message: String(e?.message ?? e) });
+            logError("mj-fallback", { from: model, kind: e?.kind, detail: e?.detail, message: String(e?.message ?? e) });
           }
           if (!tryNext) break;
         }
 
         if (reply === null || modelUsed === null) {
-          send({ error: "MJ has hit today's limit, please try again later" });
+          // The call never succeeded — release the reserved per-user slot so a
+          // service outage doesn't burn the user's daily message quota.
+          if (user.role !== "admin") {
+            await env.DB.prepare(
+              "UPDATE mj_usage SET count = count - 1 WHERE user_id = ? AND date = ? AND count > 0",
+            ).bind(user.id, today).run();
+          }
+          // Only call it a "limit" when Gemini actually returned a quota (429).
+          // Other failures (bad/expired API key → 403, rejected model → 400,
+          // gateway errors) were previously masked as a daily-limit message.
+          if (lastErr instanceof ProviderError && lastErr.kind === "quota") {
+            send({ error: "MJ has hit today's limit, please try again later" });
+          } else {
+            const detail = user.role === "admin" && lastErr?.detail ? ` [${lastErr.detail}]` : "";
+            send({ error: `MJ is having trouble reaching the AI service right now. Please try again in a bit.${detail}` });
+          }
           return;
         }
 

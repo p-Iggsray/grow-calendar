@@ -68,11 +68,11 @@ async function streamGeminiCall({ apiKey, model, body, onChunk, gatewayBase, use
     throw new ProviderError("unreachable");
   }
 
-  if (res.status === 429) throw new ProviderError("quota");
+  if (res.status === 429) throw new ProviderError("quota", `429 ${(await res.text().catch(() => "")).slice(0, 160)}`);
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     console.error("gemini stream error", res.status, detail);
-    throw new ProviderError("upstream");
+    throw new ProviderError("upstream", `${res.status} ${String(detail).slice(0, 160)}`);
   }
 
   const reader = res.body.getReader();
