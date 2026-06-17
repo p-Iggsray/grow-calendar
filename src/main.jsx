@@ -30,6 +30,23 @@ window.addEventListener("unhandledrejection", (e) => {
   _captureError(err?.message || String(err), err?.stack);
 });
 
+// Block iOS Safari pinch-zoom. iOS ignores the viewport's user-scalable=no, but
+// it still fires gesture* events for pinch, so we cancel them. Also guard against
+// double-tap zoom, which touch-action handles on modern browsers but not all.
+["gesturestart", "gesturechange", "gestureend"].forEach((evt) =>
+  document.addEventListener(evt, (e) => e.preventDefault(), { passive: false })
+);
+let _lastTouchEnd = 0;
+document.addEventListener(
+  "touchend",
+  (e) => {
+    const now = Date.now();
+    if (now - _lastTouchEnd < 300) e.preventDefault();
+    _lastTouchEnd = now;
+  },
+  { passive: false }
+);
+
 // Lazy-load the full calendar app so logged-out and pending users only receive
 // the auth/login chunk — not the entire calendar engine.
 const App = lazy(() => import("./App.jsx"));

@@ -115,6 +115,14 @@ body,
   min-height: 100vh;
 }
 
+html,
+body {
+  /* pan only — no pinch-to-zoom or double-tap zoom */
+  touch-action: pan-x pan-y;
+  /* kill pull-to-refresh / rubber-band that lets the page drift */
+  overscroll-behavior: none;
+}
+
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
