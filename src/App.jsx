@@ -29,6 +29,7 @@ import DayView from "./components/DayView/DayView.jsx";
 import TabBar from "./components/TabBar.jsx";
 import MoreScreen from "./components/MoreScreen.jsx";
 import GrowsListTab from "./components/GrowsListTab.jsx";
+import PlantsTab from "./components/PlantsTab/PlantsTab.jsx";
 
 // Heavy, rarely-on-screen panels load on demand so they stay out of the
 // initial bundle. The service worker runtime-caches each chunk on first use.
@@ -109,7 +110,7 @@ export default function App() {
   useEffect(() => {
     function onPop() {
       setSelected(null);
-      setActiveTab(prev => prev === "today" ? "calendar" : prev);
+      setActiveTab(prev => prev === "plants" ? "calendar" : prev);
       const url = new URL(window.location.href);
       if (url.searchParams.has("d")) {
         url.searchParams.delete("d");
@@ -290,9 +291,10 @@ export default function App() {
   }
 
   function handleTab(tabId) {
-    if (tabId === "today") {
-      setActiveTab("today");
-      jumpToday();
+    if (tabId === "plants") {
+      setSelected(null);
+      setActiveTab("plants");
+      if (chatOpen) closeChat();
     } else if (tabId === "mj") {
       openChat();
     } else if (tabId === "calendar") {
@@ -311,7 +313,7 @@ export default function App() {
   }
 
   // Key for the tab content AnimatePresence — drives crossfade between screens.
-  const tabKey = activeTab === "plan" ? "plan" : activeTab === "more" ? "more" : "calendar";
+  const tabKey = activeTab === "plan" ? "plan" : activeTab === "more" ? "more" : activeTab === "plants" ? "plants" : "calendar";
 
   return (
     <div style={SHELL_STYLE}>
@@ -364,6 +366,16 @@ export default function App() {
                 onNewGrow={(growId) => setWizardGrowId(growId)}
               />
             </motion.div>
+          ) : tabKey === "plants" ? (
+            <motion.div
+              key="plants"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={FADE_DURATION}
+            >
+              <PlantsTab />
+            </motion.div>
           ) : (
             <motion.div
               key="calendar"
@@ -401,7 +413,7 @@ export default function App() {
 
       {/* DayView — slides up as a fixed overlay over everything */}
       <AnimatePresence>
-        {(activeTab === "calendar" || activeTab === "today") && selected && (
+        {activeTab === "calendar" && selected && (
           <motion.div
             key="dayview"
             initial={{ y: "100%" }}

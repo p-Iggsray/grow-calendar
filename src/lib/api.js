@@ -212,6 +212,22 @@ export const api = {
     request(`/api/grows/${id}/phase/${phase}`, { method: "DELETE", body: "{}" }),
   patchGrowDay: (id, date, patch) =>
     request(`/api/grows/${id}/day/${date}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  addPlant: (growId, fields) =>
+    request(`/api/grows/${growId}/plants`, { method: "POST", body: JSON.stringify(fields) }),
+  patchPlant: (growId, plantId, patch) =>
+    request(`/api/grows/${growId}/plants/${plantId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  deletePlant: (growId, plantId) =>
+    request(`/api/grows/${growId}/plants/${plantId}`, { method: "DELETE", body: "{}" }),
+  getPlantLog: (growId, plantId) =>
+    request(`/api/grows/${growId}/plants/${plantId}/log`),
+  getPlantLogSummary: (growId) =>
+    request(`/api/grows/${growId}/plant-log-summary`),
+  addPlantLogEntry: (growId, plantId, entry) =>
+    request(`/api/grows/${growId}/plants/${plantId}/log`, { method: "POST", body: JSON.stringify(entry) }),
+  patchPlantLogEntry: (growId, plantId, entryId, patch) =>
+    request(`/api/grows/${growId}/plants/${plantId}/log/${entryId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  deletePlantLogEntry: (growId, plantId, entryId) =>
+    request(`/api/grows/${growId}/plants/${plantId}/log/${entryId}`, { method: "DELETE", body: "{}" }),
 
   getShareToken: () => request("/api/share"),
   createShareToken: () => request("/api/share", { method: "POST", body: "{}" }),

@@ -7,6 +7,7 @@ import {
   REQUIRED_CONFIG_KEYS,
   generatePlanJson,
 } from "./planSetup.js";
+import { ensurePlantIds } from "./plantsRoster.js";
 
 const VALID_PHASES = new Set([
   "transplant", "early_veg", "veg_cm", "veg_half", "veg_full",
@@ -201,7 +202,16 @@ export async function getGrow(env, user, growId) {
   const config        = parseField(row.config);
   const generatedPlan = parseField(row.generated_plan);
   const phaseOverrides = parseField(row.phase_overrides) ?? {};
-  const survey        = parseField(row.survey);
+  let survey = parseField(row.survey);
+  if (survey) {
+    const ensured = ensurePlantIds(survey);
+    if (ensured.changed) {
+      survey = ensured.survey;
+      await env.DB.prepare(
+        "UPDATE grows SET survey = ?, updated_at = ? WHERE id = ? AND user_id = ?"
+      ).bind(JSON.stringify(survey), new Date().toISOString(), row.id, user.id).run();
+    }
+  }
 
   return json({
     id:           row.id,

@@ -14,6 +14,7 @@ import { getPushVapidKey, postPushSubscribe, deletePushSubscribe, getPushToday, 
 import { getPlan, patchPlanConfig, putPlanPhase, deletePlanPhase } from "./plan.js";
 import { postPlanSetup, postPlanRegenerate } from "./planSetup.js";
 import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, setupGrow, regenerateGrow, putGrowPhase, deleteGrowPhase, patchGrowDayOverride } from "./grows.js";
+import { addPlant, patchPlant, deletePlant, listPlantLog, addPlantLogEntry, patchPlantLogEntry, deletePlantLogEntry, plantLogSummary } from "./plants.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
 import { getStats } from "./stats.js";
 import { requireApproved, requireAdmin } from "./guard.js";
@@ -179,6 +180,34 @@ async function authenticatedRoute(request, env, path, method, user) {
   }
   const growDayMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/day\/(\d{4}-\d{2}-\d{2})$/);
   if (growDayMatch && method === "PATCH") return patchGrowDayOverride(request, env, user, growDayMatch[1], growDayMatch[2]);
+
+  const plantsMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/plants$/);
+  if (plantsMatch && method === "POST") return addPlant(request, env, user, plantsMatch[1]);
+  const plantMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/plants\/([A-Za-z0-9_]+)$/);
+  if (plantMatch) {
+    const gId = plantMatch[1];
+    const pId = plantMatch[2];
+    if (method === "PATCH")  return patchPlant(request, env, user, gId, pId);
+    if (method === "DELETE") return deletePlant(env, user, gId, pId);
+  }
+
+  const plantSummaryMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/plant-log-summary$/);
+  if (plantSummaryMatch && method === "GET") return plantLogSummary(env, user, plantSummaryMatch[1]);
+  const plantLogMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/plants\/([A-Za-z0-9_]+)\/log$/);
+  if (plantLogMatch) {
+    const gId = plantLogMatch[1];
+    const pId = plantLogMatch[2];
+    if (method === "GET")  return listPlantLog(env, user, gId, pId);
+    if (method === "POST") return addPlantLogEntry(request, env, user, gId, pId);
+  }
+  const plantLogEntryMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/plants\/([A-Za-z0-9_]+)\/log\/(\d+)$/);
+  if (plantLogEntryMatch) {
+    const gId = plantLogEntryMatch[1];
+    const pId = plantLogEntryMatch[2];
+    const eId = Number(plantLogEntryMatch[3]);
+    if (method === "PATCH")  return patchPlantLogEntry(request, env, user, gId, pId, eId);
+    if (method === "DELETE") return deletePlantLogEntry(env, user, gId, pId, eId);
+  }
 
   if (path === "/api/share" && method === "GET")    return getShareToken(env, user);
   if (path === "/api/share" && method === "POST")   return createShareToken(env, user);

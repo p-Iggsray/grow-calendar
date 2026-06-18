@@ -249,6 +249,25 @@ CREATE INDEX IF NOT EXISTS idx_grows_user_id ON grows(user_id, created_at DESC);
 -- CREATE TABLE IF NOT EXISTS grows (id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, display_name TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','harvested','abandoned')), config TEXT, survey TEXT, generated_plan TEXT, phase_overrides TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
 -- CREATE INDEX IF NOT EXISTS idx_grows_user_id ON grows(user_id, created_at DESC);
 
+-- Per-plant log entries (notes + height + health). plant_id references a survey.strains[] entry id.
+CREATE TABLE IF NOT EXISTS plant_log (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id     INTEGER NOT NULL,
+  grow_id     TEXT NOT NULL,
+  plant_id    TEXT NOT NULL,
+  date        TEXT NOT NULL,
+  body        TEXT NOT NULL DEFAULT '',
+  height      REAL,
+  height_unit TEXT,
+  health      TEXT,
+  created_at  TEXT NOT NULL,
+  updated_at  TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_plant_log
+  ON plant_log(user_id, grow_id, plant_id, date DESC);
+
 -- Buddy / read-only share links. Each user may have at most one active token.
 CREATE TABLE IF NOT EXISTS share_tokens (
   token      TEXT    PRIMARY KEY,

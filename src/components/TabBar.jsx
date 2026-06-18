@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
-import { CalendarDays, Sun, Sparkles, ClipboardList, MoreHorizontal } from "lucide-react";
+import { CalendarDays, Sprout, Sparkles, ClipboardList, MoreHorizontal } from "lucide-react";
 
 const TABS = [
   { id: "calendar", Icon: CalendarDays,   label: "CALENDAR" },
-  { id: "today",    Icon: Sun,             label: "TODAY"    },
+  { id: "plants",   Icon: Sprout,          label: "PLANTS"   },
   { id: "mj",       Icon: Sparkles,        label: "MJ"       },
   { id: "plan",     Icon: ClipboardList,   label: "PLAN"     },
   { id: "more",     Icon: MoreHorizontal,  label: "MORE"     },
