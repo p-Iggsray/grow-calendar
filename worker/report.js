@@ -56,6 +56,18 @@ function chip(phase) {
   return `<span class="chip" style="background:${p.light};color:${p.dark};border-color:${p.color}">${esc(p.label)}</span>`;
 }
 
+const HEALTH = {
+  thriving: { label: "Thriving", bg: "#dcfce7", fg: "#14532d", bd: "#22c55e" },
+  healthy:  { label: "Healthy",  bg: "#e9f7ee", fg: "#166534", bd: "#4ade80" },
+  stressed: { label: "Stressed", bg: "#fef3c7", fg: "#7c3a00", bd: "#f59e0b" },
+  sick:     { label: "Sick",     bg: "#fee2e2", fg: "#991b1b", bd: "#ef4444" },
+};
+function healthBadge(h) {
+  const v = HEALTH[h];
+  if (!v) return `<span class="hbadge">${esc(humanize(h))}</span>`;
+  return `<span class="hbadge" style="background:${v.bg};color:${v.fg};border-color:${v.bd}">${v.label}</span>`;
+}
+
 // Render an arbitrary survey value as readable text (handles strings, numbers,
 // booleans, primitive arrays, and arrays/objects of simple shape).
 function renderValue(v) {
@@ -115,9 +127,19 @@ export async function getGrowReport(env, user, growId) {
   const checkRows = checkRes.results ?? [];
   const taskNoteRows = taskNoteRes.results ?? [];
 
+  // Per-plant growth/health log (plant roster lives in survey.strains). The
+  // table is created lazily, so tolerate it not existing yet.
+  let plantLogRows = [];
+  try {
+    const r = await env.DB.prepare(
+      "SELECT plant_id, date, body, height, height_unit, health FROM plant_log WHERE user_id = ? AND grow_id = ? ORDER BY plant_id, date",
+    ).bind(user.id, growId).all();
+    plantLogRows = r.results ?? [];
+  } catch { /* plant_log not created yet */ }
+
   const html = renderReport({
     row, config, survey, generatedPlan, phaseOverrides, overrides,
-    logRows, noteRows, checkRows, taskNoteRows,
+    logRows, noteRows, checkRows, taskNoteRows, plantLogRows,
   });
 
   return new Response(html, {
@@ -129,12 +151,13 @@ export async function getGrowReport(env, user, growId) {
 }
 
 function renderReport(ctx) {
-  const { row, config, survey, generatedPlan, phaseOverrides, overrides, logRows, noteRows, checkRows, taskNoteRows } = ctx;
+  const { row, config, survey, generatedPlan, phaseOverrides, overrides, logRows, noteRows, checkRows, taskNoteRows, plantLogRows } = ctx;
 
   const name = row.display_name || "My Grow";
   const status = row.status || "active";
   const location = growLocation(survey);
   const strains = strainSummary(survey, generatedPlan);
+  const plants = Array.isArray(survey.strains) ? survey.strains : [];
 
   // ── Stats (grow-scoped) ──────────────────────────────────────────────────
   let totalWater = 0, feedDays = 0, tempMin = null, tempMax = null;
@@ -160,6 +183,7 @@ function renderReport(ctx) {
     config?.hazeHarvest ? ["Final harvest", fmtNice(config.hazeHarvest)] : null,
     progress != null ? ["Progress", `${progress}%`] : null,
     currentPhase ? ["Current phase", PHASES[currentPhase]?.label ?? currentPhase] : null,
+    plants.length ? ["Plants", String(plants.length)] : null,
     ["Days logged", String(logDays)],
     ["Total water", `${Math.round(totalWater * 10) / 10} gal`],
     ["Tasks done", String(tDone)],
@@ -181,6 +205,42 @@ function renderReport(ctx) {
   const profileSection = profileRows.length ? section("Setup & Profile",
     `<div class="defs">${profileRows.map(([l, v]) =>
       `<div class="def"><div class="def-l">${esc(l)}</div><div class="def-v">${v}</div></div>`).join("")}</div>`) : "";
+
+  // ── Plants: roster + per-plant growth/health timeline ────────────────────
+  let plantsSection = "";
+  if (plants.length) {
+    const logByPlant = new Map();
+    for (const r of (plantLogRows ?? [])) {
+      if (!logByPlant.has(r.plant_id)) logByPlant.set(r.plant_id, []);
+      logByPlant.get(r.plant_id).push(r);
+    }
+    const cards = plants.map((p, i) => {
+      const pname = (p?.name || "").trim() || `Plant ${i + 1}`;
+      const meta = [
+        p?.type ? humanize(p.type) : null,
+        p?.flowerWeeks ? `${p.flowerWeeks} wk flower` : null,
+        p?.photo === false ? "Autoflower" : (p?.photo === true ? "Photoperiod" : null),
+        p?.status ? humanize(p.status) : null,
+      ].filter(Boolean).join(" · ");
+      const entries = (logByPlant.get(p?.id) ?? []);
+      const timeline = entries.length
+        ? `<div class="ptimeline">${entries.map(e => {
+            const h = num(e.height) != null ? `${num(e.height)}${esc(e.height_unit || "")}` : "";
+            return `<div class="prow">
+              <span class="pdate">${fmtNice(e.date)}</span>
+              ${h ? `<span class="pmetric">${h}</span>` : ""}
+              ${e.health ? healthBadge(e.health) : ""}
+              ${e.body ? `<span class="pbody">${esc(e.body)}</span>` : ""}
+            </div>`;
+          }).join("")}</div>`
+        : `<p class="empty">No measurements logged for this plant yet.</p>`;
+      return `<div class="plant">
+        <div class="plant-head"><span class="plant-name">${esc(pname)}</span>${meta ? `<span class="plant-meta">${esc(meta)}</span>` : ""}</div>
+        ${timeline}
+      </div>`;
+    }).join("");
+    plantsSection = section(`Plants · ${plants.length}`, cards);
+  }
 
   // ── Plan timeline (milestones) ───────────────────────────────────────────
   let timelineSection = "";
@@ -343,6 +403,7 @@ function renderReport(ctx) {
     ${statStrip}
   </header>
   ${profileSection}
+  ${plantsSection}
   ${timelineSection}
   ${planSection}
   ${threatsSection}
@@ -404,6 +465,16 @@ h1{font-size:34px;line-height:1.1;margin:0 0 10px;color:var(--gd);letter-spacing
 .tasks{margin:6px 0;padding-left:20px;}
 .tasks li{margin:4px 0;font-size:14px;}
 .note-line{font-size:13px;color:#3f5a45;background:#eef6f0;border-radius:8px;padding:8px 12px;margin:8px 0 0;}
+.plant{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 12px;break-inside:avoid;}
+.plant-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:6px;}
+.plant-name{font-size:17px;font-weight:700;color:var(--gd);}
+.plant-meta{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--mut);font-family:'Courier New',monospace;}
+.ptimeline{display:grid;gap:6px;}
+.prow{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:14px;border-bottom:1px dotted var(--line);padding:4px 0;}
+.pdate{font-family:'Courier New',monospace;font-size:12px;color:var(--gd);font-weight:700;min-width:96px;}
+.pmetric{background:#eef6f0;border-radius:6px;padding:2px 8px;font-weight:600;font-size:13px;}
+.pbody{flex:1;color:#3f5a45;}
+.hbadge{font-family:'Courier New',monospace;font-size:10px;letter-spacing:.5px;padding:2px 8px;border-radius:999px;border:1px solid #cbd5cf;background:#f1f5f2;color:#475c4d;}
 .threats{display:grid;gap:10px;}
 .threat{border:1px solid var(--line);border-radius:10px;padding:10px 14px;}
 .threat-t{font-weight:700;color:var(--gd);margin-bottom:2px;}
