@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Users, Download, Bell, BellOff, BarChart2, Sun, Moon, Monitor, Map, Share2 } from "lucide-react";
+import { Users, FileText, Bell, BellOff, BarChart2, Sun, Moon, Monitor, Map, Share2 } from "lucide-react";
 import ShareSheet from "./ShareSheet.jsx";
 import PhaseLegend from "./PhaseLegend.jsx";
 import ThreatsReference from "./ThreatsReference.jsx";
 import AuthFooter from "./AuthFooter.jsx";
-import { api } from "../lib/api.js";
 import { usePlan } from "../lib/usePlan.jsx";
 import { growLocation, strainSummary } from "../lib/growProfile.js";
 import { useNotifications } from "../lib/useNotifications.js";
@@ -20,26 +19,14 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
   const { survey, generatedPlan, activeGrowId } = usePlan();
   const location = growLocation(survey);
   const strains = strainSummary(survey, generatedPlan);
-  const [exporting, setExporting] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const { supported: notifSupported, permission, subscribed, busy: notifBusy, error: notifError, subscribe, unsubscribe } = useNotifications();
 
-  async function handleCsvExport() {
-    if (exporting) return;
-    setExporting(true);
-    try {
-      const blob = await api.downloadGrowLogCsv(activeGrowId);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "grow-log.csv";
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      // silent — no toast in MoreScreen
-    } finally {
-      setExporting(false);
-    }
+  // Opens the full, print-ready grow report in a new tab (it has a built-in
+  // "Save as PDF / Print" button). Requires an active grow.
+  function openReport() {
+    if (!activeGrowId) return;
+    window.open(`/api/grows/${activeGrowId}/report`, "_blank", "noopener");
   }
   return (
     <div style={{
@@ -154,23 +141,23 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
       <div style={{ padding: "12px 0 0" }}>
         <button
           type="button"
-          onClick={handleCsvExport}
-          disabled={exporting}
+          onClick={openReport}
+          disabled={!activeGrowId}
           style={{
             display: "flex", alignItems: "center", gap: 10,
             width: "100%", padding: "14px 16px",
             background: "var(--c-surface-1)",
             border: "1px solid var(--c-border)",
-            borderRadius: 12, cursor: exporting ? "default" : "pointer",
-            color: exporting ? "var(--c-text-ghost)" : "var(--c-text-dim)",
+            borderRadius: 12, cursor: activeGrowId ? "pointer" : "default",
+            color: activeGrowId ? "var(--c-text-dim)" : "var(--c-text-ghost)",
             fontFamily: "'Courier New', monospace",
             fontSize: 13, letterSpacing: 1,
-            opacity: exporting ? 0.6 : 1,
+            opacity: activeGrowId ? 1 : 0.6,
             transition: "opacity 0.15s",
           }}
         >
-          <Download size={16} strokeWidth={1.8} />
-          {exporting ? "Exporting..." : "Download grow log CSV"}
+          <FileText size={16} strokeWidth={1.8} />
+          Export full grow report
         </button>
       </div>
 

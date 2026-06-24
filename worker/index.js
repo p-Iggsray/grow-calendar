@@ -15,6 +15,7 @@ import { getPlan, patchPlanConfig, putPlanPhase, deletePlanPhase } from "./plan.
 import { postPlanSetup, postPlanRegenerate } from "./planSetup.js";
 import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, setupGrow, regenerateGrow, putGrowPhase, deleteGrowPhase, patchGrowDayOverride } from "./grows.js";
 import { addPlant, patchPlant, deletePlant, listPlantLog, addPlantLogEntry, patchPlantLogEntry, deletePlantLogEntry, plantLogSummary } from "./plants.js";
+import { getGrowReport } from "./report.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
 import { getStats } from "./stats.js";
 import { requireApproved, requireAdmin } from "./guard.js";
@@ -208,6 +209,8 @@ async function authenticatedRoute(request, env, path, method, user) {
     if (method === "PATCH")  return patchPlantLogEntry(request, env, user, gId, pId, eId);
     if (method === "DELETE") return deletePlantLogEntry(env, user, gId, pId, eId);
   }
+  const growReportMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/report$/);
+  if (growReportMatch && method === "GET") return getGrowReport(env, user, growReportMatch[1]);
 
   if (path === "/api/share" && method === "GET")    return getShareToken(env, user);
   if (path === "/api/share" && method === "POST")   return createShareToken(env, user);
