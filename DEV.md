@@ -18,7 +18,7 @@ npm install
 npm run dev
 ```
 
-Or just double-click `launch.bat` on Windows. It installs dependencies if needed, ensures the local database tables exist, then opens two windows (the Cloudflare Worker on :8787 and the Vite dev server) and points your browser at http://localhost:5173. Easiest way to run the full stack locally.
+The two commands above run a frontend-only or local-DB stack (see below). To instead run the **exact deployed build against the real production database**, use `./launch.sh`. It installs dependencies if needed, checks your Cloudflare login, builds the production bundle, runs the Worker via `wrangler dev --remote`, and opens your browser at http://localhost:8787. WARNING: this writes to live production data with no undo.
 
 `npm run dev` alone is frontend-only (Vite). For a full local stack (frontend + API + local D1), run two terminals:
 
@@ -42,7 +42,7 @@ The local database is separate from production and has its own accounts. A test 
 - Username: `test`
 - Password: `testpass123`
 
-Sign in with those at http://localhost:5173 (launch.bat) or http://localhost:8787 (wrangler dev only).
+Sign in with those at http://localhost:5173 (`npm run dev`) or http://localhost:8787 (`npx wrangler dev`). Note: `launch.sh` uses the remote production database, not this local one.
 
 If your local database is fresh and has no accounts yet, create one once via the signup endpoint (it only works while no user exists):
 
@@ -248,7 +248,7 @@ assets/
 schema.sql                        D1 schema for fresh environments. Apply with wrangler d1 execute.
 migrations/                       One-time numbered migrations for existing databases.
 wrangler.jsonc                    Worker + D1 + assets config.
-launch.bat / launch.sh            One-click local dev launchers (Windows / WSL).
+launch.sh                         One-click launcher: builds and runs the deployed app against the production DB.
 ```
 
 ## How sync works
