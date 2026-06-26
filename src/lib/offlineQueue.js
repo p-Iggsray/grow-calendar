@@ -36,15 +36,25 @@ export async function flushCheckoffQueue(putFn) {
   const entries = Object.entries(q);
   if (entries.length === 0) return;
 
-  const remaining = { ...q };
+  const succeeded = [];
   await Promise.allSettled(
     entries.map(async ([date, val]) => {
       // Back-compat: older queued items stored the bare taskStates object.
       const taskStates = val && val.taskStates ? val.taskStates : val;
       const growId = val && val.growId ? val.growId : undefined;
       await putFn(date, taskStates, growId);
-      delete remaining[date];
+      succeeded.push(date);
     })
   );
-  writeQueue(remaining);
+
+  // Re-read the live queue: a checkoff queued *during* this flush (e.g. the
+  // network dropped again mid-replay) must survive. Only drop dates we actually
+  // persisted AND that weren't re-queued with newer data in the meantime.
+  const live = readQueue();
+  for (const date of succeeded) {
+    if (live[date] !== undefined && JSON.stringify(live[date]) === JSON.stringify(q[date])) {
+      delete live[date];
+    }
+  }
+  writeQueue(live);
 }

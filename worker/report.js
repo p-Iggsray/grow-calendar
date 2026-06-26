@@ -173,7 +173,10 @@ function renderReport(ctx) {
   }
   const logDays = new Set(logRows.map(r => r.date)).size;
 
+  // Floor to midnight: getPhase compares against midnight phase dates, so a
+  // timestamped "now" made the current-phase stat vanish on the final harvest day.
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const currentPhase = config ? getPhase(today, config) : null;
   const progress = config && config.start && config.hazeHarvest ? getGrowProgress(today, config) : null;
 

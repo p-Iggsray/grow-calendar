@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronLeft, Pencil } from "lucide-react";
-import { fmtL } from "../../lib/dates.js";
+import { fmtL, getToday, daysBetween } from "../../lib/dates.js";
 import { useGrowLog } from "../../lib/useGrowLog.js";
 import { useWeather } from "../../lib/useWeather.js";
 import { renderNote } from "./renderNote.js";
@@ -41,6 +41,7 @@ export default function DayView({
   dayEditedTasks,
   onEditTaskForDay, onEditTaskForPhase,
   onTaskEditActiveChange,
+  onPickerActiveChange,
 }) {
   const [tab, setTab] = useState("tasks");
   const [noteEditing, setNoteEditing] = useState(false);
@@ -52,6 +53,14 @@ export default function DayView({
   useEffect(() => {
     onTaskEditActiveChange?.(editingIdx !== null);
   }, [editingIdx, onTaskEditActiveChange]);
+
+  // The state picker is a bottom sheet rendered inside this fixed overlay, so the
+  // global TabBar (higher stacking context) would paint over its lower buttons and
+  // steal taps. Report when it's open so the app can hide the TabBar, matching the
+  // task-edit sheet behavior.
+  useEffect(() => {
+    onPickerActiveChange?.(pickerIdx !== null);
+  }, [pickerIdx, onPickerActiveChange]);
 
   const { entry: logEntry, setField: setLogField, setFields: setLogFields, status: logStatus } = useGrowLog(selected, true, activeGrowId);
 
@@ -68,9 +77,10 @@ export default function DayView({
   function updateHealth(i, k, v)      { const a = [...(logEntry.plant_health ?? [])]; a[i] = { ...a[i], [k]: v }; setLogField("plant_health", a); }
   function removeHealth(i)            { const a = [...(logEntry.plant_health ?? [])]; a.splice(i, 1); setLogField("plant_health", a); }
 
-  // Weather: only fetch for today or future dates.
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const isCurrentOrFuture = selected >= todayStr;
+  // Weather: only fetch for today or future dates. Compare by local calendar day
+  // (daysBetween normalizes to local Y/M/D) — comparing a Date against a string
+  // here always coerced to NaN, which silently disabled the weather/frost panel.
+  const isCurrentOrFuture = selected ? daysBetween(selected, getToday()) >= 0 : false;
   const { data: weather, loading: weatherLoading } = useWeather(isCurrentOrFuture && tab === "threats", activeGrowId);
 
   useEffect(() => {

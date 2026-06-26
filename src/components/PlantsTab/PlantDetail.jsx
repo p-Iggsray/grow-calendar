@@ -39,7 +39,7 @@ export default function PlantDetail({ growId, plant, currentPhaseLabel, harvestL
       style={{ position: "fixed", inset: 0, zIndex: 40, background: "var(--c-bg)", overflowY: "auto", paddingBottom: 40 }}
     >
       <div style={{ padding: 16, paddingTop: "calc(16px + env(safe-area-inset-top, 0px))" }}>
-        <button type="button" onClick={onClose} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "var(--c-text-muted)", fontFamily: MONO, fontSize: 12, letterSpacing: 1, cursor: "pointer", padding: 0 }}>
+        <button type="button" className="touch-target" onClick={onClose} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "var(--c-text-muted)", fontFamily: MONO, fontSize: 12, letterSpacing: 1, cursor: "pointer", padding: 0 }}>
           <ArrowLeft size={16} /> PLANTS
         </button>
 
@@ -84,7 +84,7 @@ export default function PlantDetail({ growId, plant, currentPhaseLabel, harvestL
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     {h && <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: h.color, textTransform: "uppercase" }}>{h.label}</span>}
                     {e.height != null && <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-muted)" }}>{e.height}{e.height_unit || ""}</span>}
-                    <button type="button" aria-label="delete entry" onClick={() => handleRemove(e.id)} style={{ background: "none", border: "none", color: "var(--c-text-ghost)", cursor: "pointer", padding: 0, display: "flex" }}>
+                    <button type="button" className="touch-target" aria-label="delete entry" onClick={() => handleRemove(e.id)} style={{ background: "none", border: "none", color: "var(--c-text-ghost)", cursor: "pointer", padding: 0, display: "flex" }}>
                       <Trash2 size={14} />
                     </button>
                   </div>

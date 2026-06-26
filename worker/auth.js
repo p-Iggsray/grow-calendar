@@ -181,7 +181,11 @@ async function clearRateLimit(env, ip, username) {
 export async function getMe(request, env) {
   const user = await currentUser(request, env);
   if (!user) return error(401, "not authenticated");
-  return json({ user: { id: user.id, username: user.username, role: user.role, status: user.status } });
+  const res = json({ user: { id: user.id, username: user.username, role: user.role, status: user.status } });
+  // currentUser may have rotated the session; deliver the new cookie here too,
+  // otherwise an old session hitting /api/auth/me gets downgraded to a 60s grace
+  // token with no replacement. (Other routes attach this in the router.)
+  return attachSessionCookie(res, request, user.rotateTo);
 }
 
 export async function signup(request, env) {

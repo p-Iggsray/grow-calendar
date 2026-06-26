@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ymd } from "../../lib/api.js";
 import { Label, Input, RadioGroup, MONO, SERIF } from "../SetupWizard/styleHelpers.jsx";
 import { HEALTH_OPTIONS } from "./constants.js";
 
@@ -11,7 +12,7 @@ function btn(kind, disabled) {
 }
 
 export default function LogEntryForm({ initial, onSave, onCancel, saving }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = ymd(new Date()); // local calendar day, not UTC (which pre-filled tomorrow each evening)
   const [date, setDate] = useState(initial?.date ?? today);
   const [body, setBody] = useState(initial?.body ?? "");
   const [height, setHeight] = useState(initial?.height != null ? String(initial.height) : "");

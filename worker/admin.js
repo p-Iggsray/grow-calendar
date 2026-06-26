@@ -62,7 +62,7 @@ export async function deleteUser(env, actingUser, targetId) {
 // removed (GDPR "delete my data"). Order doesn't matter — it's one batch.
 const USER_OWNED_TABLES = [
   "sessions", "password_reset_tokens", "share_tokens", "push_subscriptions",
-  "task_checkoffs", "task_notes", "day_notes", "grow_log", "plan_day_overrides",
-  "plan_config", "grows", "mj_conversations", "mj_usage", "plan_gen_usage",
-  "client_errors",
+  "task_checkoffs", "task_notes", "day_notes", "grow_log", "plant_log",
+  "plan_day_overrides", "plan_config", "grows", "mj_conversations",
+  "mj_usage", "plan_gen_usage", "client_errors",
 ];

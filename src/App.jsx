@@ -90,6 +90,7 @@ export default function App() {
   const [activeTab,   setActiveTab]  = useState("calendar");
   const [chatOpen,      setChatOpen]      = useState(false);
   const [taskEditing,   setTaskEditing]   = useState(false);
+  const [pickerActive,  setPickerActive]  = useState(false);
   const [chatContext,   setChatContext]   = useState(null);
   const [showAdmin,     setShowAdmin]     = useState(false);
   const [showStats,     setShowStats]     = useState(false);
@@ -447,6 +448,7 @@ export default function App() {
               onEditTaskForDay={handleEditTaskForDay}
               onEditTaskForPhase={handleEditTaskForPhase}
               onTaskEditActiveChange={setTaskEditing}
+              onPickerActiveChange={setPickerActive}
             />
           </motion.div>
         )}
@@ -513,8 +515,8 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Tab bar — hidden while chat or task-edit sheet is open */}
-      {!chatOpen && !taskEditing && (
+      {/* Tab bar — hidden while chat, task-edit sheet, or state picker is open */}
+      {!chatOpen && !taskEditing && !pickerActive && (
         <TabBar
           activeTab={activeTab}
           onTab={handleTab}

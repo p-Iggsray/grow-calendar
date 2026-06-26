@@ -3,6 +3,18 @@ import { api } from "./api.js";
 
 const STORED_KEY = "push_subscribed";
 
+// localStorage access throws in some mobile contexts (iOS Safari private mode),
+// and these devices still pass the push-support gate — so never let it crash.
+function readSubscribed() {
+  try { return localStorage.getItem(STORED_KEY) === "true"; } catch { return false; }
+}
+function writeSubscribed(value) {
+  try {
+    if (value) localStorage.setItem(STORED_KEY, "true");
+    else localStorage.removeItem(STORED_KEY);
+  } catch { /* storage unavailable */ }
+}
+
 function base64urlToUint8Array(base64url) {
   const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
   const pad = base64.length % 4;
@@ -28,7 +40,7 @@ export function useNotifications() {
     setSupported(ok);
     if (ok) {
       setPermission(Notification.permission);
-      setSubscribed(localStorage.getItem(STORED_KEY) === "true");
+      setSubscribed(readSubscribed());
     }
   }, []);
 
@@ -51,7 +63,7 @@ export function useNotifications() {
       const sub = pushSub.toJSON();
       await api.pushSubscribe({ endpoint: sub.endpoint, keys: sub.keys });
 
-      localStorage.setItem(STORED_KEY, "true");
+      writeSubscribed(true);
       setSubscribed(true);
     } catch (e) {
       setError(e.message || "Could not enable notifications");
@@ -71,7 +83,7 @@ export function useNotifications() {
         await api.pushUnsubscribe({ endpoint: pushSub.endpoint });
         await pushSub.unsubscribe();
       }
-      localStorage.removeItem(STORED_KEY);
+      writeSubscribed(false);
       setSubscribed(false);
     } catch (e) {
       setError(e.message || "Could not disable notifications");
