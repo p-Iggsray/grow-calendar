@@ -1,6 +1,7 @@
 import { sameDay, daysBetween, fmt, fmtL } from "../dates-core.js";
 import { PHASES } from "./phases.js";
 import { dpt, getPhase } from "./phase.js";
+import { occurrencesForDate } from "./eventRules.js";
 
 function generateDetail(date, config) {
   const phase = getPhase(date, config);
@@ -323,7 +324,7 @@ function applyPhaseOverride(detail, override) {
 
 // getDetail now accepts an optional phaseOverrides map so the Plan editor's
 // manual edits layer on top of AI content (and survive regeneration).
-export function getDetail(date, config, overrides, generatedPlan, phaseOverrides) {
+export function getDetail(date, config, overrides, generatedPlan, phaseOverrides, eventRules = []) {
   const phase = getPhase(date, config);
   if (!phase) return null;
 
@@ -354,6 +355,14 @@ export function getDetail(date, config, overrides, generatedPlan, phaseOverrides
   // Phase-level override (survives AI regeneration — full task array).
   if (phaseOverrides?.[phase]) {
     base = applyPhaseOverride(base, phaseOverrides[phase]);
+  }
+
+  // Recurring event-rule occurrences are appended after phase tasks and before
+  // day overrides, so per-day edits/removes and check-off indices treat them as
+  // ordinary tasks.
+  const occurrences = occurrencesForDate(date, config, eventRules);
+  if (occurrences.length > 0) {
+    base = { ...base, tasks: base.tasks.concat(occurrences) };
   }
 
   // Day-level override (most specific — from MJ tool-use or user day edits).

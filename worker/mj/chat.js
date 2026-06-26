@@ -102,6 +102,7 @@ export async function postMj(request, env, user) {
   const config = parseConfig(raw.config);
   const overrides = raw.overrides;
   const phaseOverrides = raw.phaseOverrides;
+  const eventRules = raw.eventRules ?? [];
 
   // Per-day data is grow-scoped; fall back to the user's first grow when the
   // request didn't carry an explicit active grow.
@@ -127,7 +128,7 @@ export async function postMj(request, env, user) {
   const growProfile = profileParts.length ? `Active grow profile — ${profileParts.join(" · ")}.` : "";
 
   // Assemble system prompt segments.
-  const planText  = buildPlanText(config, overrides, raw.generatedPlan, phaseOverrides);
+  const planText  = buildPlanText(config, overrides, raw.generatedPlan, phaseOverrides, eventRules);
   const baseBlock = [MJ_PERSONA, "", planText, "", supplyContext].filter(s => s !== "").join("\n");
 
   const dynamicParts = [
@@ -167,7 +168,7 @@ export async function postMj(request, env, user) {
 
       const actions = [];
       const executeToolUse = (name, input) =>
-        executeTool(name, input, env, user.id, config, overrides, raw.generatedPlan, phaseOverrides, actions, activeGrowId, raw);
+        executeTool(name, input, env, user.id, config, overrides, raw.generatedPlan, phaseOverrides, actions, activeGrowId, raw, eventRules);
 
       let reply = null;
       let modelUsed = null;

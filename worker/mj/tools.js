@@ -7,8 +7,27 @@ import { ensureGrowLogSchema } from "../growLog.js";
 import { firstGrowId } from "../perDayScope.js";
 import { readNote, writeNote, MAX_NOTE_LEN } from "../notes.js";
 import { mergeChecked, appendNoteText, buildDayView, VALID_GROW_PHASES, VALID_CONFIG_DATE_KEYS } from "../mj-logic.js";
+import { validateEventRule, MAX_RULES_PER_GROW } from "../eventRulesValidate.js";
 import { logError } from "../log.js";
 import { DATE_RE } from "./constants.js";
+
+function newRuleId() {
+  return "evt_" + Math.random().toString(36).slice(2, 10);
+}
+
+async function readActiveRules(env, userId, growId) {
+  const row = await env.DB.prepare(
+    "SELECT event_rules FROM grows WHERE id = ? AND user_id = ?"
+  ).bind(growId, userId).first();
+  if (!row) return null;
+  try { return row.event_rules ? JSON.parse(row.event_rules) : []; } catch { return []; }
+}
+
+async function writeActiveRules(env, userId, growId, rules) {
+  await env.DB.prepare(
+    "UPDATE grows SET event_rules = ?, updated_at = ? WHERE id = ? AND user_id = ?"
+  ).bind(JSON.stringify(rules), new Date().toISOString(), growId, userId).run();
+}
 
 function dateToYmd(dt) {
   const y = dt.getFullYear();
@@ -29,7 +48,7 @@ async function readCheckoffsInRange(env, userId, growId, startDate, endDate) {
   return map;
 }
 
-export async function executeTool(name, input, env, userId, config, overrides, generatedPlan, phaseOverrides, actions, growId, rawGrow) {
+export async function executeTool(name, input, env, userId, config, overrides, generatedPlan, phaseOverrides, actions, growId, rawGrow, eventRules = []) {
   // Per-day reads/writes are grow-scoped; fall back to the user's first grow
   // when no active grow was supplied. (Grow-editing tools below keep using the
   // raw `growId` so their "no active grow" guards still apply.)
@@ -48,6 +67,7 @@ export async function executeTool(name, input, env, userId, config, overrides, g
         location: rawGrow.survey?.location ?? null,
         configDates: rawGrow.config ?? {},
         phasesWithOverrides,
+        eventRules: (rawGrow.eventRules ?? []).map(r => ({ id: r.id, label: r.label, task: r.task, enabled: r.enabled !== false, window: r.window, cadence: r.cadence })),
         growId,
       };
     }
@@ -131,6 +151,41 @@ export async function executeTool(name, input, env, userId, config, overrides, g
       return { ok: true, phase, taskCount: tasks?.length ?? 0 };
     }
 
+    if (name === "create_event_rule") {
+      if (!growId) return { error: "No active grow selected. Tap a grow in the Plan tab first." };
+      const rules = await readActiveRules(env, userId, growId);
+      if (rules === null) return { error: "Grow not found." };
+      if (rules.length >= MAX_RULES_PER_GROW) return { error: `Rule limit (${MAX_RULES_PER_GROW}) reached.` };
+
+      const rule = {
+        id: newRuleId(),
+        label: typeof input?.label === "string" ? input.label.slice(0, 80) : "",
+        task: typeof input?.task === "string" ? input.task : "",
+        enabled: true,
+        window: input?.window ?? null,
+        cadence: input?.cadence ?? null,
+        createdAt: new Date().toISOString(),
+      };
+      const invalid = validateEventRule(rule);
+      if (invalid) return { error: invalid };
+
+      rules.push(rule);
+      await writeActiveRules(env, userId, growId, rules);
+      actions.push({ type: "create_event_rule", summary: `Added recurring event: ${rule.label || rule.task}` });
+      return { ok: true, rule };
+    }
+
+    if (name === "delete_event_rule") {
+      if (!growId) return { error: "No active grow selected." };
+      const rules = await readActiveRules(env, userId, growId);
+      if (rules === null) return { error: "Grow not found." };
+      const target = rules.find(r => r.id === input?.id);
+      if (!target) return { error: `No event rule with id ${input?.id}.` };
+      await writeActiveRules(env, userId, growId, rules.filter(r => r.id !== input.id));
+      actions.push({ type: "delete_event_rule", summary: `Removed recurring event: ${target.label || target.task}` });
+      return { ok: true };
+    }
+
     if (name === "get_week") {
       const startDate = input?.start_date;
       if (typeof startDate !== "string" || !DATE_RE.test(startDate)) {
@@ -151,7 +206,7 @@ export async function executeTool(name, input, env, userId, config, overrides, g
           days.push({ date, outside_season: true });
           continue;
         }
-        const detail = getDetail(dt, config, overrides, generatedPlan, phaseOverrides);
+        const detail = getDetail(dt, config, overrides, generatedPlan, phaseOverrides, eventRules);
         const checked = checkoffMap.get(date) ?? [];
         const userNote = await readNote(env, userId, dayGrowId, date);
         const threats = getThreatsForPhase(phase, generatedPlan);
@@ -254,7 +309,7 @@ export async function executeTool(name, input, env, userId, config, overrides, g
     if (!phase) return { error: `no plan for ${date} (outside the grow season)` };
 
     if (name === "get_day") {
-      const detail = getDetail(dt, config, overrides, generatedPlan, phaseOverrides);
+      const detail = getDetail(dt, config, overrides, generatedPlan, phaseOverrides, eventRules);
       const checked = await readCheckoffs(env, userId, dayGrowId, date);
       const userNote = await readNote(env, userId, dayGrowId, date);
       const phaseInfo = PHASES[phase] ?? {};
@@ -266,7 +321,7 @@ export async function executeTool(name, input, env, userId, config, overrides, g
         ? input.taskIndices.map(Number).filter(Number.isInteger) : null;
       if (!indices) return { error: "taskIndices must be an array of integers" };
       if (typeof input?.done !== "boolean") return { error: "done must be a boolean" };
-      const detail = getDetail(dt, config, overrides, generatedPlan, phaseOverrides);
+      const detail = getDetail(dt, config, overrides, generatedPlan, phaseOverrides, eventRules);
       const inRange = indices.filter(i => i >= 0 && i < detail.tasks.length);
       const ignored = indices.filter(i => i < 0 || i >= detail.tasks.length);
       const current = await readCheckoffs(env, userId, dayGrowId, date);

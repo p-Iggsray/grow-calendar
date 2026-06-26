@@ -13,7 +13,7 @@ import { getWeather } from "./weather.js";
 import { getPushVapidKey, postPushSubscribe, deletePushSubscribe, getPushToday, sendDailyReminders } from "./push.js";
 import { getPlan, patchPlanConfig, putPlanPhase, deletePlanPhase } from "./plan.js";
 import { postPlanSetup, postPlanRegenerate } from "./planSetup.js";
-import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, setupGrow, regenerateGrow, putGrowPhase, deleteGrowPhase, patchGrowDayOverride } from "./grows.js";
+import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, setupGrow, regenerateGrow, putGrowPhase, deleteGrowPhase, patchGrowDayOverride, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./grows.js";
 import { addPlant, patchPlant, deletePlant, listPlantLog, addPlantLogEntry, patchPlantLogEntry, deletePlantLogEntry, plantLogSummary } from "./plants.js";
 import { getGrowReport } from "./report.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
@@ -181,6 +181,15 @@ async function authenticatedRoute(request, env, path, method, user) {
   }
   const growDayMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/day\/(\d{4}-\d{2}-\d{2})$/);
   if (growDayMatch && method === "PATCH") return patchGrowDayOverride(request, env, user, growDayMatch[1], growDayMatch[2]);
+
+  const growEventsMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/events(?:\/([A-Za-z0-9_]+))?$/);
+  if (growEventsMatch) {
+    const gid = growEventsMatch[1];
+    const ruleId = growEventsMatch[2];
+    if (method === "POST"   && !ruleId) return createGrowEvent(request, env, user, gid);
+    if (method === "PATCH"  &&  ruleId) return patchGrowEvent(request, env, user, gid, ruleId);
+    if (method === "DELETE" &&  ruleId) return deleteGrowEvent(env, user, gid, ruleId);
+  }
 
   const plantsMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/plants$/);
   if (plantsMatch && method === "POST") return addPlant(request, env, user, plantsMatch[1]);

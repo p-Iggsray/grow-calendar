@@ -150,7 +150,7 @@ export async function getPushToday(env, user) {
     const phase = getPhase(todayDt, config);
     if (!phase) return json({ title: "The Grow Calendar", body: "Check in on your grow today.", url: "/" });
 
-    const detail = getDetail(todayDt, config, raw.overrides, raw.generatedPlan, raw.phaseOverrides);
+    const detail = getDetail(todayDt, config, raw.overrides, raw.generatedPlan, raw.phaseOverrides, raw.eventRules ?? []);
     const n = detail.tasks?.length ?? 0;
     return json({
       title: detail.title ?? "Grow Calendar",

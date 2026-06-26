@@ -87,6 +87,8 @@ When diagnosing a problem, connect the dots first: "Temps at \`95°F\` all week 
 - **update_grow_info** — rename the grow or change its status (active / harvested / abandoned)
 - **update_grow_dates** — change config dates (transplant, flip, harvest, flush windows)
 - **update_phase_tasks** — replace the task list for a specific grow phase
+- **create_event_rule**: add a recurring/timed event (spray, foliar feed) across the cycle
+- **delete_event_rule**: remove a recurring event by id
 
 **Confirmation protocol for all grow edits (update_grow_info, update_grow_dates, update_phase_tasks):**
 1. Call get_grow_info to see current values
@@ -127,7 +129,7 @@ When you receive a photo from the grower:
 export const MJ_TOOLS = [
   {
     name: "get_grow_info",
-    description: "Read the active grow's current metadata: display name, status, strains, all config date fields, and which phases have custom task overrides. Call this BEFORE any update_grow_* tool so you can show the grower current values and confirm what will change.",
+    description: "Read the active grow's current metadata: display name, status, strains, all config date fields, and which phases have custom task overrides. Call this BEFORE any update_grow_* tool so you can show the grower current values and confirm what will change. Also returns the active grow's recurring event rules (eventRules) with their ids.",
     parameters: {
       type: "object",
       properties: {},
@@ -246,6 +248,37 @@ export const MJ_TOOLS = [
         text: { type: "string", description: "New note text that will replace the existing note entirely" },
       },
       required: ["date", "text"],
+    },
+  },
+  {
+    name: "create_event_rule",
+    description: "Create a recurring or timed event (e.g. a spray, a foliar feed) that appears as a task on every matching day. IMPORTANT: confirm the full rule with the grower before calling. Resolve natural language into a structured window and cadence.",
+    parameters: {
+      type: "object",
+      properties: {
+        label: { type: "string", description: "Short name for the event, e.g. 'Neem oil spray' (max 80 chars)." },
+        task: { type: "string", description: "The task line shown on each matching day, e.g. 'Spray neem oil on leaf undersides to runoff' (max 200 chars)." },
+        window: {
+          type: "object",
+          description: "When the rule is active. Exactly one shape. range: {type:'range', from:'YYYY-MM-DD', to:'YYYY-MM-DD'}. phase: {type:'phase', phases:[...]} valid phases: transplant, early_veg, veg_cm, veg_half, veg_full, pre_flower, flower, flush, flush_gdp, harvest_gdp, flower_haze, flush_haze, harvest_haze. milestone: {type:'milestone', anchor:'<configKey>', offsetStart:int, offsetEnd:int} valid anchors: start, transplant, calMag, feedStart, fullDose, flush1, flush2, flush3, backyardMove, preFlower, flowerStart, gdpFlush, gdpHarvest, hazeFlush, hazeHarvest. Omit window only when cadence.type is 'dates'.",
+        },
+        cadence: {
+          type: "object",
+          description: "Which days inside the window fire. everyDay: {type:'everyDay'}. everyNDays: {type:'everyNDays', n:int, anchor?:'YYYY-MM-DD'} (anchor defaults to grow start). weekdays: {type:'weekdays', days:['mon','thu',...]}. dates: {type:'dates', dates:['YYYY-MM-DD',...]} (window not required).",
+        },
+      },
+      required: ["task", "cadence"],
+    },
+  },
+  {
+    name: "delete_event_rule",
+    description: "Delete a recurring event rule from the active grow by its id. Use get_grow_info first to find the rule id.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "The event rule id (starts with 'evt_'), from get_grow_info." },
+      },
+      required: ["id"],
     },
   },
   {

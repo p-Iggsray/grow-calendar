@@ -109,6 +109,7 @@ export async function getGrowReport(env, user, growId) {
   const survey = parseField(row.survey) ?? {};
   const generatedPlan = parseField(row.generated_plan);
   const phaseOverrides = parseField(row.phase_overrides) ?? {};
+  const eventRules = parseField(row.event_rules) ?? [];
 
   const ovRes = await env.DB.prepare(
     "SELECT date, payload FROM plan_day_overrides WHERE user_id = ? AND grow_id = ? ORDER BY date",
@@ -138,7 +139,7 @@ export async function getGrowReport(env, user, growId) {
   } catch { /* plant_log not created yet */ }
 
   const html = renderReport({
-    row, config, survey, generatedPlan, phaseOverrides, overrides,
+    row, config, survey, generatedPlan, phaseOverrides, overrides, eventRules,
     logRows, noteRows, checkRows, taskNoteRows, plantLogRows,
   });
 
@@ -151,7 +152,7 @@ export async function getGrowReport(env, user, growId) {
 }
 
 function renderReport(ctx) {
-  const { row, config, survey, generatedPlan, phaseOverrides, overrides, logRows, noteRows, checkRows, taskNoteRows, plantLogRows } = ctx;
+  const { row, config, survey, generatedPlan, phaseOverrides, overrides, eventRules, logRows, noteRows, checkRows, taskNoteRows, plantLogRows } = ctx;
 
   const name = row.display_name || "My Grow";
   const status = row.status || "active";
@@ -269,7 +270,7 @@ function renderReport(ctx) {
       else cur.end = date;
     }
     const phaseCards = ranges.map(r => {
-      const detail = getDetail(r.start, config, overrides, generatedPlan, phaseOverrides);
+      const detail = getDetail(r.start, config, overrides, generatedPlan, phaseOverrides, eventRules);
       if (!detail) return "";
       const range = r.start.getTime() === r.end.getTime() ? fmtNice(r.start) : `${fmtNice(r.start)} – ${fmtNice(r.end)}`;
       const tasks = (detail.tasks ?? []).map(t => `<li>${esc(t)}</li>`).join("");
@@ -305,7 +306,7 @@ function renderReport(ctx) {
     const e = byDate.get(d);
     const date = asDate(d);
     const phase = config && date ? getPhase(date, config) : null;
-    const detail = config && date ? getDetail(date, config, overrides, generatedPlan, phaseOverrides) : null;
+    const detail = config && date ? getDetail(date, config, overrides, generatedPlan, phaseOverrides, eventRules) : null;
     const tasks = detail?.tasks ?? [];
 
     // Grow-log metrics

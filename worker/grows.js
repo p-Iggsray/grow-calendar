@@ -8,6 +8,7 @@ import {
   generatePlanJson,
 } from "./planSetup.js";
 import { ensurePlantIds, backfillStrainsFromPlan } from "./plantsRoster.js";
+import { validateEventRule, MAX_RULES_PER_GROW } from "./eventRulesValidate.js";
 
 const VALID_PHASES = new Set([
   "transplant", "early_veg", "veg_cm", "veg_half", "veg_full",
@@ -36,6 +37,7 @@ async function ensureMigrated(env, userId) {
         survey          TEXT,
         generated_plan  TEXT,
         phase_overrides TEXT,
+        event_rules     TEXT,
         created_at      TEXT NOT NULL,
         updated_at      TEXT NOT NULL
       )`
@@ -111,6 +113,7 @@ export async function loadRawGrow(env, userId, growId) {
     overrides,
     generatedPlan: parseField(row.generated_plan),
     phaseOverrides: parseField(row.phase_overrides) ?? {},
+    eventRules:     parseField(row.event_rules) ?? [],
     survey:        parseField(row.survey),
     needsSetup:    !row.config,
     displayName:   row.display_name,
@@ -202,6 +205,7 @@ export async function getGrow(env, user, growId) {
   const config        = parseField(row.config);
   const generatedPlan = parseField(row.generated_plan);
   const phaseOverrides = parseField(row.phase_overrides) ?? {};
+  const eventRules = parseField(row.event_rules) ?? [];
   let survey = parseField(row.survey);
   let surveyChanged = false;
 
@@ -229,6 +233,7 @@ export async function getGrow(env, user, growId) {
     overrides,
     generatedPlan,
     phaseOverrides,
+    eventRules,
     survey,
     needsSetup:   !config,
     createdAt:    row.created_at,
@@ -408,6 +413,84 @@ export async function deleteGrowPhase(env, user, growId, phase) {
     "UPDATE grows SET phase_overrides = ?, updated_at = ? WHERE id = ? AND user_id = ?"
   ).bind(JSON.stringify(phaseOverrides), new Date().toISOString(), growId, user.id).run();
 
+  return json({ ok: true });
+}
+
+function newRuleId() {
+  return "evt_" + Math.random().toString(36).slice(2, 10);
+}
+
+async function readGrowRules(env, userId, growId) {
+  const row = await env.DB.prepare(
+    "SELECT event_rules FROM grows WHERE id = ? AND user_id = ?"
+  ).bind(growId, userId).first();
+  if (!row) return null;
+  return parseField(row.event_rules) ?? [];
+}
+
+async function writeGrowRules(env, userId, growId, rules) {
+  await env.DB.prepare(
+    "UPDATE grows SET event_rules = ?, updated_at = ? WHERE id = ? AND user_id = ?"
+  ).bind(JSON.stringify(rules), new Date().toISOString(), growId, userId).run();
+}
+
+// POST /api/grows/:id/events
+export async function createGrowEvent(request, env, user, growId) {
+  const rules = await readGrowRules(env, user.id, growId);
+  if (rules === null) return error(404, "grow not found");
+  if (rules.length >= MAX_RULES_PER_GROW) return error(400, `rule limit (${MAX_RULES_PER_GROW}) reached`);
+
+  let body;
+  { const p = await safeJsonBounded(request, 16384); if (!p.ok) return error(p.status, p.error); body = p.data; }
+
+  const rule = {
+    id: newRuleId(),
+    label: typeof body?.label === "string" ? body.label.slice(0, 80) : "",
+    task: typeof body?.task === "string" ? body.task : "",
+    enabled: body?.enabled !== false,
+    window: body?.window ?? null,
+    cadence: body?.cadence ?? null,
+    createdAt: new Date().toISOString(),
+  };
+
+  const invalid = validateEventRule(rule);
+  if (invalid) return error(400, invalid);
+
+  rules.push(rule);
+  await writeGrowRules(env, user.id, growId, rules);
+  return json({ ok: true, rule });
+}
+
+// PATCH /api/grows/:id/events/:ruleId
+export async function patchGrowEvent(request, env, user, growId, ruleId) {
+  const rules = await readGrowRules(env, user.id, growId);
+  if (rules === null) return error(404, "grow not found");
+  const idx = rules.findIndex(r => r.id === ruleId);
+  if (idx < 0) return error(404, "rule not found");
+
+  let body;
+  { const p = await safeJsonBounded(request, 16384); if (!p.ok) return error(p.status, p.error); body = p.data; }
+
+  const next = { ...rules[idx] };
+  if (typeof body?.label === "string") next.label = body.label.slice(0, 80);
+  if (typeof body?.task === "string") next.task = body.task;
+  if (typeof body?.enabled === "boolean") next.enabled = body.enabled;
+  if (body?.window !== undefined) next.window = body.window;
+  if (body?.cadence !== undefined) next.cadence = body.cadence;
+
+  const invalid = validateEventRule(next);
+  if (invalid) return error(400, invalid);
+
+  rules[idx] = next;
+  await writeGrowRules(env, user.id, growId, rules);
+  return json({ ok: true, rule: next });
+}
+
+// DELETE /api/grows/:id/events/:ruleId
+export async function deleteGrowEvent(env, user, growId, ruleId) {
+  const rules = await readGrowRules(env, user.id, growId);
+  if (rules === null) return error(404, "grow not found");
+  await writeGrowRules(env, user.id, growId, rules.filter(r => r.id !== ruleId));
   return json({ ok: true });
 }
 

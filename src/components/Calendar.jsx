@@ -21,7 +21,7 @@ function ymdKey(date) {
 }
 
 export default function Calendar({
-  today, month, setMonth, selected, config, overrides, generatedPlan, phaseOverrides,
+  today, month, setMonth, selected, config, overrides, generatedPlan, phaseOverrides, eventRules,
   checkoffCounts, onPickDay, onClearSelection,
 }) {
   const touchStart = useRef(null);
@@ -127,7 +127,7 @@ export default function Calendar({
             let ringRatio = 0;
             let totalTasks = 0;
             if (pStyle) {
-              const dayDetail = getDetail(date, config, overrides, generatedPlan, phaseOverrides);
+              const dayDetail = getDetail(date, config, overrides, generatedPlan, phaseOverrides, eventRules);
               totalTasks = dayDetail?.tasks?.length ?? 0;
               const doneCount = checkoffCounts?.[ymdKey(date)] ?? 0;
               if (totalTasks > 0 && doneCount > 0) {

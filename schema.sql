@@ -238,6 +238,7 @@ CREATE TABLE IF NOT EXISTS grows (
   survey          TEXT,             -- JSON: grow survey
   generated_plan  TEXT,            -- JSON: AI-generated plan
   phase_overrides TEXT,            -- JSON: per-phase task overrides
+  event_rules     TEXT,            -- JSON: recurring event rules ({window x cadence})
   created_at      TEXT NOT NULL,
   updated_at      TEXT NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

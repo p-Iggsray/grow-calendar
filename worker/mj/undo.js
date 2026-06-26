@@ -29,7 +29,7 @@ export async function postMjUndo(request, env, user) {
     const dt = parseDate(date);
     const phase = getPhase(dt, config);
     if (!phase) return error(400, `no plan for ${date}`);
-    const detail = getDetail(dt, config, raw.overrides, raw.generatedPlan, raw.phaseOverrides);
+    const detail = getDetail(dt, config, raw.overrides, raw.generatedPlan, raw.phaseOverrides, raw.eventRules ?? []);
     const inRange = taskIndices.map(Number).filter(i => Number.isInteger(i) && i >= 0 && i < detail.tasks.length);
     const current = await readCheckoffs(env, user.id, growId, date);
     const next = mergeChecked(current, inRange, done);

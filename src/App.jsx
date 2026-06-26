@@ -84,7 +84,7 @@ export default function App() {
   const today    = useToday();
   const online   = useOnlineStatus();
   const { theme, setTheme } = useTheme();
-  const { grows, activeGrowId, setActiveGrowId, config, overrides, generatedPlan, phaseOverrides, survey, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
+  const { grows, activeGrowId, setActiveGrowId, config, overrides, generatedPlan, phaseOverrides, eventRules, survey, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
   const [month,       setMonth]      = useState(() => today.getMonth());
   const [selected,    setSelected]   = useState(null);
   const [activeTab,   setActiveTab]  = useState("calendar");
@@ -247,7 +247,7 @@ export default function App() {
 
   const selPhase    = selected ? getPhase(selected, config) : null;
   const selStyle    = selPhase ? PHASES[selPhase] : null;
-  const detail      = selected ? getDetail(selected, config, overrides, generatedPlan, phaseOverrides) : null;
+  const detail      = selected ? getDetail(selected, config, overrides, generatedPlan, phaseOverrides, eventRules) : null;
   const dayEditedTasks = selected ? (overrides?.[ymd(selected)]?.editedTasks ?? {}) : {};
   const threats     = selPhase ? getThreatsForPhase(selPhase, generatedPlan) : [];
   const todayThreats = todayPhase ? getThreatsForPhase(todayPhase, generatedPlan) : [];
@@ -403,6 +403,7 @@ export default function App() {
                 overrides={overrides}
                 generatedPlan={generatedPlan}
                 phaseOverrides={phaseOverrides}
+                eventRules={eventRules}
                 checkoffCounts={monthCheckoffCounts}
                 onPickDay={pickDay}
                 onClearSelection={() => setSelected(null)}

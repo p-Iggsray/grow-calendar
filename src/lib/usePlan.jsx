@@ -23,6 +23,7 @@ export function PlanProvider({ children }) {
   const [overrides, setOverrides] = useState({});
   const [generatedPlan, setGeneratedPlan] = useState(null);
   const [phaseOverrides, setPhaseOverrides] = useState({});
+  const [eventRules, setEventRules] = useState([]);
   const [survey, setSurvey] = useState(null);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -83,6 +84,7 @@ export function PlanProvider({ children }) {
         setOverrides(data.overrides || {});
         setGeneratedPlan(data.generatedPlan || null);
         setPhaseOverrides(data.phaseOverrides || {});
+        setEventRules(data.eventRules || []);
         setSurvey(data.survey || null);
         setLoading(false);
       })
@@ -102,7 +104,7 @@ export function PlanProvider({ children }) {
       grows,
       activeGrowId,
       setActiveGrowId,
-      config, overrides, generatedPlan, phaseOverrides, survey,
+      config, overrides, generatedPlan, phaseOverrides, eventRules, survey,
       needsSetup, loading, error, reload,
     }}>
       {children}

@@ -210,6 +210,12 @@ export const api = {
     request(`/api/grows/${id}/phase/${phase}`, { method: "PUT", body: JSON.stringify(data) }),
   clearGrowPhase: (id, phase) =>
     request(`/api/grows/${id}/phase/${phase}`, { method: "DELETE", body: "{}" }),
+  createGrowEvent: (id, rule) =>
+    request(`/api/grows/${id}/events`, { method: "POST", body: JSON.stringify(rule) }),
+  patchGrowEvent: (id, ruleId, patch) =>
+    request(`/api/grows/${id}/events/${ruleId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  deleteGrowEvent: (id, ruleId) =>
+    request(`/api/grows/${id}/events/${ruleId}`, { method: "DELETE", body: "{}" }),
   patchGrowDay: (id, date, patch) =>
     request(`/api/grows/${id}/day/${date}`, { method: "PATCH", body: JSON.stringify(patch) }),
   addPlant: (growId, fields) =>
