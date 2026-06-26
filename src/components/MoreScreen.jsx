@@ -16,9 +16,9 @@ const THEME_OPTIONS = [
 ];
 
 export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMap, onBeforeSignOut, theme, setTheme }) {
-  const { survey, generatedPlan, activeGrowId } = usePlan();
+  const { survey, activeGrowId } = usePlan();
   const location = growLocation(survey);
-  const strains = strainSummary(survey, generatedPlan);
+  const strains = strainSummary(survey);
   const [showShare, setShowShare] = useState(false);
   const { supported: notifSupported, permission, subscribed, busy: notifBusy, error: notifError, subscribe, unsubscribe } = useNotifications();
 

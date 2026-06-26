@@ -390,7 +390,7 @@ export default function App() {
                 daysToNext={daysToNext}
                 progress={progress}
                 location={growLocation(survey)}
-                strains={strainSummary(survey, generatedPlan)}
+                strains={strainSummary(survey)}
               />
               <MilestoneStrip today={today} milestones={milestones} onPick={pickMilestone} />
               <Calendar

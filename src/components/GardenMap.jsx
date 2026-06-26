@@ -93,8 +93,8 @@ function sunT(hour) {
 }
 
 export default function GardenMap({ today, config, onClose }) {
-  const { survey, generatedPlan, activeGrowId } = usePlan();
-  const plantNames = growStrains(survey, generatedPlan);
+  const { survey, activeGrowId } = usePlan();
+  const plantNames = growStrains(survey);
   const svgRef = useRef(null);
   const [pots, setPots] = useState(() => buildPots(plantNames, loadSaved(activeGrowId)));
   const [dragging, setDragging] = useState(null); // { id, offsetCx, offsetCy }
@@ -324,7 +324,7 @@ export default function GardenMap({ today, config, onClose }) {
         paddingBottom: "calc(10px + env(safe-area-inset-bottom, 0px))",
         display: "flex", gap: 20, flexWrap: "wrap",
       }}>
-        {distinctStrains(survey, generatedPlan).map(name => {
+        {distinctStrains(survey).map(name => {
           const count = plantNames.filter(p => p === name).length;
           const base = strainShortLabel(name);
           const label = count > 1 ? `${base} 1-${count}` : base;

@@ -7,28 +7,25 @@ export function growLocation(survey) {
   return (survey?.location || "").trim();
 }
 
-// Per-plant strain names in entry order. The survey holds one entry per plant;
-// the generated plan holds primary/secondary slots. Prefer the survey (it has
-// real per-plant counts), falling back to the generated plan.
-export function growStrains(survey, generatedPlan) {
-  const fromSurvey = (survey?.strains ?? [])
-    .map(s => (s?.name || "").trim())
-    .filter(Boolean);
-  if (fromSurvey.length) return fromSurvey;
-  return (generatedPlan?.strains ?? [])
+// Per-plant strain names in entry order. The survey's strain roster is the
+// single source of truth: the backend seeds it from the AI plan on load (see
+// backfillStrainsFromPlan), so there is never a plant on the calendar that is
+// not in this list.
+export function growStrains(survey) {
+  return (survey?.strains ?? [])
     .map(s => (s?.name || "").trim())
     .filter(Boolean);
 }
 
 // Distinct strain names in first-seen order (primary, secondary, …).
-export function distinctStrains(survey, generatedPlan) {
-  return [...new Set(growStrains(survey, generatedPlan))];
+export function distinctStrains(survey) {
+  return [...new Set(growStrains(survey))];
 }
 
 // Grouped, counted summary: "1× Grandaddy Purp · 2× Strawberry Haze".
 // Returns "" when no strains are known.
-export function strainSummary(survey, generatedPlan) {
-  const names = growStrains(survey, generatedPlan);
+export function strainSummary(survey) {
+  const names = growStrains(survey);
   if (names.length === 0) return "";
   const order = [];
   const counts = new Map();

@@ -7,7 +7,7 @@ import {
   REQUIRED_CONFIG_KEYS,
   generatePlanJson,
 } from "./planSetup.js";
-import { ensurePlantIds } from "./plantsRoster.js";
+import { ensurePlantIds, backfillStrainsFromPlan } from "./plantsRoster.js";
 
 const VALID_PHASES = new Set([
   "transplant", "early_veg", "veg_cm", "veg_half", "veg_full",
@@ -203,14 +203,22 @@ export async function getGrow(env, user, growId) {
   const generatedPlan = parseField(row.generated_plan);
   const phaseOverrides = parseField(row.phase_overrides) ?? {};
   let survey = parseField(row.survey);
+  let surveyChanged = false;
+
+  // Seed the per-plant roster from the AI plan's strains if it has none yet, so
+  // the Plants section never lags behind the calendar/garden.
+  const back = backfillStrainsFromPlan(survey, generatedPlan);
+  if (back.changed) { survey = back.survey; surveyChanged = true; }
+
   if (survey) {
     const ensured = ensurePlantIds(survey);
-    if (ensured.changed) {
-      survey = ensured.survey;
-      await env.DB.prepare(
-        "UPDATE grows SET survey = ?, updated_at = ? WHERE id = ? AND user_id = ?"
-      ).bind(JSON.stringify(survey), new Date().toISOString(), row.id, user.id).run();
-    }
+    if (ensured.changed) { survey = ensured.survey; surveyChanged = true; }
+  }
+
+  if (surveyChanged) {
+    await env.DB.prepare(
+      "UPDATE grows SET survey = ?, updated_at = ? WHERE id = ? AND user_id = ?"
+    ).bind(JSON.stringify(survey), new Date().toISOString(), row.id, user.id).run();
   }
 
   return json({

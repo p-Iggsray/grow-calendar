@@ -2,8 +2,46 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   ensurePlantIds, validatePlantFields, addPlantToSurvey,
-  updatePlantInSurvey, removePlantFromSurvey,
+  updatePlantInSurvey, removePlantFromSurvey, backfillStrainsFromPlan,
 } from "../worker/plantsRoster.js";
+
+let _seq = 0;
+const fakeId = () => `p_fake_${_seq++}`;
+
+test("backfillStrainsFromPlan seeds roster from plan strains when survey empty", () => {
+  _seq = 0;
+  const plan = { strains: [
+    { name: "Grandaddy Purp", type: "indica", photo: true },
+    { name: "Strawberry Haze", type: "sativa", flowerWeeks: 11 },
+  ] };
+  const { survey, changed } = backfillStrainsFromPlan(null, plan, fakeId);
+  assert.equal(changed, true);
+  assert.equal(survey.strains.length, 2);
+  assert.deepEqual(survey.strains[0], { id: "p_fake_0", name: "Grandaddy Purp", type: "indica", photo: true, flowerWeeks: 9, status: "growing" });
+  assert.equal(survey.strains[1].type, "sativa");
+  assert.equal(survey.strains[1].flowerWeeks, 11);
+});
+
+test("backfillStrainsFromPlan is a no-op when survey already has strains", () => {
+  const survey = { strains: [{ name: "Existing", id: "p_1" }] };
+  const { survey: out, changed } = backfillStrainsFromPlan(survey, { strains: [{ name: "Plan" }] }, fakeId);
+  assert.equal(changed, false);
+  assert.equal(out, survey);
+});
+
+test("backfillStrainsFromPlan is a no-op when plan has no usable strains", () => {
+  assert.equal(backfillStrainsFromPlan(null, null, fakeId).changed, false);
+  assert.equal(backfillStrainsFromPlan(null, { strains: [] }, fakeId).changed, false);
+  assert.equal(backfillStrainsFromPlan(null, { strains: [{ name: "  " }] }, fakeId).changed, false);
+});
+
+test("backfillStrainsFromPlan preserves other survey keys and clamps flowerWeeks", () => {
+  _seq = 0;
+  const { survey } = backfillStrainsFromPlan({ location: "Ohio" }, { strains: [{ name: "X", flowerWeeks: 99 }] }, fakeId);
+  assert.equal(survey.location, "Ohio");
+  assert.equal(survey.strains[0].flowerWeeks, 20);
+  assert.equal(survey.strains[0].type, "hybrid");
+});
 
 test("ensurePlantIds assigns ids and default status, preserves existing ids", () => {
   const survey = { strains: [{ name: "A", id: "p_keep" }, { name: "B" }] };

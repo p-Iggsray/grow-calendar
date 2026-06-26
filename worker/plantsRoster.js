@@ -58,6 +58,36 @@ export function validatePlantFields(fields, partial = false) {
   return { ok: true, value: out };
 }
 
+// Seed a per-plant roster from an AI-generated plan's strain slots when the grow
+// has none yet. This keeps the Plants section (which reads survey.strains) from
+// ever lagging behind the calendar/garden (which fall back to the plan's strains
+// when the survey is empty). Only fires when survey.strains is empty AND the plan
+// has named strains; otherwise it is a no-op. Never mutates the input.
+// Returns { survey, changed }.
+export function backfillStrainsFromPlan(survey, generatedPlan, idGen = newPlantId) {
+  const existing = survey && Array.isArray(survey.strains) ? survey.strains : [];
+  if (existing.length > 0) return { survey, changed: false };
+
+  const planStrains = Array.isArray(generatedPlan?.strains) ? generatedPlan.strains : [];
+  const strains = planStrains
+    .filter((s) => s && String(s.name ?? "").trim())
+    .map((s) => {
+      const fw = Number(s.flowerWeeks);
+      return {
+        id: idGen(),
+        name: String(s.name).trim().slice(0, NAME_MAX),
+        type: PLANT_TYPES.has(s.type) ? s.type : "hybrid",
+        photo: s.photo !== undefined ? Boolean(s.photo) : true,
+        flowerWeeks: Number.isFinite(fw) ? Math.min(20, Math.max(4, Math.round(fw))) : 9,
+        status: "growing",
+      };
+    });
+  if (strains.length === 0) return { survey, changed: false };
+
+  const base = survey && typeof survey === "object" ? survey : {};
+  return { survey: { ...base, strains }, changed: true };
+}
+
 export function addPlantToSurvey(survey, fields, idGen = newPlantId) {
   const base = survey && typeof survey === "object" ? survey : {};
   const strains = Array.isArray(base.strains) ? base.strains.slice() : [];
