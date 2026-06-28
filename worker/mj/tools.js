@@ -8,11 +8,36 @@ import { firstGrowId } from "../perDayScope.js";
 import { readNote, writeNote, MAX_NOTE_LEN } from "../notes.js";
 import { mergeChecked, appendNoteText, buildDayView, VALID_GROW_PHASES, VALID_CONFIG_DATE_KEYS } from "../mj-logic.js";
 import { validateEventRule, MAX_RULES_PER_GROW } from "../eventRulesValidate.js";
+import {
+  ensurePlantIds, validatePlantFields, addPlantToSurvey,
+  updatePlantInSurvey, removePlantFromSurvey,
+} from "../plantsRoster.js";
+import { ensurePlantLogSchema } from "../plants.js";
 import { logError } from "../log.js";
 import { DATE_RE } from "./constants.js";
 
 function newRuleId() {
   return "evt_" + Math.random().toString(36).slice(2, 10);
+}
+
+// Read/write a grow's survey JSON (where the plant roster lives). readSurvey
+// returns {} for a grow with no survey yet, or null if the grow doesn't exist.
+async function readSurvey(env, userId, growId) {
+  const row = await env.DB.prepare(
+    "SELECT survey FROM grows WHERE id = ? AND user_id = ?"
+  ).bind(growId, userId).first();
+  if (!row) return null;
+  try { return row.survey ? JSON.parse(row.survey) : {}; } catch { return {}; }
+}
+
+async function writeSurvey(env, userId, growId, survey) {
+  await env.DB.prepare(
+    "UPDATE grows SET survey = ?, updated_at = ? WHERE id = ? AND user_id = ?"
+  ).bind(JSON.stringify(survey), new Date().toISOString(), growId, userId).run();
+}
+
+function plantOut(p) {
+  return { id: p.id, name: p.name, type: p.type, photo: p.photo, flowerWeeks: p.flowerWeeks, status: p.status };
 }
 
 async function readActiveRules(env, userId, growId) {
@@ -56,14 +81,21 @@ export async function executeTool(name, input, env, userId, config, overrides, g
   try {
     if (name === "get_grow_info") {
       if (!growId || !rawGrow) return { error: "No active grow selected. Tap a grow in the Plan tab first." };
-      const strains =
-        rawGrow.generatedPlan?.strains?.map(s => s.name).filter(Boolean) ??
-        rawGrow.survey?.strains?.map(s => s.name).filter(Boolean) ?? [];
+      // Make sure every plant in the roster has a stable id so the plant
+      // edit/delete tools can target them; persist if we had to assign any.
+      let survey = rawGrow.survey ?? {};
+      const ensured = ensurePlantIds(survey);
+      if (ensured.changed) { survey = ensured.survey; await writeSurvey(env, userId, growId, survey); }
+      const plants = Array.isArray(survey?.strains) ? survey.strains.map(plantOut) : [];
+      const strains = plants.length
+        ? plants.map(p => p.name).filter(Boolean)
+        : (rawGrow.generatedPlan?.strains?.map(s => s.name).filter(Boolean) ?? []);
       const phasesWithOverrides = Object.keys(rawGrow.phaseOverrides ?? {});
       return {
         displayName: rawGrow.displayName,
         status: rawGrow.status,
         strains,
+        plants,
         location: rawGrow.survey?.location ?? null,
         configDates: rawGrow.config ?? {},
         phasesWithOverrides,
@@ -183,6 +215,55 @@ export async function executeTool(name, input, env, userId, config, overrides, g
       if (!target) return { error: `No event rule with id ${input?.id}.` };
       await writeActiveRules(env, userId, growId, rules.filter(r => r.id !== input.id));
       actions.push({ type: "delete_event_rule", summary: `Removed recurring event: ${target.label || target.task}` });
+      return { ok: true };
+    }
+
+    if (name === "add_plant") {
+      if (!growId) return { error: "No active grow selected. Tap a grow in the Plan tab first." };
+      const v = validatePlantFields(input ?? {}, false);
+      if (!v.ok) return { error: v.error };
+      const survey = await readSurvey(env, userId, growId);
+      if (survey === null) return { error: "Grow not found." };
+      const ensured = ensurePlantIds(survey);
+      const { survey: nextSurvey, plant } = addPlantToSurvey(ensured.survey, v.value);
+      await writeSurvey(env, userId, growId, nextSurvey);
+      actions.push({ type: "add_plant", summary: `Added plant: ${plant.name}` });
+      return { ok: true, plant: plantOut(plant) };
+    }
+
+    if (name === "update_plant") {
+      if (!growId) return { error: "No active grow selected." };
+      const plantId = input?.plant_id;
+      if (typeof plantId !== "string" || !plantId) return { error: "plant_id is required — get it from get_grow_info." };
+      const v = validatePlantFields(input ?? {}, true);
+      if (!v.ok) return { error: v.error };
+      if (Object.keys(v.value).length === 0) return { error: "No valid fields to update." };
+      const survey = await readSurvey(env, userId, growId);
+      if (survey === null) return { error: "Grow not found." };
+      const ensured = ensurePlantIds(survey);
+      const res = updatePlantInSurvey(ensured.survey, plantId, v.value);
+      if (!res) return { error: `No plant with id ${plantId}. Call get_grow_info to see plant ids.` };
+      await writeSurvey(env, userId, growId, res.survey);
+      actions.push({ type: "update_plant", summary: `Updated plant: ${res.plant.name}` });
+      return { ok: true, plant: plantOut(res.plant) };
+    }
+
+    if (name === "delete_plant") {
+      if (!growId) return { error: "No active grow selected." };
+      const plantId = input?.plant_id;
+      if (typeof plantId !== "string" || !plantId) return { error: "plant_id is required — get it from get_grow_info." };
+      const survey = await readSurvey(env, userId, growId);
+      if (survey === null) return { error: "Grow not found." };
+      const ensured = ensurePlantIds(survey);
+      const target = (ensured.survey.strains ?? []).find(s => s.id === plantId);
+      const res = removePlantFromSurvey(ensured.survey, plantId);
+      if (!res) return { error: `No plant with id ${plantId}. Call get_grow_info to see plant ids.` };
+      await writeSurvey(env, userId, growId, res.survey);
+      await ensurePlantLogSchema(env);
+      await env.DB.prepare(
+        "DELETE FROM plant_log WHERE user_id = ? AND grow_id = ? AND plant_id = ?"
+      ).bind(userId, growId, plantId).run();
+      actions.push({ type: "delete_plant", summary: `Deleted plant: ${target?.name ?? plantId}` });
       return { ok: true };
     }
 

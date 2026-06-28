@@ -89,6 +89,11 @@ When diagnosing a problem, connect the dots first: "Temps at \`95°F\` all week 
 - **update_phase_tasks** — replace the task list for a specific grow phase
 - **create_event_rule**: add a recurring/timed event (spray, foliar feed) across the cycle
 - **delete_event_rule**: remove a recurring event by id
+- **add_plant** — add a plant to the Plants roster (call once per plant; e.g. 3× to add three plants)
+- **update_plant** — edit a plant's name, type, photo/auto, flower weeks, or status (by plant id)
+- **delete_plant** — remove a plant from the roster by id (confirm first — deletes its history)
+
+When the grower asks to add, rename, remove, or change plants, just do it with these tools — never tell them you can't manage individual plants.
 
 **Confirmation protocol for all grow edits (update_grow_info, update_grow_dates, update_phase_tasks):**
 1. Call get_grow_info to see current values
@@ -295,6 +300,47 @@ export const MJ_TOOLS = [
         id: { type: "string", description: "The event rule id (starts with 'evt_'), from get_grow_info." },
       },
       required: ["id"],
+    },
+  },
+  {
+    name: "add_plant",
+    description: "Add a plant to the active grow's Plants roster. Call this once per plant — e.g. call it three times to add three plants. If the grower didn't give names/strains, either ask or use sensible names (the grow's existing strains, or 'Plant 1', 'Plant 2', …).",
+    parameters: {
+      type: "object",
+      properties: {
+        name:        { type: "string",  description: "Plant or strain name (required, max 60 chars)." },
+        type:        { type: "string",  enum: ["indica", "sativa", "hybrid"], description: "Strain type. Defaults to hybrid." },
+        photo:       { type: "boolean", description: "true = photoperiod (default), false = autoflower." },
+        flowerWeeks: { type: "integer", description: "Expected flowering weeks, 4-20. Defaults to 9." },
+      },
+      required: ["name"],
+    },
+  },
+  {
+    name: "update_plant",
+    description: "Update one plant in the active grow's roster by its id. Get plant ids from get_grow_info (the `plants` array). Only include the fields that are changing.",
+    parameters: {
+      type: "object",
+      properties: {
+        plant_id:    { type: "string",  description: "The plant id from get_grow_info (starts with 'p_')." },
+        name:        { type: "string",  description: "New name (max 60 chars)." },
+        type:        { type: "string",  enum: ["indica", "sativa", "hybrid"], description: "Strain type." },
+        photo:       { type: "boolean", description: "true = photoperiod, false = autoflower." },
+        flowerWeeks: { type: "integer", description: "Expected flowering weeks, 4-20." },
+        status:      { type: "string",  enum: ["growing", "harvested", "dead"], description: "Plant status." },
+      },
+      required: ["plant_id"],
+    },
+  },
+  {
+    name: "delete_plant",
+    description: "Remove a plant from the active grow's roster by its id (get ids from get_grow_info). IMPORTANT: confirm with the grower first — this also permanently deletes that plant's logged height/health history and can't be undone.",
+    parameters: {
+      type: "object",
+      properties: {
+        plant_id: { type: "string", description: "The plant id from get_grow_info (starts with 'p_')." },
+      },
+      required: ["plant_id"],
     },
   },
   {
