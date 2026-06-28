@@ -37,6 +37,48 @@ export const HEALTH_OPTIONS = [
 ];
 export const HEALTH_MAP = Object.fromEntries(HEALTH_OPTIONS.map((o) => [o.value, o]));
 
+// Per-plant history categories. Order drives the filter row. "stage" is produced
+// by the stage control, not the entry form.
+export const LOG_KINDS = [
+  { value: "note",        label: "Note" },
+  { value: "measurement", label: "Measurement" },
+  { value: "watering",    label: "Watering" },
+  { value: "nutrients",   label: "Nutrients" },
+  { value: "training",    label: "Training" },
+  { value: "trim",        label: "Trim" },
+  { value: "environment", label: "Environment" },
+  { value: "health",      label: "Health" },
+  { value: "stage",       label: "Stage" },
+];
+export const FORM_KINDS = LOG_KINDS.filter((k) => k.value !== "stage");
+export const KIND_LABEL = Object.fromEntries(LOG_KINDS.map((k) => [k.value, k.label]));
+export function kindLabel(kind) { return KIND_LABEL[kind] ?? "Note"; }
+
+// One-line summary of an entry's category-specific detail, for the history list.
+export function summarizeEntry(e) {
+  const d = e.detail ?? {};
+  switch (e.kind) {
+    case "measurement": return e.height != null ? `${e.height}${e.height_unit || ""}` : "";
+    case "watering": {
+      const parts = [];
+      if (d.gal) parts.push(`${d.gal} gal`);
+      if (d.ec_in) parts.push(`EC in ${d.ec_in}`);
+      if (d.ec_out) parts.push(`EC out ${d.ec_out}`);
+      return parts.join(" · ");
+    }
+    case "nutrients": return [d.mix, d.dose].filter(Boolean).join(" — ");
+    case "training":  return d.action || "";
+    case "environment": {
+      const parts = [];
+      if (d.temp_high || d.temp_low) parts.push(`${d.temp_high ?? "?"}/${d.temp_low ?? "?"}°F`);
+      if (d.humidity) parts.push(`${d.humidity}% RH`);
+      return parts.join(" · ");
+    }
+    case "health": return HEALTH_MAP[e.health]?.label ?? "";
+    default: return "";
+  }
+}
+
 // Split a grow's strain roster into active (growing) and archived plants.
 export function partitionPlants(survey) {
   const strains = Array.isArray(survey?.strains) ? survey.strains : [];

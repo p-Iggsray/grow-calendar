@@ -139,9 +139,16 @@ export function removePlantFromSurvey(survey, plantId) {
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const BODY_MAX = 2000;
+const DETAIL_MAX = 2000;
+
+// Per-plant history entry categories. "stage" is produced by the stage control.
+export const LOG_KINDS = new Set([
+  "note", "measurement", "watering", "nutrients",
+  "training", "trim", "environment", "health", "stage",
+]);
 
 // Validates + normalizes a log entry. partial=true for PATCH. Returns DB-column
-// shaped value: { date, body, height, height_unit, health }.
+// shaped value: { date, kind, detail, body, height, height_unit, health }.
 export function normalizeLogEntry(input, partial = false, todayIso) {
   const out = {};
   const has = (k) => input[k] !== undefined;
@@ -150,6 +157,22 @@ export function normalizeLogEntry(input, partial = false, todayIso) {
     const date = String(input.date ?? todayIso ?? "");
     if (!DATE_RE.test(date)) return { ok: false, error: "date must be YYYY-MM-DD" };
     out.date = date;
+  }
+  if (has("kind") || !partial) {
+    const kind = String(input.kind ?? "note");
+    if (!LOG_KINDS.has(kind)) return { ok: false, error: "invalid kind" };
+    out.kind = kind;
+  }
+  if (has("detail")) {
+    if (input.detail == null || input.detail === "") {
+      out.detail = null;
+    } else if (typeof input.detail !== "object" || Array.isArray(input.detail)) {
+      return { ok: false, error: "detail must be an object" };
+    } else {
+      const s = JSON.stringify(input.detail);
+      if (s.length > DETAIL_MAX) return { ok: false, error: "detail too large" };
+      out.detail = s;
+    }
   }
   if (has("body") || !partial) {
     out.body = String(input.body ?? "").slice(0, BODY_MAX);

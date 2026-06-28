@@ -130,9 +130,19 @@ test("normalizeLogEntry validates height and health, allows clearing", () => {
   assert.equal(normalizeLogEntry({ body: "x", date: "2026-06-17", height: -1 }).ok, false);
   assert.equal(normalizeLogEntry({ body: "x", date: "2026-06-17", health: "bogus" }).ok, false);
   const ok = normalizeLogEntry({ body: "x", date: "2026-06-17", height: 24, heightUnit: "in", health: "healthy" });
-  assert.deepEqual(ok.value, { date: "2026-06-17", body: "x", height: 24, height_unit: "in", health: "healthy" });
+  assert.deepEqual(ok.value, { date: "2026-06-17", kind: "note", body: "x", height: 24, height_unit: "in", health: "healthy" });
   const cleared = normalizeLogEntry({ height: "", health: "" }, true);
   assert.deepEqual(cleared.value, { height: null, health: null });
+});
+
+test("normalizeLogEntry handles kind + detail", () => {
+  assert.equal(normalizeLogEntry({ kind: "bogus" }, false, "2026-06-17").ok, false);
+  const ok = normalizeLogEntry({ kind: "watering", detail: { gal: 2 }, date: "2026-06-17" });
+  assert.equal(ok.value.kind, "watering");
+  assert.equal(ok.value.detail, JSON.stringify({ gal: 2 }));
+  // detail must be an object, and defaults to kind "note" when omitted
+  assert.equal(normalizeLogEntry({ detail: "nope", date: "2026-06-17" }).ok, false);
+  assert.equal(normalizeLogEntry({ date: "2026-06-17" }).value.kind, "note");
 });
 
 test("normalizeLogEntry partial rejects an empty object only when not partial", () => {

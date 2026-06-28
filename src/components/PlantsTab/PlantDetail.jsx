@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Plus, Trash2, Archive, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { usePlantLog } from "../../lib/usePlantLog.js";
 import { api } from "../../lib/api.js";
-import { MONO, SERIF, TYPE_LABEL, HEALTH_MAP, STAGE_ORDER, stageLabel, nextStage, prevStage } from "./constants.js";
+import { MONO, SERIF, TYPE_LABEL, HEALTH_MAP, STAGE_ORDER, stageLabel, nextStage, prevStage, LOG_KINDS, kindLabel, summarizeEntry } from "./constants.js";
 import LogEntryForm from "./LogEntryForm.jsx";
 import AddPlantSheet from "./AddPlantSheet.jsx";
 
@@ -23,6 +23,10 @@ export default function PlantDetail({ growId, plant, harvestLabel, onClose, onAr
   const [editing, setEditing] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [stageBusy, setStageBusy] = useState(false);
+  const [histFilter, setHistFilter] = useState("all");
+
+  const presentKinds = LOG_KINDS.filter((k) => entries.some((e) => (e.kind || "note") === k.value));
+  const shownEntries = histFilter === "all" ? entries : entries.filter((e) => (e.kind || "note") === histFilter);
 
   const stage = plant.stage || "seedling";
   const stageIdx = STAGE_ORDER.indexOf(stage);
@@ -55,7 +59,7 @@ export default function PlantDetail({ growId, plant, harvestLabel, onClose, onAr
     setStageBusy(true);
     try {
       await api.patchPlant(growId, plant.id, { stage: next });
-      await addEntry({ body: `Stage → ${stageLabel(next)}` });
+      await addEntry({ kind: "stage", body: `Stage → ${stageLabel(next)}` });
       onLogChange?.();
       onChanged?.();
     } finally { setStageBusy(false); }
@@ -145,21 +149,46 @@ export default function PlantDetail({ growId, plant, harvestLabel, onClose, onAr
           <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-ghost)", padding: "12px 0" }}>No log entries yet.</div>
         )}
 
+        {presentKinds.length > 1 && (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+            {[{ value: "all", label: "All" }, ...presentKinds].map((k) => {
+              const active = histFilter === k.value;
+              return (
+                <button key={k.value} type="button" onClick={() => setHistFilter(k.value)}
+                  style={{
+                    padding: "6px 11px", borderRadius: 13,
+                    background: active ? "rgba(74,222,128,0.16)" : "rgba(255,255,255,0.05)",
+                    border: active ? "1px solid rgba(74,222,128,0.5)" : "1px solid var(--c-border-strong)",
+                    color: active ? "var(--c-accent)" : "var(--c-text-muted)",
+                    fontFamily: MONO, fontSize: 10, letterSpacing: 0.5, cursor: "pointer",
+                  }}>
+                  {k.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {entries.map((e) => {
+          {shownEntries.map((e) => {
+            const kind = e.kind || "note";
             const h = e.health ? HEALTH_MAP[e.health] : null;
+            const summary = summarizeEntry(e);
             return (
               <div key={e.id} style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border-faint)", borderRadius: 12, padding: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-dim)" }}>{e.date}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "var(--c-text-faint)", textTransform: "uppercase", background: "var(--c-surface-2)", borderRadius: 5, padding: "2px 6px" }}>{kindLabel(kind)}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-dim)" }}>{e.date}</span>
+                  </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     {h && <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: h.color, textTransform: "uppercase" }}>{h.label}</span>}
-                    {e.height != null && <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-muted)" }}>{e.height}{e.height_unit || ""}</span>}
                     <button type="button" className="touch-target" aria-label="delete entry" onClick={() => handleRemove(e.id)} style={{ background: "none", border: "none", color: "var(--c-text-ghost)", cursor: "pointer", padding: 0, display: "flex" }}>
                       <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
+                {summary && <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-dim)", marginTop: 8 }}>{summary}</div>}
                 {e.body && <div style={{ fontFamily: SERIF, fontSize: 15, color: "var(--c-text)", marginTop: 8, whiteSpace: "pre-wrap" }}>{e.body}</div>}
               </div>
             );

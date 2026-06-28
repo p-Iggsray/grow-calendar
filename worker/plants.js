@@ -34,6 +34,8 @@ export async function ensurePlantLogSchema(env) {
         grow_id     TEXT NOT NULL,
         plant_id    TEXT NOT NULL,
         date        TEXT NOT NULL,
+        kind        TEXT,
+        detail      TEXT,
         body        TEXT NOT NULL DEFAULT '',
         height      REAL,
         height_unit TEXT,
@@ -45,6 +47,13 @@ export async function ensurePlantLogSchema(env) {
     await env.DB.prepare(
       "CREATE INDEX IF NOT EXISTS idx_plant_log ON plant_log(user_id, grow_id, plant_id, date DESC)"
     ).run();
+    // Categorize-history columns (added later); ALTER for tables created earlier.
+    for (const sql of [
+      "ALTER TABLE plant_log ADD COLUMN kind TEXT",
+      "ALTER TABLE plant_log ADD COLUMN detail TEXT",
+    ]) {
+      try { await env.DB.prepare(sql).run(); } catch { /* column already exists */ }
+    }
     _schemaReady = true;
   } catch (e) {
     logError("plant-log-ddl", { message: String(e?.message) });
@@ -112,11 +121,16 @@ export async function listPlantLog(env, user, growId, plantId) {
   if (!row) return error(404, "grow not found");
   await ensurePlantLogSchema(env);
   const res = await env.DB.prepare(
-    `SELECT id, date, body, height, height_unit, health, created_at, updated_at
+    `SELECT id, date, kind, detail, body, height, height_unit, health, created_at, updated_at
      FROM plant_log WHERE user_id = ? AND grow_id = ? AND plant_id = ?
      ORDER BY date DESC, id DESC`
   ).bind(user.id, growId, plantId).all();
-  return json({ entries: res.results ?? [] });
+  const entries = (res.results ?? []).map((r) => {
+    let detail = null;
+    if (r.detail) { try { detail = JSON.parse(r.detail); } catch { detail = null; } }
+    return { ...r, kind: r.kind || "note", detail };
+  });
+  return json({ entries });
 }
 
 // POST /api/grows/:id/plants/:plantId/log
@@ -138,11 +152,11 @@ export async function addPlantLogEntry(request, env, user, growId, plantId) {
   const now = new Date().toISOString();
   const ins = await env.DB.prepare(
     `INSERT INTO plant_log
-       (user_id, grow_id, plant_id, date, body, height, height_unit, health, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       (user_id, grow_id, plant_id, date, kind, detail, body, height, height_unit, health, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     user.id, growId, plantId,
-    v.value.date, v.value.body ?? "",
+    v.value.date, v.value.kind ?? "note", v.value.detail ?? null, v.value.body ?? "",
     v.value.height ?? null, v.value.height_unit ?? null, v.value.health ?? null,
     now, now,
   ).run();
