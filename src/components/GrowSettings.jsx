@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { X, Check } from "lucide-react";
-import { api, ymd } from "../lib/api.js";
+import { useState, useEffect } from "react";
+import { X, Check, Trash2 } from "lucide-react";
+import { api } from "../lib/api.js";
 import { Label, Input, RadioGroup, MONO, SERIF } from "./SetupWizard/styleHelpers.jsx";
+import DeleteGrowConfirm from "./DeleteGrowConfirm.jsx";
 
 // Full timeline, grouped for scanning. Each row edits one config date key
 // independently — nothing cascades, the grower has full manual control.
@@ -54,22 +55,47 @@ const dateInputStyle = {
   colorScheme: "dark",
 };
 
-// config is the parsed (Date-keyed) config from usePlan; grow is the matching
-// entry from the grows list (display name + status). onSaved should reload the
-// plan so the calendar/milestones reflect the new dates immediately.
-export default function GrowSettings({ growId, grow, config, onClose, onSaved }) {
-  const [name, setName]     = useState(grow?.displayName || "");
-  const [status, setStatus] = useState(grow?.status || "active");
-  const [dates, setDates]   = useState(() => {
-    const out = {};
-    for (const key of ALL_KEYS) out[key] = config?.[key] ? ymd(config[key]) : "";
-    return out;
-  });
+// Edits any grow by id (fetches its own data so it works for the active grow
+// or any other from the grows list). onSaved reloads the plan so the
+// calendar/milestones reflect changes immediately. onDeleted runs after the
+// grow is deleted (parent should reload + close this panel).
+export default function GrowSettings({ growId, onClose, onSaved, onDeleted }) {
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [name, setName]     = useState("");
+  const [status, setStatus] = useState("active");
+  const [hasConfig, setHasConfig] = useState(false);
+  const [dates, setDates]   = useState({});
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState(null);
+  const [showDelete, setShowDelete] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
+    api.getGrow(growId)
+      .then(data => {
+        if (cancelled) return;
+        setName(data.displayName || "");
+        setStatus(data.status || "active");
+        const cfg = data.config || null;
+        setHasConfig(Boolean(cfg));
+        const out = {};
+        for (const key of ALL_KEYS) out[key] = cfg?.[key] || "";
+        setDates(out);
+        setLoading(false);
+      })
+      .catch(e => {
+        if (cancelled) return;
+        setLoadError(e?.message || "Could not load this grow.");
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [growId]);
 
   const setDate = (key, val) => setDates(d => ({ ...d, [key]: val }));
-  const missing = ALL_KEYS.filter(k => !dates[k]);
+  const missing = hasConfig ? ALL_KEYS.filter(k => !dates[k]) : [];
 
   async function handleSave() {
     if (saving) return;
@@ -77,11 +103,9 @@ export default function GrowSettings({ growId, grow, config, onClose, onSaved })
     setSaving(true);
     setError(null);
     try {
-      await api.patchGrow(growId, {
-        displayName: name.trim() || "Untitled Grow",
-        status,
-        config: { ...dates },
-      });
+      const payload = { displayName: name.trim() || "Untitled Grow", status };
+      if (hasConfig) payload.config = { ...dates };
+      await api.patchGrow(growId, payload);
       await onSaved?.();
       onClose();
     } catch (e) {
@@ -121,14 +145,14 @@ export default function GrowSettings({ growId, grow, config, onClose, onSaved })
           type="button"
           className="touch-target"
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || loading || Boolean(loadError)}
           style={{
             display: "flex", alignItems: "center", gap: 5,
             padding: "9px 16px", borderRadius: 20,
             background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.4)",
-            color: saving ? "var(--c-text-ghost)" : "var(--c-accent)",
+            color: (saving || loading) ? "var(--c-text-ghost)" : "var(--c-accent)",
             fontFamily: MONO, fontSize: 12, letterSpacing: 0.5,
-            cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1,
+            cursor: (saving || loading) ? "default" : "pointer", opacity: (saving || loading) ? 0.6 : 1,
           }}
         >
           <Check size={14} strokeWidth={2} />
@@ -136,6 +160,24 @@ export default function GrowSettings({ growId, grow, config, onClose, onSaved })
         </button>
       </div>
 
+      {loading && (
+        <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 3, color: "var(--c-text-ghost)", padding: "24px 4px" }}>
+          LOADING…
+        </div>
+      )}
+
+      {loadError && !loading && (
+        <div style={{
+          fontFamily: MONO, fontSize: 12, color: "var(--c-danger-soft)",
+          background: "rgba(160,50,50,0.1)", border: "1px solid rgba(160,50,50,0.3)",
+          borderRadius: 10, padding: "10px 12px",
+        }}>
+          {loadError}
+        </div>
+      )}
+
+      {!loading && !loadError && (
+      <>
       {/* Name + status */}
       <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 24 }}>
         <div>
@@ -148,8 +190,18 @@ export default function GrowSettings({ growId, grow, config, onClose, onSaved })
         </div>
       </div>
 
+      {!hasConfig && (
+        <div style={{
+          fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", lineHeight: 1.7,
+          background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
+          borderRadius: 10, padding: "12px 14px", marginBottom: 22,
+        }}>
+          This grow isn&apos;t set up yet, so it has no timeline to edit. Finish setup to unlock the date editor.
+        </div>
+      )}
+
       {/* Date groups */}
-      {DATE_GROUPS.map(group => (
+      {hasConfig && DATE_GROUPS.map(group => (
         <div key={group.title} style={{ marginBottom: 22 }}>
           <div style={{
             fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
@@ -203,6 +255,42 @@ export default function GrowSettings({ growId, grow, config, onClose, onSaved })
         }}>
           {error}
         </div>
+      )}
+
+      {/* Danger zone */}
+      <div style={{ marginTop: 30, paddingTop: 18, borderTop: "1px solid var(--c-border-faint)" }}>
+        <div style={{
+          fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
+          color: "var(--c-text-ghost)", marginBottom: 12,
+        }}>
+          Danger zone
+        </div>
+        <button
+          type="button"
+          className="touch-target"
+          onClick={() => setShowDelete(true)}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            width: "100%", padding: "13px 16px", borderRadius: 12,
+            background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.35)",
+            color: "var(--c-danger-soft)", fontFamily: MONO, fontSize: 12, letterSpacing: 0.5,
+            cursor: "pointer",
+          }}
+        >
+          <Trash2 size={14} strokeWidth={1.8} />
+          Delete this grow
+        </button>
+      </div>
+      </>
+      )}
+
+      {showDelete && (
+        <DeleteGrowConfirm
+          growId={growId}
+          growName={name}
+          onClose={() => setShowDelete(false)}
+          onDeleted={onDeleted}
+        />
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { SlidersHorizontal } from "lucide-react";
+import { MoreVertical, SlidersHorizontal, Trash2 } from "lucide-react";
 import { api } from "../lib/api.js";
+import DeleteGrowConfirm from "./DeleteGrowConfirm.jsx";
 
 const MONO  = "'Courier New', monospace";
 const SERIF = "'Georgia', 'Times New Roman', serif";
@@ -18,7 +19,8 @@ function fmtDate(iso) {
   return `${months[m - 1]} ${d}, ${y}`;
 }
 
-function GrowCard({ grow, isActive, onActivate }) {
+function GrowCard({ grow, isActive, onActivate, onEdit, onDelete }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const ss = STATUS_STYLE[grow.status] ?? STATUS_STYLE.active;
   const strains = grow.survey?.strains?.map(s => s.name).filter(Boolean) ?? [];
   const cfg     = grow.config;
@@ -27,83 +29,150 @@ function GrowCard({ grow, isActive, onActivate }) {
   const harvestDate    = cfg?.hazeHarvest ? fmtDate(cfg.hazeHarvest)
                        : cfg?.gdpHarvest  ? fmtDate(cfg.gdpHarvest)  : null;
 
+  const activate = () => { if (!isActive) onActivate(grow.id); };
+
   return (
-    <button
-      type="button"
-      onClick={() => { if (!isActive) onActivate(grow.id); }}
-      style={{
-        display: "block", width: "100%", textAlign: "left",
-        padding: 18, borderRadius: 16,
-        background: isActive ? "rgba(74,222,128,0.07)" : "var(--c-surface-1)",
-        border: `1.5px solid ${isActive ? "rgba(74,222,128,0.4)" : "var(--c-border)"}`,
-        cursor: isActive ? "default" : "pointer",
-        transition: "border-color 0.2s, background 0.2s",
-        opacity: grow.status === "abandoned" ? 0.65 : 1,
-      }}
-    >
-      {/* Name row */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: strains.length > 0 || transplantDate || harvestDate ? 10 : 0 }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: "var(--c-text)", fontFamily: SERIF, letterSpacing: -0.3, lineHeight: 1.2, flex: 1 }}>
-          {grow.displayName || "Unnamed Grow"}
+    <div style={{ position: "relative" }}>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={activate}
+        onKeyDown={e => { if ((e.key === "Enter" || e.key === " ") && !isActive) { e.preventDefault(); activate(); } }}
+        style={{
+          display: "block", width: "100%", textAlign: "left",
+          padding: 18, paddingRight: 52, borderRadius: 16,
+          background: isActive ? "rgba(74,222,128,0.07)" : "var(--c-surface-1)",
+          border: `1.5px solid ${isActive ? "rgba(74,222,128,0.4)" : "var(--c-border)"}`,
+          cursor: isActive ? "default" : "pointer",
+          transition: "border-color 0.2s, background 0.2s",
+          opacity: grow.status === "abandoned" ? 0.65 : 1,
+          boxSizing: "border-box",
+        }}
+      >
+        {/* Name row */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: strains.length > 0 || transplantDate || harvestDate ? 10 : 0 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "var(--c-text)", fontFamily: SERIF, letterSpacing: -0.3, lineHeight: 1.2, flex: 1 }}>
+            {grow.displayName || "Unnamed Grow"}
+          </div>
+          <div style={{
+            padding: "4px 9px", borderRadius: 6, flexShrink: 0,
+            background: ss.bg, color: ss.color,
+            fontFamily: MONO, fontSize: 11, letterSpacing: 1.5,
+          }}>
+            {ss.label}
+          </div>
         </div>
-        <div style={{
-          padding: "4px 9px", borderRadius: 6, flexShrink: 0,
-          background: ss.bg, color: ss.color,
-          fontFamily: MONO, fontSize: 11, letterSpacing: 1.5,
-        }}>
-          {ss.label}
-        </div>
+
+        {/* Strains */}
+        {strains.length > 0 && (
+          <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)", marginBottom: 10, letterSpacing: 0.3 }}>
+            {strains.join(" · ")}
+          </div>
+        )}
+
+        {/* Dates */}
+        {(transplantDate || harvestDate) && (
+          <div style={{ display: "flex", gap: 20, marginBottom: isActive ? 10 : 0 }}>
+            {transplantDate && (
+              <div>
+                <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 2 }}>Transplant</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-dim)" }}>{transplantDate}</div>
+              </div>
+            )}
+            {harvestDate && (
+              <div>
+                <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 2 }}>Est. Harvest</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-dim)" }}>{harvestDate}</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* No config yet */}
+        {!cfg && (
+          <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 4 }}>
+            Setup not complete
+          </div>
+        )}
+
+        {/* Calendar-active badge */}
+        {isActive && (
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 5,
+            fontFamily: MONO, fontSize: 11, letterSpacing: 1.5,
+            color: "var(--c-accent)", textTransform: "uppercase",
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--c-accent)", flexShrink: 0 }} />
+            Calendar active
+          </div>
+        )}
       </div>
 
-      {/* Strains */}
-      {strains.length > 0 && (
-        <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)", marginBottom: 10, letterSpacing: 0.3 }}>
-          {strains.join(" · ")}
-        </div>
-      )}
+      {/* Kebab (⋮) menu trigger */}
+      <button
+        type="button"
+        className="touch-target"
+        aria-label="Grow options"
+        onClick={e => { e.stopPropagation(); setMenuOpen(o => !o); }}
+        style={{
+          position: "absolute", top: 10, right: 10,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          width: 36, height: 36, borderRadius: 9,
+          background: menuOpen ? "var(--c-surface-2)" : "transparent",
+          border: "none", color: "var(--c-text-dim)", cursor: "pointer",
+        }}
+      >
+        <MoreVertical size={18} strokeWidth={1.8} />
+      </button>
 
-      {/* Dates */}
-      {(transplantDate || harvestDate) && (
-        <div style={{ display: "flex", gap: 20, marginBottom: isActive ? 10 : 0 }}>
-          {transplantDate && (
-            <div>
-              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 2 }}>Transplant</div>
-              <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-dim)" }}>{transplantDate}</div>
-            </div>
-          )}
-          {harvestDate && (
-            <div>
-              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 2 }}>Est. Harvest</div>
-              <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-dim)" }}>{harvestDate}</div>
-            </div>
-          )}
-        </div>
+      {/* Dropdown menu + click-away backdrop */}
+      {menuOpen && (
+        <>
+          <div
+            onClick={() => setMenuOpen(false)}
+            style={{ position: "fixed", inset: 0, zIndex: 40 }}
+          />
+          <div style={{
+            position: "absolute", top: 44, right: 10, zIndex: 41,
+            minWidth: 184, padding: 6, borderRadius: 12,
+            background: "var(--c-panel-bg)", border: "1px solid var(--c-border-strong)",
+            boxShadow: "0 16px 40px rgba(0,0,0,0.5)",
+          }}>
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); onEdit(grow.id); }}
+              style={menuItemStyle("var(--c-text-dim)")}
+            >
+              <SlidersHorizontal size={15} strokeWidth={1.8} />
+              Grow settings
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); onDelete(grow); }}
+              style={menuItemStyle("var(--c-danger-soft)")}
+            >
+              <Trash2 size={15} strokeWidth={1.8} />
+              Delete grow
+            </button>
+          </div>
+        </>
       )}
-
-      {/* No config yet */}
-      {!cfg && (
-        <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 4 }}>
-          Setup not complete
-        </div>
-      )}
-
-      {/* Calendar-active badge */}
-      {isActive && (
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: 5,
-          fontFamily: MONO, fontSize: 11, letterSpacing: 1.5,
-          color: "var(--c-accent)", textTransform: "uppercase",
-        }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--c-accent)", flexShrink: 0 }} />
-          Calendar active
-        </div>
-      )}
-    </button>
+    </div>
   );
 }
 
-export default function GrowsListTab({ grows, activeGrowId, setActiveGrowId, onNewGrow, onEditGrow }) {
+function menuItemStyle(color) {
+  return {
+    display: "flex", alignItems: "center", gap: 10,
+    width: "100%", padding: "11px 12px", borderRadius: 8,
+    background: "transparent", border: "none", cursor: "pointer",
+    color, fontFamily: MONO, fontSize: 13, letterSpacing: 0.5, textAlign: "left",
+  };
+}
+
+export default function GrowsListTab({ grows, activeGrowId, setActiveGrowId, onNewGrow, onEditGrow, onGrowDeleted }) {
   const [creating, setCreating] = useState(false);
+  const [deletingGrow, setDeletingGrow] = useState(null);
 
   async function handleNewGrow() {
     if (creating) return;
@@ -156,36 +225,26 @@ export default function GrowsListTab({ grows, activeGrowId, setActiveGrowId, onN
         paddingLeft: "calc(16px + env(safe-area-inset-left, 0px))",
         paddingRight: "calc(16px + env(safe-area-inset-right, 0px))",
       }}>
-        {grows.map(grow => {
-          const isActive = grow.id === activeGrowId;
-          return (
-            <div key={grow.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <GrowCard
-                grow={grow}
-                isActive={isActive}
-                onActivate={setActiveGrowId}
-              />
-              {isActive && grow.config && onEditGrow && (
-                <button
-                  type="button"
-                  className="touch-target"
-                  onClick={() => onEditGrow(grow.id)}
-                  style={{
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-                    padding: "11px 16px", borderRadius: 12,
-                    background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
-                    color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 12, letterSpacing: 0.5,
-                    cursor: "pointer",
-                  }}
-                >
-                  <SlidersHorizontal size={14} strokeWidth={1.8} />
-                  Edit settings &amp; dates
-                </button>
-              )}
-            </div>
-          );
-        })}
+        {grows.map(grow => (
+          <GrowCard
+            key={grow.id}
+            grow={grow}
+            isActive={grow.id === activeGrowId}
+            onActivate={setActiveGrowId}
+            onEdit={onEditGrow}
+            onDelete={setDeletingGrow}
+          />
+        ))}
       </div>
+
+      {deletingGrow && (
+        <DeleteGrowConfirm
+          growId={deletingGrow.id}
+          growName={deletingGrow.displayName}
+          onClose={() => setDeletingGrow(null)}
+          onDeleted={async () => { setDeletingGrow(null); await onGrowDeleted?.(); }}
+        />
+      )}
     </div>
   );
 }

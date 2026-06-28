@@ -97,6 +97,7 @@ export default function App() {
   const [showStats,     setShowStats]     = useState(false);
   const [showMap,       setShowMap]       = useState(false);
   const [showSettings,  setShowSettings]  = useState(false);
+  const [settingsGrowId, setSettingsGrowId] = useState(null);
   const [reviewPending, setReviewPending] = useState(false);
   const [wizardGrowId,  setWizardGrowId]  = useState(null); // growId for SetupWizard
 
@@ -349,7 +350,7 @@ export default function App() {
                 onOpenAdmin={() => setShowAdmin(true)}
                 onOpenStats={() => setShowStats(true)}
                 onOpenMap={() => setShowMap(true)}
-                onOpenSettings={() => setShowSettings(true)}
+                onOpenSettings={() => { setSettingsGrowId(activeGrowId); setShowSettings(true); }}
                 onBeforeSignOut={flushNote}
                 theme={theme}
                 setTheme={setTheme}
@@ -368,7 +369,8 @@ export default function App() {
                 activeGrowId={activeGrowId}
                 setActiveGrowId={setActiveGrowId}
                 onNewGrow={(growId) => setWizardGrowId(growId)}
-                onEditGrow={() => setShowSettings(true)}
+                onEditGrow={(growId) => { setSettingsGrowId(growId); setShowSettings(true); }}
+                onGrowDeleted={reloadPlan}
               />
             </motion.div>
           ) : tabKey === "plants" ? (
@@ -518,7 +520,7 @@ export default function App() {
             </Suspense>
           </motion.div>
         )}
-        {showSettings && (
+        {showSettings && settingsGrowId && (
           <motion.div
             key="settings"
             initial={{ x: "100%" }}
@@ -529,11 +531,10 @@ export default function App() {
           >
             <Suspense fallback={null}>
               <GrowSettings
-                growId={activeGrowId}
-                grow={grows.find(g => g.id === activeGrowId)}
-                config={config}
+                growId={settingsGrowId}
                 onClose={() => setShowSettings(false)}
                 onSaved={reloadPlan}
+                onDeleted={() => { setShowSettings(false); reloadPlan(); }}
               />
             </Suspense>
           </motion.div>
