@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { MONO, SERIF, TYPE_LABEL, HEALTH_MAP, stageLabel } from "./constants.js";
+import StageTimeline from "./StageTimeline.jsx";
 
 export default function PlantCard({ plant, metrics, onOpen }) {
   const health = metrics?.health ? HEALTH_MAP[metrics.health] : null;
@@ -34,6 +35,9 @@ export default function PlantCard({ plant, metrics, onOpen }) {
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>
         <span>Stage: {stageLabel(plant.stage)}</span>
         {metrics?.height != null && <span>{metrics.height}{metrics.heightUnit || ""}</span>}
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <StageTimeline stage={plant.stage} height={5} />
       </div>
       {metrics?.date && (
         <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginTop: 4 }}>

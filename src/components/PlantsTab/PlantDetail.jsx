@@ -6,6 +6,7 @@ import { api } from "../../lib/api.js";
 import { MONO, SERIF, TYPE_LABEL, HEALTH_MAP, STAGE_ORDER, stageLabel, nextStage, prevStage, LOG_KINDS, kindLabel, summarizeEntry } from "./constants.js";
 import LogEntryForm from "./LogEntryForm.jsx";
 import AddPlantSheet from "./AddPlantSheet.jsx";
+import StageTimeline from "./StageTimeline.jsx";
 
 function Meta({ label, value }) {
   return (
@@ -125,16 +126,19 @@ export default function PlantDetail({ growId, plant, harvestLabel, onClose, onAr
               style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 10, background: "var(--c-surface-1)", border: "1px solid var(--c-border)", color: stageIdx <= 0 ? "var(--c-text-ghost)" : "var(--c-text-dim)", cursor: stageIdx <= 0 ? "default" : "pointer" }}>
               <ChevronLeft size={18} />
             </button>
-            <div style={{ flex: 1, textAlign: "center", fontFamily: MONO, fontSize: 14, letterSpacing: 1, color: "var(--c-accent)", background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, padding: "11px 8px" }}>
-              {stageLabel(stage)}
+            <div style={{ flex: 1 }}>
+              <StageTimeline stage={stage} onPick={setStage} height={10} />
+              <div style={{ textAlign: "center", marginTop: 8, fontFamily: MONO, fontSize: 14, letterSpacing: 1, color: "var(--c-accent)" }}>
+                {stageLabel(stage)}
+              </div>
             </div>
             <button type="button" className="touch-target" aria-label="Next stage" disabled={stageBusy || stageIdx >= STAGE_ORDER.length - 1} onClick={() => setStage(nextStage(stage))}
               style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 10, background: "var(--c-surface-1)", border: "1px solid var(--c-border)", color: stageIdx >= STAGE_ORDER.length - 1 ? "var(--c-text-ghost)" : "var(--c-text-dim)", cursor: stageIdx >= STAGE_ORDER.length - 1 ? "default" : "pointer" }}>
               <ChevronRight size={18} />
             </button>
           </div>
-          <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginTop: 6 }}>
-            Step {stageIdx + 1} of {STAGE_ORDER.length} · changes are logged below
+          <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginTop: 8, textAlign: "center" }}>
+            Step {stageIdx + 1} of {STAGE_ORDER.length} · tap a segment to jump · changes are logged below
           </div>
         </div>
 
