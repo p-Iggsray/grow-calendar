@@ -14,7 +14,7 @@ import { getPushVapidKey, postPushSubscribe, deletePushSubscribe, getPushToday, 
 import { getPlan, patchPlanConfig, putPlanPhase, deletePlanPhase } from "./plan.js";
 import { postPlanSetup, postPlanRegenerate } from "./planSetup.js";
 import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, setupGrow, regenerateGrow, putGrowPhase, deleteGrowPhase, patchGrowDayOverride, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./grows.js";
-import { addPlant, patchPlant, deletePlant, listPlantLog, addPlantLogEntry, patchPlantLogEntry, deletePlantLogEntry, plantLogSummary } from "./plants.js";
+import { addPlant, patchPlant, deletePlant, listPlantLog, addPlantLogEntry, patchPlantLogEntry, deletePlantLogEntry, plantLogSummary, dailyLogForPlant } from "./plants.js";
 import { getGrowReport } from "./report.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
 import { getStats } from "./stats.js";
@@ -203,6 +203,8 @@ async function authenticatedRoute(request, env, path, method, user) {
 
   const plantSummaryMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/plant-log-summary$/);
   if (plantSummaryMatch && method === "GET") return plantLogSummary(env, user, plantSummaryMatch[1]);
+  const plantDailyMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/plants\/([A-Za-z0-9_]+)\/daily$/);
+  if (plantDailyMatch && method === "GET") return dailyLogForPlant(env, user, plantDailyMatch[1], plantDailyMatch[2]);
   const plantLogMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/plants\/([A-Za-z0-9_]+)\/log$/);
   if (plantLogMatch) {
     const gId = plantLogMatch[1];

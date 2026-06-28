@@ -5,6 +5,7 @@ import {
   ensurePlantIds, validatePlantFields, addPlantToSurvey,
   updatePlantInSurvey, removePlantFromSurvey, normalizeLogEntry,
 } from "./plantsRoster.js";
+import { ensureGrowLogSchema } from "./growLog.js";
 
 function parseSurvey(raw) {
   if (!raw) return null;
@@ -198,6 +199,45 @@ export async function deletePlantLogEntry(env, user, growId, plantId, entryId) {
   ).bind(user.id, growId, plantId, entryId).run();
   if (!del.meta.changes) return error(404, "entry not found");
   return json({ ok: true });
+}
+
+// GET /api/grows/:id/plants/:plantId/daily -- per-plant entries from the daily
+// grow log (water/training/health) surfaced as read-only history items, so a
+// plant's record reflects what was logged on the day screen. Matches by plant
+// id; falls back to the plant's name for rows logged before id linking existed.
+export async function dailyLogForPlant(env, user, growId, plantId) {
+  const row = await ownedGrowRow(env, user.id, growId);
+  if (!row) return error(404, "grow not found");
+  const survey = parseSurvey(row.survey);
+  const name = (survey?.strains ?? []).find((s) => s.id === plantId)?.name ?? null;
+
+  await ensureGrowLogSchema(env);
+  const res = await env.DB.prepare(
+    `SELECT date, water_plants, training, plant_health FROM grow_log
+     WHERE user_id = ? AND grow_id = ? ORDER BY date DESC`
+  ).bind(user.id, growId).all();
+
+  const parse = (s) => { if (!s) return []; try { const v = JSON.parse(s); return Array.isArray(v) ? v : []; } catch { return []; } };
+  const mine = (e) => e && (e.plantId === plantId || (!e.plantId && name && (e.plant ?? "") === name));
+  const numOrUndef = (v) => (v == null || v === "" ? undefined : Number(v));
+
+  const out = [];
+  let i = 0;
+  for (const r of res.results ?? []) {
+    for (const w of parse(r.water_plants)) {
+      if (!mine(w)) continue;
+      out.push({ id: `daily_${r.date}_w_${i++}`, date: r.date, kind: "watering", source: "daily", detail: { gal: numOrUndef(w.gal) }, body: "" });
+    }
+    for (const t of parse(r.training)) {
+      if (!mine(t) || !(t.action ?? "").trim()) continue;
+      out.push({ id: `daily_${r.date}_t_${i++}`, date: r.date, kind: "training", source: "daily", detail: { action: t.action }, body: "" });
+    }
+    for (const h of parse(r.plant_health)) {
+      if (!mine(h)) continue;
+      out.push({ id: `daily_${r.date}_h_${i++}`, date: r.date, kind: "health", source: "daily", detail: { color: h.color || undefined, trichomes: h.trichomes || undefined }, body: h.notes || "" });
+    }
+  }
+  return json({ entries: out });
 }
 
 // GET /api/grows/:id/plant-log-summary -- latest metric row per plant in one query.

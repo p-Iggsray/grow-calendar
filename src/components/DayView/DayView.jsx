@@ -49,12 +49,16 @@ export default function DayView({
   const [pickerIdx, setPickerIdx] = useState(null);
   const [editingIdx, setEditingIdx] = useState(null);
   const [pendingPhaseApply, setPendingPhaseApply] = useState(null);
-  // Which plant the per-plant log sections are scoped to ("all" or a plant name).
+  // Which plant the per-plant log sections are scoped to ("all" or a plant id).
   const [logPlant, setLogPlant] = useState("all");
   const logPlants = (plants ?? []).filter(p => (p.status ?? "growing") === "growing");
   const scoped = logPlant !== "all";
-  const matches = (e) => !scoped || (e.plant ?? "") === logPlant;
-  const newPlantName = () => (scoped ? logPlant : "");
+  const selPlant = logPlants.find(p => p.id === logPlant) || null;
+  // Match by plant id; fall back to name for legacy rows that predate id linking.
+  const matches = (e) => !scoped || e.plantId === logPlant || (!e.plantId && (e.plant ?? "") === (selPlant?.name ?? ""));
+  // New per-plant rows carry the plant's id (when scoped) so they link to the
+  // plant's history; name is kept for display + back-compat.
+  const newRow = (extra) => ({ plant: selPlant?.name ?? "", ...(scoped ? { plantId: logPlant } : {}), ...extra });
   const textareaRef = useRef(null);
 
   useEffect(() => {
@@ -73,14 +77,14 @@ export default function DayView({
 
   // Per-plant watering. water_gal is kept as the day's total (sum of all
   // plants) so the stats "total water" aggregation keeps working.
-  function addWater()                 { const a = [...(logEntry.water_plants ?? []), { plant: newPlantName(), gal: "" }]; setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
+  function addWater()                 { const a = [...(logEntry.water_plants ?? []), newRow({ gal: "" })]; setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
   function updateWater(i, k, v)       { const a = [...(logEntry.water_plants ?? [])]; a[i] = { ...a[i], [k]: v }; setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
   function removeWater(i)             { const a = [...(logEntry.water_plants ?? [])]; a.splice(i, 1); setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
 
-  function addTraining()              { setLogField("training", [...(logEntry.training ?? []), { plant: newPlantName(), action: "" }]); }
+  function addTraining()              { setLogField("training", [...(logEntry.training ?? []), newRow({ action: "" })]); }
   function updateTraining(i, k, v)    { const a = [...(logEntry.training ?? [])]; a[i] = { ...a[i], [k]: v }; setLogField("training", a); }
   function removeTraining(i)          { const a = [...(logEntry.training ?? [])]; a.splice(i, 1); setLogField("training", a); }
-  function addHealth()                { setLogField("plant_health", [...(logEntry.plant_health ?? []), { plant: newPlantName(), color: "", trichomes: "", notes: "" }]); }
+  function addHealth()                { setLogField("plant_health", [...(logEntry.plant_health ?? []), newRow({ color: "", trichomes: "", notes: "" })]); }
   function updateHealth(i, k, v)      { const a = [...(logEntry.plant_health ?? [])]; a[i] = { ...a[i], [k]: v }; setLogField("plant_health", a); }
   function removeHealth(i)            { const a = [...(logEntry.plant_health ?? [])]; a.splice(i, 1); setLogField("plant_health", a); }
 
@@ -296,7 +300,7 @@ export default function DayView({
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ ...fieldNameStyle, marginBottom: 8 }}>Log entries for</div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {[{ key: "all", label: "All plants" }, ...logPlants.map(p => ({ key: p.name, label: p.name || "Unnamed" }))].map(opt => {
+                    {[{ key: "all", label: "All plants" }, ...logPlants.map(p => ({ key: p.id, label: p.name || "Unnamed" }))].map(opt => {
                       const active = logPlant === opt.key;
                       return (
                         <button
@@ -333,7 +337,7 @@ export default function DayView({
                       onRemove={() => removeWater(i)}
                     />
                   ))}
-                <AddEntryButton onClick={addWater} label={scoped ? `ADD WATERING FOR ${logPlant.toUpperCase()}` : "ADD PLANT WATERING"} />
+                <AddEntryButton onClick={addWater} label={scoped ? `ADD WATERING FOR ${(selPlant?.name || "PLANT").toUpperCase()}` : "ADD PLANT WATERING"} />
                 {sumWater(logEntry.water_plants) && (
                   <div style={{
                     marginTop: 10, textAlign: "right",
@@ -371,7 +375,7 @@ export default function DayView({
                       onRemove={() => removeTraining(i)}
                     />
                   ))}
-                <AddEntryButton onClick={addTraining} label={scoped ? `ADD TRAINING FOR ${logPlant.toUpperCase()}` : "ADD TRAINING ENTRY"} />
+                <AddEntryButton onClick={addTraining} label={scoped ? `ADD TRAINING FOR ${(selPlant?.name || "PLANT").toUpperCase()}` : "ADD TRAINING ENTRY"} />
               </LogSection>
 
               {/* ── Plant Health ── */}
@@ -387,7 +391,7 @@ export default function DayView({
                       onRemove={() => removeHealth(i)}
                     />
                   ))}
-                <AddEntryButton onClick={addHealth} label={scoped ? `ADD HEALTH FOR ${logPlant.toUpperCase()}` : "ADD HEALTH OBSERVATION"} />
+                <AddEntryButton onClick={addHealth} label={scoped ? `ADD HEALTH FOR ${(selPlant?.name || "PLANT").toUpperCase()}` : "ADD HEALTH OBSERVATION"} />
               </LogSection>
             </div>
           )}

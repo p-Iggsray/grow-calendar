@@ -74,7 +74,13 @@ export function summarizeEntry(e) {
       if (d.humidity) parts.push(`${d.humidity}% RH`);
       return parts.join(" · ");
     }
-    case "health": return HEALTH_MAP[e.health]?.label ?? "";
+    case "health": {
+      if (e.health) return HEALTH_MAP[e.health]?.label ?? "";
+      const parts = [];
+      if (d.color) parts.push(d.color);
+      if (d.trichomes) parts.push(`${d.trichomes} trichomes`);
+      return parts.join(" · ");
+    }
     default: return "";
   }
 }

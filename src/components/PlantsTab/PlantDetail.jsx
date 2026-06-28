@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Plus, Trash2, Archive, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { usePlantLog } from "../../lib/usePlantLog.js";
@@ -24,9 +24,21 @@ export default function PlantDetail({ growId, plant, harvestLabel, onClose, onAr
   const [savingEdit, setSavingEdit] = useState(false);
   const [stageBusy, setStageBusy] = useState(false);
   const [histFilter, setHistFilter] = useState("all");
+  const [daily, setDaily] = useState([]);
 
-  const presentKinds = LOG_KINDS.filter((k) => entries.some((e) => (e.kind || "note") === k.value));
-  const shownEntries = histFilter === "all" ? entries : entries.filter((e) => (e.kind || "note") === histFilter);
+  // Per-plant entries logged on the daily screen (read-only here, linked by id).
+  useEffect(() => {
+    let cancelled = false;
+    api.getPlantDailyLog(growId, plant.id)
+      .then((d) => { if (!cancelled) setDaily(d.entries ?? []); })
+      .catch(() => { if (!cancelled) setDaily([]); });
+    return () => { cancelled = true; };
+  }, [growId, plant.id, entries.length]);
+
+  const combined = [...entries.map((e) => ({ ...e, source: "log" })), ...daily]
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  const presentKinds = LOG_KINDS.filter((k) => combined.some((e) => (e.kind || "note") === k.value));
+  const shownEntries = histFilter === "all" ? combined : combined.filter((e) => (e.kind || "note") === histFilter);
 
   const stage = plant.stage || "seedling";
   const stageIdx = STAGE_ORDER.indexOf(stage);
@@ -145,7 +157,7 @@ export default function PlantDetail({ growId, plant, harvestLabel, onClose, onAr
           </div>
         )}
 
-        {entries.length === 0 && !adding && (
+        {combined.length === 0 && !adding && (
           <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-ghost)", padding: "12px 0" }}>No log entries yet.</div>
         )}
 
@@ -183,9 +195,13 @@ export default function PlantDetail({ growId, plant, harvestLabel, onClose, onAr
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     {h && <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: h.color, textTransform: "uppercase" }}>{h.label}</span>}
-                    <button type="button" className="touch-target" aria-label="delete entry" onClick={() => handleRemove(e.id)} style={{ background: "none", border: "none", color: "var(--c-text-ghost)", cursor: "pointer", padding: 0, display: "flex" }}>
-                      <Trash2 size={14} />
-                    </button>
+                    {e.source === "daily" ? (
+                      <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase" }} title="Logged on the daily log screen">Daily</span>
+                    ) : (
+                      <button type="button" className="touch-target" aria-label="delete entry" onClick={() => handleRemove(e.id)} style={{ background: "none", border: "none", color: "var(--c-text-ghost)", cursor: "pointer", padding: 0, display: "flex" }}>
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
                 </div>
                 {summary && <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-dim)", marginTop: 8 }}>{summary}</div>}

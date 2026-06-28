@@ -228,6 +228,8 @@ export const api = {
     request(`/api/grows/${growId}/plants/${plantId}/log`),
   getPlantLogSummary: (growId) =>
     request(`/api/grows/${growId}/plant-log-summary`),
+  getPlantDailyLog: (growId, plantId) =>
+    request(`/api/grows/${growId}/plants/${plantId}/daily`),
   addPlantLogEntry: (growId, plantId, entry) =>
     request(`/api/grows/${growId}/plants/${plantId}/log`, { method: "POST", body: JSON.stringify(entry) }),
   patchPlantLogEntry: (growId, plantId, entryId, patch) =>
