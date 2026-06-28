@@ -33,6 +33,22 @@ export function StepTimeline({ survey, update }) {
           When plants go into their final containers.
         </div>
       </div>
+      {survey.environment === "outdoor" && (
+        <div>
+          <Label>Plant placement</Label>
+          <RadioGroup
+            value={survey.plantsAlreadyOutside ? "outside" : "moving"}
+            onChange={v => update("plantsAlreadyOutside", v === "outside")}
+            options={[
+              { value: "outside", label: "Already in final outdoor spot" },
+              { value: "moving",  label: "Will move outside later" },
+            ]}
+          />
+          <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 6, lineHeight: 1.7 }}>
+            Already-placed plants skip the move-outside milestone.
+          </div>
+        </div>
+      )}
       <div>
         <Label>Planned veg duration</Label>
         <NumStepper

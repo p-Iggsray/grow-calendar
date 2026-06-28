@@ -15,6 +15,9 @@ export function StepReview({ survey }) {
     secondaryStrain ? ["Secondary strain", secondaryStrain?.name || "(unnamed)"] : null,
     ["Start type", survey.startType],
     ["Transplant", survey.transplantDate || "(not set)"],
+    survey.environment === "outdoor"
+      ? ["Plant placement", survey.plantsAlreadyOutside ? "Already in final spot" : "Will move outside later"]
+      : null,
     ["Veg plan", `${survey.vegWeeks} weeks`],
     ["Location", survey.location || "(not set)"],
     ["Experience", survey.experienceLevel],

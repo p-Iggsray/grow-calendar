@@ -47,7 +47,7 @@ DATE CALCULATION RULES:
 - feedStart = transplant + 28 days
 - fullDose = transplant + 42 days
 - flush1/flush2/flush3: routine flushes ~30 days apart (flush1 ≈ feedStart + 3 days, flush2 ≈ flush1 + 30, flush3 ≈ flush2 + 30)
-- backyardMove: for outdoor grows, when plants move to final outdoor spot. For indoor: same as transplant
+- backyardMove: ONLY for outdoor grows whose plants start indoors and are relocated to their final spot later — set it to that move date. For indoor grows, greenhouse grows, or any grow where survey.plantsAlreadyOutside is true (plants already in their final spot), set backyardMove = transplant (there is no separate move-outside step)
 - preFlower: for outdoor photo-period plants, late July/early August in northern hemisphere; for indoor: when 12/12 schedule starts
 - flowerStart: preFlower + 10-14 days (when flowers clearly set)
 - gdpFlush: gdpHarvest minus 7-14 days (indica: 7d, sativa: 14d)
@@ -154,7 +154,18 @@ export function fillMissingConfigKeys(config, survey) {
   if (!config.flush1)      config.flush1      = addDays(base, 31);
   if (!config.flush2)      config.flush2      = addDays(base, 61);
   if (!config.flush3)      config.flush3      = addDays(base, 91);
-  if (!config.backyardMove) config.backyardMove = addDays(base, 64);
+  // A "move outside" milestone only applies to outdoor grows whose plants start
+  // indoors and get relocated to their final spot later. Indoor/greenhouse grows
+  // — and outdoor grows whose plants are already in place — have no such step, so
+  // collapse backyardMove onto transplant. milestones.js hides the milestone when
+  // backyardMove === transplant. This is authoritative: it overrides any move date
+  // the AI may have invented, so the event can't reappear for these grows.
+  const hasMoveOutside = survey.environment === "outdoor" && !survey.plantsAlreadyOutside;
+  if (hasMoveOutside) {
+    if (!config.backyardMove) config.backyardMove = addDays(base, 64);
+  } else {
+    config.backyardMove = base;
+  }
   if (!config.preFlower)   config.preFlower   = addDays(base, 69);
   if (!config.flowerStart) config.flowerStart = addDays(base, 83);
   if (!config.gdpFlush)    config.gdpFlush    = addDays(base, 114);

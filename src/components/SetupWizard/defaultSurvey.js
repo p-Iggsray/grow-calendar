@@ -16,6 +16,7 @@ export function defaultSurvey() {
     ],
     startType: "clone",
     transplantDate: "",
+    plantsAlreadyOutside: false,
     vegWeeks: 10,
     location: "",
     experienceLevel: "beginner",
