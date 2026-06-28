@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Users, FileText, Bell, BellOff, BarChart2, Sun, Moon, Monitor, Map, Share2 } from "lucide-react";
+import { Users, FileText, Bell, BellOff, BarChart2, Sun, Moon, Monitor, Map, Share2, SlidersHorizontal } from "lucide-react";
 import ShareSheet from "./ShareSheet.jsx";
 import PhaseLegend from "./PhaseLegend.jsx";
 import ThreatsReference from "./ThreatsReference.jsx";
@@ -15,7 +15,7 @@ const THEME_OPTIONS = [
   { value: "dark",  label: "Dark",  Icon: Moon },
 ];
 
-export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMap, onBeforeSignOut, theme, setTheme }) {
+export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMap, onOpenSettings, onBeforeSignOut, theme, setTheme }) {
   const { survey, activeGrowId } = usePlan();
   const location = growLocation(survey);
   const strains = strainSummary(survey);
@@ -55,6 +55,29 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
 
       <PhaseLegend />
       <ThreatsReference />
+
+      <div style={{ padding: "12px 0 0" }}>
+        <button
+          type="button"
+          onClick={onOpenSettings}
+          disabled={!activeGrowId}
+          style={{
+            display: "flex", alignItems: "center", gap: 10,
+            width: "100%", padding: "14px 16px",
+            background: "var(--c-surface-1)",
+            border: "1px solid var(--c-border)",
+            borderRadius: 12, cursor: activeGrowId ? "pointer" : "default",
+            color: activeGrowId ? "var(--c-text-dim)" : "var(--c-text-ghost)",
+            fontFamily: "'Courier New', monospace",
+            fontSize: 13, letterSpacing: 1,
+            opacity: activeGrowId ? 1 : 0.6,
+            transition: "opacity 0.15s",
+          }}
+        >
+          <SlidersHorizontal size={16} strokeWidth={1.8} />
+          Grow settings &amp; dates
+        </button>
+      </div>
 
       {isAdmin && (
         <div style={{ padding: "12px 0 0" }}>

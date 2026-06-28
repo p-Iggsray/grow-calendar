@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SlidersHorizontal } from "lucide-react";
 import { api } from "../lib/api.js";
 
 const MONO  = "'Courier New', monospace";
@@ -101,7 +102,7 @@ function GrowCard({ grow, isActive, onActivate }) {
   );
 }
 
-export default function GrowsListTab({ grows, activeGrowId, setActiveGrowId, onNewGrow }) {
+export default function GrowsListTab({ grows, activeGrowId, setActiveGrowId, onNewGrow, onEditGrow }) {
   const [creating, setCreating] = useState(false);
 
   async function handleNewGrow() {
@@ -155,14 +156,35 @@ export default function GrowsListTab({ grows, activeGrowId, setActiveGrowId, onN
         paddingLeft: "calc(16px + env(safe-area-inset-left, 0px))",
         paddingRight: "calc(16px + env(safe-area-inset-right, 0px))",
       }}>
-        {grows.map(grow => (
-          <GrowCard
-            key={grow.id}
-            grow={grow}
-            isActive={grow.id === activeGrowId}
-            onActivate={setActiveGrowId}
-          />
-        ))}
+        {grows.map(grow => {
+          const isActive = grow.id === activeGrowId;
+          return (
+            <div key={grow.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <GrowCard
+                grow={grow}
+                isActive={isActive}
+                onActivate={setActiveGrowId}
+              />
+              {isActive && grow.config && onEditGrow && (
+                <button
+                  type="button"
+                  className="touch-target"
+                  onClick={() => onEditGrow(grow.id)}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                    padding: "11px 16px", borderRadius: 12,
+                    background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
+                    color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 12, letterSpacing: 0.5,
+                    cursor: "pointer",
+                  }}
+                >
+                  <SlidersHorizontal size={14} strokeWidth={1.8} />
+                  Edit settings &amp; dates
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

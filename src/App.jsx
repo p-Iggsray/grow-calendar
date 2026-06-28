@@ -39,6 +39,7 @@ const MjReviewPanel = lazy(() => import("./components/MjReviewPanel.jsx"));
 const AdminPanel    = lazy(() => import("./components/AdminPanel.jsx"));
 const StatsScreen   = lazy(() => import("./components/StatsScreen.jsx"));
 const GardenMap     = lazy(() => import("./components/GardenMap.jsx"));
+const GrowSettings  = lazy(() => import("./components/GrowSettings.jsx"));
 
 const SHELL_STYLE = {
   fontFamily: "'Georgia', 'Times New Roman', serif",
@@ -95,6 +96,7 @@ export default function App() {
   const [showAdmin,     setShowAdmin]     = useState(false);
   const [showStats,     setShowStats]     = useState(false);
   const [showMap,       setShowMap]       = useState(false);
+  const [showSettings,  setShowSettings]  = useState(false);
   const [reviewPending, setReviewPending] = useState(false);
   const [wizardGrowId,  setWizardGrowId]  = useState(null); // growId for SetupWizard
 
@@ -347,6 +349,7 @@ export default function App() {
                 onOpenAdmin={() => setShowAdmin(true)}
                 onOpenStats={() => setShowStats(true)}
                 onOpenMap={() => setShowMap(true)}
+                onOpenSettings={() => setShowSettings(true)}
                 onBeforeSignOut={flushNote}
                 theme={theme}
                 setTheme={setTheme}
@@ -365,6 +368,7 @@ export default function App() {
                 activeGrowId={activeGrowId}
                 setActiveGrowId={setActiveGrowId}
                 onNewGrow={(growId) => setWizardGrowId(growId)}
+                onEditGrow={() => setShowSettings(true)}
               />
             </motion.div>
           ) : tabKey === "plants" ? (
@@ -511,6 +515,26 @@ export default function App() {
           >
             <Suspense fallback={null}>
               <GardenMap config={config} today={today} onClose={() => setShowMap(false)} />
+            </Suspense>
+          </motion.div>
+        )}
+        {showSettings && (
+          <motion.div
+            key="settings"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={PUSH_SPRING}
+            style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--c-bg)", overflowY: "auto" }}
+          >
+            <Suspense fallback={null}>
+              <GrowSettings
+                growId={activeGrowId}
+                grow={grows.find(g => g.id === activeGrowId)}
+                config={config}
+                onClose={() => setShowSettings(false)}
+                onSaved={reloadPlan}
+              />
             </Suspense>
           </motion.div>
         )}

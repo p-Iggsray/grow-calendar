@@ -1,0 +1,209 @@
+import { useState } from "react";
+import { X, Check } from "lucide-react";
+import { api, ymd } from "../lib/api.js";
+import { Label, Input, RadioGroup, MONO, SERIF } from "./SetupWizard/styleHelpers.jsx";
+
+// Full timeline, grouped for scanning. Each row edits one config date key
+// independently — nothing cascades, the grower has full manual control.
+const DATE_GROUPS = [
+  {
+    title: "Timeline",
+    fields: [
+      { key: "start",        label: "Season start" },
+      { key: "transplant",   label: "Transplant" },
+      { key: "backyardMove", label: "Move outside", hint: "Set equal to transplant to hide the move-outside milestone." },
+      { key: "preFlower",    label: "Pre-flower" },
+      { key: "flowerStart",  label: "Flower start" },
+    ],
+  },
+  {
+    title: "Feeding & flushes",
+    fields: [
+      { key: "calMag",    label: "Cal-Mag start" },
+      { key: "feedStart", label: "Feeding start" },
+      { key: "fullDose",  label: "Full-dose nutrients" },
+      { key: "flush1",    label: "Flush 1" },
+      { key: "flush2",    label: "Flush 2" },
+      { key: "flush3",    label: "Flush 3" },
+    ],
+  },
+  {
+    title: "Harvest",
+    fields: [
+      { key: "gdpFlush",    label: "Primary pre-harvest flush" },
+      { key: "gdpHarvest",  label: "Primary harvest" },
+      { key: "hazeFlush",   label: "Secondary pre-harvest flush" },
+      { key: "hazeHarvest", label: "Secondary harvest" },
+    ],
+  },
+];
+
+const ALL_KEYS = DATE_GROUPS.flatMap(g => g.fields.map(f => f.key));
+
+const STATUS_OPTIONS = [
+  { value: "active",    label: "Active" },
+  { value: "harvested", label: "Harvested" },
+  { value: "abandoned", label: "Abandoned" },
+];
+
+const dateInputStyle = {
+  background: "rgba(0,0,0,0.3)", color: "var(--c-text)",
+  border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10,
+  padding: "11px 13px", fontSize: 16, fontFamily: SERIF,
+  outline: "none", width: "100%", boxSizing: "border-box",
+  colorScheme: "dark",
+};
+
+// config is the parsed (Date-keyed) config from usePlan; grow is the matching
+// entry from the grows list (display name + status). onSaved should reload the
+// plan so the calendar/milestones reflect the new dates immediately.
+export default function GrowSettings({ growId, grow, config, onClose, onSaved }) {
+  const [name, setName]     = useState(grow?.displayName || "");
+  const [status, setStatus] = useState(grow?.status || "active");
+  const [dates, setDates]   = useState(() => {
+    const out = {};
+    for (const key of ALL_KEYS) out[key] = config?.[key] ? ymd(config[key]) : "";
+    return out;
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState(null);
+
+  const setDate = (key, val) => setDates(d => ({ ...d, [key]: val }));
+  const missing = ALL_KEYS.filter(k => !dates[k]);
+
+  async function handleSave() {
+    if (saving) return;
+    if (missing.length > 0) { setError("Every date needs a value before saving."); return; }
+    setSaving(true);
+    setError(null);
+    try {
+      await api.patchGrow(growId, {
+        displayName: name.trim() || "Untitled Grow",
+        status,
+        config: { ...dates },
+      });
+      await onSaved?.();
+      onClose();
+    } catch (e) {
+      setError(e?.message || "Could not save. Try again.");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div style={{
+      minHeight: "100vh",
+      paddingTop: "calc(14px + env(safe-area-inset-top, 0px))",
+      paddingLeft: "calc(16px + env(safe-area-inset-left, 0px))",
+      paddingRight: "calc(16px + env(safe-area-inset-right, 0px))",
+      paddingBottom: "calc(40px + env(safe-area-inset-bottom, 0px))",
+    }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+        <button
+          type="button"
+          className="touch-target"
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center",
+            width: 40, height: 40, borderRadius: 10,
+            background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
+            color: "var(--c-text-dim)", cursor: "pointer",
+          }}
+        >
+          <X size={18} strokeWidth={1.8} />
+        </button>
+        <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 3, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>
+          Grow Settings
+        </div>
+        <button
+          type="button"
+          className="touch-target"
+          onClick={handleSave}
+          disabled={saving}
+          style={{
+            display: "flex", alignItems: "center", gap: 5,
+            padding: "9px 16px", borderRadius: 20,
+            background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.4)",
+            color: saving ? "var(--c-text-ghost)" : "var(--c-accent)",
+            fontFamily: MONO, fontSize: 12, letterSpacing: 0.5,
+            cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1,
+          }}
+        >
+          <Check size={14} strokeWidth={2} />
+          {saving ? "Saving…" : "Save"}
+        </button>
+      </div>
+
+      {/* Name + status */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 24 }}>
+        <div>
+          <Label>Grow name</Label>
+          <Input value={name} onChange={setName} placeholder="e.g. Summer 2026 Outdoor" />
+        </div>
+        <div>
+          <Label>Status</Label>
+          <RadioGroup value={status} onChange={setStatus} options={STATUS_OPTIONS} />
+        </div>
+      </div>
+
+      {/* Date groups */}
+      {DATE_GROUPS.map(group => (
+        <div key={group.title} style={{ marginBottom: 22 }}>
+          <div style={{
+            fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
+            color: "var(--c-text-ghost)", marginBottom: 12,
+            paddingBottom: 8, borderBottom: "1px solid var(--c-border-faint)",
+          }}>
+            {group.title}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {group.fields.map(({ key, label, hint }) => (
+              <div key={key}>
+                <Label>{label}</Label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input
+                    type="date"
+                    value={dates[key]}
+                    onChange={e => setDate(key, e.target.value)}
+                    style={dateInputStyle}
+                  />
+                  {key === "backyardMove" && dates.transplant && dates.backyardMove !== dates.transplant && (
+                    <button
+                      type="button"
+                      onClick={() => setDate("backyardMove", dates.transplant)}
+                      style={{
+                        flexShrink: 0, padding: "9px 12px", borderRadius: 10,
+                        background: "rgba(255,255,255,0.05)", border: "1px solid var(--c-border-strong)",
+                        color: "#8ab89a", fontFamily: MONO, fontSize: 11, letterSpacing: 0.5,
+                        cursor: "pointer", whiteSpace: "nowrap",
+                      }}
+                    >
+                      = transplant
+                    </button>
+                  )}
+                </div>
+                {hint && (
+                  <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 5, lineHeight: 1.6 }}>
+                    {hint}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {error && (
+        <div style={{
+          fontFamily: MONO, fontSize: 12, color: "var(--c-danger-soft)",
+          background: "rgba(160,50,50,0.1)", border: "1px solid rgba(160,50,50,0.3)",
+          borderRadius: 10, padding: "10px 12px", marginTop: 4,
+        }}>
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
