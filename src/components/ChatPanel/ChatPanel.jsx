@@ -8,7 +8,7 @@ import ThreadStrip from "./ThreadStrip.jsx";
 import UsageBar from "./UsageBar.jsx";
 import Bubble from "./Bubble.jsx";
 
-export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, suggestions }) {
+export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, suggestions, onDataChanged }) {
   const [messages,       setMessages]      = useState([]);
   const [input,          setInput]         = useState("");
   const [busy,           setBusy]          = useState(false);
@@ -143,6 +143,9 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
               setUndoForMsgId(msgId);
               undoTimerRef.current = setTimeout(() => setUndoForMsgId(null), 60_000);
             }
+            // MJ may have changed grow data (plants, dates, profile, tasks…).
+            // Refresh the app's plan state so every tab reflects it immediately.
+            if ((actions || []).length > 0) onDataChanged?.();
             resolve();
           },
           onError: (err) => {
@@ -177,6 +180,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
     }));
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     setUndoForMsgId(null);
+    onDataChanged?.();
   }
 
   function handleClear() {

@@ -471,6 +471,7 @@ export default function App() {
               activeGrowId={activeGrowId}
               grows={grows}
               suggestions={suggestions}
+              onDataChanged={reloadPlan}
             />
           </Suspense>
         )}
