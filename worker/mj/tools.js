@@ -13,8 +13,17 @@ import {
   updatePlantInSurvey, removePlantFromSurvey,
 } from "../plantsRoster.js";
 import { ensurePlantLogSchema } from "../plants.js";
+import { geocode } from "../geocode.js";
 import { logError } from "../log.js";
 import { DATE_RE } from "./constants.js";
+
+const PROFILE_ENUMS = {
+  environment:    new Set(["outdoor", "indoor", "greenhouse"]),
+  medium:         new Set(["soil", "coco", "hydro", "other"]),
+  containerType:  new Set(["fabric", "plastic", "ground", "other"]),
+  experienceLevel:new Set(["beginner", "intermediate", "advanced"]),
+  wateringMethod: new Set(["hand", "drip"]),
+};
 
 function newRuleId() {
   return "evt_" + Math.random().toString(36).slice(2, 10);
@@ -97,6 +106,18 @@ export async function executeTool(name, input, env, userId, config, overrides, g
         strains,
         plants,
         location: rawGrow.survey?.location ?? null,
+        profile: {
+          environment:          survey?.environment ?? null,
+          medium:               survey?.medium ?? null,
+          containerType:        survey?.containerType ?? null,
+          containerGallons:     survey?.containerGallons ?? null,
+          location:             survey?.location ?? null,
+          experienceLevel:      survey?.experienceLevel ?? null,
+          wateringMethod:       survey?.wateringMethod ?? null,
+          vegWeeks:             survey?.vegWeeks ?? null,
+          plantsAlreadyOutside: survey?.plantsAlreadyOutside ?? null,
+          notes:                survey?.extraNotes ?? null,
+        },
         configDates: rawGrow.config ?? {},
         phasesWithOverrides,
         eventRules: (rawGrow.eventRules ?? []).map(r => ({ id: r.id, label: r.label, task: r.task, enabled: r.enabled !== false, window: r.window, cadence: r.cadence })),
@@ -265,6 +286,67 @@ export async function executeTool(name, input, env, userId, config, overrides, g
       ).bind(userId, growId, plantId).run();
       actions.push({ type: "delete_plant", summary: `Deleted plant: ${target?.name ?? plantId}` });
       return { ok: true };
+    }
+
+    if (name === "update_grow_profile") {
+      if (!growId) return { error: "No active grow selected." };
+      const survey = await readSurvey(env, userId, growId);
+      if (survey === null) return { error: "Grow not found." };
+
+      const patch = {};
+      const changes = [];
+      const enumField = (inKey, surveyKey, label) => {
+        if (input[inKey] === undefined) return null;
+        if (!PROFILE_ENUMS[surveyKey].has(input[inKey]))
+          return `${inKey} must be one of: ${[...PROFILE_ENUMS[surveyKey]].join(", ")}`;
+        patch[surveyKey] = input[inKey];
+        changes.push(`${label} → ${input[inKey]}`);
+        return null;
+      };
+
+      for (const [inKey, surveyKey, label] of [
+        ["environment", "environment", "environment"],
+        ["medium", "medium", "medium"],
+        ["container_type", "containerType", "container"],
+        ["experience_level", "experienceLevel", "experience"],
+        ["watering_method", "wateringMethod", "watering"],
+      ]) {
+        const err = enumField(inKey, surveyKey, label);
+        if (err) return { error: err };
+      }
+
+      if (input.container_gallons !== undefined) {
+        const g = Number(input.container_gallons);
+        if (!Number.isFinite(g) || g < 1 || g > 400) return { error: "container_gallons out of range (1-400)" };
+        patch.containerGallons = Math.round(g);
+        changes.push(`container size → ${Math.round(g)} gal`);
+      }
+      if (input.veg_weeks !== undefined) {
+        const w = Number(input.veg_weeks);
+        if (!Number.isFinite(w) || w < 1 || w > 52) return { error: "veg_weeks out of range (1-52)" };
+        patch.vegWeeks = Math.round(w);
+        changes.push(`veg weeks → ${Math.round(w)}`);
+      }
+      if (input.plants_already_outside !== undefined) {
+        patch.plantsAlreadyOutside = Boolean(input.plants_already_outside);
+        changes.push(`plants already outside → ${patch.plantsAlreadyOutside}`);
+      }
+      if (input.notes !== undefined) {
+        patch.extraNotes = String(input.notes).slice(0, 2000);
+        changes.push("notes updated");
+      }
+      if (input.location !== undefined) {
+        const loc = String(input.location).trim().slice(0, 200);
+        patch.location = loc;
+        changes.push(`location → ${loc}`);
+        try { const geo = await geocode(loc); if (geo) { patch.lat = geo.lat; patch.lon = geo.lon; } }
+        catch { /* keep existing coords if geocoding fails */ }
+      }
+
+      if (changes.length === 0) return { error: "No valid profile fields to update." };
+      await writeSurvey(env, userId, growId, { ...survey, ...patch });
+      actions.push({ type: "update_grow_profile", summary: `Profile: ${changes.join(", ")}` });
+      return { ok: true, updated: patch };
     }
 
     if (name === "get_week") {

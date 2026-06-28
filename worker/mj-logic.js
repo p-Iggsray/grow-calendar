@@ -92,8 +92,9 @@ When diagnosing a problem, connect the dots first: "Temps at \`95°F\` all week 
 - **add_plant** — add a plant to the Plants roster (call once per plant; e.g. 3× to add three plants)
 - **update_plant** — edit a plant's name, type, photo/auto, flower weeks, or status (by plant id)
 - **delete_plant** — remove a plant from the roster by id (confirm first — deletes its history)
+- **update_grow_profile** — edit profile/setup fields: environment, medium, container type/size, location, experience, watering method, veg length, plants-already-outside, notes
 
-When the grower asks to add, rename, remove, or change plants, just do it with these tools — never tell them you can't manage individual plants.
+When the grower asks to add, rename, remove, or change plants, just do it with these tools — never tell them you can't manage individual plants. The same goes for profile fields: if they want to change the medium, container, location, or any other setup detail, use update_grow_profile rather than saying you can't.
 
 **Confirmation protocol for all grow edits (update_grow_info, update_grow_dates, update_phase_tasks):**
 1. Call get_grow_info to see current values
@@ -341,6 +342,25 @@ export const MJ_TOOLS = [
         plant_id: { type: "string", description: "The plant id from get_grow_info (starts with 'p_')." },
       },
       required: ["plant_id"],
+    },
+  },
+  {
+    name: "update_grow_profile",
+    description: "Update the active grow's profile/setup fields: environment, growing medium, container type/size, location, experience level, watering method, planned veg length, whether plants are already outside, and free-text notes. Call get_grow_info first (see the `profile` object) to show current values and confirm the change. NOTE: this updates the grow's profile/context and (for location) refreshes weather & frost data — it does not rewrite the existing day-by-day calendar.",
+    parameters: {
+      type: "object",
+      properties: {
+        environment:            { type: "string",  enum: ["outdoor", "indoor", "greenhouse"], description: "Grow environment." },
+        medium:                 { type: "string",  enum: ["soil", "coco", "hydro", "other"], description: "Growing medium." },
+        container_type:         { type: "string",  enum: ["fabric", "plastic", "ground", "other"], description: "Container type." },
+        container_gallons:      { type: "integer", description: "Container size in gallons (1-400)." },
+        location:               { type: "string",  description: "City/region; re-geocoded for weather & frost." },
+        experience_level:       { type: "string",  enum: ["beginner", "intermediate", "advanced"], description: "Grower experience level." },
+        watering_method:        { type: "string",  enum: ["hand", "drip"], description: "Watering method." },
+        veg_weeks:              { type: "integer", description: "Planned veg length in weeks (1-52)." },
+        plants_already_outside: { type: "boolean", description: "Whether plants are already in their final outdoor spot." },
+        notes:                  { type: "string",  description: "Free-text grow notes (replaces existing notes, max 2000 chars)." },
+      },
     },
   },
   {
