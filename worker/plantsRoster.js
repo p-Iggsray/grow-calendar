@@ -7,6 +7,13 @@ export const PLANT_TYPES = new Set(["indica", "sativa", "hybrid"]);
 export const PLANT_STATUSES = new Set(["growing", "harvested", "dead"]);
 export const HEALTH_VALUES = new Set(["thriving", "healthy", "stressed", "sick"]);
 export const HEIGHT_UNITS = new Set(["in", "cm"]);
+// Ordered per-plant lifecycle stages (manual; the grower advances them).
+export const PLANT_STAGES = [
+  "seedling", "vegetative", "flowering", "flushing",
+  "harvest", "drying", "curing", "done",
+];
+export const STAGE_SET = new Set(PLANT_STAGES);
+export const DEFAULT_STAGE = "seedling";
 
 const NAME_MAX = 60;
 
@@ -23,6 +30,7 @@ export function ensurePlantIds(survey) {
     const next = { ...s };
     if (!next.id) { next.id = newPlantId(); changed = true; }
     if (!PLANT_STATUSES.has(next.status)) { next.status = "growing"; changed = true; }
+    if (!STAGE_SET.has(next.stage)) { next.stage = DEFAULT_STAGE; changed = true; }
     return next;
   });
   return changed ? { survey: { ...survey, strains }, changed: true } : { survey, changed: false };
@@ -50,6 +58,20 @@ export function validatePlantFields(fields, partial = false) {
     const fw = Number(fields.flowerWeeks ?? 9);
     if (!Number.isFinite(fw) || fw < 4 || fw > 20) return { ok: false, error: "flowerWeeks out of range" };
     out.flowerWeeks = Math.round(fw);
+  }
+  if (has("potSize")) {
+    if (fields.potSize === null || fields.potSize === "") {
+      out.potSize = null;
+    } else {
+      const ps = Number(fields.potSize);
+      if (!Number.isFinite(ps) || ps < 0 || ps > 400) return { ok: false, error: "potSize out of range" };
+      out.potSize = ps;
+    }
+  }
+  if (has("stage") || !partial) {
+    const stage = String(fields.stage ?? DEFAULT_STAGE);
+    if (!STAGE_SET.has(stage)) return { ok: false, error: "invalid stage" };
+    out.stage = stage;
   }
   if (has("status")) {
     if (!PLANT_STATUSES.has(fields.status)) return { ok: false, error: "invalid status" };

@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import { MONO, SERIF, TYPE_LABEL, HEALTH_MAP } from "./constants.js";
+import { MONO, SERIF, TYPE_LABEL, HEALTH_MAP, stageLabel } from "./constants.js";
 
-export default function PlantCard({ plant, currentPhaseLabel, metrics, onOpen }) {
+export default function PlantCard({ plant, metrics, onOpen }) {
   const health = metrics?.health ? HEALTH_MAP[metrics.health] : null;
   return (
     <motion.button
@@ -29,9 +29,10 @@ export default function PlantCard({ plant, currentPhaseLabel, metrics, onOpen })
         {TYPE_LABEL[plant.type] ?? plant.type}
         {plant.photo === false ? " · Auto" : " · Photo"}
         {plant.flowerWeeks ? ` · ${plant.flowerWeeks}wk flower` : ""}
+        {plant.potSize ? ` · ${plant.potSize} gal` : ""}
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>
-        <span>{currentPhaseLabel ? `Phase: ${currentPhaseLabel}` : "No timeline"}</span>
+        <span>Stage: {stageLabel(plant.stage)}</span>
         {metrics?.height != null && <span>{metrics.height}{metrics.heightUnit || ""}</span>}
       </div>
       {metrics?.date && (

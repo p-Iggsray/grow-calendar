@@ -42,12 +42,19 @@ export default function DayView({
   onEditTaskForDay, onEditTaskForPhase,
   onTaskEditActiveChange,
   onPickerActiveChange,
+  plants = [],
 }) {
   const [tab, setTab] = useState("tasks");
   const [noteEditing, setNoteEditing] = useState(false);
   const [pickerIdx, setPickerIdx] = useState(null);
   const [editingIdx, setEditingIdx] = useState(null);
   const [pendingPhaseApply, setPendingPhaseApply] = useState(null);
+  // Which plant the per-plant log sections are scoped to ("all" or a plant name).
+  const [logPlant, setLogPlant] = useState("all");
+  const logPlants = (plants ?? []).filter(p => (p.status ?? "growing") === "growing");
+  const scoped = logPlant !== "all";
+  const matches = (e) => !scoped || (e.plant ?? "") === logPlant;
+  const newPlantName = () => (scoped ? logPlant : "");
   const textareaRef = useRef(null);
 
   useEffect(() => {
@@ -66,14 +73,14 @@ export default function DayView({
 
   // Per-plant watering. water_gal is kept as the day's total (sum of all
   // plants) so the stats "total water" aggregation keeps working.
-  function addWater()                 { const a = [...(logEntry.water_plants ?? []), { plant: "", gal: "" }]; setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
+  function addWater()                 { const a = [...(logEntry.water_plants ?? []), { plant: newPlantName(), gal: "" }]; setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
   function updateWater(i, k, v)       { const a = [...(logEntry.water_plants ?? [])]; a[i] = { ...a[i], [k]: v }; setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
   function removeWater(i)             { const a = [...(logEntry.water_plants ?? [])]; a.splice(i, 1); setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
 
-  function addTraining()              { setLogField("training", [...(logEntry.training ?? []), { plant: "", action: "" }]); }
+  function addTraining()              { setLogField("training", [...(logEntry.training ?? []), { plant: newPlantName(), action: "" }]); }
   function updateTraining(i, k, v)    { const a = [...(logEntry.training ?? [])]; a[i] = { ...a[i], [k]: v }; setLogField("training", a); }
   function removeTraining(i)          { const a = [...(logEntry.training ?? [])]; a.splice(i, 1); setLogField("training", a); }
-  function addHealth()                { setLogField("plant_health", [...(logEntry.plant_health ?? []), { plant: "", color: "", trichomes: "", notes: "" }]); }
+  function addHealth()                { setLogField("plant_health", [...(logEntry.plant_health ?? []), { plant: newPlantName(), color: "", trichomes: "", notes: "" }]); }
   function updateHealth(i, k, v)      { const a = [...(logEntry.plant_health ?? [])]; a[i] = { ...a[i], [k]: v }; setLogField("plant_health", a); }
   function removeHealth(i)            { const a = [...(logEntry.plant_health ?? [])]; a.splice(i, 1); setLogField("plant_health", a); }
 
@@ -284,17 +291,49 @@ export default function DayView({
                 </div>
               </LogSection>
 
+              {/* ── Plant selector for the per-plant sections below ── */}
+              {logPlants.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ ...fieldNameStyle, marginBottom: 8 }}>Log entries for</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {[{ key: "all", label: "All plants" }, ...logPlants.map(p => ({ key: p.name, label: p.name || "Unnamed" }))].map(opt => {
+                      const active = logPlant === opt.key;
+                      return (
+                        <button
+                          key={opt.key}
+                          type="button"
+                          onClick={() => setLogPlant(opt.key)}
+                          style={{
+                            padding: "8px 14px", borderRadius: 16,
+                            background: active ? "rgba(74,222,128,0.16)" : "rgba(255,255,255,0.05)",
+                            border: active ? "1px solid rgba(74,222,128,0.5)" : "1px solid var(--c-border-strong)",
+                            color: active ? "var(--c-accent)" : "var(--c-text-muted)",
+                            fontFamily: "'Courier New', monospace", fontSize: 12, letterSpacing: 0.5,
+                            cursor: "pointer", whiteSpace: "nowrap",
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* ── Watering & Nutrients ── */}
               <LogSection label="Watering & Nutrients">
-                {(logEntry.water_plants ?? []).map((w, i) => (
-                  <WaterEntry
-                    key={i}
-                    entry={w}
-                    onChangeField={(k, v) => updateWater(i, k, v)}
-                    onRemove={() => removeWater(i)}
-                  />
-                ))}
-                <AddEntryButton onClick={addWater} label="ADD PLANT WATERING" />
+                {(logEntry.water_plants ?? []).map((w, i) => ({ w, i }))
+                  .filter(({ w }) => matches(w))
+                  .map(({ w, i }) => (
+                    <WaterEntry
+                      key={i}
+                      entry={w}
+                      hidePlant={scoped}
+                      onChangeField={(k, v) => updateWater(i, k, v)}
+                      onRemove={() => removeWater(i)}
+                    />
+                  ))}
+                <AddEntryButton onClick={addWater} label={scoped ? `ADD WATERING FOR ${logPlant.toUpperCase()}` : "ADD PLANT WATERING"} />
                 {sumWater(logEntry.water_plants) && (
                   <div style={{
                     marginTop: 10, textAlign: "right",
@@ -321,28 +360,34 @@ export default function DayView({
 
               {/* ── Plant Training ── */}
               <LogSection label="Plant Training">
-                {(logEntry.training ?? []).map((t, i) => (
-                  <TrainingEntry
-                    key={i}
-                    entry={t}
-                    onChangeField={(k, v) => updateTraining(i, k, v)}
-                    onRemove={() => removeTraining(i)}
-                  />
-                ))}
-                <AddEntryButton onClick={addTraining} label="ADD TRAINING ENTRY" />
+                {(logEntry.training ?? []).map((t, i) => ({ t, i }))
+                  .filter(({ t }) => matches(t))
+                  .map(({ t, i }) => (
+                    <TrainingEntry
+                      key={i}
+                      entry={t}
+                      hidePlant={scoped}
+                      onChangeField={(k, v) => updateTraining(i, k, v)}
+                      onRemove={() => removeTraining(i)}
+                    />
+                  ))}
+                <AddEntryButton onClick={addTraining} label={scoped ? `ADD TRAINING FOR ${logPlant.toUpperCase()}` : "ADD TRAINING ENTRY"} />
               </LogSection>
 
               {/* ── Plant Health ── */}
               <LogSection label="Plant Health">
-                {(logEntry.plant_health ?? []).map((h, i) => (
-                  <PlantHealthEntry
-                    key={i}
-                    entry={h}
-                    onChangeField={(k, v) => updateHealth(i, k, v)}
-                    onRemove={() => removeHealth(i)}
-                  />
-                ))}
-                <AddEntryButton onClick={addHealth} label="ADD HEALTH OBSERVATION" />
+                {(logEntry.plant_health ?? []).map((h, i) => ({ h, i }))
+                  .filter(({ h }) => matches(h))
+                  .map(({ h, i }) => (
+                    <PlantHealthEntry
+                      key={i}
+                      entry={h}
+                      hidePlant={scoped}
+                      onChangeField={(k, v) => updateHealth(i, k, v)}
+                      onRemove={() => removeHealth(i)}
+                    />
+                  ))}
+                <AddEntryButton onClick={addHealth} label={scoped ? `ADD HEALTH FOR ${logPlant.toUpperCase()}` : "ADD HEALTH OBSERVATION"} />
               </LogSection>
             </div>
           )}

@@ -3,6 +3,32 @@ export const SERIF = "'Georgia', 'Times New Roman', serif";
 
 export const TYPE_LABEL = { indica: "Indica", sativa: "Sativa", hybrid: "Hybrid" };
 
+// Manual per-plant lifecycle stages (mirror of worker/plantsRoster.js PLANT_STAGES).
+export const STAGE_OPTIONS = [
+  { value: "seedling",   label: "Seedling" },
+  { value: "vegetative", label: "Vegetative" },
+  { value: "flowering",  label: "Flowering" },
+  { value: "flushing",   label: "Flushing" },
+  { value: "harvest",    label: "Harvest" },
+  { value: "drying",     label: "Drying" },
+  { value: "curing",     label: "Curing" },
+  { value: "done",       label: "Done" },
+];
+export const STAGE_ORDER = STAGE_OPTIONS.map((o) => o.value);
+export function stageLabel(stage) {
+  return STAGE_OPTIONS.find((s) => s.value === stage)?.label ?? "Seedling";
+}
+function stageIndex(stage) {
+  const i = STAGE_ORDER.indexOf(stage);
+  return i < 0 ? 0 : i;
+}
+export function nextStage(stage) {
+  return STAGE_ORDER[Math.min(STAGE_ORDER.length - 1, stageIndex(stage) + 1)];
+}
+export function prevStage(stage) {
+  return STAGE_ORDER[Math.max(0, stageIndex(stage) - 1)];
+}
+
 export const HEALTH_OPTIONS = [
   { value: "thriving", label: "Thriving", color: "var(--c-accent)" },
   { value: "healthy",  label: "Healthy",  color: "var(--c-text-dim)" },

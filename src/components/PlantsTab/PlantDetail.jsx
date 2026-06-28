@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Trash2, Archive } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Archive, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { usePlantLog } from "../../lib/usePlantLog.js";
-import { MONO, SERIF, TYPE_LABEL, HEALTH_MAP } from "./constants.js";
+import { api } from "../../lib/api.js";
+import { MONO, SERIF, TYPE_LABEL, HEALTH_MAP, STAGE_ORDER, stageLabel, nextStage, prevStage } from "./constants.js";
 import LogEntryForm from "./LogEntryForm.jsx";
+import AddPlantSheet from "./AddPlantSheet.jsx";
 
 function Meta({ label, value }) {
   return (
@@ -14,10 +16,16 @@ function Meta({ label, value }) {
   );
 }
 
-export default function PlantDetail({ growId, plant, currentPhaseLabel, harvestLabel, onClose, onArchive, onDelete, onLogChange }) {
+export default function PlantDetail({ growId, plant, harvestLabel, onClose, onArchive, onDelete, onLogChange, onChanged }) {
   const { entries, addEntry, removeEntry } = usePlantLog(growId, plant.id, true);
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [stageBusy, setStageBusy] = useState(false);
+
+  const stage = plant.stage || "seedling";
+  const stageIdx = STAGE_ORDER.indexOf(stage);
 
   async function handleSave(entry) {
     setSaving(true);
@@ -28,6 +36,29 @@ export default function PlantDetail({ growId, plant, currentPhaseLabel, harvestL
   async function handleRemove(id) {
     await removeEntry(id);
     onLogChange?.();
+  }
+
+  async function handleEditSave(fields) {
+    setSavingEdit(true);
+    try {
+      await api.patchPlant(growId, plant.id, {
+        name: fields.name, type: fields.type, photo: fields.photo,
+        flowerWeeks: fields.flowerWeeks, potSize: fields.potSize,
+      });
+      setEditing(false);
+      onChanged?.();
+    } finally { setSavingEdit(false); }
+  }
+
+  async function setStage(next) {
+    if (stageBusy || next === stage) return;
+    setStageBusy(true);
+    try {
+      await api.patchPlant(growId, plant.id, { stage: next });
+      await addEntry({ body: `Stage → ${stageLabel(next)}` });
+      onLogChange?.();
+      onChanged?.();
+    } finally { setStageBusy(false); }
   }
 
   return (
@@ -43,20 +74,60 @@ export default function PlantDetail({ growId, plant, currentPhaseLabel, harvestL
           <ArrowLeft size={16} /> PLANTS
         </button>
 
-        <div style={{ marginTop: 16 }}>
-          <div style={{ fontSize: 24, fontWeight: 700, fontFamily: SERIF, color: "var(--c-text)" }}>{plant.name || "Unnamed plant"}</div>
-          <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-muted)", marginTop: 4 }}>
-            {TYPE_LABEL[plant.type] ?? plant.type}{plant.photo === false ? " · Auto" : " · Photo"}{plant.flowerWeeks ? ` · ${plant.flowerWeeks}wk flower` : ""}
+        <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 700, fontFamily: SERIF, color: "var(--c-text)" }}>{plant.name || "Unnamed plant"}</div>
+            <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-muted)", marginTop: 4 }}>
+              {TYPE_LABEL[plant.type] ?? plant.type}{plant.photo === false ? " · Auto" : " · Photo"}{plant.flowerWeeks ? ` · ${plant.flowerWeeks}wk flower` : ""}{plant.potSize ? ` · ${plant.potSize} gal` : ""}
+            </div>
+          </div>
+          {!editing && (
+            <button type="button" className="touch-target" onClick={() => setEditing(true)} aria-label="Edit plant" style={{ display: "flex", alignItems: "center", gap: 5, background: "var(--c-surface-1)", border: "1px solid var(--c-border)", borderRadius: 18, padding: "7px 12px", color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 11, cursor: "pointer", flexShrink: 0 }}>
+              <Pencil size={13} /> Edit
+            </button>
+          )}
+        </div>
+
+        {editing && (
+          <div style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 14, marginTop: 14 }}>
+            <AddPlantSheet
+              initial={{ name: plant.name, type: plant.type, photo: plant.photo, flowerWeeks: plant.flowerWeeks, potSize: plant.potSize }}
+              onSave={handleEditSave}
+              onCancel={() => setEditing(false)}
+              saving={savingEdit}
+              saveLabel="Save changes"
+              savingLabel="Saving…"
+            />
+          </div>
+        )}
+
+        {/* Stage control */}
+        <div style={{ marginTop: 20 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 6 }}>Stage</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button type="button" className="touch-target" aria-label="Previous stage" disabled={stageBusy || stageIdx <= 0} onClick={() => setStage(prevStage(stage))}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 10, background: "var(--c-surface-1)", border: "1px solid var(--c-border)", color: stageIdx <= 0 ? "var(--c-text-ghost)" : "var(--c-text-dim)", cursor: stageIdx <= 0 ? "default" : "pointer" }}>
+              <ChevronLeft size={18} />
+            </button>
+            <div style={{ flex: 1, textAlign: "center", fontFamily: MONO, fontSize: 14, letterSpacing: 1, color: "var(--c-accent)", background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, padding: "11px 8px" }}>
+              {stageLabel(stage)}
+            </div>
+            <button type="button" className="touch-target" aria-label="Next stage" disabled={stageBusy || stageIdx >= STAGE_ORDER.length - 1} onClick={() => setStage(nextStage(stage))}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 10, background: "var(--c-surface-1)", border: "1px solid var(--c-border)", color: stageIdx >= STAGE_ORDER.length - 1 ? "var(--c-text-ghost)" : "var(--c-text-dim)", cursor: stageIdx >= STAGE_ORDER.length - 1 ? "default" : "pointer" }}>
+              <ChevronRight size={18} />
+            </button>
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginTop: 6 }}>
+            Step {stageIdx + 1} of {STAGE_ORDER.length} · changes are logged below
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 28, marginTop: 16 }}>
-          <Meta label="Current phase" value={currentPhaseLabel || "-"} />
+        <div style={{ display: "flex", gap: 28, marginTop: 18 }}>
           <Meta label="Est. harvest" value={harvestLabel || "-"} />
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 28, marginBottom: 12 }}>
-          <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>Log</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>History</span>
           {!adding && (
             <button type="button" onClick={() => setAdding(true)} style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 18, padding: "7px 14px", color: "var(--c-accent)", fontFamily: MONO, fontSize: 11, cursor: "pointer" }}>
               <Plus size={13} /> Add entry

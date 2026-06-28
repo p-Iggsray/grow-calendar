@@ -56,9 +56,16 @@ test("ensurePlantIds assigns ids and default status, preserves existing ids", ()
 });
 
 test("ensurePlantIds is a no-op when everything is present", () => {
-  const survey = { strains: [{ name: "A", id: "p_1", status: "harvested" }] };
+  const survey = { strains: [{ name: "A", id: "p_1", status: "harvested", stage: "curing" }] };
   const { changed } = ensurePlantIds(survey);
   assert.equal(changed, false);
+});
+
+test("ensurePlantIds backfills a default stage when missing", () => {
+  const survey = { strains: [{ name: "A", id: "p_1", status: "growing" }] };
+  const { survey: out, changed } = ensurePlantIds(survey);
+  assert.equal(changed, true);
+  assert.equal(out.strains[0].stage, "seedling");
 });
 
 test("validatePlantFields rejects bad input and normalizes good input", () => {
@@ -66,7 +73,11 @@ test("validatePlantFields rejects bad input and normalizes good input", () => {
   assert.equal(validatePlantFields({ name: "X", type: "bogus" }).ok, false);
   assert.equal(validatePlantFields({ name: "X", flowerWeeks: 99 }).ok, false);
   const ok = validatePlantFields({ name: "  Blue Dream  ", type: "sativa", photo: false, flowerWeeks: 10 });
-  assert.deepEqual(ok.value, { name: "Blue Dream", type: "sativa", photo: false, flowerWeeks: 10 });
+  assert.deepEqual(ok.value, { name: "Blue Dream", type: "sativa", photo: false, flowerWeeks: 10, stage: "seedling" });
+  // potSize + stage validate and normalize too
+  assert.equal(validatePlantFields({ name: "X", potSize: 999 }).ok, false);
+  assert.equal(validatePlantFields({ stage: "bogus" }, true).ok, false);
+  assert.deepEqual(validatePlantFields({ potSize: 7, stage: "flowering" }, true).value, { potSize: 7, stage: "flowering" });
 });
 
 test("validatePlantFields partial allows a subset including status", () => {

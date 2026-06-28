@@ -112,12 +112,12 @@ export default function PlantsTab() {
             key={selectedPlant.id}
             growId={activeGrowId}
             plant={selectedPlant}
-            currentPhaseLabel={selectedPlant.status === "growing" ? currentPhaseLabel : null}
             harvestLabel={selectedPlant.status === "growing" ? harvestLabel : null}
             onClose={() => setSelectedId(null)}
             onArchive={handleArchive}
             onDelete={(p) => setConfirmDelete(p)}
             onLogChange={loadSummary}
+            onChanged={reload}
           />
         )}
       </AnimatePresence>

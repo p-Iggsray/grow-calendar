@@ -102,9 +102,10 @@ export function sumWater(arr) {
   return total > 0 ? String(Math.round(total * 100) / 100) : "";
 }
 
-export function WaterEntry({ entry, onChangeField, onRemove }) {
+export function WaterEntry({ entry, onChangeField, onRemove, hidePlant }) {
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "flex-end", marginBottom: 8 }}>
+      {!hidePlant && (
       <label style={{ flex: 2, display: "flex", flexDirection: "column" }}>
         <span style={_entryLabel}>Plant</span>
         <input
@@ -115,6 +116,7 @@ export function WaterEntry({ entry, onChangeField, onRemove }) {
           style={_entryInput}
         />
       </label>
+      )}
       <label style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <span style={_entryLabel}>Water (gal)</span>
         <input
@@ -141,7 +143,7 @@ export function WaterEntry({ entry, onChangeField, onRemove }) {
   );
 }
 
-export function TrainingEntry({ entry, onChangeField, onRemove }) {
+export function TrainingEntry({ entry, onChangeField, onRemove, hidePlant }) {
   return (
     <div style={_entryCard}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -150,11 +152,13 @@ export function TrainingEntry({ entry, onChangeField, onRemove }) {
           <X size={12} strokeWidth={2} />
         </button>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: hidePlant ? "1fr" : "1fr 2fr", gap: 8 }}>
+        {!hidePlant && (
         <div>
           <span style={_entryLabel}>Plant</span>
           <input type="text" value={entry.plant} onChange={e => onChangeField("plant", e.target.value)} placeholder="Plant 1" style={_entryInput} />
         </div>
+        )}
         <div>
           <span style={_entryLabel}>Action</span>
           <input type="text" value={entry.action} onChange={e => onChangeField("action", e.target.value)} placeholder="LST, topped, defoliated…" style={_entryInput} />
@@ -180,7 +184,7 @@ const _selectInput = {
   appearance: "auto",
 };
 
-export function PlantHealthEntry({ entry, onChangeField, onRemove }) {
+export function PlantHealthEntry({ entry, onChangeField, onRemove, hidePlant }) {
   return (
     <div style={_entryCard}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -190,10 +194,12 @@ export function PlantHealthEntry({ entry, onChangeField, onRemove }) {
         </button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+        {!hidePlant && (
         <div>
           <span style={_entryLabel}>Plant</span>
           <input type="text" value={entry.plant} onChange={e => onChangeField("plant", e.target.value)} placeholder="Plant 1" style={_entryInput} />
         </div>
+        )}
         <div>
           <span style={_entryLabel}>Leaf Color</span>
           <select value={entry.color ?? ""} onChange={e => onChangeField("color", e.target.value)} style={_selectInput}>

@@ -456,6 +456,7 @@ export default function App() {
               onEditTaskForPhase={handleEditTaskForPhase}
               onTaskEditActiveChange={setTaskEditing}
               onPickerActiveChange={setPickerActive}
+              plants={survey?.strains ?? []}
             />
           </motion.div>
         )}
