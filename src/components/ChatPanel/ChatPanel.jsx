@@ -5,15 +5,27 @@ import { api } from "../../lib/api.js";
 import { MONO, SERIF } from "./constants.js";
 import { fmtContextDate, compressImage } from "./helpers.js";
 import ThreadStrip from "./ThreadStrip.jsx";
-import UsageBar from "./UsageBar.jsx";
 import Bubble from "./Bubble.jsx";
+
+// When the daily message cap is hit, MJ "clocks out" with a bit of personality
+// instead of showing a cold error. One line is picked at random each time.
+const REST_LINES = [
+  "I'm tired, boss… let me rest for the day. 😴",
+  "Whew — that's all the brainpower I've got today. Catch me tomorrow. 🌙",
+  "These leaves are wilting and so am I. Powering down 'til morning. 🌿💤",
+  "My circuits need a nap, boss. Let's pick this back up tomorrow. 😴",
+  "I've been in the garden all day. Time to rest — see you tomorrow! 🌱💤",
+];
+function pickRestLine() {
+  return REST_LINES[Math.floor(Math.random() * REST_LINES.length)];
+}
 
 export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, suggestions, onDataChanged }) {
   const [messages,       setMessages]      = useState([]);
   const [input,          setInput]         = useState("");
   const [busy,           setBusy]          = useState(false);
   const [error,          setError]         = useState("");
-  const [usage,          setUsage]         = useState(null);
+  const [resting,        setResting]       = useState("");
   const [historyLoading, setHistoryLoading]= useState(true);
   const [undoForMsgId,   setUndoForMsgId]  = useState(null);
   const [confirmClear,   setConfirmClear]  = useState(false);
@@ -59,18 +71,14 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
     if (!input && textareaRef.current) textareaRef.current.style.height = "auto";
   }, [input]);
 
-  // Reload history + usage whenever the thread changes.
+  // Reload history whenever the thread changes.
   useEffect(() => {
     let alive = true;
     setHistoryLoading(true);
     setMessages([]);
-    Promise.all([
-      api.getMjHistory(threadGrowId).catch(() => ({ history: [] })),
-      api.getMjUsage().catch(() => null),
-    ]).then(([h, u]) => {
+    api.getMjHistory(threadGrowId).catch(() => ({ history: [] })).then((h) => {
       if (!alive) return;
       setMessages(h.history ?? []);
-      if (u) setUsage(u);
       setHistoryLoading(false);
     });
     return () => { alive = false; };
@@ -104,6 +112,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
     setBusy(true);
     setInput("");
     setError("");
+    setResting("");
     const capturedPreview = imagePreview;
     const capturedImageData = imageData;
     setImagePreview(null);
@@ -131,14 +140,13 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
               return msgs;
             });
           },
-          onDone: ({ actions, usage: u, modelUsed }) => {
+          onDone: ({ actions }) => {
             setMessages(prev => {
               const msgs = [...prev];
               const last = msgs[msgs.length - 1];
               if (last?.role === "assistant") msgs[msgs.length - 1] = { ...last, actions: actions || [] };
               return msgs;
             });
-            if (u) setUsage({ ...u, modelUsed });
             if ((actions || []).some(a => a.undoPayload)) {
               setUndoForMsgId(msgId);
               undoTimerRef.current = setTimeout(() => setUndoForMsgId(null), 60_000);
@@ -154,10 +162,13 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
               if (last?.role === "assistant" && !last.content) return prev.slice(0, -1);
               return prev;
             });
-            const msg = err.status === 429
-              ? (err.message || "Daily message limit reached. Try again tomorrow.")
-              : (err.message || "Something went wrong. Try again.");
-            setError(msg);
+            // Daily limit reached → MJ "clocks out" with a playful line rather
+            // than a cold error. Everything else stays a normal error.
+            if (err.status === 429) {
+              setResting(pickRestLine());
+            } else {
+              setError(err.message || "Something went wrong. Try again.");
+            }
             resolve();
           },
         });
@@ -240,7 +251,9 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-muted)", textTransform: "uppercase" }}>MJ</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>Your grow assistant</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>
+              {resting ? "Resting until tomorrow 😴" : "Your grow assistant"}
+            </div>
             {contextDate && (
               <span style={{
                 fontFamily: MONO, fontSize: 11, letterSpacing: 1,
@@ -277,7 +290,6 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
             </button>
           )
         )}
-        <UsageBar usage={usage} />
       </div>
 
       {/* Thread strip */}
@@ -290,6 +302,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
             if (busy) return;
             setThreadGrowId(id);
             setError("");
+            setResting("");
             setUndoForMsgId(null);
           }}
         />
@@ -340,6 +353,22 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
             />
           );
         })}
+        {resting && (
+          <div style={{
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+            textAlign: "center", margin: "8px auto", maxWidth: 360,
+            background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
+            borderRadius: 14, padding: "18px 18px",
+          }}>
+            <div style={{ fontSize: 34 }}>😴</div>
+            <div style={{ fontSize: 14.5, color: "var(--c-text-dim)", lineHeight: 1.6, fontFamily: SERIF }}>
+              {resting}
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.5, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>
+              Back tomorrow
+            </div>
+          </div>
+        )}
         {error && (
           <div style={{ fontSize: 12.5, color: "var(--c-danger-soft)", background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.25)", borderRadius: 8, padding: "8px 10px" }}>{error}</div>
         )}
