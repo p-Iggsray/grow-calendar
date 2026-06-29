@@ -8,6 +8,8 @@ import AuthFooter from "./AuthFooter.jsx";
 import { usePlan } from "../lib/usePlan.jsx";
 import { growLocation, strainSummary } from "../lib/growProfile.js";
 import { useNotifications } from "../lib/useNotifications.js";
+import { useToast } from "../lib/useToast.jsx";
+import { api } from "../lib/api.js";
 
 const THEME_OPTIONS = [
   { value: "auto",  label: "Auto",  Icon: Monitor },
@@ -20,13 +22,35 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
   const location = growLocation(survey);
   const strains = strainSummary(survey);
   const [showShare, setShowShare] = useState(false);
+  const [reportBusy, setReportBusy] = useState(false);
+  const { addToast } = useToast();
   const { supported: notifSupported, permission, subscribed, busy: notifBusy, error: notifError, subscribe, unsubscribe } = useNotifications();
 
-  // Opens the full, print-ready grow report in a new tab (it has a built-in
-  // "Save as PDF / Print" button). Requires an active grow.
-  function openReport() {
-    if (!activeGrowId) return;
-    window.open(`/api/grows/${activeGrowId}/report`, "_blank", "noopener");
+  // Downloads the full, print-ready grow report as a self-contained HTML file
+  // (it has a built-in "Save as PDF / Print" button). We fetch + save rather
+  // than navigating to the URL: this is an installed standalone PWA (scope "/"),
+  // so a same-origin window.open is captured by the app window and replaces the
+  // running app — which looked like a hard refresh. Requires an active grow.
+  async function openReport() {
+    if (!activeGrowId || reportBusy) return;
+    setReportBusy(true);
+    try {
+      const html = await api.getGrowReport(activeGrowId);
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `grow-report-${activeGrowId}.html`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // Give the browser a moment to start the download before revoking.
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (err) {
+      addToast(`Could not export report: ${err?.message ?? "unknown error"}`);
+    } finally {
+      setReportBusy(false);
+    }
   }
   return (
     <div style={{
@@ -165,22 +189,22 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
         <button
           type="button"
           onClick={openReport}
-          disabled={!activeGrowId}
+          disabled={!activeGrowId || reportBusy}
           style={{
             display: "flex", alignItems: "center", gap: 10,
             width: "100%", padding: "14px 16px",
             background: "var(--c-surface-1)",
             border: "1px solid var(--c-border)",
-            borderRadius: 12, cursor: activeGrowId ? "pointer" : "default",
+            borderRadius: 12, cursor: activeGrowId && !reportBusy ? "pointer" : "default",
             color: activeGrowId ? "var(--c-text-dim)" : "var(--c-text-ghost)",
             fontFamily: "'Courier New', monospace",
             fontSize: 13, letterSpacing: 1,
-            opacity: activeGrowId ? 1 : 0.6,
+            opacity: activeGrowId && !reportBusy ? 1 : 0.6,
             transition: "opacity 0.15s",
           }}
         >
           <FileText size={16} strokeWidth={1.8} />
-          Export full grow report
+          {reportBusy ? "Preparing report…" : "Export full grow report"}
         </button>
       </div>
 

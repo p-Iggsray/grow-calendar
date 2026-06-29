@@ -167,6 +167,14 @@ export const api = {
     if (!res.ok) throw new Error(`Export failed: ${res.status}`);
     return res.blob();
   },
+  // Full print-ready grow report (self-contained HTML). Fetched (not navigated
+  // to) so an installed standalone PWA doesn't capture the navigation and
+  // replace the running app — see MoreScreen.openReport.
+  getGrowReport: async (growId) => {
+    const res = await fetch(`/api/grows/${encodeURIComponent(growId)}/report`, { credentials: "same-origin" });
+    if (!res.ok) throw new Error(`Report failed: ${res.status}`);
+    return res.text();
+  },
 
   getWeather: (growId) =>
     request(`/api/weather${growId ? `?growId=${encodeURIComponent(growId)}` : ""}`),
