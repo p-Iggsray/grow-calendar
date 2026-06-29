@@ -2,6 +2,7 @@
 // POST /mj/undo — reverts task check-offs and note appends made by MJ tools.
 import { json, error, safeJsonBounded } from "../util.js";
 import { loadRawPlan } from "../plan.js";
+import { loadRawGrow } from "../grows.js";
 import { parseConfig, parseDate } from "../../src/lib/planConfig.js";
 import { getPhase, getDetail } from "../../src/lib/growData.js";
 import { readCheckoffs, writeCheckoffs } from "../checkoffs.js";
@@ -20,10 +21,23 @@ export async function postMjUndo(request, env, user) {
 
   const growId = new URL(request.url).searchParams.get("growId") || await firstGrowId(env, user.id);
 
+  // Resolve the same plan the forward tool used: prefer the active grow's row
+  // (grows table), fall back to the legacy plan_config. Using loadRawPlan here
+  // unconditionally meant the task indices were validated against a different
+  // (often empty) plan than the one set_tasks_done wrote to, so undo silently
+  // no-opped or 400'd for multi-grow users.
+  async function loadRawForGrow() {
+    if (growId) {
+      const g = await loadRawGrow(env, user.id, growId);
+      if (g) return g;
+    }
+    return loadRawPlan(env, user.id);
+  }
+
   if (type === "set_tasks_done") {
     const { taskIndices, done } = body;
     if (!Array.isArray(taskIndices) || typeof done !== "boolean") return error(400, "invalid undo payload");
-    const raw = await loadRawPlan(env, user.id);
+    const raw = await loadRawForGrow();
     if (raw.needsSetup) return error(400, "no plan configured");
     const config = parseConfig(raw.config);
     const dt = parseDate(date);

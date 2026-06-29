@@ -157,7 +157,7 @@ async function authenticatedRoute(request, env, path, method, user) {
   }
   if (path === "/api/errors"    && method === "POST") return postClientError(request, env, user);
 
-  if (path === "/api/stats"         && method === "GET")  return getStats(env, user);
+  if (path === "/api/stats"         && method === "GET")  return getStats(env, user, await resolveGrowId(env, user, new URL(request.url)));
 
   if (path === "/api/grows" && method === "GET")  return listGrows(env, user);
   if (path === "/api/grows" && method === "POST") return createGrow(request, env, user);

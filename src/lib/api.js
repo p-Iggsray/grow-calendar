@@ -200,7 +200,7 @@ export const api = {
   clearPlanPhase: (phase) =>
     request(`/api/plan/phase/${phase}`, { method: "DELETE" }),
 
-  getStats: () => request("/api/stats"),
+  getStats: (growId) => request(withGrow("/api/stats", growId)),
 
   listGrows: () => request("/api/grows"),
   createGrow: (data) =>

@@ -42,6 +42,31 @@ let _schemaReady = false;
 
 export async function ensureGrowLogSchema(env) {
   if (_schemaReady) return;
+  // Self-heal the table like plant_log/grows do, rather than assuming schema.sql
+  // already ran. Without this, a fresh/partial D1 makes every grow_log write
+  // throw an unhandled 500. If the CREATE throws it propagates and _schemaReady
+  // stays false, so the next request retries instead of caching "ready".
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS grow_log (
+      user_id      INTEGER NOT NULL,
+      grow_id      TEXT NOT NULL,
+      date         TEXT NOT NULL,
+      water_gal    REAL,
+      feed         TEXT,
+      temp_high    REAL,
+      temp_low     REAL,
+      humidity     REAL,
+      ec_in        REAL,
+      ec_out       REAL,
+      water_plants TEXT,
+      training     TEXT,
+      plant_health TEXT,
+      updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (user_id, grow_id, date)
+    )
+  `).run();
+  // Backfill columns on databases created before they were added (no-ops on a
+  // freshly-created table above).
   const cols = [
     "ALTER TABLE grow_log ADD COLUMN ec_in REAL",
     "ALTER TABLE grow_log ADD COLUMN ec_out REAL",

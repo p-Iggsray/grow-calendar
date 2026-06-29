@@ -78,8 +78,8 @@ function StrainCard({ name, harvestDate, today, config }) {
 }
 
 export default function StatsScreen({ config, today, onClose }) {
-  const { stats, loading } = useStats(Boolean(config));
-  const { survey } = usePlan();
+  const { survey, activeGrowId } = usePlan();
+  const { stats, loading } = useStats(Boolean(config), activeGrowId);
   const location = growLocation(survey);
 
   // Up to two strain cards: primary maps to gdpHarvest, secondary to hazeHarvest.
