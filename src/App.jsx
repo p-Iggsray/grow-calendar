@@ -417,8 +417,9 @@ export default function App() {
                 location={growLocation(survey)}
                 strains={strainSummary(survey)}
               />
-              {/* Once final harvest has passed, nudge toward the drying tracker. */}
-              {config?.hazeHarvest && today >= config.hazeHarvest && <PhasePrompt today={today} />}
+              {/* Drying entry point — always available, but only prominent once
+                  final harvest has passed (`due`). */}
+              <PhasePrompt today={today} due={Boolean(config?.hazeHarvest && today >= config.hazeHarvest)} />
               <MilestoneStrip today={today} milestones={milestones} onPick={pickMilestone} />
               <Calendar
                 today={today}
