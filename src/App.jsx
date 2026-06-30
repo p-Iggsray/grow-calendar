@@ -21,6 +21,7 @@ import { useOnlineStatus } from "./lib/useOnlineStatus.js";
 import { flushCheckoffQueue } from "./lib/offlineQueue.js";
 import { useTheme } from "./lib/useTheme.js";
 import { growLocation, strainSummary } from "./lib/growProfile.js";
+import { getLifecyclePhase, phaseMeta } from "./lib/lifecycle.js";
 
 import Header from "./components/Header.jsx";
 import MilestoneStrip from "./components/MilestoneStrip.jsx";
@@ -30,6 +31,7 @@ import TabBar from "./components/TabBar.jsx";
 import MoreScreen from "./components/MoreScreen.jsx";
 import GrowsListTab from "./components/GrowsListTab.jsx";
 import PlantsTab from "./components/PlantsTab/PlantsTab.jsx";
+import PhasePrompt from "./components/Lifecycle/PhasePrompt.jsx";
 
 // Heavy, rarely-on-screen panels load on demand so they stay out of the
 // initial bundle. The service worker runtime-caches each chunk on first use.
@@ -40,6 +42,9 @@ const AdminPanel    = lazy(() => import("./components/AdminPanel.jsx"));
 const StatsScreen   = lazy(() => import("./components/StatsScreen.jsx"));
 const GardenMap     = lazy(() => import("./components/GardenMap.jsx"));
 const GrowSettings  = lazy(() => import("./components/GrowSettings.jsx"));
+const DryingTracker = lazy(() => import("./components/Lifecycle/DryingTracker.jsx"));
+const CuringTracker = lazy(() => import("./components/Lifecycle/CuringTracker.jsx"));
+const GrowComplete  = lazy(() => import("./components/Lifecycle/GrowComplete.jsx"));
 
 const SHELL_STYLE = {
   fontFamily: "'Georgia', 'Times New Roman', serif",
@@ -85,7 +90,8 @@ export default function App() {
   const today    = useToday();
   const online   = useOnlineStatus();
   const { theme, setTheme } = useTheme();
-  const { grows, activeGrowId, setActiveGrowId, config, overrides, generatedPlan, phaseOverrides, eventRules, survey, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
+  const { grows, activeGrowId, setActiveGrowId, config, overrides, generatedPlan, phaseOverrides, eventRules, survey, lifecycle, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
+  const lifecyclePhase = getLifecyclePhase(lifecycle);
   const [month,       setMonth]      = useState(() => today.getMonth());
   const [selected,    setSelected]   = useState(null);
   const [activeTab,   setActiveTab]  = useState("calendar");
@@ -383,6 +389,18 @@ export default function App() {
             >
               <PlantsTab />
             </motion.div>
+          ) : lifecyclePhase === "drying" ? (
+            <motion.div key="drying" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FADE_DURATION}>
+              <Suspense fallback={null}><DryingTracker today={today} /></Suspense>
+            </motion.div>
+          ) : lifecyclePhase === "curing" ? (
+            <motion.div key="curing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FADE_DURATION}>
+              <Suspense fallback={null}><CuringTracker today={today} /></Suspense>
+            </motion.div>
+          ) : lifecyclePhase === "done" ? (
+            <motion.div key="done" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FADE_DURATION}>
+              <Suspense fallback={null}><GrowComplete onStartNewGrow={() => setActiveTab("plan")} /></Suspense>
+            </motion.div>
           ) : (
             <motion.div
               key="calendar"
@@ -399,6 +417,8 @@ export default function App() {
                 location={growLocation(survey)}
                 strains={strainSummary(survey)}
               />
+              {/* Once final harvest has passed, nudge toward the drying tracker. */}
+              {config?.hazeHarvest && today >= config.hazeHarvest && <PhasePrompt today={today} />}
               <MilestoneStrip today={today} milestones={milestones} onPick={pickMilestone} />
               <Calendar
                 today={today}
@@ -421,7 +441,7 @@ export default function App() {
 
       {/* DayView — slides up as a fixed overlay over everything */}
       <AnimatePresence>
-        {activeTab === "calendar" && selected && (
+        {activeTab === "calendar" && lifecyclePhase === "growing" && selected && (
           <motion.div
             key="dayview"
             initial={{ y: "100%" }}
@@ -548,6 +568,7 @@ export default function App() {
         <TabBar
           activeTab={activeTab}
           onTab={handleTab}
+          firstTab={phaseMeta(lifecyclePhase)}
         />
       )}
     </div>

@@ -9,6 +9,7 @@ import {
 } from "./planSetup.js";
 import { ensurePlantIds, backfillStrainsFromPlan } from "./plantsRoster.js";
 import { validateEventRule, MAX_RULES_PER_GROW } from "./eventRulesValidate.js";
+import { LIFECYCLE_PHASES } from "../src/lib/lifecycle.js";
 
 const VALID_PHASES = new Set([
   "transplant", "early_veg", "veg_cm", "veg_half", "veg_full",
@@ -38,6 +39,7 @@ async function ensureMigrated(env, userId) {
         generated_plan  TEXT,
         phase_overrides TEXT,
         event_rules     TEXT,
+        lifecycle       TEXT,
         created_at      TEXT NOT NULL,
         updated_at      TEXT NOT NULL
       )`
@@ -52,6 +54,11 @@ async function ensureMigrated(env, userId) {
       `CREATE INDEX IF NOT EXISTS idx_grows_user_id ON grows(user_id, created_at DESC)`
     ).run();
   } catch { /* index may already exist */ }
+  // Backfill the post-harvest lifecycle column on grows tables created before it
+  // existed (no-op on a freshly-created table above).
+  try {
+    await env.DB.prepare(`ALTER TABLE grows ADD COLUMN lifecycle TEXT`).run();
+  } catch { /* column already exists */ }
 
   const existing = await env.DB.prepare(
     "SELECT id FROM grows WHERE user_id = ? LIMIT 1"
@@ -115,6 +122,7 @@ export async function loadRawGrow(env, userId, growId) {
     phaseOverrides: parseField(row.phase_overrides) ?? {},
     eventRules:     parseField(row.event_rules) ?? [],
     survey:        parseField(row.survey),
+    lifecycle:     parseField(row.lifecycle),
     needsSetup:    !row.config,
     displayName:   row.display_name,
     status:        row.status,
@@ -126,7 +134,7 @@ export async function loadRawGrow(env, userId, growId) {
 export async function loadRawGrows(env, userId) {
   await ensureMigrated(env, userId);
   const res = await env.DB.prepare(
-    `SELECT id, display_name, status, config, survey, generated_plan, created_at
+    `SELECT id, display_name, status, config, survey, generated_plan, lifecycle, created_at
      FROM grows WHERE user_id = ? ORDER BY created_at DESC`
   ).bind(userId).all();
   return (res.results ?? []).map(r => ({
@@ -136,6 +144,7 @@ export async function loadRawGrows(env, userId) {
     config:        parseField(r.config),
     survey:        parseField(r.survey),
     generatedPlan: parseField(r.generated_plan),
+    lifecycle:     parseField(r.lifecycle),
     createdAt:     r.created_at,
   }));
 }
@@ -235,6 +244,7 @@ export async function getGrow(env, user, growId) {
     phaseOverrides,
     eventRules,
     survey,
+    lifecycle:    parseField(row.lifecycle),
     needsSetup:   !config,
     createdAt:    row.created_at,
     updatedAt:    row.updated_at,
@@ -277,6 +287,104 @@ export async function patchGrow(request, env, user, growId) {
   ).bind(...binds).run();
 
   return json({ ok: true });
+}
+
+// ── Lifecycle (post-harvest drying/curing/done) ──────────────────────────────
+const MAX_LIFECYCLE_LOGS = 120;
+
+function clampNum(v, lo, hi) {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(lo, Math.min(hi, n));
+}
+function clampStr(v, max) {
+  if (typeof v !== "string") return "";
+  return v.slice(0, max);
+}
+function validDateOrNull(v) {
+  return typeof v === "string" && DATE_RE.test(v) ? v : null;
+}
+
+// Belt-and-suspenders validation of a full lifecycle object before it's stored
+// (same style as validatePlantFields): unknown/oversized data is dropped, not
+// trusted. Returns { ok, value } or { ok:false, error }.
+export function validateLifecycle(input) {
+  if (!input || typeof input !== "object") return { ok: false, error: "lifecycle object required" };
+  if (!LIFECYCLE_PHASES.has(input.phase)) return { ok: false, error: "invalid phase" };
+
+  const checklist = {};
+  if (input.dryChecklist && typeof input.dryChecklist === "object") {
+    for (const [k, v] of Object.entries(input.dryChecklist).slice(0, 20)) {
+      checklist[clampStr(k, 40)] = v === true;
+    }
+  }
+
+  const dryLogs = (Array.isArray(input.dryLogs) ? input.dryLogs : [])
+    .slice(-MAX_LIFECYCLE_LOGS)
+    .map(e => ({
+      date: validDateOrNull(e?.date),
+      tempF: clampNum(e?.tempF, -20, 200),
+      rh: clampNum(e?.rh, 0, 100),
+      note: clampStr(e?.note, 500),
+    }))
+    .filter(e => e.date);
+
+  const cureLogs = (Array.isArray(input.cureLogs) ? input.cureLogs : [])
+    .slice(-MAX_LIFECYCLE_LOGS)
+    .map(e => ({
+      date: validDateOrNull(e?.date),
+      rh: clampNum(e?.rh, 0, 100),
+      burped: e?.burped === true,
+      note: clampStr(e?.note, 500),
+    }))
+    .filter(e => e.date);
+
+  return {
+    ok: true,
+    value: {
+      phase: input.phase,
+      dryStartedAt: validDateOrNull(input.dryStartedAt),
+      cureStartedAt: validDateOrNull(input.cureStartedAt),
+      finishedAt: validDateOrNull(input.finishedAt),
+      dryChecklist: checklist,
+      dryLogs,
+      cureLogs,
+      finalWeightG: clampNum(input.finalWeightG, 0, 1000000),
+      finalNotes: clampStr(input.finalNotes, 2000),
+    },
+  };
+}
+
+// PATCH /api/grows/:id/lifecycle — full-replace write of the validated lifecycle.
+export async function patchGrowLifecycle(request, env, user, growId) {
+  const row = await env.DB.prepare(
+    "SELECT id FROM grows WHERE id = ? AND user_id = ?"
+  ).bind(growId, user.id).first();
+  if (!row) return error(404, "grow not found");
+
+  let body;
+  { const p = await safeJsonBounded(request, 131072); if (!p.ok) return error(p.status, p.error); body = p.data; }
+
+  const v = validateLifecycle(body?.lifecycle);
+  if (!v.ok) return error(400, v.error);
+
+  // Make sure the column exists on older grows tables before writing to it.
+  try { await env.DB.prepare(`ALTER TABLE grows ADD COLUMN lifecycle TEXT`).run(); } catch { /* exists */ }
+
+  const now = new Date().toISOString();
+  // Finishing the grow also flips its top-level status so cards/badges reflect it.
+  if (v.value.phase === "done") {
+    await env.DB.prepare(
+      "UPDATE grows SET lifecycle = ?, status = 'harvested', updated_at = ? WHERE id = ? AND user_id = ?"
+    ).bind(JSON.stringify(v.value), now, growId, user.id).run();
+  } else {
+    await env.DB.prepare(
+      "UPDATE grows SET lifecycle = ?, updated_at = ? WHERE id = ? AND user_id = ?"
+    ).bind(JSON.stringify(v.value), now, growId, user.id).run();
+  }
+
+  return json({ ok: true, lifecycle: v.value });
 }
 
 // DELETE /api/grows/:id

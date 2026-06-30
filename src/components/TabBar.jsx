@@ -1,15 +1,24 @@
 import { motion } from "framer-motion";
-import { CalendarDays, Sprout, Sparkles, ClipboardList, MoreHorizontal } from "lucide-react";
+import { CalendarDays, Wind, Package, CheckCircle2, Sprout, Sparkles, ClipboardList, MoreHorizontal } from "lucide-react";
 
-const TABS = [
-  { id: "calendar", Icon: CalendarDays,   label: "CALENDAR" },
-  { id: "plants",   Icon: Sprout,          label: "PLANTS"   },
-  { id: "mj",       Icon: Sparkles,        label: "MJ"       },
-  { id: "plan",     Icon: ClipboardList,   label: "PLAN"     },
-  { id: "more",     Icon: MoreHorizontal,  label: "MORE"     },
-];
+// The first tab is phase-aware: it's the calendar while growing, then morphs
+// into the drying/curing/done tracker label + icon as the grow finishes.
+const FIRST_TAB_ICON = {
+  growing: CalendarDays,
+  drying:  Wind,
+  curing:  Package,
+  done:    CheckCircle2,
+};
 
-export default function TabBar({ activeTab, onTab }) {
+export default function TabBar({ activeTab, onTab, firstTab }) {
+  const FirstIcon = FIRST_TAB_ICON[firstTab?.key] ?? CalendarDays;
+  const TABS = [
+    { id: "calendar", Icon: FirstIcon,     label: firstTab?.tabLabel ?? "CALENDAR" },
+    { id: "plants",   Icon: Sprout,         label: "PLANTS"   },
+    { id: "mj",       Icon: Sparkles,       label: "MJ"       },
+    { id: "plan",     Icon: ClipboardList,  label: "PLAN"     },
+    { id: "more",     Icon: MoreHorizontal, label: "MORE"     },
+  ];
   return (
     <nav
       aria-label="Main navigation"

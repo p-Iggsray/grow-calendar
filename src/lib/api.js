@@ -210,6 +210,8 @@ export const api = {
     request(`/api/grows/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteGrow: (id) =>
     request(`/api/grows/${id}`, { method: "DELETE", body: "{}" }),
+  updateGrowLifecycle: (id, lifecycle) =>
+    request(`/api/grows/${id}/lifecycle`, { method: "PATCH", body: JSON.stringify({ lifecycle }) }),
   setupGrow: (id, survey) =>
     request(`/api/grows/${id}/setup`, { method: "POST", body: JSON.stringify({ survey }) }),
   regenerateGrow: (id) =>

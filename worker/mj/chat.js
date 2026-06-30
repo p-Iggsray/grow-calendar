@@ -4,8 +4,9 @@
 import { error, safeJsonBounded } from "../util.js";
 import { loadRawPlan } from "../plan.js";
 import { loadRawGrow, loadRawGrows } from "../grows.js";
-import { parseConfig } from "../../src/lib/planConfig.js";
+import { parseConfig, parseDate } from "../../src/lib/planConfig.js";
 import { buildPlanText } from "../../src/lib/planText.js";
+import { getLifecyclePhase, dryProgress, cureProgress } from "../../src/lib/lifecycle.js";
 import { growLocation, strainSummary } from "../../src/lib/growProfile.js";
 import { firstGrowId } from "../perDayScope.js";
 import { GEMINI_DAILY_LIMIT, GEMINI_PRO_DAILY_LIMIT, PER_USER_DAILY_CAP } from "../limits.js";
@@ -127,12 +128,27 @@ export async function postMj(request, env, user) {
   ].filter(Boolean);
   const growProfile = profileParts.length ? `Active grow profile — ${profileParts.join(" · ")}.` : "";
 
+  // Tell MJ which post-harvest phase the grow is in so advice matches reality
+  // (the calendar is hidden once drying/curing starts).
+  let lifecycleContext = "";
+  const lcPhase = getLifecyclePhase(raw.lifecycle);
+  if (lcPhase === "drying") {
+    const p = dryProgress(raw.lifecycle, parseDate(today));
+    lifecycleContext = `LIFECYCLE: This grow is DRYING${p ? ` (day ${p.dayNum}, target ~${p.target} days at ~60°F/60% RH)` : ""}. The calendar is finished; help with drying and when to move to jars/curing.`;
+  } else if (lcPhase === "curing") {
+    const p = cureProgress(raw.lifecycle, parseDate(today));
+    lifecycleContext = `LIFECYCLE: This grow is CURING${p ? ` (day ${p.dayNum}; min 2 weeks, great at 4+)` : ""} in jars at ~62% RH. Help with burping cadence and when it's well cured.`;
+  } else if (lcPhase === "done") {
+    lifecycleContext = "LIFECYCLE: This grow is COMPLETE (harvested, dried, and cured). Help with storage, review, or planning the next grow.";
+  }
+
   // Assemble system prompt segments.
   const planText  = buildPlanText(config, overrides, raw.generatedPlan, phaseOverrides, eventRules);
   const baseBlock = [MJ_PERSONA, "", planText, "", supplyContext].filter(s => s !== "").join("\n");
 
   const dynamicParts = [
     growProfile,
+    lifecycleContext,
     growsContext,
     growLogContext,
     weatherContext,
