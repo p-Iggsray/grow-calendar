@@ -33,22 +33,25 @@ export default function PhasePrompt({ today, due }) {
     />
   );
 
-  // Quiet mode: a small, low-key link. Shown before harvest, or after the bright
-  // banner is dismissed.
+  // Quiet mode: a real, tappable button — just styled calmly so it doesn't
+  // compete with the calendar. Shown before harvest, or after the bright banner
+  // is dismissed.
   if (!due || dismissed) {
     return (
-      <div style={{ padding: "10px 14px 0", textAlign: "center" }}>
+      <div style={{ padding: "10px 14px 0" }}>
         <button
           type="button"
           onClick={() => setConfirm(true)}
           disabled={busy}
           style={{
-            background: "none", border: "none", cursor: busy ? "default" : "pointer",
-            color: "var(--c-text-ghost)", fontFamily: MONO, fontSize: 11.5, letterSpacing: 0.5,
-            padding: "6px 10px", display: "inline-flex", alignItems: "center", gap: 6,
+            width: "100%", minHeight: 46, padding: "12px 14px", borderRadius: 12,
+            background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
+            color: "var(--c-text-dim)", cursor: busy ? "default" : "pointer",
+            fontFamily: MONO, fontSize: 12.5, letterSpacing: 0.5,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}>
-          <Wind size={13} strokeWidth={1.6} />
-          Harvested early? Start drying
+          <Wind size={15} strokeWidth={1.8} />
+          Start drying
         </button>
         {modal}
       </div>
