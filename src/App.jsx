@@ -32,6 +32,7 @@ import MoreScreen from "./components/MoreScreen.jsx";
 import GrowsListTab from "./components/GrowsListTab.jsx";
 import PlantsTab from "./components/PlantsTab/PlantsTab.jsx";
 import PhasePrompt from "./components/Lifecycle/PhasePrompt.jsx";
+import { AppShellSkeleton, PanelSkeleton } from "./components/LoadingScreens.jsx";
 
 // Heavy, rarely-on-screen panels load on demand so they stay out of the
 // initial bundle. The service worker runtime-caches each chunk on first use.
@@ -64,15 +65,6 @@ function NewGrowInitializer({ onReady }) {
   return (
     <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "var(--c-text-ghost)", letterSpacing: 4 }}>
       SETTING UP…
-    </div>
-  );
-}
-
-// Monospace status line used for plan loading and lazy-chunk fallbacks.
-function LoadingPane({ label = "LOADING PLAN" }) {
-  return (
-    <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "var(--c-text-ghost)", letterSpacing: 4 }}>
-      {label}
     </div>
   );
 }
@@ -182,10 +174,14 @@ export default function App() {
       </div>
     );
   }
-  if (planLoading) {
+  // Only blank to the skeleton on the FIRST load (no config yet). reload() and
+  // grow switches also flip planLoading, but we keep the current UI on screen
+  // while they refetch so the whole app doesn't flash to a skeleton every time
+  // MJ acts, a phase transitions, or a plant is edited.
+  if (planLoading && !config) {
     return (
       <div style={SHELL_STYLE}>
-        <LoadingPane />
+        <AppShellSkeleton />
       </div>
     );
   }
@@ -194,7 +190,7 @@ export default function App() {
   if (wizardGrowId) {
     return (
       <div style={SHELL_STYLE}>
-        <Suspense fallback={<LoadingPane />}>
+        <Suspense fallback={<PanelSkeleton />}>
         <SetupWizard
           growId={wizardGrowId}
           onComplete={() => {
@@ -228,7 +224,7 @@ export default function App() {
   if (reviewPending && config) {
     return (
       <div style={SHELL_STYLE}>
-        <Suspense fallback={<LoadingPane />}>
+        <Suspense fallback={<PanelSkeleton />}>
         <MjReviewPanel
           activeGrowId={activeGrowId}
           onComplete={() => { setReviewPending(false); setActiveTab("plan"); reloadPlan(); }}
@@ -242,7 +238,7 @@ export default function App() {
   if (!config) {
     return (
       <div style={SHELL_STYLE}>
-        <LoadingPane />
+        <AppShellSkeleton />
       </div>
     );
   }
@@ -391,15 +387,15 @@ export default function App() {
             </motion.div>
           ) : lifecyclePhase === "drying" ? (
             <motion.div key="drying" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FADE_DURATION}>
-              <Suspense fallback={null}><DryingTracker today={today} /></Suspense>
+              <Suspense fallback={<PanelSkeleton />}><DryingTracker today={today} /></Suspense>
             </motion.div>
           ) : lifecyclePhase === "curing" ? (
             <motion.div key="curing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FADE_DURATION}>
-              <Suspense fallback={null}><CuringTracker today={today} /></Suspense>
+              <Suspense fallback={<PanelSkeleton />}><CuringTracker today={today} /></Suspense>
             </motion.div>
           ) : lifecyclePhase === "done" ? (
             <motion.div key="done" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FADE_DURATION}>
-              <Suspense fallback={null}><GrowComplete onStartNewGrow={() => setActiveTab("plan")} /></Suspense>
+              <Suspense fallback={<PanelSkeleton />}><GrowComplete onStartNewGrow={() => setActiveTab("plan")} /></Suspense>
             </motion.div>
           ) : (
             <motion.div

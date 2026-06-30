@@ -1,4 +1,5 @@
 // --- Weather card (Threats tab, today + future only) ---
+import { Skeleton } from "../Skeleton.jsx";
 
 const SEVERITY_COLOR = {
   Extreme: "#ef4444",
@@ -21,13 +22,17 @@ function fmt12h(iso) {
 export function WeatherCard({ weather, loading }) {
   if (loading) {
     return (
-      <div style={{
+      <div role="status" aria-busy="true" aria-label="Loading weather" style={{
         background: "rgba(56,189,248,0.06)", borderRadius: 10,
         border: "1px solid rgba(56,189,248,0.15)", padding: "12px 14px",
-        fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-info-dim)",
-        letterSpacing: 1, textTransform: "uppercase",
+        display: "flex", flexDirection: "column", gap: 10,
       }}>
-        Loading weather…
+        <Skeleton width="40%" height={12} />
+        <div style={{ display: "flex", gap: 8 }}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} width={44} height={48} radius={8} style={{ flexShrink: 0 }} />
+          ))}
+        </div>
       </div>
     );
   }

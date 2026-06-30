@@ -19,8 +19,12 @@ export function useWeather(enabled, growId = null) {
     aborted.current = false;
 
     const hit = _cache.get(cacheKey);
+    // Re-sync displayed data to THIS key first so a grow switch never briefly
+    // shows the previous grow's forecast (the useState initializer only ran on
+    // mount, so `data` can still hold the old key's value here).
+    setData(hit?.data ?? null);
+
     if (hit && Date.now() - hit.fetchedAt < CACHE_MS) {
-      setData(hit.data);
       setLoading(false);
       return;
     }

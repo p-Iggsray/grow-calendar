@@ -3,6 +3,7 @@ import { X, Check, Trash2 } from "lucide-react";
 import { api } from "../lib/api.js";
 import { Label, Input, RadioGroup, MONO, SERIF } from "./SetupWizard/styleHelpers.jsx";
 import DeleteGrowConfirm from "./DeleteGrowConfirm.jsx";
+import { Skeleton } from "./Skeleton.jsx";
 
 // Full timeline, grouped for scanning. Each row edits one config date key
 // independently — nothing cascades, the grower has full manual control.
@@ -161,8 +162,21 @@ export default function GrowSettings({ growId, onClose, onSaved, onDeleted }) {
       </div>
 
       {loading && (
-        <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 3, color: "var(--c-text-ghost)", padding: "24px 4px" }}>
-          LOADING…
+        <div role="status" aria-busy="true" aria-label="Loading grow settings" style={{ display: "flex", flexDirection: "column", gap: 20, padding: "8px 0" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <Skeleton width={90} height={11} />
+            <Skeleton width="100%" height={44} radius={10} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <Skeleton width={70} height={11} />
+            <Skeleton width="100%" height={44} radius={10} />
+          </div>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <Skeleton width="40%" height={13} />
+              <Skeleton width={120} height={36} radius={10} />
+            </div>
+          ))}
         </div>
       )}
 

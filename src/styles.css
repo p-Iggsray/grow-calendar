@@ -196,8 +196,27 @@ textarea {
   animation: today-pulse 2.4s ease-in-out infinite;
 }
 
+/* Skeleton loading placeholders: a soft shimmer sweeping across a muted block. */
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--c-surface-1) 25%,
+    var(--c-surface-2) 37%,
+    var(--c-surface-1) 63%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cell-today { animation: none; }
+  .skeleton { animation: none; }
   * { transition: none !important; }
 }
 

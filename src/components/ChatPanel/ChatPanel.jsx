@@ -6,6 +6,7 @@ import { MONO, SERIF } from "./constants.js";
 import { fmtContextDate, compressImage } from "./helpers.js";
 import ThreadStrip from "./ThreadStrip.jsx";
 import Bubble from "./Bubble.jsx";
+import { Skeleton } from "../Skeleton.jsx";
 
 // When the daily message cap is hit, MJ "clocks out" with a bit of personality
 // instead of showing a cold error. One line is picked at random each time.
@@ -316,8 +317,12 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
         WebkitOverflowScrolling: "touch",
       }}>
         {historyLoading && (
-          <div style={{ margin: "auto", fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", letterSpacing: 2 }}>
-            LOADING...
+          <div role="status" aria-busy="true" aria-label="Loading conversation" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {[{ me: false, w: "72%" }, { me: true, w: "55%" }, { me: false, w: "80%" }, { me: false, w: "40%" }].map((b, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: b.me ? "flex-end" : "flex-start" }}>
+                <Skeleton width={b.w} height={b.me ? 38 : 56} radius={14} />
+              </div>
+            ))}
           </div>
         )}
         {!historyLoading && messages.length === 0 && (

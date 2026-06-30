@@ -7,6 +7,7 @@ import { MONO, SERIF, TYPE_LABEL, HEALTH_MAP, STAGE_ORDER, stageLabel, nextStage
 import LogEntryForm from "./LogEntryForm.jsx";
 import AddPlantSheet from "./AddPlantSheet.jsx";
 import StageTimeline from "./StageTimeline.jsx";
+import { Skeleton } from "../Skeleton.jsx";
 
 function Meta({ label, value }) {
   return (
@@ -18,7 +19,7 @@ function Meta({ label, value }) {
 }
 
 export default function PlantDetail({ growId, plant, harvestLabel, onClose, onArchive, onDelete, onLogChange, onChanged }) {
-  const { entries, addEntry, removeEntry } = usePlantLog(growId, plant.id, true);
+  const { entries, loading: logLoading, addEntry, removeEntry } = usePlantLog(growId, plant.id, true);
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -161,7 +162,15 @@ export default function PlantDetail({ growId, plant, harvestLabel, onClose, onAr
           </div>
         )}
 
-        {combined.length === 0 && !adding && (
+        {logLoading && combined.length === 0 && (
+          <div role="status" aria-busy="true" aria-label="Loading log" style={{ display: "flex", flexDirection: "column", gap: 10, padding: "6px 0" }}>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} width="100%" height={52} radius={12} />
+            ))}
+          </div>
+        )}
+
+        {!logLoading && combined.length === 0 && !adding && (
           <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-ghost)", padding: "12px 0" }}>No log entries yet.</div>
         )}
 

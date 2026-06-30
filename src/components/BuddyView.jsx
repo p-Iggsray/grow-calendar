@@ -4,6 +4,7 @@ import { parseConfig } from "../lib/planConfig.js";
 import { useToday, MONTH_NAMES, DOW_SHORT, sameDay } from "../lib/dates.js";
 import { PHASES, getPhase, getDetail, phaseGlyph } from "../lib/growData.js";
 import PhaseLegend from "./PhaseLegend.jsx";
+import { AppShellSkeleton } from "./LoadingScreens.jsx";
 
 const MONO = "'Courier New', monospace";
 const SERIF = "'Georgia', 'Times New Roman', serif";
@@ -144,11 +145,8 @@ export default function BuddyView({ token }) {
 
   if (!data || !config) {
     return (
-      <div style={{
-        minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
-        background: "var(--c-bg)", fontFamily: MONO, fontSize: 12, letterSpacing: 4, color: "var(--c-text-ghost)",
-      }}>
-        LOADING
+      <div style={{ minHeight: "100vh", background: "var(--c-bg)" }}>
+        <AppShellSkeleton />
       </div>
     );
   }

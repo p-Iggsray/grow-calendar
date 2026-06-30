@@ -1,5 +1,6 @@
-import { ChevronLeft, Loader, Droplets, Thermometer, CheckSquare, BookOpen, BarChart2 } from "lucide-react";
+import { ChevronLeft, Droplets, Thermometer, CheckSquare, BookOpen, BarChart2 } from "lucide-react";
 import { useStats } from "../lib/useStats.js";
+import { Skeleton } from "./Skeleton.jsx";
 import { usePlan } from "../lib/usePlan.jsx";
 import { distinctStrains, growLocation } from "../lib/growProfile.js";
 
@@ -184,8 +185,18 @@ export default function StatsScreen({ config, today, onClose }) {
       {/* By the Numbers */}
       <SectionTitle>By the Numbers</SectionTitle>
       {loading ? (
-        <div style={{ display: "flex", justifyContent: "center", padding: "20px 0" }}>
-          <Loader size={18} strokeWidth={1.5} style={{ color: "var(--c-text-ghost)", animation: "spin 1s linear infinite" }} />
+        <div role="status" aria-busy="true" aria-label="Loading stats" style={{
+          background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
+          borderRadius: 12, padding: "4px 16px",
+        }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 0", borderBottom: i < 3 ? "1px solid var(--c-border-faint)" : "none" }}>
+              <Skeleton width={14} height={14} radius={4} />
+              <Skeleton width="45%" height={11} />
+              <div style={{ flex: 1 }} />
+              <Skeleton width={56} height={12} />
+            </div>
+          ))}
         </div>
       ) : stats ? (
         <div style={{
