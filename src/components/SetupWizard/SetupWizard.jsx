@@ -7,6 +7,7 @@ import { StepStrains } from "./StepStrains.jsx";
 import { StepTimeline } from "./StepTimeline.jsx";
 import { StepSetup } from "./StepSetup.jsx";
 import { StepSupplies } from "./StepSupplies.jsx";
+import { StepTasks } from "./StepTasks.jsx";
 import { StepReview } from "./StepReview.jsx";
 import { GeneratingScreen } from "./GeneratingScreen.jsx";
 
@@ -18,6 +19,7 @@ const STEPS = [
   { id: "timeline", title: "Timeline" },
   { id: "setup",    title: "Your Setup" },
   { id: "supplies", title: "Supplies" },
+  { id: "tasks",    title: "Daily Tasks" },
   { id: "review",   title: "Review & Generate" },
 ];
 
@@ -28,6 +30,18 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
   );
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState("");
+  // Task-mode choice (Daily Tasks step). firstGrow=yes → guided; no+autofill →
+  // autofill; no+manual → manual.
+  const [firstGrow, setFirstGrow] = useState(null);
+  const [autofill, setAutofill] = useState(null);
+
+  const taskMode = firstGrow === true
+    ? "guided"
+    : autofill === true
+      ? "autofill"
+      : autofill === false
+        ? "manual"
+        : null;
 
   function update(field, value) {
     setSurvey(s => ({ ...s, [field]: value }));
@@ -37,6 +51,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
     if (step === 0) return survey.growName.trim().length > 0;
     if (step === 1) return survey.strains.every(s => s.name.trim().length > 0);
     if (step === 2) return survey.transplantDate.length > 0;
+    if (STEPS[step].id === "tasks") return taskMode !== null;
     return true;
   }
 
@@ -45,11 +60,11 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
     setGenError("");
     try {
       if (growId) {
-        await api.setupGrow(growId, survey);
+        await api.setupGrow(growId, survey, taskMode || "guided");
       } else {
         await api.planSetup(survey);
       }
-      onComplete();
+      onComplete(taskMode || "guided");
     } catch (err) {
       setGenError(err.message || "Generation failed. Please try again.");
       setGenerating(false);
@@ -97,7 +112,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
       {/* Scrollable content */}
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px" }}>
         {generating ? (
-          <GeneratingScreen />
+          <GeneratingScreen manual={taskMode === "manual"} />
         ) : (
           <>
             {step === 0 && <StepBasics survey={survey} update={update} />}
@@ -105,7 +120,8 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
             {step === 2 && <StepTimeline survey={survey} update={update} />}
             {step === 3 && <StepSetup survey={survey} update={update} />}
             {step === 4 && <StepSupplies survey={survey} update={update} />}
-            {step === 5 && <StepReview survey={survey} />}
+            {step === 5 && <StepTasks firstGrow={firstGrow} setFirstGrow={setFirstGrow} autofill={autofill} setAutofill={setAutofill} />}
+            {step === 6 && <StepReview survey={survey} taskMode={taskMode} />}
 
             {genError && (
               <div style={{
@@ -175,7 +191,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
               cursor: canAdvance() ? "pointer" : "default",
               fontWeight: isLast ? 800 : 400,
             }}>
-            {isLast ? "✦ Generate My Calendar" : "Next →"}
+            {isLast ? (taskMode === "manual" ? "✦ Create My Calendar" : "✦ Generate My Calendar") : "Next →"}
           </button>
         </div>
       )}

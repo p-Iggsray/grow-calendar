@@ -46,6 +46,7 @@ const GrowSettings  = lazy(() => import("./components/GrowSettings.jsx"));
 const DryingTracker = lazy(() => import("./components/Lifecycle/DryingTracker.jsx"));
 const CuringTracker = lazy(() => import("./components/Lifecycle/CuringTracker.jsx"));
 const GrowComplete  = lazy(() => import("./components/Lifecycle/GrowComplete.jsx"));
+const ManualTasksSheet = lazy(() => import("./components/ManualTasks/ManualTasksSheet.jsx"));
 
 const SHELL_STYLE = {
   fontFamily: "'Georgia', 'Times New Roman', serif",
@@ -98,6 +99,7 @@ export default function App() {
   const [settingsGrowId, setSettingsGrowId] = useState(null);
   const [reviewPending, setReviewPending] = useState(false);
   const [wizardGrowId,  setWizardGrowId]  = useState(null); // growId for SetupWizard
+  const [manualTasksOpen, setManualTasksOpen] = useState(false);
 
   const { taskStates, loading: checkoffsLoading, toggle, setTaskState } = useCheckoffs(selected, Boolean(user), activeGrowId);
   const { counts: monthCheckoffCounts } = useMonthCheckoffs(today.getFullYear(), month, Boolean(user), activeGrowId);
@@ -193,10 +195,11 @@ export default function App() {
         <Suspense fallback={<PanelSkeleton />}>
         <SetupWizard
           growId={wizardGrowId}
-          onComplete={() => {
+          onComplete={(taskMode) => {
             setWizardGrowId(null);
-            // For a fresh user (needsSetup), show MJ review after wizard.
-            if (needsSetup) {
+            // The guided ("first grow") path gets the MJ plan-review onboarding;
+            // auto-fill and manual skip it.
+            if (taskMode === "guided") {
               setReviewPending(true);
             }
             reloadPlan();
@@ -416,6 +419,22 @@ export default function App() {
               {/* Drying entry point — always available, but only prominent once
                   final harvest has passed (`due`). */}
               <PhasePrompt today={today} due={Boolean(config?.hazeHarvest && today >= config.hazeHarvest)} />
+              {generatedPlan?.manual && (
+                <div style={{ padding: "8px 14px 0" }}>
+                  <button
+                    type="button"
+                    onClick={() => setManualTasksOpen(true)}
+                    style={{
+                      width: "100%", padding: "12px 14px", borderRadius: 12, minHeight: 46,
+                      background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
+                      color: "var(--c-text-dim)", fontFamily: "'Courier New', monospace",
+                      fontSize: 12.5, letterSpacing: 0.5, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    }}>
+                    ＋ Manage daily tasks
+                  </button>
+                </div>
+              )}
               <MilestoneStrip today={today} milestones={milestones} onPick={pickMilestone} />
               <Calendar
                 today={today}
@@ -476,6 +495,15 @@ export default function App() {
               plants={survey?.strains ?? []}
             />
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Manual task manager — slides up over the calendar (manual grows) */}
+      <AnimatePresence>
+        {manualTasksOpen && (
+          <Suspense key="manual-tasks" fallback={null}>
+            <ManualTasksSheet onClose={() => setManualTasksOpen(false)} />
+          </Suspense>
         )}
       </AnimatePresence>
 

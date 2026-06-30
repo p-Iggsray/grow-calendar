@@ -332,7 +332,12 @@ export function getDetail(date, config, overrides, generatedPlan, phaseOverrides
   const aiPhases = generatedPlan?.phases ?? {};
   let base;
 
-  if (phase === "pre" && aiPhases.pre?.days) {
+  if (generatedPlan?.manual) {
+    // Manual grows have no auto-generated tasks: start from an empty shell (just
+    // the phase label) so the hardcoded fallback below is skipped. The user's
+    // tasks then come entirely from event rules + day overrides layered on.
+    base = { title: PHASES[phase]?.label ?? phase, summary: "", tasks: [], notes: null };
+  } else if (phase === "pre" && aiPhases.pre?.days) {
     const n = daysBetween(date, config.start);
     const entry = aiPhases.pre.days[Math.min(n, aiPhases.pre.days.length - 1)];
     base = entry

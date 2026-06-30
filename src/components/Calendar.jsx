@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { MONTH_NAMES, DOW_SHORT, sameDay } from "../lib/dates.js";
-import { PHASES, getPhase, getDetail, getThreatsForPhase, phaseGlyph } from "../lib/growData.js";
+import { PHASES, getPhase, getDetail, phaseFamily } from "../lib/growData.js";
 import { GROW_MIN_MONTH, GROW_MAX_MONTH } from "../lib/appConfig.js";
 
 const YEAR = 2026;
@@ -114,12 +114,12 @@ export default function Calendar({
             if (!date) return <div key={`e${i}`} style={{ minHeight: 40 }} />;
             const phase = getPhase(date, config);
             const pStyle = phase ? PHASES[phase] : null;
+            // One consolidated color per phase family keeps the calendar from
+            // turning into a 13-color quilt.
+            const famColor = phase ? phaseFamily(phase)?.color : null;
             const isSel = selected && sameDay(date, selected);
             const isToday = sameDay(date, today);
             const isKey = sameDay(date, config.transplant) || sameDay(date, config.backyardMove) || sameDay(date, config.gdpHarvest) || sameDay(date, config.hazeHarvest);
-            const hasThreat = phase && getThreatsForPhase(phase, generatedPlan).length > 0;
-
-            const glyph = pStyle ? phaseGlyph(phase) : "";
 
             // Completion ring: ratio of checked / total tasks for this day.
             // Only render once the user has checked at least one task on this
@@ -141,7 +141,6 @@ export default function Calendar({
               pStyle ? `${pStyle.label} phase` : "outside grow season",
               isToday ? "today" : null,
               isKey ? "key milestone" : null,
-              hasThreat ? "has active threats" : null,
               totalTasks > 0 && doneCount > 0
                 ? `${doneCount} of ${totalTasks} tasks done`
                 : null,
@@ -166,18 +165,18 @@ export default function Calendar({
                   alignItems: "center", justifyContent: "center", gap: 2,
                   cursor: pStyle ? "pointer" : "default",
                   background: isSel
-                    ? pStyle?.color
+                    ? famColor
                     : isToday
-                    ? `${pStyle?.color || "var(--c-accent)"}22`
+                    ? `${famColor || "var(--c-accent)"}22`
                     : pStyle
-                    ? `${pStyle.color}18`
+                    ? `${famColor}18`
                     : "transparent",
                   border: isSel
-                    ? `2px solid ${pStyle?.color}`
+                    ? `2px solid ${famColor}`
                     : isToday
-                    ? `2px solid ${pStyle?.color || "var(--c-accent)"}`
+                    ? `2px solid ${famColor || "var(--c-accent)"}`
                     : isKey
-                    ? `2px dashed ${pStyle?.color || "#aaa"}`
+                    ? `2px dashed ${famColor || "#aaa"}`
                     : "2px solid transparent",
                   position: "relative",
                   transition: "background 0.15s",
@@ -191,27 +190,6 @@ export default function Calendar({
                 }} aria-hidden="true">
                   {date.getDate()}
                 </span>
-                {glyph && (
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      fontSize: 11, fontFamily: "'Courier New', monospace",
-                      fontWeight: 700, letterSpacing: 0.5,
-                      color: isSel ? "rgba(255,255,255,0.85)" : pStyle.color,
-                      lineHeight: 1,
-                    }}>
-                    {glyph}
-                  </span>
-                )}
-                {hasThreat && !isSel && (
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      position: "absolute", top: 3, right: 4,
-                      width: 5, height: 5, borderRadius: "50%",
-                      background: "#f59e0b",
-                    }} />
-                )}
                 {ringRatio > 0 && !isSel && (
                   <CompletionRing ratio={ringRatio} complete={ringRatio >= 1} />
                 )}
@@ -222,7 +200,7 @@ export default function Calendar({
       </div>
 
       <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-text-ghost)", textAlign: "center", marginTop: 8, lineHeight: 1.8 }}>
-        Solid border = today · Dashed = key date · Amber dot = active threats · Green ring = day complete
+        Solid border = today · Dashed = key date · Green ring = day complete
       </div>
     </div>
   );

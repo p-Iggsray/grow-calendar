@@ -411,6 +411,39 @@ export async function setupGrow(request, env, user, growId) {
   if (!Array.isArray(survey.strains) || survey.strains.length === 0)
     return error(400, "survey.strains required");
 
+  // Manual mode: build the phase timeline from the survey WITHOUT calling the AI,
+  // and store a sentinel generated_plan so getDetail renders no auto tasks (the
+  // grower enters their own). guided/autofill fall through to the AI path below.
+  if (body.taskMode === "manual") {
+    const config = {};
+    fillMissingConfigKeys(config, survey);
+    const missing = REQUIRED_CONFIG_KEYS.filter(k => !config[k]);
+    if (missing.length > 0) {
+      logError("grows-setup-manual-missing-keys", { missing });
+      return error(500, "Could not build the calendar timeline. Check your transplant date.");
+    }
+    if ((survey.lat == null || survey.lon == null) && survey.location) {
+      const geo = await geocode(survey.location);
+      if (geo) { survey.lat = geo.lat; survey.lon = geo.lon; }
+    }
+    const displayName = survey.growName || "My Grow";
+    const now = new Date().toISOString();
+    await env.DB.prepare(
+      `UPDATE grows
+       SET display_name = ?, config = ?, survey = ?, generated_plan = ?, updated_at = ?
+       WHERE id = ? AND user_id = ?`
+    ).bind(
+      displayName,
+      JSON.stringify(config),
+      JSON.stringify(survey),
+      JSON.stringify({ manual: true }),
+      now,
+      growId,
+      user.id,
+    ).run();
+    return json({ ok: true, config, generatedPlan: { manual: true }, displayName });
+  }
+
   const r = await generatePlanJson(env, user, survey, "grows-setup");
   if (r.status) return error(r.status, r.message);
   const generatedPlan = r.generatedPlan;

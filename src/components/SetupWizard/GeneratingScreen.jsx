@@ -1,6 +1,6 @@
 import { MONO, SERIF } from "./styleHelpers.jsx";
 
-export function GeneratingScreen() {
+export function GeneratingScreen({ manual = false }) {
   return (
     <div style={{
       display: "flex", flexDirection: "column", alignItems: "center",
@@ -12,7 +12,9 @@ export function GeneratingScreen() {
           BUILDING YOUR CALENDAR
         </div>
         <div style={{ fontFamily: SERIF, fontSize: 14, color: "var(--c-text-muted)", lineHeight: 1.8, maxWidth: 280 }}>
-          The AI is analyzing your setup and generating a personalized grow schedule. This takes about 30 seconds.
+          {manual
+            ? "Laying out your phase timeline. Just a moment…"
+            : "The AI is analyzing your setup and generating a personalized grow schedule. This takes about 30 seconds."}
         </div>
       </div>
       <Spinner />

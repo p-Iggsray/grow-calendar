@@ -12,6 +12,44 @@ export function phaseGlyph(phase) {
   return "";
 }
 
+// Phase families group the 13 granular phases into a handful of friendly stages
+// with ONE color each. Used to (a) declutter the calendar (one color per family
+// instead of 13 distinct phase colors) and (b) drive manual task entry, where a
+// task spans a chosen number of consecutive families. Order matters: it's the
+// sequence shown in the manual-task phase picker.
+export const FAMILIES = {
+  setup:   { key: "setup",   label: "Setup",   color: "#5b8dee", phases: ["pre", "transplant"] },
+  veg:     { key: "veg",     label: "Veg",     color: "#22c55e", phases: ["early_veg", "veg_cm", "veg_half", "veg_full"] },
+  flower:  { key: "flower",  label: "Flower",  color: "#f97316", phases: ["pre_flower", "flower", "flower_haze"] },
+  flush:   { key: "flush",   label: "Flush",   color: "#0ea5e9", phases: ["flush", "flush_gdp", "flush_haze"] },
+  harvest: { key: "harvest", label: "Harvest", color: "#d97706", phases: ["harvest_gdp", "harvest_haze"] },
+};
+
+export const FAMILY_ORDER = ["setup", "veg", "flower", "flush", "harvest"];
+
+// Reverse lookup: granular phase key -> family object.
+const _PHASE_TO_FAMILY = (() => {
+  const m = {};
+  for (const key of FAMILY_ORDER) for (const p of FAMILIES[key].phases) m[p] = FAMILIES[key];
+  return m;
+})();
+
+export function phaseFamily(phase) {
+  return _PHASE_TO_FAMILY[phase] ?? null;
+}
+
+// Union of granular phase keys for a span of consecutive families, starting at
+// `startKey` and covering `count` families (clamped to the end of the order).
+export function familyPhases(startKey, count = 1) {
+  const start = FAMILY_ORDER.indexOf(startKey);
+  if (start < 0) return [];
+  const out = [];
+  for (let i = start; i < Math.min(start + count, FAMILY_ORDER.length); i++) {
+    out.push(...FAMILIES[FAMILY_ORDER[i]].phases);
+  }
+  return out;
+}
+
 export const PHASES = {
   pre:          { label:"Pre-Transplant",       color:"#5b8dee", light:"#e8f0fe", dark:"#1e3a8a" },
   transplant:   { label:"Transplant Day",       color:"#7c3aed", light:"#f3effe", dark:"#4c1d95" },

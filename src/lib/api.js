@@ -212,8 +212,8 @@ export const api = {
     request(`/api/grows/${id}`, { method: "DELETE", body: "{}" }),
   updateGrowLifecycle: (id, lifecycle) =>
     request(`/api/grows/${id}/lifecycle`, { method: "PATCH", body: JSON.stringify({ lifecycle }) }),
-  setupGrow: (id, survey) =>
-    request(`/api/grows/${id}/setup`, { method: "POST", body: JSON.stringify({ survey }) }),
+  setupGrow: (id, survey, taskMode = "guided") =>
+    request(`/api/grows/${id}/setup`, { method: "POST", body: JSON.stringify({ survey, taskMode }) }),
   regenerateGrow: (id) =>
     request(`/api/grows/${id}/regenerate`, { method: "POST", body: "{}" }),
   saveGrowPhase: (id, phase, data) =>

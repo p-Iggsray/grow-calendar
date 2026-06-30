@@ -1,6 +1,12 @@
 import { MONO, SERIF } from "./styleHelpers.jsx";
 
-export function StepReview({ survey }) {
+const TASK_MODE_LABEL = {
+  guided:   "Guided AI plan (full tasks)",
+  autofill: "AI auto-fill (full tasks)",
+  manual:   "Manual — you'll add your own tasks",
+};
+
+export function StepReview({ survey, taskMode }) {
   const primaryStrain = survey.strains[0];
   const secondaryStrain = survey.strains[1];
   const have = Object.values(survey.supplies).filter(v => v === "have").length;
@@ -23,12 +29,17 @@ export function StepReview({ survey }) {
     ["Experience", survey.experienceLevel],
     ["Watering", survey.wateringMethod],
     ["Supplies", `${have} have · ${need} to order`],
+    taskMode ? ["Tasks", TASK_MODE_LABEL[taskMode]] : null,
   ].filter(Boolean);
+
+  const manual = taskMode === "manual";
 
   return (
     <div>
       <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-faint)", marginBottom: 14, lineHeight: 1.8 }}>
-        Review your answers. The AI will use all of this to build a personalized grow calendar.
+        {manual
+          ? "Review your answers. We'll lay out your phase timeline — you'll add tasks yourself."
+          : "Review your answers. The AI will use all of this to build a personalized grow calendar."}
       </div>
       <div style={{
         background: "var(--c-surface-1)", borderRadius: 12,
