@@ -56,21 +56,6 @@ export function StepBasics({ survey, update }) {
           />
         </div>
       )}
-      <div>
-        <Label>Number of plants</Label>
-        <NumStepper
-          value={survey.plantCount}
-          onChange={v => {
-            const strains = [...survey.strains];
-            while (strains.length < v) strains.push({ name: "", type: "hybrid", photo: true, flowerWeeks: 9 });
-            while (strains.length > v) strains.pop();
-            update("strains", strains);
-            update("plantCount", v);
-          }}
-          min={1} max={8}
-          label="plants"
-        />
-      </div>
     </div>
   );
 }

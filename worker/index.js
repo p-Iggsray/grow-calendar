@@ -15,6 +15,8 @@ import { getPlan, patchPlanConfig, putPlanPhase, deletePlanPhase } from "./plan.
 import { postPlanSetup, postPlanRegenerate } from "./planSetup.js";
 import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, patchGrowLifecycle, setupGrow, regenerateGrow, putGrowPhase, deleteGrowPhase, patchGrowDayOverride, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./grows.js";
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
+import { getReverseGeocode } from "./geocode.js";
+import { listStrains } from "./strains.js";
 import { addPlant, patchPlant, deletePlant, listPlantLog, addPlantLogEntry, patchPlantLogEntry, deletePlantLogEntry, plantLogSummary, dailyLogForPlant } from "./plants.js";
 import { getGrowReport } from "./report.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
@@ -159,6 +161,8 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (path === "/api/errors"    && method === "POST") return postClientError(request, env, user);
 
   if (path === "/api/stats"         && method === "GET")  return getStats(env, user, await resolveGrowId(env, user, new URL(request.url)));
+  if (path === "/api/geocode/reverse" && method === "GET") return getReverseGeocode(request, env, user);
+  if (path === "/api/strains"         && method === "GET") return listStrains(env, user);
 
   if (path === "/api/grows" && method === "GET")  return listGrows(env, user);
   if (path === "/api/grows" && method === "POST") return createGrow(request, env, user);

@@ -10,18 +10,22 @@ const TASK_MODE_LABEL = {
 };
 
 export function StepReview({ survey, taskMode }) {
-  const primaryStrain = survey.strains[0];
-  const secondaryStrain = survey.strains[1];
   const have = Object.values(survey.supplies).filter(v => v === "have").length;
   const need = Object.values(survey.supplies).filter(v => v === "need_to_order").length;
+  const totalPlants = survey.strains.reduce((n, s) => n + (Number(s.count) || 1), 0);
+
+  // One row per strain: "Blue Dream  ×3 · hybrid".
+  const strainRows = survey.strains.map((s, i) => [
+    i === 0 ? "Strains" : "",
+    `${s.name || "(unnamed)"}  ×${Number(s.count) || 1} · ${s.type}`,
+  ]);
 
   const rows = [
     ["Grow", survey.growName || "(unnamed)"],
     ["Environment", survey.environment],
     ["Medium", survey.medium],
-    ["Plants", `${survey.plantCount} × ${survey.containerType !== "ground" ? `${survey.containerGallons}-gal` : "in-ground"}`],
-    ["Primary strain", primaryStrain?.name || "(unnamed)"],
-    secondaryStrain ? ["Secondary strain", secondaryStrain?.name || "(unnamed)"] : null,
+    ["Plants", `${totalPlants} × ${survey.containerType !== "ground" ? `${survey.containerGallons}-gal` : "in-ground"}`],
+    ...strainRows,
     ["Current stage", STAGE_LABEL[survey.currentStage] || "Seedling"],
     ["Stage started", survey.stageStartDate || "(not set)"],
     survey.environment === "outdoor"
@@ -49,7 +53,7 @@ export function StepReview({ survey, taskMode }) {
         border: "1px solid var(--c-surface-2)", overflow: "hidden", marginBottom: 20,
       }}>
         {rows.map(([k, v], i) => (
-          <div key={k} style={{
+          <div key={i} style={{
             display: "flex", justifyContent: "space-between", alignItems: "flex-start",
             padding: "10px 14px",
             borderTop: i > 0 ? "1px solid rgba(255,255,255,0.05)" : "none",

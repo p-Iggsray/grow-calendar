@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api } from "../../lib/api.js";
 import { resolveSurveyForSetup } from "../../lib/stageAnchor.js";
+import ConfirmModal from "../ConfirmModal.jsx";
 import { defaultSurvey } from "./defaultSurvey.js";
 import { MONO, SERIF } from "./styleHelpers.jsx";
 import { StepBasics } from "./StepBasics.jsx";
@@ -35,6 +36,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
   // autofill; no+manual → manual.
   const [firstGrow, setFirstGrow] = useState(null);
   const [autofill, setAutofill] = useState(null);
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   const taskMode = firstGrow === true
     ? "guided"
@@ -153,7 +155,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
           {step === 0 && onCancel && (
             <button
               type="button"
-              onClick={onCancel}
+              onClick={() => setConfirmCancel(true)}
               style={{
                 flex: 1, padding: "14px", borderRadius: 12,
                 background: "var(--c-border-faint)",
@@ -199,6 +201,17 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
           </button>
         </div>
       )}
+
+      <ConfirmModal
+        open={confirmCancel}
+        title="Discard this new grow?"
+        message="You'll lose everything you've entered so far — strains, timeline, and setup. This can't be undone."
+        confirmLabel="Discard"
+        cancelLabel="Keep editing"
+        tone="destructive"
+        onConfirm={() => { setConfirmCancel(false); onCancel?.(); }}
+        onCancel={() => setConfirmCancel(false)}
+      />
     </div>
   );
 }

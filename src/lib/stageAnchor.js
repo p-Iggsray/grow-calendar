@@ -37,17 +37,31 @@ export function deriveTransplantDate(currentStage, stageStartDate) {
 }
 
 // Returns a copy of the survey ready for setup: transplantDate computed from the
-// current stage, startType derived, and every plant tagged with the current
-// stage (the grower can fine-tune individual plants later on the Plants tab).
+// current stage, startType derived, and each strain expanded into one roster
+// entry per plant (count), every plant tagged with the current stage (the grower
+// can fine-tune individual plants later on the Plants tab).
 export function resolveSurveyForSetup(survey) {
   const currentStage = survey.currentStage || "seedling";
   const transplantDate = deriveTransplantDate(currentStage, survey.stageStartDate) || survey.transplantDate || survey.stageStartDate;
-  const strains = (survey.strains || []).map(s => ({ ...s, stage: currentStage }));
+
+  // Expand each strain into `count` roster entries (same strain name — they're
+  // the same strain, just different plants, distinguished by id). Keeping the
+  // plain name means the shared strain catalog records the clean base name.
+  const strains = [];
+  for (const s of survey.strains || []) {
+    const count = Math.max(1, Math.min(12, Number(s.count) || 1));
+    const { count: _drop, ...base } = s;
+    for (let i = 0; i < count; i++) {
+      strains.push({ ...base, stage: currentStage });
+    }
+  }
+
   return {
     ...survey,
     currentStage,
     startType: stageToStartType(currentStage),
     transplantDate,
+    plantCount: strains.length,
     strains,
   };
 }

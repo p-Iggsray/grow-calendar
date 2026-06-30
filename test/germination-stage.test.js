@@ -32,11 +32,29 @@ test("stageToStartType: germination/seedling are seed starts", () => {
 test("resolveSurveyForSetup computes transplant + tags every plant with the stage", () => {
   const out = resolveSurveyForSetup({
     currentStage: "seedling", stageStartDate: "2026-06-01",
-    strains: [{ name: "A" }, { name: "B" }],
+    strains: [{ name: "A", count: 1 }, { name: "B", count: 1 }],
   });
   assert.equal(out.transplantDate, "2026-06-15");
   assert.equal(out.startType, "seed");
   assert.ok(out.strains.every(s => s.stage === "seedling"));
+});
+
+test("resolveSurveyForSetup expands per-strain counts into individual plants", () => {
+  const out = resolveSurveyForSetup({
+    currentStage: "vegetative", stageStartDate: "2026-06-01",
+    strains: [
+      { name: "Blue Dream", type: "hybrid", flowerWeeks: 9, count: 3 },
+      { name: "OG Kush", type: "indica", flowerWeeks: 8, count: 1 },
+    ],
+  });
+  assert.equal(out.strains.length, 4);
+  assert.equal(out.plantCount, 4);
+  // Each plant keeps the clean strain name (so the catalog stays clean).
+  assert.equal(out.strains.filter(s => s.name === "Blue Dream").length, 3);
+  assert.equal(out.strains.filter(s => s.name === "OG Kush").length, 1);
+  // The transient `count` field is not carried onto plant entries.
+  assert.ok(out.strains.every(s => s.count === undefined));
+  assert.ok(out.strains.every(s => s.stage === "vegetative"));
 });
 
 // ── Calendar phases ──────────────────────────────────────────────────────────

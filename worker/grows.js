@@ -10,6 +10,7 @@ import {
 import { ensurePlantIds, backfillStrainsFromPlan } from "./plantsRoster.js";
 import { validateEventRule, MAX_RULES_PER_GROW } from "./eventRulesValidate.js";
 import { LIFECYCLE_PHASES } from "../src/lib/lifecycle.js";
+import { recordStrains } from "./strains.js";
 
 const VALID_PHASES = new Set([
   "transplant", "early_veg", "veg_cm", "veg_half", "veg_full",
@@ -441,6 +442,7 @@ export async function setupGrow(request, env, user, growId) {
       growId,
       user.id,
     ).run();
+    await recordStrains(env, survey.strains);
     return json({ ok: true, config, generatedPlan: { manual: true }, displayName });
   }
 
@@ -486,6 +488,7 @@ export async function setupGrow(request, env, user, growId) {
     user.id,
   ).run();
 
+  await recordStrains(env, survey.strains);
   return json({ ok: true, config, generatedPlan, displayName });
 }
 

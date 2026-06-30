@@ -228,6 +228,8 @@ export const api = {
     request(`/api/grows/${id}/events/${ruleId}`, { method: "DELETE", body: "{}" }),
   importEnv: (id, readings) =>
     request(`/api/grows/${id}/env/import`, { method: "POST", body: JSON.stringify({ readings }) }),
+  reverseGeocode: (lat, lon) => request(`/api/geocode/reverse?lat=${lat}&lon=${lon}`),
+  getStrains: () => request("/api/strains"),
   getEnvSummary: (id) => request(`/api/grows/${id}/env/summary`),
   getEnvDay: (id, date) => request(`/api/grows/${id}/env/day/${date}`),
   clearEnv: (id) =>

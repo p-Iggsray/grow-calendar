@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { api } from "../../lib/api.js";
 import { MONO, SERIF, Label, Input, RadioGroup } from "./styleHelpers.jsx";
 
 export function StepSetup({ survey, update }) {
-  const [geoStatus, setGeoStatus] = useState(""); // "" | "locating" | "done" | "error"
+  const [geoStatus, setGeoStatus] = useState(""); // "" | "locating" | "done" | "nolabel" | "error"
 
   function useMyLocation() {
     if (!navigator.geolocation) { setGeoStatus("error"); return; }
@@ -13,23 +14,13 @@ export function StepSetup({ survey, update }) {
         const lon = pos.coords.longitude;
         update("lat", lat);
         update("lon", lon);
-        // Best-effort reverse geocode to fill a readable label when blank.
-        if (!survey.location?.trim()) {
-          try {
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&lat=${lat}&lon=${lon}`,
-              { headers: { Accept: "application/json" } },
-            );
-            if (res.ok) {
-              const d = await res.json();
-              const a = d.address || {};
-              const place = [a.city || a.town || a.village || a.county, a.state]
-                .filter(Boolean).join(", ");
-              if (place) update("location", place);
-            }
-          } catch { /* keep coordinates even if the label lookup fails */ }
-        }
-        setGeoStatus("done");
+        // Reverse-geocode via our worker (reliable User-Agent + proxy) and write
+        // the readable place name straight into the box.
+        try {
+          const { place } = await api.reverseGeocode(lat, lon);
+          if (place) { update("location", place); setGeoStatus("done"); return; }
+        } catch { /* fall through — coordinates are still saved */ }
+        setGeoStatus("nolabel");
       },
       () => setGeoStatus("error"),
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 },
@@ -62,7 +53,10 @@ export function StepSetup({ survey, update }) {
             📍 {geoStatus === "locating" ? "Locating…" : "Use my current location"}
           </button>
           {geoStatus === "done" && (
-            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-accent)" }}>✓ Location set</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-accent)" }}>✓ Filled in above</span>
+          )}
+          {geoStatus === "nolabel" && (
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-faint)" }}>Got your coordinates — add a place name above</span>
           )}
           {geoStatus === "error" && (
             <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-danger)" }}>Couldn&apos;t get location — type it above</span>
