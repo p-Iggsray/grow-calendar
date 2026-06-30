@@ -2,6 +2,7 @@ import { StrictMode, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import LoginGate from "./components/LoginGate.jsx";
 import PendingScreen from "./components/PendingScreen.jsx";
+import Splash from "./components/Splash.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import Toast from "./components/Toast.jsx";
 import BuddyView from "./components/BuddyView.jsx";
@@ -62,20 +63,6 @@ function Root() {
         <App />
       </Suspense>
     </PlanProvider>
-  );
-}
-
-function Splash() {
-  return (
-    <div style={{
-      minHeight: "100vh",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      background: "var(--c-bg)",
-      fontFamily: "'Courier New', monospace",
-      fontSize: 12, letterSpacing: 4, color: "var(--c-text-ghost)",
-    }}>
-      LOADING
-    </div>
   );
 }
 

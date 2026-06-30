@@ -8,6 +8,16 @@
     <script>
       (function(){var t=localStorage.getItem('grow-theme');if(t&&t!=='auto')document.documentElement.dataset.theme=t;})();
     </script>
+    <!-- Critical paint styles: match the brand background immediately so there's
+         no white flash before the CSS bundle / React splash load. -->
+    <style>
+      html { background: #0e1a12; }
+      @media (prefers-color-scheme: light) { html { background: #faf7f2; } }
+      html[data-theme="dark"]  { background: #0e1a12; }
+      html[data-theme="light"] { background: #faf7f2; }
+      body { margin: 0; }
+      #root { min-height: 100vh; }
+    </style>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Grow" />
