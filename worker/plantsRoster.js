@@ -9,7 +9,7 @@ export const HEALTH_VALUES = new Set(["thriving", "healthy", "stressed", "sick"]
 export const HEIGHT_UNITS = new Set(["in", "cm"]);
 // Ordered per-plant lifecycle stages (manual; the grower advances them).
 export const PLANT_STAGES = [
-  "seedling", "vegetative", "flowering", "flushing",
+  "germination", "seedling", "vegetative", "flowering", "flushing",
   "harvest", "drying", "curing", "done",
 ];
 export const STAGE_SET = new Set(PLANT_STAGES);

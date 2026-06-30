@@ -11,7 +11,14 @@ export function hasSecondaryStrain(config) {
 }
 
 export function getPhase(date, config) {
-  if (date < config.start || date > config.hazeHarvest) return null;
+  // Germination & seedling extend the timeline before transplant. Older grows
+  // have no germinate/seedlingStart, so fall back to `start`: the windows
+  // collapse to zero days and behavior is identical to before they existed.
+  const germinate = config.germinate ?? config.start;
+  const seedlingStart = config.seedlingStart ?? config.start;
+  if (date < germinate || date > config.hazeHarvest) return null;
+  if (date < seedlingStart) return "germination";
+  if (date < config.start) return "seedling";
   if (date < config.transplant) return "pre";
   const d = dpt(date, config);
   if (d === 0) return "transplant";

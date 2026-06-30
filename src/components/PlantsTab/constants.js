@@ -5,6 +5,7 @@ export const TYPE_LABEL = { indica: "Indica", sativa: "Sativa", hybrid: "Hybrid"
 
 // Manual per-plant lifecycle stages (mirror of worker/plantsRoster.js PLANT_STAGES).
 export const STAGE_OPTIONS = [
+  { value: "germination", label: "Germination" },
   { value: "seedling",   label: "Seedling" },
   { value: "vegetative", label: "Vegetative" },
   { value: "flowering",  label: "Flowering" },

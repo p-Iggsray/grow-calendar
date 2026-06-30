@@ -8,6 +8,45 @@ function generateDetail(date, config) {
   if (!phase) return null;
   const d = dpt(date, config);
 
+  if (phase === "germination") {
+    const germinate = config.germinate ?? config.start;
+    const n = daysBetween(date, germinate) + 1;
+    return {
+      title: `Germination — Day ${n}`,
+      summary: "Get your seeds to crack and pop their taproot. Warm, dark, and damp is the goal.",
+      tasks: [
+        "Keep the medium (or paper towel / starter plug) consistently damp — never soggy and never dried out.",
+        "Hold it warm: roughly 70–85°F speeds germination. A seedling heat mat helps in a cool room.",
+        "Keep seeds in the dark until they sprout — no light needed yet.",
+        "Don't add any nutrients — the seed has everything it needs to pop.",
+        "Check 1–2× a day for the white taproot; once it shows, plant it taproot-down ~¼ inch deep if it isn't already.",
+        "Be patient and avoid handling the seed — most pop in 2 to 7 days.",
+      ],
+      notes: "Once you see green break the surface, it becomes a seedling — move it under gentle light.",
+    };
+  }
+
+  if (phase === "seedling") {
+    const seedlingStart = config.seedlingStart ?? config.start;
+    const n = daysBetween(date, seedlingStart) + 1;
+    const wk = Math.ceil(n / 7);
+    return {
+      title: `Seedling — Day ${n} (Week ${wk})`,
+      summary: "Fragile but growing. Gentle light, careful watering, high humidity — no feeding yet.",
+      tasks: [
+        "Give gentle light — a dim LED or a few hours of soft sun. Keep strong light back a bit to prevent stretch.",
+        "Water lightly around the base, only when the top of the medium starts to dry. Overwatering is the #1 seedling killer.",
+        "Keep humidity high (~65–75%); a humidity dome helps until the first true leaves open.",
+        "Still no nutrients — a quality starter mix carries the seedling for the first couple of weeks.",
+        "Watch for damping-off (a pinched, dark, mushy stem base) — improve airflow and ease off water if you see it.",
+        n <= 4
+          ? "A little droop right after sprouting is normal — leave it be."
+          : "Look for the first set of true, serrated leaves — that's your cue veg is near.",
+      ].filter(Boolean),
+      notes: `Keep it simple and low-stress. Transplant into the final container around ${fmt(config.transplant)}.`,
+    };
+  }
+
   if (phase === "pre") {
     const n = daysBetween(date, config.start);
     const plans = [

@@ -4,6 +4,8 @@
 export function phaseGlyph(phase) {
   if (!phase) return "";
   if (phase === "pre") return "";
+  if (phase === "germination") return "G";
+  if (phase === "seedling") return "S";
   if (phase === "transplant") return "T";
   if (phase.startsWith("veg") || phase === "early_veg") return "V";
   if (phase.startsWith("flush")) return "~";
@@ -18,7 +20,7 @@ export function phaseGlyph(phase) {
 // task spans a chosen number of consecutive families. Order matters: it's the
 // sequence shown in the manual-task phase picker.
 export const FAMILIES = {
-  setup:   { key: "setup",   label: "Setup",   color: "#5b8dee", phases: ["pre", "transplant"] },
+  setup:   { key: "setup",   label: "Setup",   color: "#5b8dee", phases: ["germination", "seedling", "pre", "transplant"] },
   veg:     { key: "veg",     label: "Veg",     color: "#22c55e", phases: ["early_veg", "veg_cm", "veg_half", "veg_full"] },
   flower:  { key: "flower",  label: "Flower",  color: "#f97316", phases: ["pre_flower", "flower", "flower_haze"] },
   flush:   { key: "flush",   label: "Flush",   color: "#0ea5e9", phases: ["flush", "flush_gdp", "flush_haze"] },
@@ -51,6 +53,8 @@ export function familyPhases(startKey, count = 1) {
 }
 
 export const PHASES = {
+  germination:  { label:"Germination",          color:"#64748b", light:"#e8edf3", dark:"#334155" },
+  seedling:     { label:"Seedling",             color:"#38bdf8", light:"#e0f2fe", dark:"#075985" },
   pre:          { label:"Pre-Transplant",       color:"#5b8dee", light:"#e8f0fe", dark:"#1e3a8a" },
   transplant:   { label:"Transplant Day",       color:"#7c3aed", light:"#f3effe", dark:"#4c1d95" },
   early_veg:    { label:"Early Veg",            color:"#22c55e", light:"#dcfce7", dark:"#14532d" },

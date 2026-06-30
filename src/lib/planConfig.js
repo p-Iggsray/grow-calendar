@@ -2,6 +2,8 @@
 // Dates are ISO YYYY-MM-DD strings and MUST be parsed as LOCAL dates (parseDate),
 // not via new Date("...") which would parse as UTC and shift the day.
 export const DEFAULT_CONFIG = {
+  germinate:    "2026-05-05",
+  seedlingStart:"2026-05-10",
   start:        "2026-05-21",
   transplant:   "2026-05-24",
   calMag:       "2026-06-07",

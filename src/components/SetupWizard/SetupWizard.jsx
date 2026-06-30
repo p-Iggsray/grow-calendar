@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "../../lib/api.js";
+import { resolveSurveyForSetup } from "../../lib/stageAnchor.js";
 import { defaultSurvey } from "./defaultSurvey.js";
 import { MONO, SERIF } from "./styleHelpers.jsx";
 import { StepBasics } from "./StepBasics.jsx";
@@ -16,7 +17,7 @@ import { GeneratingScreen } from "./GeneratingScreen.jsx";
 const STEPS = [
   { id: "basics",   title: "Grow Basics" },
   { id: "strains",  title: "Your Strains" },
-  { id: "timeline", title: "Timeline" },
+  { id: "timeline", title: "Where You're At" },
   { id: "setup",    title: "Your Setup" },
   { id: "supplies", title: "Supplies" },
   { id: "tasks",    title: "Daily Tasks" },
@@ -50,7 +51,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
   function canAdvance() {
     if (step === 0) return survey.growName.trim().length > 0;
     if (step === 1) return survey.strains.every(s => s.name.trim().length > 0);
-    if (step === 2) return survey.transplantDate.length > 0;
+    if (step === 2) return (survey.stageStartDate || "").length > 0;
     if (STEPS[step].id === "tasks") return taskMode !== null;
     return true;
   }
@@ -59,10 +60,13 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
     setGenerating(true);
     setGenError("");
     try {
+      // Convert the "current stage + start date" answer into transplantDate,
+      // startType, and per-plant stages before sending.
+      const resolved = resolveSurveyForSetup(survey);
       if (growId) {
-        await api.setupGrow(growId, survey, taskMode || "guided");
+        await api.setupGrow(growId, resolved, taskMode || "guided");
       } else {
-        await api.planSetup(survey);
+        await api.planSetup(resolved);
       }
       onComplete(taskMode || "guided");
     } catch (err) {

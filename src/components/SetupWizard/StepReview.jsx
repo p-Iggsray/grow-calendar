@@ -1,4 +1,7 @@
 import { MONO, SERIF } from "./styleHelpers.jsx";
+import { WIZARD_STAGES } from "./StepTimeline.jsx";
+
+const STAGE_LABEL = Object.fromEntries(WIZARD_STAGES.map(s => [s.value, s.label]));
 
 const TASK_MODE_LABEL = {
   guided:   "Guided AI plan (full tasks)",
@@ -19,8 +22,8 @@ export function StepReview({ survey, taskMode }) {
     ["Plants", `${survey.plantCount} × ${survey.containerType !== "ground" ? `${survey.containerGallons}-gal` : "in-ground"}`],
     ["Primary strain", primaryStrain?.name || "(unnamed)"],
     secondaryStrain ? ["Secondary strain", secondaryStrain?.name || "(unnamed)"] : null,
-    ["Start type", survey.startType],
-    ["Transplant", survey.transplantDate || "(not set)"],
+    ["Current stage", STAGE_LABEL[survey.currentStage] || "Seedling"],
+    ["Stage started", survey.stageStartDate || "(not set)"],
     survey.environment === "outdoor"
       ? ["Plant placement", survey.plantsAlreadyOutside ? "Already in final spot" : "Will move outside later"]
       : null,

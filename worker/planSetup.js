@@ -26,6 +26,8 @@ GROW SURVEY:
 ${JSON.stringify(survey, null, 2)}
 
 PHASE SYSTEM (your dates must be compatible with these phase keys):
+- "germination": seed start only — from germinate until seedlingStart (warm, dark, damp; no nutrients)
+- "seedling": seed start only — from seedlingStart until pre/transplant (gentle light, careful watering, high humidity, no nutrients)
 - "pre": before transplant (hardening off)
 - "transplant": transplant day
 - "early_veg": days 1-13 post-transplant (plain water only)
@@ -42,6 +44,7 @@ PHASE SYSTEM (your dates must be compatible with these phase keys):
 - "harvest_haze": secondary strain harvest
 
 DATE CALCULATION RULES:
+- germinate / seedlingStart: ONLY for seed starts (survey.startType === "seed"). seedlingStart = transplant - 14, germinate = transplant - 19. For clone/veg starts there is no germination or seedling window — set germinate = seedlingStart = start.
 - start = 2-3 days before transplant for hardening off (or = transplant if skipping)
 - calMag = transplant + 14 days
 - feedStart = transplant + 28 days
@@ -61,6 +64,8 @@ All tasks must be actionable, specific to this grower's actual strains, nutrient
 
 {
   "config": {
+    "germinate": "YYYY-MM-DD",
+    "seedlingStart": "YYYY-MM-DD",
     "start": "YYYY-MM-DD",
     "transplant": "YYYY-MM-DD",
     "calMag": "YYYY-MM-DD",
@@ -83,6 +88,8 @@ All tasks must be actionable, specific to this grower's actual strains, nutrient
     { "name": "strain name", "type": "indica|sativa|hybrid", "photo": true, "slot": "secondary" }
   ],
   "phases": {
+    "germination": { "summary": "1-2 sentences (seed starts only): cracking seeds, warm/dark/damp.", "tasks": ["5-7 tasks: moisture, temperature target, darkness, no nutrients, when the taproot shows, patience"], "notes": "optional tip" },
+    "seedling": { "summary": "1-2 sentences (seed starts only): fragile seedling care under gentle light.", "tasks": ["6-8 tasks: gentle light, careful watering, humidity, no nutrients yet, damping-off watch, spotting first true leaves"], "notes": "optional tip" },
     "pre": {
       "days": [
         { "title": "Pre-Transplant — Prep Day", "summary": "1-2 sentences: what to accomplish today before hardening begins.", "tasks": ["6-8 detailed prep tasks specific to this grow (supplies check, space setup, etc.)"], "notes": "optional tip or reminder" },
@@ -148,6 +155,19 @@ export function addDays(isoDate, n) {
 export function fillMissingConfigKeys(config, survey) {
   const base = config.transplant || survey.transplantDate;
   if (!config.start)       config.start       = addDays(base, -2);
+  // Germination + seedling windows live before transplant, but only for grows
+  // that actually start from seed/seedling. Clone/veg starts have no such window,
+  // so collapse them onto `start` (getPhase then emits no germination/seedling
+  // days, identical to grows created before these keys existed).
+  const seedStart = survey?.startType === "seed"
+    || ["germination", "seedling"].includes(survey?.currentStage);
+  if (seedStart) {
+    if (!config.seedlingStart) config.seedlingStart = addDays(base, -14);
+    if (!config.germinate)     config.germinate     = addDays(base, -19);
+  } else {
+    config.seedlingStart = config.start;
+    config.germinate     = config.start;
+  }
   if (!config.calMag)      config.calMag      = addDays(base, 14);
   if (!config.feedStart)   config.feedStart   = addDays(base, 28);
   if (!config.fullDose)    config.fullDose    = addDays(base, 42);
