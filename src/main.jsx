@@ -1,8 +1,10 @@
-import { StrictMode, lazy, Suspense } from "react";
+import { StrictMode, lazy, Suspense, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import LoginGate from "./components/LoginGate.jsx";
 import PendingScreen from "./components/PendingScreen.jsx";
 import Splash from "./components/Splash.jsx";
+import { AppShellSkeleton } from "./components/LoadingScreens.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import Toast from "./components/Toast.jsx";
 import BuddyView from "./components/BuddyView.jsx";
@@ -52,17 +54,60 @@ document.addEventListener(
 // the auth/login chunk — not the entire calendar engine.
 const App = lazy(() => import("./App.jsx"));
 
+// Minimum time the opening animation is held so it always plays fully through —
+// even on a warm/instant load — before fading out to reveal the app. Reduced-
+// motion users skip the wait (there's no animation to watch).
+const INTRO_HOLD_MS = 1900;
+
+// One persistent intro overlay that sits above everything and fades out once the
+// animation has played AND the app underneath is ready. Owning the Splash in a
+// single place (rather than rendering it from two branches) means the animation
+// mounts once and never restarts mid-play.
+function IntroGate({ ready }) {
+  const reduce = useReducedMotion();
+  const [minElapsed, setMinElapsed] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMinElapsed(true), reduce ? 350 : INTRO_HOLD_MS);
+    return () => clearTimeout(t);
+  }, [reduce]);
+
+  const show = !(minElapsed && ready);
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          key="intro"
+          initial={false}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
+          style={{ position: "fixed", inset: 0, zIndex: 9999, background: "var(--c-bg)" }}>
+          <Splash />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function Root() {
   const { user, loading } = useAuth();
-  if (loading) return <Splash />;
-  if (!user) return <LoginGate />;
-  if (user.status !== "approved") return <PendingScreen />;
+  // Render the real content underneath as soon as auth resolves; the intro
+  // overlay covers the auth check + app-chunk load and holds for the full
+  // animation, then fades to reveal whatever is ready beneath it.
   return (
-    <PlanProvider>
-      <Suspense fallback={<Splash />}>
-        <App />
-      </Suspense>
-    </PlanProvider>
+    <>
+      {!loading && (
+        !user ? <LoginGate />
+        : user.status !== "approved" ? <PendingScreen />
+        : (
+          <PlanProvider>
+            <Suspense fallback={<AppShellSkeleton />}>
+              <App />
+            </Suspense>
+          </PlanProvider>
+        )
+      )}
+      <IntroGate ready={!loading} />
+    </>
   );
 }
 

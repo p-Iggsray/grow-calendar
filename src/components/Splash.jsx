@@ -16,8 +16,10 @@ export default function Splash() {
         position: "fixed", inset: 0,
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center", gap: 22,
-        // Soft green glow up top fading into the brand background for depth.
-        background: "radial-gradient(120% 80% at 50% 18%, rgba(34,197,94,0.10), var(--c-bg) 60%)",
+        // Solid brand background (must be fully opaque so nothing bleeds through
+        // the overlay) with a soft green glow layered on top for depth.
+        backgroundColor: "var(--c-bg)",
+        backgroundImage: "radial-gradient(120% 80% at 50% 18%, rgba(34,197,94,0.12), transparent 60%)",
         fontFamily: "'Georgia', 'Times New Roman', serif",
         color: "var(--c-text)",
         padding: "0 24px",
@@ -69,7 +71,7 @@ function Sprout({ reduce }) {
       {/* Sprout, swaying from its base */}
       <motion.svg
         viewBox="0 0 64 72" width="80" height="90"
-        style={{ position: "relative", transformOrigin: "32px 70px", overflow: "visible" }}
+        style={{ position: "relative", transformOrigin: "50% 92%", overflow: "visible" }}
         initial={reduce ? false : { rotate: 0 }}
         animate={reduce ? undefined : { rotate: [-2.5, 2.5, -2.5] }}
         transition={reduce ? undefined : { duration: 4, repeat: Infinity, ease: "easeInOut" }}>
@@ -81,11 +83,12 @@ function Sprout({ reduce }) {
           animate={{ pathLength: 1 }}
           transition={{ duration: 0.7, ease: "easeOut" }}
         />
-        {/* Left leaf unfurls */}
+        {/* Left leaf unfurls (fill-box keeps the scale origin on the leaf
+            itself, near where it meets the stem) */}
         <motion.path
           d="M32 48 C 18 47 9 38 9 25 C 23 26 32 35 32 48 Z"
           fill="#22c55e"
-          style={{ transformOrigin: "32px 48px" }}
+          style={{ transformBox: "fill-box", transformOrigin: "100% 100%" }}
           initial={reduce ? false : { scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.45, ease: "backOut" }}
@@ -94,7 +97,7 @@ function Sprout({ reduce }) {
         <motion.path
           d="M32 42 C 46 41 55 32 55 19 C 41 20 32 29 32 42 Z"
           fill="#4ade80"
-          style={{ transformOrigin: "32px 42px" }}
+          style={{ transformBox: "fill-box", transformOrigin: "0% 100%" }}
           initial={reduce ? false : { scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.66, duration: 0.45, ease: "backOut" }}
