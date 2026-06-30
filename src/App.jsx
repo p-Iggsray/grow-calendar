@@ -41,6 +41,7 @@ const ChatPanel     = lazy(() => import("./components/ChatPanel/ChatPanel.jsx"))
 const MjReviewPanel = lazy(() => import("./components/MjReviewPanel.jsx"));
 const AdminPanel    = lazy(() => import("./components/AdminPanel.jsx"));
 const StatsScreen   = lazy(() => import("./components/StatsScreen.jsx"));
+const EnvironmentScreen = lazy(() => import("./components/Environment/EnvironmentScreen.jsx"));
 const GardenMap     = lazy(() => import("./components/GardenMap.jsx"));
 const GrowSettings  = lazy(() => import("./components/GrowSettings.jsx"));
 const DryingTracker = lazy(() => import("./components/Lifecycle/DryingTracker.jsx"));
@@ -94,6 +95,7 @@ export default function App() {
   const [chatContext,   setChatContext]   = useState(null);
   const [showAdmin,     setShowAdmin]     = useState(false);
   const [showStats,     setShowStats]     = useState(false);
+  const [showEnv,       setShowEnv]       = useState(false);
   const [showMap,       setShowMap]       = useState(false);
   const [showSettings,  setShowSettings]  = useState(false);
   const [settingsGrowId, setSettingsGrowId] = useState(null);
@@ -355,6 +357,7 @@ export default function App() {
                 onOpenAdmin={() => setShowAdmin(true)}
                 onOpenStats={() => setShowStats(true)}
                 onOpenMap={() => setShowMap(true)}
+                onOpenEnv={() => setShowEnv(true)}
                 onOpenSettings={() => { setSettingsGrowId(activeGrowId); setShowSettings(true); }}
                 onBeforeSignOut={flushNote}
                 theme={theme}
@@ -550,6 +553,20 @@ export default function App() {
           >
             <Suspense fallback={null}>
               <StatsScreen config={config} today={today} onClose={() => setShowStats(false)} />
+            </Suspense>
+          </motion.div>
+        )}
+        {showEnv && (
+          <motion.div
+            key="env"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={PUSH_SPRING}
+            style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--c-bg)", overflowY: "auto" }}
+          >
+            <Suspense fallback={null}>
+              <EnvironmentScreen onClose={() => setShowEnv(false)} />
             </Suspense>
           </motion.div>
         )}

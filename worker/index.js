@@ -14,6 +14,7 @@ import { getPushVapidKey, postPushSubscribe, deletePushSubscribe, getPushToday, 
 import { getPlan, patchPlanConfig, putPlanPhase, deletePlanPhase } from "./plan.js";
 import { postPlanSetup, postPlanRegenerate } from "./planSetup.js";
 import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, patchGrowLifecycle, setupGrow, regenerateGrow, putGrowPhase, deleteGrowPhase, patchGrowDayOverride, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./grows.js";
+import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
 import { addPlant, patchPlant, deletePlant, listPlantLog, addPlantLogEntry, patchPlantLogEntry, deletePlantLogEntry, plantLogSummary, dailyLogForPlant } from "./plants.js";
 import { getGrowReport } from "./report.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
@@ -170,6 +171,14 @@ async function authenticatedRoute(request, env, path, method, user) {
   }
   const growLifecycleMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/lifecycle$/);
   if (growLifecycleMatch && method === "PATCH") return patchGrowLifecycle(request, env, user, growLifecycleMatch[1]);
+  const envImportMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/env\/import$/);
+  if (envImportMatch && method === "POST") return importEnvReadings(request, env, user, envImportMatch[1]);
+  const envSummaryMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/env\/summary$/);
+  if (envSummaryMatch && method === "GET") return getEnvSummary(env, user, envSummaryMatch[1]);
+  const envDayMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/env\/day\/(\d{4}-\d{2}-\d{2})$/);
+  if (envDayMatch && method === "GET") return getEnvDay(env, user, envDayMatch[1], envDayMatch[2]);
+  const envClearMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/env$/);
+  if (envClearMatch && method === "DELETE") return clearEnv(env, user, envClearMatch[1]);
   const growSetupMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/setup$/);
   if (growSetupMatch && method === "POST") return setupGrow(request, env, user, growSetupMatch[1]);
   const growRegenMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/regenerate$/);
