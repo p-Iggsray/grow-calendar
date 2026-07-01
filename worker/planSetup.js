@@ -186,12 +186,31 @@ export function fillMissingConfigKeys(config, survey) {
   } else {
     config.backyardMove = base;
   }
-  if (!config.preFlower)   config.preFlower   = addDays(base, 69);
-  if (!config.flowerStart) config.flowerStart = addDays(base, 83);
-  if (!config.gdpFlush)    config.gdpFlush    = addDays(base, 114);
-  if (!config.gdpHarvest)  config.gdpHarvest  = addDays(base, 121);
-  if (!config.hazeFlush)   config.hazeFlush   = config.gdpFlush;
-  if (!config.hazeHarvest) config.hazeHarvest = config.gdpHarvest;
+  // Veg length to pre-flower depends on the setup. Autos flower on age at about
+  // four weeks. Outdoor photoperiod flips with the season in late summer (about
+  // ten weeks). Indoor and greenhouse photoperiod flip when the grower chooses,
+  // so use their planned veg weeks. Harvest is then set by each strain's flower
+  // length: the earliest finisher drives gdp, the latest drives haze (a single
+  // strain, or several with the same flower time, collapses to one harvest).
+  const strains = Array.isArray(survey.strains) ? survey.strains : [];
+  const allAuto = strains.length > 0 && strains.every(s => s.photo === false);
+  const fwList = strains.map(s => Number(s.flowerWeeks)).filter(n => Number.isFinite(n) && n > 0);
+  const minFw = fwList.length ? Math.min(...fwList) : 9;
+  const maxFw = fwList.length ? Math.max(...fwList) : 9;
+  const primaryType = strains[0]?.type;
+  const flushLead = primaryType === "sativa" ? 14 : primaryType === "indica" ? 7 : 10;
+
+  let vegDays;
+  if (allAuto) vegDays = 28;
+  else if (survey.environment === "outdoor") vegDays = 69;
+  else vegDays = Math.max(14, (Number(survey.vegWeeks) || 4) * 7);
+
+  if (!config.preFlower)   config.preFlower   = addDays(base, vegDays);
+  if (!config.flowerStart) config.flowerStart = addDays(config.preFlower, allAuto ? 10 : 14);
+  if (!config.gdpHarvest)  config.gdpHarvest  = addDays(config.flowerStart, minFw * 7);
+  if (!config.gdpFlush)    config.gdpFlush    = addDays(config.gdpHarvest, -flushLead);
+  if (!config.hazeHarvest) config.hazeHarvest = addDays(config.flowerStart, maxFw * 7);
+  if (!config.hazeFlush)   config.hazeFlush   = addDays(config.hazeHarvest, -flushLead);
 }
 
 export function extractJson(text) {
