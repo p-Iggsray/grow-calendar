@@ -7,7 +7,6 @@ import {
   getDetail,
   getThreatsForPhase,
   getNextMilestone,
-  getGrowProgress,
   buildMilestones,
 } from "./lib/growData.js";
 import { useAuth } from "./lib/auth.jsx";
@@ -261,7 +260,6 @@ export default function App() {
   const todayStyle = todayPhase ? PHASES[todayPhase] : null;
   const nextMs     = getNextMilestone(today, config);
   const daysToNext = nextMs ? daysBetween(nextMs.date, today) : 0;
-  const progress   = getGrowProgress(today, config);
   const milestones = buildMilestones(config);
 
   const selPhase    = selected ? getPhase(selected, config) : null;
@@ -421,12 +419,15 @@ export default function App() {
               transition={FADE_DURATION}
             >
               <Header
+                growName={grows.find(g => g.id === activeGrowId)?.displayName}
+                todayPhase={todayPhase}
                 todayStyle={todayStyle}
                 nextMs={nextMs}
                 daysToNext={daysToNext}
-                progress={progress}
                 location={growLocation(survey)}
                 strains={strainSummary(survey)}
+                config={config}
+                today={today}
               />
               {/* Drying entry point — always available, but only prominent once
                   final harvest has passed (`due`). */}
