@@ -32,19 +32,11 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
   );
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState("");
-  // Task-mode choice (Daily Tasks step). firstGrow=yes → guided; no+autofill →
-  // autofill; no+manual → manual.
-  const [firstGrow, setFirstGrow] = useState(null);
-  const [autofill, setAutofill] = useState(null);
+  // Daily Tasks step: build a heuristic plan, or start empty and add your own.
+  const [wantTasks, setWantTasks] = useState(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
 
-  const taskMode = firstGrow === true
-    ? "guided"
-    : autofill === true
-      ? "autofill"
-      : autofill === false
-        ? "manual"
-        : null;
+  const taskMode = wantTasks === true ? "heuristic" : wantTasks === false ? "manual" : null;
 
   function update(field, value) {
     setSurvey(s => ({ ...s, [field]: value }));
@@ -66,11 +58,11 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
       // startType, and per-plant stages before sending.
       const resolved = resolveSurveyForSetup(survey);
       if (growId) {
-        await api.setupGrow(growId, resolved, taskMode || "guided");
+        await api.setupGrow(growId, resolved, taskMode || "heuristic");
       } else {
         await api.planSetup(resolved);
       }
-      onComplete(taskMode || "guided");
+      onComplete(taskMode || "heuristic");
     } catch (err) {
       setGenError(err.message || "Generation failed. Please try again.");
       setGenerating(false);
@@ -97,7 +89,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
         flexShrink: 0,
       }}>
         <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "var(--c-text-faint)", marginBottom: 4 }}>
-          NEW GROW — STEP {step + 1} OF {STEPS.length}
+          NEW GROW, STEP {step + 1} OF {STEPS.length}
         </div>
         <div style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>
           {STEPS[step].title}
@@ -126,7 +118,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
             {step === 2 && <StepTimeline survey={survey} update={update} />}
             {step === 3 && <StepSetup survey={survey} update={update} />}
             {step === 4 && <StepSupplies survey={survey} update={update} />}
-            {step === 5 && <StepTasks firstGrow={firstGrow} setFirstGrow={setFirstGrow} autofill={autofill} setAutofill={setAutofill} />}
+            {step === 5 && <StepTasks wantTasks={wantTasks} setWantTasks={setWantTasks} />}
             {step === 6 && <StepReview survey={survey} taskMode={taskMode} />}
 
             {genError && (
@@ -177,7 +169,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
                 color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 12,
                 letterSpacing: 1, cursor: "pointer",
               }}>
-              ← Back
+              Back
             </button>
           )}
           <button
@@ -197,7 +189,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
               cursor: canAdvance() ? "pointer" : "default",
               fontWeight: isLast ? 800 : 400,
             }}>
-            {isLast ? (taskMode === "manual" ? "✦ Create My Calendar" : "✦ Generate My Calendar") : "Next →"}
+            {isLast ? (taskMode === "manual" ? "Create My Calendar" : "Build My Calendar") : "Next"}
           </button>
         </div>
       )}
@@ -205,7 +197,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
       <ConfirmModal
         open={confirmCancel}
         title="Discard this new grow?"
-        message="You'll lose everything you've entered so far — strains, timeline, and setup. This can't be undone."
+        message="You will lose everything entered so far: strains, timeline, and setup. This cannot be undone."
         confirmLabel="Discard"
         cancelLabel="Keep editing"
         tone="destructive"

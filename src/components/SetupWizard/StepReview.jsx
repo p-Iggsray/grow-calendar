@@ -4,9 +4,8 @@ import { WIZARD_STAGES } from "./StepTimeline.jsx";
 const STAGE_LABEL = Object.fromEntries(WIZARD_STAGES.map(s => [s.value, s.label]));
 
 const TASK_MODE_LABEL = {
-  guided:   "Guided AI plan (full tasks)",
-  autofill: "AI auto-fill (full tasks)",
-  manual:   "Manual — you'll add your own tasks",
+  heuristic: "Full task plan for your setup",
+  manual:    "Manual, you add your own tasks",
 };
 
 export function StepReview({ survey, taskMode }) {
@@ -45,8 +44,8 @@ export function StepReview({ survey, taskMode }) {
     <div>
       <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-faint)", marginBottom: 14, lineHeight: 1.8 }}>
         {manual
-          ? "Review your answers. We'll lay out your phase timeline — you'll add tasks yourself."
-          : "Review your answers. The AI will use all of this to build a personalized grow calendar."}
+          ? "Review your answers. We will lay out your phase timeline and you add the tasks yourself."
+          : "Review your answers. We will build a full task plan tailored to your setup."}
       </div>
       <div style={{
         background: "var(--c-surface-1)", borderRadius: 12,

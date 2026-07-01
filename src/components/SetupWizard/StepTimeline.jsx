@@ -29,7 +29,7 @@ export function StepTimeline({ survey, update }) {
       <div>
         <Label>Where are your plants right now?</Label>
         <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginBottom: 12, lineHeight: 1.6 }}>
-          Pick the current stage — we&rsquo;ll start your calendar right here.
+          Pick the current stage and we will start your calendar right here.
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           {WIZARD_STAGES.map(s => {
@@ -81,7 +81,7 @@ export function StepTimeline({ survey, update }) {
         </div>
         <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 6, lineHeight: 1.7 }}>
           {stage === "germination" || stage === "seedling"
-            ? "The day you started this stage — even a rough guess is fine."
+            ? "The day you started this stage. Even a rough guess is fine."
             : "Roughly when this stage began. Everything before and after is filled in for you."}
         </div>
       </div>

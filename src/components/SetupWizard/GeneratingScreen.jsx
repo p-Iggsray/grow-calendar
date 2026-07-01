@@ -13,8 +13,8 @@ export function GeneratingScreen({ manual = false }) {
         </div>
         <div style={{ fontFamily: SERIF, fontSize: 14, color: "var(--c-text-muted)", lineHeight: 1.8, maxWidth: 280 }}>
           {manual
-            ? "Laying out your phase timeline. Just a moment…"
-            : "The AI is analyzing your setup and generating a personalized grow schedule. This takes about 30 seconds."}
+            ? "Laying out your phase timeline. Just a moment."
+            : "Building your task plan for your setup. Just a moment."}
         </div>
       </div>
       <Spinner />

@@ -50,16 +50,16 @@ export function StepSetup({ survey, update }) {
               cursor: geoStatus === "locating" ? "default" : "pointer",
             }}
           >
-            📍 {geoStatus === "locating" ? "Locating…" : "Use my current location"}
+            {geoStatus === "locating" ? "Locating..." : "Use my current location"}
           </button>
           {geoStatus === "done" && (
             <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-accent)" }}>✓ Filled in above</span>
           )}
           {geoStatus === "nolabel" && (
-            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-faint)" }}>Got your coordinates — add a place name above</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-faint)" }}>Got your coordinates. Add a place name above.</span>
           )}
           {geoStatus === "error" && (
-            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-danger)" }}>Couldn&apos;t get location — type it above</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-danger)" }}>Could not get location. Type it above.</span>
           )}
         </div>
         <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 5, lineHeight: 1.7 }}>

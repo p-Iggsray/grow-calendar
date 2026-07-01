@@ -5,12 +5,12 @@ import { geocode } from "./geocode.js";
 import {
   fillMissingConfigKeys,
   REQUIRED_CONFIG_KEYS,
-  generatePlanJson,
 } from "./planSetup.js";
 import { ensurePlantIds, backfillStrainsFromPlan } from "./plantsRoster.js";
 import { validateEventRule, MAX_RULES_PER_GROW } from "./eventRulesValidate.js";
 import { LIFECYCLE_PHASES } from "../src/lib/lifecycle.js";
 import { recordStrains } from "./strains.js";
+import { buildHeuristicPlan } from "../src/lib/heuristicPlan.js";
 
 const VALID_PHASES = new Set([
   "transplant", "early_veg", "veg_cm", "veg_half", "veg_full",
@@ -412,66 +412,26 @@ export async function setupGrow(request, env, user, growId) {
   if (!Array.isArray(survey.strains) || survey.strains.length === 0)
     return error(400, "survey.strains required");
 
-  // Manual mode: build the phase timeline from the survey WITHOUT calling the AI,
-  // and store a sentinel generated_plan so getDetail renders no auto tasks (the
-  // grower enters their own). guided/autofill fall through to the AI path below.
-  if (body.taskMode === "manual") {
-    const config = {};
-    fillMissingConfigKeys(config, survey);
-    const missing = REQUIRED_CONFIG_KEYS.filter(k => !config[k]);
-    if (missing.length > 0) {
-      logError("grows-setup-manual-missing-keys", { missing });
-      return error(500, "Could not build the calendar timeline. Check your transplant date.");
-    }
-    if ((survey.lat == null || survey.lon == null) && survey.location) {
-      const geo = await geocode(survey.location);
-      if (geo) { survey.lat = geo.lat; survey.lon = geo.lon; }
-    }
-    const displayName = survey.growName || "My Grow";
-    const now = new Date().toISOString();
-    await env.DB.prepare(
-      `UPDATE grows
-       SET display_name = ?, config = ?, survey = ?, generated_plan = ?, updated_at = ?
-       WHERE id = ? AND user_id = ?`
-    ).bind(
-      displayName,
-      JSON.stringify(config),
-      JSON.stringify(survey),
-      JSON.stringify({ manual: true }),
-      now,
-      growId,
-      user.id,
-    ).run();
-    await recordStrains(env, survey.strains);
-    return json({ ok: true, config, generatedPlan: { manual: true }, displayName });
-  }
-
-  const r = await generatePlanJson(env, user, survey, "grows-setup");
-  if (r.status) return error(r.status, r.message);
-  const generatedPlan = r.generatedPlan;
-
-  const config = generatedPlan?.config;
-  if (!config || typeof config !== "object")
-    return error(502, "AI did not produce a valid config. Please try again.");
-
+  // The whole timeline is built from the survey with no AI call (no quota, no
+  // failures). Manual mode stores a sentinel so getDetail renders no auto tasks;
+  // any other mode gets a heuristic, environment-aware task rundown.
+  const config = {};
   fillMissingConfigKeys(config, survey);
-
   const missing = REQUIRED_CONFIG_KEYS.filter(k => !config[k]);
   if (missing.length > 0) {
-    logError("grows-setup-missing-keys", { missing, config });
-    return error(502, "Generated plan is incomplete. Please try again.");
+    logError("grows-setup-missing-keys", { missing });
+    return error(500, "Could not build the calendar timeline. Check your transplant date.");
   }
 
   // Resolve coordinates for weather/frost if the GPS button didn't already
-  // provide them. Geocoding the typed location is best-effort — a failure just
-  // means no weather until it's set, never a failed setup.
+  // provide them. Best-effort; a failure just means no weather until it's set.
   if ((survey.lat == null || survey.lon == null) && survey.location) {
     const geo = await geocode(survey.location);
     if (geo) { survey.lat = geo.lat; survey.lon = geo.lon; }
   }
 
-  // Use the AI-generated grow name as the display name if available.
-  const displayName = generatedPlan.growName || survey.growName || "My Grow";
+  const generatedPlan = body.taskMode === "manual" ? { manual: true } : buildHeuristicPlan(survey);
+  const displayName = survey.growName || "My Grow";
   const now = new Date().toISOString();
 
   await env.DB.prepare(
@@ -492,21 +452,20 @@ export async function setupGrow(request, env, user, growId) {
   return json({ ok: true, config, generatedPlan, displayName });
 }
 
-// POST /api/grows/:id/regenerate — re-run AI using stored survey, update generated_plan only
+// POST /api/grows/:id/regenerate — rebuild the heuristic task plan from the
+// stored survey (no AI). Leaves config and phase overrides as they are.
 export async function regenerateGrow(request, env, user, growId) {
   const row = await env.DB.prepare(
     "SELECT survey FROM grows WHERE id = ? AND user_id = ?"
   ).bind(growId, user.id).first();
   if (!row) return error(404, "grow not found");
-  if (!row.survey) return error(400, "no survey on file — complete initial setup first");
+  if (!row.survey) return error(400, "no survey on file, complete initial setup first");
 
   let survey;
   try { survey = JSON.parse(row.survey); }
-  catch { return error(500, "stored survey is corrupt — re-run full setup"); }
+  catch { return error(500, "stored survey is corrupt, re-run full setup"); }
 
-  const r = await generatePlanJson(env, user, survey, "grows-regen");
-  if (r.status) return error(r.status, r.message);
-  const generatedPlan = r.generatedPlan;
+  const generatedPlan = buildHeuristicPlan(survey);
 
   await env.DB.prepare(
     "UPDATE grows SET generated_plan = ?, updated_at = ? WHERE id = ? AND user_id = ?"

@@ -1,9 +1,8 @@
 import { MONO } from "./styleHelpers.jsx";
 
-// Choose how this grow's daily tasks are populated:
-//   first grow? yes            -> "guided"  (full AI plan, like the original)
-//   first grow? no + autofill  -> "autofill" (MJ fills the whole season once)
-//   first grow? no + manual    -> "manual"  (you enter your own tasks)
+// How the grow's daily tasks get populated. Both options are instant and fully
+// offline (no AI, no limits): a heuristic plan tailored to the survey answers,
+// or a blank calendar the grower fills in.
 function Choice({ active, title, desc, onClick }) {
   return (
     <button
@@ -11,7 +10,7 @@ function Choice({ active, title, desc, onClick }) {
       onClick={onClick}
       style={{
         width: "100%", textAlign: "left", cursor: "pointer",
-        padding: "14px 16px", borderRadius: 12, marginBottom: 10,
+        padding: "16px", borderRadius: 14, marginBottom: 12,
         background: active ? "rgba(34,197,94,0.16)" : "rgba(255,255,255,0.04)",
         border: `1.5px solid ${active ? "rgba(34,197,94,0.55)" : "var(--c-border-strong)"}`,
         color: "var(--c-text)",
@@ -22,48 +21,29 @@ function Choice({ active, title, desc, onClick }) {
   );
 }
 
-export function StepTasks({ firstGrow, setFirstGrow, autofill, setAutofill }) {
+export function StepTasks({ wantTasks, setWantTasks }) {
   return (
     <div>
+      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "var(--c-text-faint)", marginBottom: 10 }}>
+        Daily tasks
+      </div>
       <div style={{ fontSize: 13.5, color: "var(--c-text-dim)", lineHeight: 1.6, marginBottom: 18 }}>
-        How should we set up your daily tasks? You can always change tasks later.
+        Do you want a task plan built for you, or would you rather add your own? You can change or
+        add tasks either way.
       </div>
 
-      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "var(--c-text-faint)", marginBottom: 8 }}>
-        Is this your first grow?
-      </div>
       <Choice
-        active={firstGrow === true}
-        title="Yes — guide me"
-        desc="MJ builds a complete day-by-day plan tailored to your setup, like a coach. Best if you're new."
-        onClick={() => { setFirstGrow(true); setAutofill(null); }}
+        active={wantTasks === true}
+        title="Build my task plan"
+        desc="Get a full day by day rundown of the best grow patterns, tailored to your environment and setup. Instant, with no limits."
+        onClick={() => setWantTasks(true)}
       />
       <Choice
-        active={firstGrow === false}
-        title="No — I've done this before"
-        desc="Skip the full guided plan. You'll choose how tasks get filled in next."
-        onClick={() => setFirstGrow(false)}
+        active={wantTasks === false}
+        title="I will add my own tasks"
+        desc="Start with an empty calendar and enter tasks yourself, choosing how many phases each one covers."
+        onClick={() => setWantTasks(false)}
       />
-
-      {firstGrow === false && (
-        <div style={{ marginTop: 18 }}>
-          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "var(--c-text-faint)", marginBottom: 8 }}>
-            Auto-fill tasks with AI?
-          </div>
-          <Choice
-            active={autofill === true}
-            title="Yes — auto-fill the season"
-            desc="MJ fills in the whole season's daily tasks once. You can edit or re-run anytime."
-            onClick={() => setAutofill(true)}
-          />
-          <Choice
-            active={autofill === false}
-            title="No — I'll add my own"
-            desc="Start with an empty calendar. Add your own tasks phase by phase, choosing how many phases each covers."
-            onClick={() => setAutofill(false)}
-          />
-        </div>
-      )}
     </div>
   );
 }

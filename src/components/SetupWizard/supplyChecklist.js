@@ -15,13 +15,13 @@ export const SUPPLY_ITEMS = [
   { id: "watering",    label: "Watering can or irrigation",     example: "" },
   { id: "loupe",       label: "Jeweler's loupe (trichome check)",example: "10x or 60x" },
   { id: "humidity",    label: "Hygrometer (humidity meter)",     example: "" },
-  { id: "drying",      label: "Drying space",                   example: "dark room, 60-70°F, 55-65% RH" },
+  { id: "drying",      label: "Drying space",                   example: "dark room, 60 to 70 F, 55 to 65 percent RH" },
   { id: "jars",        label: "Mason jars for curing",          example: "" },
   { id: "neem",        label: "Pest preventative",              example: "e.g. neem oil, insecticidal soap" },
 ];
 
 export const SUPPLY_STATUS = ["have", "need_to_order", "not_using"];
-export const SUPPLY_STATUS_LABEL = { have: "✓ Have", need_to_order: "⏳ Need", not_using: "— Skip" };
+export const SUPPLY_STATUS_LABEL = { have: "Have", need_to_order: "Need", not_using: "Skip" };
 export const SUPPLY_STATUS_COLOR = {
   have:          { bg: "rgba(34,197,94,0.15)",  border: "rgba(34,197,94,0.4)",  text: "var(--c-accent)" },
   need_to_order: { bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.4)", text: "#fbbf24" },
