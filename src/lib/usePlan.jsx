@@ -54,23 +54,28 @@ export function PlanProvider({ children }) {
           return;
         }
 
-        // Resolve which grow is active.
+        // Resolve which grow to show. PREFER a grow that's actually been set up
+        // (has config) so a half-finished/abandoned grow — which has no config —
+        // can never route the app into an inescapable setup wizard on load or
+        // after a reset. Only fall into first-time setup when NO grow is
+        // configured yet, and then resume an existing unconfigured grow rather
+        // than leaving the choice ambiguous.
         const stored = getStoredGrowId();
-        const validStored = stored && growsList.find(g => g.id === stored);
-        let targetId = validStored ? stored : null;
-        if (!targetId) {
-          const first = growsList.find(g => g.status === "active") || growsList[0];
-          targetId = first?.id || null;
-          storeGrowId(targetId);
-          setActiveGrowIdRaw(targetId);
+        const configured = growsList.filter(g => g.config);
+
+        let targetId;
+        if (configured.length > 0) {
+          const pick = configured.find(g => g.id === stored)
+            || configured.find(g => g.status === "active")
+            || configured[0];
+          targetId = pick.id;
+        } else {
+          const pick = growsList.find(g => g.id === stored) || growsList[0];
+          targetId = pick.id;
         }
 
-        if (!targetId) {
-          setNeedsSetup(true);
-          setConfig(null);
-          setLoading(false);
-          return;
-        }
+        if (targetId !== stored) storeGrowId(targetId);
+        setActiveGrowIdRaw(targetId);
 
         const data = await api.getGrow(targetId);
         if (cancelled) return;

@@ -190,13 +190,23 @@ export default function App() {
     );
   }
 
-  // wizardGrowId is set whenever we want to show SetupWizard (new user or new grow).
-  if (wizardGrowId) {
+  // Show the setup wizard for an explicitly-created new grow (wizardGrowId) OR an
+  // existing grow that still needs setup — reuse that grow instead of spawning a
+  // duplicate. Only create a brand-new grow (NewGrowInitializer) when there's
+  // genuinely nothing to resume.
+  const setupGrowId = wizardGrowId
+    || (needsSetup && activeGrowId && grows.some(g => g.id === activeGrowId) ? activeGrowId : null);
+
+  if (setupGrowId) {
+    // Escapable whenever any grow already exists to fall back to — only the
+    // literal first-ever grow must be completed. Canceling deletes the
+    // in-progress empty grow so it can't pile up as junk or trap the app later.
+    const canCancel = grows.length > 0;
     return (
       <div style={SHELL_STYLE}>
         <Suspense fallback={<PanelSkeleton />}>
         <SetupWizard
-          growId={wizardGrowId}
+          growId={setupGrowId}
           onComplete={(taskMode) => {
             setWizardGrowId(null);
             // The guided ("first grow") path gets the MJ plan-review onboarding;
@@ -206,9 +216,10 @@ export default function App() {
             }
             reloadPlan();
           }}
-          onCancel={needsSetup ? undefined : () => {
+          onCancel={canCancel ? () => {
             setWizardGrowId(null);
-          }}
+            api.deleteGrow(setupGrowId).catch(() => {}).finally(() => reloadPlan());
+          } : undefined}
         />
         </Suspense>
       </div>
@@ -216,9 +227,7 @@ export default function App() {
   }
 
   if (needsSetup) {
-    // No grows yet — create one and open the wizard.
-    // We trigger this by setting wizardGrowId, but we need a grow to exist first.
-    // Show a transitional state while we create the grow.
+    // No grow to resume — create the very first one, then open the wizard for it.
     return (
       <div style={SHELL_STYLE}>
         <NewGrowInitializer onReady={(id) => setWizardGrowId(id)} />
