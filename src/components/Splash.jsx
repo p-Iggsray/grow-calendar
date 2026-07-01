@@ -20,7 +20,7 @@ export default function Splash() {
         // the overlay) with a soft green glow layered on top for depth.
         backgroundColor: "var(--c-bg)",
         backgroundImage: "radial-gradient(120% 80% at 50% 18%, rgba(34,197,94,0.12), transparent 60%)",
-        fontFamily: "'Georgia', 'Times New Roman', serif",
+        fontFamily: "var(--font-ui)",
         color: "var(--c-text)",
         padding: "0 24px",
         paddingTop: "env(safe-area-inset-top, 0px)",
@@ -33,7 +33,7 @@ export default function Splash() {
         transition={{ delay: 0.35, duration: 0.5, ease: "easeOut" }}
         style={{ textAlign: "center" }}>
         <div style={{
-          fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 5,
+          fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 5,
           textTransform: "uppercase", color: "var(--c-text-faint)", marginBottom: 8,
         }}>
           Est. 2026

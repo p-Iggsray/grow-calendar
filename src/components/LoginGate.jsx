@@ -4,7 +4,7 @@ import { api } from "../lib/api.js";
 
 const LABEL_STYLE = {
   fontSize: 11, letterSpacing: 2, color: "var(--c-text-faint)",
-  textTransform: "uppercase", fontFamily: "'Courier New', monospace",
+  textTransform: "uppercase", fontFamily: "var(--font-ui)",
 };
 const INPUT_STYLE = {
   background: "var(--c-input-bg)",
@@ -13,7 +13,7 @@ const INPUT_STYLE = {
   padding: "10px 12px",
   color: "var(--c-text)",
   fontSize: 14,
-  fontFamily: "'Courier New', monospace",
+  fontFamily: "var(--font-ui)",
   outline: "none",
   width: "100%",
 };
@@ -88,7 +88,7 @@ export default function LoginGate() {
 
   return (
     <div style={{
-      fontFamily: "'Georgia', 'Times New Roman', serif",
+      fontFamily: "var(--font-ui)",
       minHeight: "100vh",
       background: "var(--c-header-bg)",
       display: "flex", alignItems: "center", justifyContent: "center",
@@ -103,7 +103,7 @@ export default function LoginGate() {
       }}>
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 22 }}>
-          <div style={{ fontSize: 11, letterSpacing: 4, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 6, fontFamily: "'Courier New', monospace" }}>
+          <div style={{ fontSize: 11, letterSpacing: 4, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 6, fontFamily: "var(--font-ui)" }}>
             Grow Log
           </div>
           <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: -1, color: "var(--c-text)" }}>
@@ -164,7 +164,7 @@ export default function LoginGate() {
                 background: busy ? "rgba(34,197,94,0.08)" : "rgba(34,197,94,0.15)",
                 border: "1px solid rgba(34,197,94,0.35)",
                 borderRadius: 10, color: "var(--c-accent)",
-                fontSize: 13, fontFamily: "'Courier New', monospace",
+                fontSize: 13, fontFamily: "var(--font-ui)",
                 cursor: submitDisabled ? "default" : "pointer",
                 letterSpacing: 1, opacity: submitDisabled ? 0.5 : 1,
               }}>
@@ -173,7 +173,7 @@ export default function LoginGate() {
 
             {/* No self-service reset — the admin issues reset links by hand */}
             {mode === "login" && (
-              <div style={{ fontSize: 11, letterSpacing: 0.5, color: "var(--c-text-faint)", fontFamily: "'Courier New', monospace", textAlign: "center", lineHeight: 1.6, marginTop: 2 }}>
+              <div style={{ fontSize: 11, letterSpacing: 0.5, color: "var(--c-text-faint)", fontFamily: "var(--font-ui)", textAlign: "center", lineHeight: 1.6, marginTop: 2 }}>
                 Forgot your password? Contact the admin to get a reset link.
               </div>
             )}
@@ -198,7 +198,7 @@ export default function LoginGate() {
 
         {/* Legal / privacy disclaimer — signup screen only */}
         {mode === "signup" && (
-          <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--c-surface-2)", fontFamily: "'Courier New', monospace" }}>
+          <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--c-surface-2)", fontFamily: "var(--font-ui)" }}>
             <p style={{ fontSize: 10, lineHeight: 1.6, color: "var(--c-text-faint)", margin: 0 }}>
               For educational and personal record-keeping only — not medical, legal, or professional cultivation advice. Intended for adults of legal age. You are responsible for complying with the cannabis laws in your area.
             </p>
@@ -217,7 +217,7 @@ export default function LoginGate() {
 
 const linkBtnStyle = {
   background: "none", border: "none",
-  color: "var(--c-text-faint)", fontFamily: "'Courier New', monospace",
+  color: "var(--c-text-faint)", fontFamily: "var(--font-ui)",
   fontSize: 11, letterSpacing: 1, cursor: "pointer",
   display: "flex", alignItems: "center", justifyContent: "center",
   textAlign: "center", width: "100%", minHeight: 44, padding: "8px",
@@ -254,7 +254,7 @@ function PasswordField({ label = "Password", value, onChange, autoComplete, auto
       <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={LABEL_STYLE}>{label}</span>
         {capsLockOn && (
-          <span role="status" aria-live="polite" style={{ fontSize: 11, letterSpacing: 1.5, fontFamily: "'Courier New', monospace", color: "var(--c-warn)", background: "rgba(250,204,21,0.12)", border: "1px solid rgba(250,204,21,0.35)", borderRadius: 6, padding: "1px 6px", textTransform: "uppercase" }}>
+          <span role="status" aria-live="polite" style={{ fontSize: 11, letterSpacing: 1.5, fontFamily: "var(--font-ui)", color: "var(--c-warn)", background: "rgba(250,204,21,0.12)", border: "1px solid rgba(250,204,21,0.35)", borderRadius: 6, padding: "1px 6px", textTransform: "uppercase" }}>
             Caps Lock
           </span>
         )}

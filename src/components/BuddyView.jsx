@@ -6,8 +6,8 @@ import { PHASES, getPhase, getDetail, phaseGlyph } from "../lib/growData.js";
 import PhaseLegend from "./PhaseLegend.jsx";
 import { AppShellSkeleton } from "./LoadingScreens.jsx";
 
-const MONO = "'Courier New', monospace";
-const SERIF = "'Georgia', 'Times New Roman', serif";
+const MONO = "var(--font-ui)";
+const SERIF = "var(--font-ui)";
 const YEAR = 2026;
 
 // Tiny read-only calendar (no click handlers, no selection)

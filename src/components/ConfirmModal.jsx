@@ -85,7 +85,7 @@ export default function ConfirmModal({
               borderRadius: 14,
               padding: "20px 22px 18px",
               maxWidth: 380, width: "100%",
-              fontFamily: "'Georgia', 'Times New Roman', serif",
+              fontFamily: "var(--font-ui)",
               color: "var(--c-text)",
               boxShadow: "0 24px 60px rgba(0,0,0,0.6)",
             }}>
@@ -106,7 +106,7 @@ export default function ConfirmModal({
                 style={{
                   background: "var(--c-border-faint)", border: "1px solid var(--c-border-strong)",
                   borderRadius: 10, padding: "8px 14px", color: "var(--c-text-dim)",
-                  fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1,
+                  fontFamily: "var(--font-ui)", fontSize: 13, letterSpacing: 1,
                   cursor: "pointer",
                 }}>
                 {cancelLabel}
@@ -119,7 +119,7 @@ export default function ConfirmModal({
                 style={{
                   ...confirmTone,
                   borderRadius: 10, padding: "8px 14px",
-                  fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1,
+                  fontFamily: "var(--font-ui)", fontSize: 13, letterSpacing: 1,
                   cursor: "pointer",
                 }}>
                 {confirmLabel}

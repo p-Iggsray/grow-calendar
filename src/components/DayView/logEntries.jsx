@@ -7,7 +7,7 @@ export function LogSection({ label, first = false, children }) {
     <div style={{ marginTop: first ? 0 : 20 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
         <span style={{
-          fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 2,
+          fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 2,
           color: "var(--c-text-muted)", textTransform: "uppercase", whiteSpace: "nowrap",
         }}>
           {label}
@@ -22,7 +22,7 @@ export function LogSection({ label, first = false, children }) {
 export function LogField({ label, name, entry, setField, step, min, max, placeholder = "—", inputMode = "decimal" }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase" }}>
+      <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase" }}>
         {label}
       </span>
       <input
@@ -38,7 +38,7 @@ export function LogField({ label, name, entry, setField, step, min, max, placeho
           background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
           border: "1px solid var(--c-border-strong)", borderRadius: 8,
           padding: "10px 12px", fontSize: 16, outline: "none",
-          fontFamily: "'Courier New', monospace",
+          fontFamily: "var(--font-ui)",
           WebkitAppearance: "none", MozAppearance: "textfield",
           width: "100%", boxSizing: "border-box",
         }}
@@ -57,7 +57,7 @@ export function AddEntryButton({ onClick, label }) {
         width: "100%", padding: "11px", borderRadius: 10, marginTop: 6,
         background: "none", border: "1px dashed var(--c-border)",
         color: "var(--c-text-ghost)", cursor: "pointer",
-        fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1.5,
+        fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1.5,
         display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
         transition: "border-color 0.15s, color 0.15s",
       }}>
@@ -84,11 +84,11 @@ const _entryInput = {
   background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
   border: "1px solid var(--c-border-strong)", borderRadius: 8,
   padding: "9px 10px", fontSize: 14, outline: "none",
-  fontFamily: "'Courier New', monospace",
+  fontFamily: "var(--font-ui)",
   width: "100%", boxSizing: "border-box",
 };
 const _entryLabel = {
-  fontFamily: "'Courier New', monospace", fontSize: 11,
+  fontFamily: "var(--font-ui)", fontSize: 11,
   letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase",
   marginBottom: 5, display: "block",
 };
@@ -221,7 +221,7 @@ export function PlantHealthEntry({ entry, onChangeField, onRemove, hidePlant }) 
           onChange={e => onChangeField("notes", e.target.value)}
           rows={2}
           placeholder="Smell, structure, bud density, leaf curl, any concerns…"
-          style={{ ..._entryInput, resize: "vertical", lineHeight: 1.6, fontFamily: "'Georgia', 'Times New Roman', serif" }}
+          style={{ ..._entryInput, resize: "vertical", lineHeight: 1.6, fontFamily: "var(--font-ui)" }}
         />
       </div>
     </div>

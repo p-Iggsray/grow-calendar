@@ -57,11 +57,11 @@ export function WeatherCard({ weather, loading }) {
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
             <span style={{ fontSize: 14 }}>⚠️</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: alertSeverityColor(alert.severity), fontFamily: "'Courier New', monospace", letterSpacing: 0.5 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: alertSeverityColor(alert.severity), fontFamily: "var(--font-ui)", letterSpacing: 0.5 }}>
               {alert.event}
             </span>
             {alert.severity && (
-              <span style={{ fontSize: 11, fontFamily: "'Courier New', monospace", letterSpacing: 1, color: alertSeverityColor(alert.severity), opacity: 0.8 }}>
+              <span style={{ fontSize: 11, fontFamily: "var(--font-ui)", letterSpacing: 1, color: alertSeverityColor(alert.severity), opacity: 0.8 }}>
                 {alert.severity.toUpperCase()}
               </span>
             )}
@@ -81,11 +81,11 @@ export function WeatherCard({ weather, loading }) {
           border: "1px solid rgba(56,189,248,0.15)", padding: "10px 12px",
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: hasHourly ? 10 : 0 }}>
-            <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1.5, color: "var(--c-info-dim)", textTransform: "uppercase" }}>
+            <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1.5, color: "var(--c-info-dim)", textTransform: "uppercase" }}>
               NWS Forecast
             </span>
             {hasHighLow && (
-              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 12, color: "var(--c-text-dim)" }}>
+              <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--c-text-dim)" }}>
                 <span style={{ color: "var(--c-temp-hot)" }}>↑{highLow.high}°</span>
                 {" "}
                 <span style={{ color: "var(--c-info)" }}>↓{highLow.low}°</span>
@@ -100,13 +100,13 @@ export function WeatherCard({ weather, loading }) {
                   display: "flex", flexDirection: "column", alignItems: "center",
                   gap: 3, minWidth: 44, flexShrink: 0,
                 }}>
-                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-info-dim)" }}>
+                  <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--c-info-dim)" }}>
                     {fmt12h(h.startTime)}
                   </span>
                   <span style={{ fontSize: 14 }}>
                     {h.isDaytime ? "☀️" : "🌙"}
                   </span>
-                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, fontWeight: 700, color: "var(--c-text-dim)" }}>
+                  <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 700, color: "var(--c-text-dim)" }}>
                     {h.temp}°
                   </span>
                 </div>

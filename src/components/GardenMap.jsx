@@ -180,16 +180,16 @@ export default function GardenMap({ today, config, onClose }) {
           display: "flex", alignItems: "center", gap: 4,
         }}>
           <ChevronLeft size={16} strokeWidth={2} />
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1 }}>Back</span>
+          <span style={{ fontFamily: "var(--font-ui)", fontSize: 13, letterSpacing: 1 }}>Back</span>
         </button>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 2, color: "var(--c-text-muted)", textTransform: "uppercase" }}>Garden</div>
+          <div style={{ fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 2, color: "var(--c-text-muted)", textTransform: "uppercase" }}>Garden</div>
           <div style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>Yard Map</div>
         </div>
         <button type="button" className="touch-target" onClick={resetPositions} style={{
           background: "none", border: "none", color: "var(--c-text-muted)",
           cursor: "pointer", padding: 8, display: "flex", alignItems: "center", gap: 5,
-          fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1,
+          fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1,
         }}>
           <RotateCcw size={13} strokeWidth={2} />
           Reset
@@ -239,10 +239,10 @@ export default function GardenMap({ today, config, onClose }) {
           />
 
           {/* Compass labels */}
-          <text x={VW / 2} y={34} textAnchor="middle" fill="var(--c-text-ghost)" fontSize={11} fontFamily="'Courier New', monospace" letterSpacing={2}>N</text>
-          <text x={VW / 2} y={VH - 8} textAnchor="middle" fill="var(--c-harvest)" fontSize={11} fontFamily="'Courier New', monospace" letterSpacing={2} opacity={0.7}>S ☀</text>
-          <text x={14} y={YARD.y + YARD.h / 2 + 4} textAnchor="middle" fill="var(--c-harvest)" fontSize={11} fontFamily="'Courier New', monospace" opacity={0.7}>W</text>
-          <text x={VW - 14} y={YARD.y + YARD.h / 2 + 4} textAnchor="middle" fill="var(--c-harvest)" fontSize={11} fontFamily="'Courier New', monospace" opacity={0.7}>E</text>
+          <text x={VW / 2} y={34} textAnchor="middle" fill="var(--c-text-ghost)" fontSize={11} fontFamily="var(--font-ui)" letterSpacing={2}>N</text>
+          <text x={VW / 2} y={VH - 8} textAnchor="middle" fill="var(--c-harvest)" fontSize={11} fontFamily="var(--font-ui)" letterSpacing={2} opacity={0.7}>S ☀</text>
+          <text x={14} y={YARD.y + YARD.h / 2 + 4} textAnchor="middle" fill="var(--c-harvest)" fontSize={11} fontFamily="var(--font-ui)" opacity={0.7}>W</text>
+          <text x={VW - 14} y={YARD.y + YARD.h / 2 + 4} textAnchor="middle" fill="var(--c-harvest)" fontSize={11} fontFamily="var(--font-ui)" opacity={0.7}>E</text>
 
           {/* Live sun marker */}
           {sunPos && (
@@ -281,7 +281,7 @@ export default function GardenMap({ today, config, onClose }) {
                   textAnchor="middle"
                   fill="var(--c-text)"
                   fontSize={9}
-                  fontFamily="'Courier New', monospace"
+                  fontFamily="var(--font-ui)"
                   fontWeight={700}
                   letterSpacing={0.5}
                   style={{ pointerEvents: "none", userSelect: "none" }}
@@ -304,13 +304,13 @@ export default function GardenMap({ today, config, onClose }) {
               borderRadius: 10, padding: "10px 14px", width: "100%",
             }}>
               <div style={{ width: 10, height: 10, borderRadius: "50%", background: phaseColor, flexShrink: 0 }} />
-              <div style={{ fontFamily: "'Courier New', monospace", fontSize: 12, color: "var(--c-text-dim)" }}>
+              <div style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--c-text-dim)" }}>
                 <span style={{ fontWeight: 700, color: "var(--c-text)" }}>{selPot.strain}</span>
                 {phase && <span style={{ color: "var(--c-text-faint)", marginLeft: 8 }}>· {PHASES[phase]?.label ?? phase} phase</span>}
               </div>
             </div>
           ) : (
-            <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-text-ghost)", letterSpacing: 1 }}>
+            <div style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--c-text-ghost)", letterSpacing: 1 }}>
               Tap a pot to select · drag to reposition
             </div>
           )}
@@ -331,7 +331,7 @@ export default function GardenMap({ today, config, onClose }) {
           return (
             <div key={name} style={{ display: "flex", alignItems: "center", gap: 7 }}>
               <div style={{ width: 9, height: 9, borderRadius: "50%", background: phaseColor, border: `1.5px solid ${phaseColor}` }} />
-              <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-text-faint)", letterSpacing: 0.5 }}>
+              <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--c-text-faint)", letterSpacing: 0.5 }}>
                 <span style={{ color: "var(--c-text-dim)", fontWeight: 700 }}>{label}</span> · {name}
               </span>
             </div>
@@ -341,7 +341,7 @@ export default function GardenMap({ today, config, onClose }) {
           <svg width={18} height={8}>
             <line x1={0} y1={4} x2={18} y2={4} stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="3 3" />
           </svg>
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-text-faint)", letterSpacing: 0.5 }}>Sun path E→S→W</span>
+          <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--c-text-faint)", letterSpacing: 0.5 }}>Sun path E→S→W</span>
         </div>
       </div>
     </div>

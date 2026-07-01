@@ -1,5 +1,13 @@
 import { motion } from "framer-motion";
 import { CalendarDays, Wind, Package, CheckCircle2, Sprout, Sparkles, ClipboardList, MoreHorizontal } from "lucide-react";
+import { tapHaptic } from "../lib/haptics.js";
+
+// Native tab bars use short Title Case labels, not tracked-out uppercase.
+function tabCase(label) {
+  if (!label) return "";
+  if (label.toUpperCase() === "MJ") return "MJ";
+  return label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
+}
 
 // The first tab is phase-aware: it's the calendar while growing, then morphs
 // into the drying/curing/done tracker label + icon as the grow finishes.
@@ -44,7 +52,7 @@ export default function TabBar({ activeTab, onTab, firstTab }) {
             type="button"
             aria-label={label.toLowerCase()}
             aria-current={active ? "page" : undefined}
-            onClick={() => onTab(id)}
+            onClick={() => { tapHaptic(); onTab(id); }}
             style={{
               flex: 1,
               position: "relative",
@@ -88,12 +96,12 @@ export default function TabBar({ activeTab, onTab, firstTab }) {
               <Icon size={22} strokeWidth={active ? 2.2 : 1.7} />
             )}
             <span style={{
-              fontSize: 11,
-              fontFamily: "'Courier New', monospace",
-              letterSpacing: 0.8,
-              fontWeight: active ? 700 : 400,
+              fontSize: 10.5,
+              fontFamily: "var(--font-ui)",
+              letterSpacing: 0.1,
+              fontWeight: active ? 700 : 500,
             }}>
-              {label}
+              {tabCase(label)}
             </span>
           </button>
         );

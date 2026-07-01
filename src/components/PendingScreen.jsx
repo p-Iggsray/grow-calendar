@@ -4,7 +4,7 @@ export default function PendingScreen() {
   const { user, logout } = useAuth();
   return (
     <div style={{
-      fontFamily: "'Georgia', 'Times New Roman', serif",
+      fontFamily: "var(--font-ui)",
       minHeight: "100vh",
       background: "var(--c-header-bg)",
       display: "flex", alignItems: "center", justifyContent: "center",
@@ -33,7 +33,7 @@ export default function PendingScreen() {
             background: "var(--c-border-faint)",
             border: "1px solid var(--c-border-strong)",
             borderRadius: 10, color: "var(--c-text-dim)",
-            fontFamily: "'Courier New', monospace", fontSize: 12,
+            fontFamily: "var(--font-ui)", fontSize: 12,
             letterSpacing: 1, cursor: "pointer",
           }}>
           LOG OUT

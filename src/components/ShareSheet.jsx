@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Copy, Check, RefreshCw, Trash2, Link } from "lucide-react";
 import { api } from "../lib/api.js";
 
-const MONO = "'Courier New', monospace";
+const MONO = "var(--font-ui)";
 
 export default function ShareSheet({ onClose }) {
   const [token, setToken] = useState(undefined); // undefined = loading
@@ -73,10 +73,12 @@ export default function ShareSheet({ onClose }) {
           position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 51,
           background: "var(--c-panel-bg)",
           borderTop: "1px solid var(--c-border)",
-          borderRadius: "18px 18px 0 0",
-          padding: "20px 18px calc(28px + env(safe-area-inset-bottom, 0px))",
+          borderRadius: "var(--radius-xl) var(--radius-xl) 0 0",
+          boxShadow: "var(--shadow-sheet)",
+          padding: "8px 18px calc(28px + env(safe-area-inset-bottom, 0px))",
         }}>
-        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 4 }}>
+        <div className="sheet-handle" />
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "var(--c-text-ghost)", textTransform: "uppercase", margin: "10px 0 4px" }}>
           Buddy access
         </div>
         <div style={{ fontSize: 17, fontWeight: 800, color: "var(--c-text)", marginBottom: 4, letterSpacing: -0.3 }}>

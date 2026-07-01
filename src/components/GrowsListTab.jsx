@@ -3,8 +3,8 @@ import { MoreVertical, SlidersHorizontal, Trash2 } from "lucide-react";
 import { api } from "../lib/api.js";
 import DeleteGrowConfirm from "./DeleteGrowConfirm.jsx";
 
-const MONO  = "'Courier New', monospace";
-const SERIF = "'Georgia', 'Times New Roman', serif";
+const MONO  = "var(--font-ui)";
+const SERIF = "var(--font-ui)";
 
 const STATUS_STYLE = {
   active:    { label: "ACTIVE",    color: "var(--c-accent)",     bg: "rgba(74,222,128,0.12)"  },

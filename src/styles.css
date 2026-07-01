@@ -1,6 +1,23 @@
 :root {
   color-scheme: dark;
 
+  /* ── Type tokens ────────────────────────────────────────────────
+     The app uses the phone's native font stack so it reads like a real
+     mobile app (SF Pro on iOS, Roboto on Android). Monospace is reserved
+     for data: numbers, dates, readings. */
+  --font-ui:  -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+              Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-num: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+              "Liberation Mono", monospace;
+
+  /* ── Shape + elevation tokens ───────────────────────────────── */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --shadow-card:  0 1px 2px rgba(0,0,0,0.20), 0 6px 20px rgba(0,0,0,0.12);
+  --shadow-sheet: 0 -8px 40px rgba(0,0,0,0.35);
+
   /* ── Color tokens ───────────────────────────────────────────── */
   --c-bg:            #0e1a12;   /* app background                 */
   --c-text:          #e8f5e3;   /* primary text                   */
@@ -124,6 +141,7 @@ body {
 }
 
 body {
+  font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-size-adjust: 100%;
@@ -134,6 +152,31 @@ button {
   font-family: inherit;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+/* Press feedback: every enabled button subtly shrinks under the finger so each
+   tap feels physical. Inline transforms (framer-motion) override this, which is
+   the correct behavior for already-animated controls. */
+button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+/* Soft native card: one consistent surface treatment (radius, hairline border,
+   gentle elevation) shared by the main content cards. */
+.card {
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-border-faint);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+/* Bottom-sheet grab handle, centered above sheet content. */
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--c-border-strong);
+  margin: 8px auto 6px;
 }
 
 input,

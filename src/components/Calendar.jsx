@@ -63,10 +63,8 @@ export default function Calendar({
       <div
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
-        style={{
-          background: "var(--c-surface-1)", borderRadius: 14,
-          border: "1px solid var(--c-border-soft)", overflow: "hidden",
-        }}>
+        className="card"
+        style={{ overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 10px" }}>
           <button
             type="button"
@@ -103,7 +101,7 @@ export default function Calendar({
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", padding: "0 10px" }}>
           {DOW_SHORT.map((l, i) => (
-            <div key={i} style={{ textAlign: "center", fontSize: 11, color: "var(--c-text-ghost)", fontFamily: "'Courier New', monospace", fontWeight: 700, padding: "2px 0" }}>
+            <div key={i} style={{ textAlign: "center", fontSize: 11, color: "var(--c-text-ghost)", fontFamily: "var(--font-ui)", fontWeight: 700, padding: "2px 0" }}>
               {l}
             </div>
           ))}
@@ -183,7 +181,7 @@ export default function Calendar({
                   opacity: pStyle ? 1 : 0.2,
                 }}>
                 <span style={{
-                  fontSize: 13, fontFamily: "'Courier New', monospace",
+                  fontSize: 13, fontFamily: "var(--font-num)",
                   fontWeight: (isSel || isToday || isKey) ? 800 : 400,
                   color: isSel ? "white" : pStyle ? "var(--c-text-dim)" : "var(--c-text-ghost)",
                   lineHeight: 1,
@@ -199,7 +197,7 @@ export default function Calendar({
         </div>
       </div>
 
-      <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-text-ghost)", textAlign: "center", marginTop: 8, lineHeight: 1.8 }}>
+      <div style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--c-text-ghost)", textAlign: "center", marginTop: 8, lineHeight: 1.8 }}>
         Solid border = today · Dashed = key date · Green ring = day complete
       </div>
     </div>

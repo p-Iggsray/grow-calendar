@@ -13,10 +13,12 @@ export function StatePicker({ task, currentState, onPick, onClose }) {
       <div style={{
         position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 51,
         background: "var(--c-panel-bg)", borderTop: "1px solid var(--c-border)",
-        borderRadius: "18px 18px 0 0",
-        padding: "20px 20px calc(24px + env(safe-area-inset-bottom, 0px))",
+        borderRadius: "var(--radius-xl) var(--radius-xl) 0 0",
+        boxShadow: "var(--shadow-sheet)",
+        padding: "8px 20px calc(24px + env(safe-area-inset-bottom, 0px))",
       }}>
-        <div style={{ fontSize: 12, color: "var(--c-text-muted)", marginBottom: 16, fontFamily: "'Courier New', monospace", letterSpacing: 0.5, lineHeight: 1.5 }}>
+        <div className="sheet-handle" />
+        <div style={{ fontSize: 12, color: "var(--c-text-muted)", marginBottom: 16, fontFamily: "var(--font-ui)", letterSpacing: 0.5, lineHeight: 1.5 }}>
           {task}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -40,7 +42,7 @@ export function StatePicker({ task, currentState, onPick, onClose }) {
               {icon}
               {label}
               {currentState === state && (
-                <span style={{ marginLeft: "auto", fontSize: 11, fontFamily: "'Courier New', monospace", color: "var(--c-text-faint)" }}>
+                <span style={{ marginLeft: "auto", fontSize: 11, fontFamily: "var(--font-ui)", color: "var(--c-text-faint)" }}>
                   tap to clear
                 </span>
               )}

@@ -1,7 +1,7 @@
 // ─── Style helpers ──────────────────────────────────────────────────────────
 
-export const MONO = "'Courier New', monospace";
-export const SERIF = "'Georgia', 'Times New Roman', serif";
+export const MONO = "var(--font-ui)";
+export const SERIF = "var(--font-ui)";
 
 export function Label({ children }) {
   return (

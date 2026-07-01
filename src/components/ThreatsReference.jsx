@@ -11,7 +11,7 @@ export default function ThreatsReference() {
           listStyle: "none", padding: "10px 14px",
           cursor: "pointer",
           fontSize: 11, letterSpacing: 2, color: "var(--c-text-faint)",
-          textTransform: "uppercase", fontFamily: "'Courier New', monospace",
+          textTransform: "uppercase", fontFamily: "var(--font-ui)",
           display: "flex", alignItems: "center", gap: 6,
         }}>
           <span aria-hidden="true">›</span> All season threats: quick reference
@@ -21,11 +21,11 @@ export default function ThreatsReference() {
             {THREATS.map(t => (
               <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 16, width: 24, textAlign: "center", flexShrink: 0 }}>{t.icon}</span>
-                <span style={{ fontSize: 12, color: "var(--c-text-muted)", fontFamily: "'Courier New', monospace" }}>{t.title}</span>
+                <span style={{ fontSize: 12, color: "var(--c-text-muted)", fontFamily: "var(--font-ui)" }}>{t.title}</span>
               </div>
             ))}
           </div>
-          <div style={{ marginTop: 12, fontSize: 11, color: "var(--c-text-ghost)", fontFamily: "'Courier New', monospace", lineHeight: 1.7 }}>
+          <div style={{ marginTop: 12, fontSize: 11, color: "var(--c-text-ghost)", fontFamily: "var(--font-ui)", lineHeight: 1.7 }}>
             Tap any day in the calendar to see which threats are active for that phase and what to do about them.
           </div>
         </div>

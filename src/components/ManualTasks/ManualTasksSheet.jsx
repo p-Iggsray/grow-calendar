@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, Plus, Trash2, Loader } from "lucide-react";
+import { Plus, Trash2, Loader } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { usePlan } from "../../lib/usePlan.jsx";
 import { useToast } from "../../lib/useToast.jsx";
 import { FAMILIES, FAMILY_ORDER, familyPhases } from "../../lib/growData.js";
 import { MONO, SERIF, Label, Input, NumStepper } from "../SetupWizard/styleHelpers.jsx";
+import ScreenHeader from "../ScreenHeader.jsx";
 
 // Human label for a span of consecutive families, e.g. "Veg" or "Veg → Flush".
 function spanLabel(startKey, count) {
@@ -80,21 +81,7 @@ export default function ManualTasksSheet({ onClose }) {
         display: "flex", flexDirection: "column", fontFamily: SERIF, color: "var(--c-text)",
         paddingTop: "env(safe-area-inset-top, 0px)",
       }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderBottom: "1px solid var(--c-surface-2)", background: "var(--c-header-bg)", flexShrink: 0 }}>
-        <button type="button" onClick={onClose} style={{
-          background: "var(--c-border-faint)", border: "1px solid var(--c-border-strong)",
-          borderRadius: 10, padding: "10px 14px", color: "var(--c-text-dim)", cursor: "pointer",
-          minHeight: 44, display: "flex", alignItems: "center", gap: 4,
-        }}>
-          <ChevronLeft size={16} strokeWidth={2} />
-          <span style={{ fontFamily: MONO, fontSize: 13, letterSpacing: 1 }}>Back</span>
-        </button>
-        <div>
-          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-muted)", textTransform: "uppercase" }}>Your tasks</div>
-          <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: -0.3 }}>Manage daily tasks</div>
-        </div>
-      </div>
+      <ScreenHeader eyebrow="Your tasks" title="Manage daily tasks" onBack={onClose} sticky={false} />
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px", display: "flex", flexDirection: "column", gap: 18, WebkitOverflowScrolling: "touch" }}>
         {/* Add form */}

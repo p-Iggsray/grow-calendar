@@ -5,9 +5,10 @@ import { api } from "../../lib/api.js";
 import { usePlan } from "../../lib/usePlan.jsx";
 import { useToast } from "../../lib/useToast.jsx";
 import { normalizeLifecycle } from "../../lib/lifecycle.js";
+import { successHaptic } from "../../lib/haptics.js";
 
-export const MONO = "'Courier New', monospace";
-export const SERIF = "'Georgia', 'Times New Roman', serif";
+export const MONO = "var(--font-ui)";
+export const SERIF = "var(--font-ui)";
 
 // Local YYYY-MM-DD (matches parseDate's local-date contract — never toISOString,
 // which would shift the day in negative-offset timezones).
@@ -31,6 +32,7 @@ export function useLifecycleSave() {
     setBusy(true);
     try {
       await api.updateGrowLifecycle(activeGrowId, next);
+      successHaptic();
       await reload();
       return true;
     } catch (err) {
@@ -61,10 +63,7 @@ export function PhaseScreen({ children }) {
 
 export function Card({ children, style }) {
   return (
-    <div style={{
-      background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
-      borderRadius: 16, padding: 18, ...style,
-    }}>
+    <div className="card" style={{ padding: 18, ...style }}>
       {children}
     </div>
   );
@@ -73,7 +72,7 @@ export function Card({ children, style }) {
 export function Eyebrow({ children, color }) {
   return (
     <div style={{
-      fontFamily: MONO, fontSize: 11, letterSpacing: 3, textTransform: "uppercase",
+      fontFamily: MONO, fontSize: 11, fontWeight: 600, letterSpacing: 1.2, textTransform: "uppercase",
       color: color ?? "var(--c-text-ghost)", marginBottom: 8,
     }}>
       {children}
@@ -117,7 +116,7 @@ export function ReadyBadge({ status, children }) {
       display: "inline-flex", alignItems: "center", gap: 6,
       background: t.bg, border: `1px solid ${t.border}`, color: t.color,
       borderRadius: 999, padding: "5px 12px",
-      fontFamily: MONO, fontSize: 11, letterSpacing: 1, textTransform: "uppercase",
+      fontFamily: MONO, fontSize: 11, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase",
     }}>
       {children}
     </div>
@@ -136,7 +135,7 @@ export function CTAButton({ onClick, disabled, emphasized, children }) {
         background: emphasized ? "#22c55e" : "var(--c-surface-2)",
         border: emphasized ? "none" : "1px solid var(--c-border)",
         color: emphasized ? "var(--c-bg)" : "var(--c-text-dim)",
-        fontFamily: MONO, fontSize: 14, fontWeight: 700, letterSpacing: 1,
+        fontFamily: MONO, fontSize: 15, fontWeight: 600, letterSpacing: 0.2,
         cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.6 : 1,
         minHeight: 50, transition: "opacity 0.15s",
       }}>
@@ -148,7 +147,7 @@ export function CTAButton({ onClick, disabled, emphasized, children }) {
 export function Stat({ label, value }) {
   return (
     <div style={{ flex: 1, textAlign: "center" }}>
-      <div style={{ fontFamily: MONO, fontSize: 17, fontWeight: 800, color: "var(--c-text)" }}>{value}</div>
+      <div style={{ fontFamily: "var(--font-num)", fontSize: 17, fontWeight: 700, color: "var(--c-text)" }}>{value}</div>
       <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginTop: 3 }}>{label}</div>
     </div>
   );

@@ -31,7 +31,7 @@ export default function Toast() {
               borderRadius: 10,
               padding: "10px 18px",
               color: "#fca5a5",
-              fontFamily: "'Courier New', monospace",
+              fontFamily: "var(--font-ui)",
               fontSize: 12,
               letterSpacing: 0.3,
               whiteSpace: "nowrap",

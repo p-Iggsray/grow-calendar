@@ -11,14 +11,14 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress, locat
       borderBottom: "1px solid var(--c-border-soft)",
     }}>
       <div style={{ marginBottom: 11 }}>
-        <div style={{ fontSize: 11, letterSpacing: 4, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 4, fontFamily: "'Courier New', monospace" }}>
+        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.2, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 4 }}>
           Grow Log{location ? ` · ${location}` : ""}
         </div>
-        <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -1, lineHeight: 1.1, color: "var(--c-text)" }}>
+        <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.7, lineHeight: 1.1, color: "var(--c-text)" }}>
           The Grow Calendar
         </div>
         {strains && (
-          <div style={{ fontSize: 11, color: "var(--c-text-muted)", marginTop: 3, fontFamily: "'Courier New', monospace" }}>
+          <div style={{ fontSize: 11, color: "var(--c-text-muted)", marginTop: 3, fontFamily: "var(--font-ui)" }}>
             {strains}
           </div>
         )}
@@ -26,10 +26,10 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress, locat
 
       <div>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-          <span style={{ fontSize: 11, color: "var(--c-text-faint)", fontFamily: "'Courier New', monospace" }}>
+          <span style={{ fontSize: 11, color: "var(--c-text-faint)", fontFamily: "var(--font-ui)" }}>
             May 21 to Oct 18
           </span>
-          <span style={{ fontSize: 11, color: "var(--c-accent)", fontFamily: "'Courier New', monospace" }}>
+          <span style={{ fontSize: 11, color: "var(--c-accent)", fontFamily: "var(--font-ui)" }}>
             {progress}% complete
           </span>
         </div>
@@ -46,7 +46,7 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress, locat
         {todayStyle && (
           <div style={{
             background: "var(--c-border-soft)", border: `1px solid ${todayStyle.color}44`,
-            borderRadius: 8, padding: "5px 11px", fontSize: 11, fontFamily: "'Courier New', monospace",
+            borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500,
             color: todayStyle.color,
           }}>
             <span style={{ opacity: 0.6 }}>Now: </span>{todayStyle.label}
@@ -55,7 +55,7 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress, locat
         {nextMs?.done && (
           <div style={{
             background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)",
-            borderRadius: 8, padding: "5px 11px", fontSize: 11, fontFamily: "'Courier New', monospace",
+            borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500,
             color: "var(--c-accent)",
           }}>
             {nextMs.icon} {nextMs.label}
@@ -64,7 +64,7 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress, locat
         {nextMs && !nextMs.done && daysToNext > 0 && (
           <div style={{
             background: "var(--c-border-soft)", border: "1px solid var(--c-border)",
-            borderRadius: 8, padding: "5px 11px", fontSize: 11, fontFamily: "'Courier New', monospace",
+            borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500,
           }}>
             <span style={{ opacity: 0.5 }}>{nextMs.icon} {nextMs.label} in </span>
             <span style={{ color: "var(--c-warn)", fontWeight: 700 }}>{daysToNext}d</span>
@@ -73,7 +73,7 @@ export default function Header({ todayStyle, nextMs, daysToNext, progress, locat
         {nextMs && !nextMs.done && daysToNext === 0 && (
           <div style={{
             background: "rgba(250,204,21,0.12)", border: "1px solid rgba(250,204,21,0.3)",
-            borderRadius: 8, padding: "5px 11px", fontSize: 11, fontFamily: "'Courier New', monospace",
+            borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 500,
             color: "var(--c-warn)",
           }}>
             {nextMs.icon} {nextMs.label} is TODAY

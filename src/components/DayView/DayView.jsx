@@ -20,14 +20,14 @@ const fieldLabelStyle = {
   display: "flex", flexDirection: "column", gap: 5,
 };
 const fieldNameStyle = {
-  fontFamily: "'Courier New', monospace", fontSize: 11,
+  fontFamily: "var(--font-ui)", fontSize: 11,
   letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase",
 };
 const numInputStyle = {
   background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
   border: "1px solid var(--c-border-strong)", borderRadius: 8,
   padding: "10px 12px", fontSize: 16, outline: "none",
-  fontFamily: "'Courier New', monospace",
+  fontFamily: "var(--font-ui)",
   WebkitAppearance: "none", MozAppearance: "textfield",
   width: "100%", boxSizing: "border-box",
 };
@@ -180,10 +180,10 @@ export default function DayView({
             minHeight: 44,
           }}>
           <ChevronLeft size={16} strokeWidth={2} />
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1 }}>Back</span>
+          <span style={{ fontFamily: "var(--font-ui)", fontSize: 13, letterSpacing: 1 }}>Back</span>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 2, color: selStyle?.color, textTransform: "uppercase" }}>
+          <div style={{ fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 2, color: selStyle?.color, textTransform: "uppercase" }}>
             {selStyle?.label}
           </div>
           <div style={{ fontSize: 18, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.4 }}>
@@ -192,7 +192,7 @@ export default function DayView({
         </div>
         {totalTasks > 0 && (
           <div style={{
-            fontSize: 11, fontFamily: "'Courier New', monospace",
+            fontSize: 11, fontFamily: "var(--font-ui)",
             color: resolvedCount === totalTasks ? "var(--c-accent)" : selStyle?.color,
             background: "rgba(0,0,0,0.25)", padding: "6px 10px", borderRadius: 8,
             whiteSpace: "nowrap", flexShrink: 0,
@@ -224,7 +224,7 @@ export default function DayView({
               flex: 1, padding: "10px 0", background: "none",
               border: "none", borderBottom: tab === t.id ? `2px solid ${selStyle?.color}` : "2px solid transparent",
               color: tab === t.id ? selStyle?.color : "#5a7a5a",
-              fontSize: 12, fontFamily: "'Courier New', monospace",
+              fontSize: 12, fontFamily: "var(--font-ui)",
               fontWeight: tab === t.id ? 700 : 400,
               cursor: "pointer", letterSpacing: 1, transition: "color 0.2s",
             }}>
@@ -279,7 +279,7 @@ export default function DayView({
             <div>
               {/* Save status */}
               <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4, minHeight: 16 }}>
-                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: logStatus === "error" ? "#f87171" : logStatus === "saved" ? "var(--c-accent)" : "#5a7a5a" }}>
+                <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: logStatus === "error" ? "#f87171" : logStatus === "saved" ? "var(--c-accent)" : "#5a7a5a" }}>
                   {logStatus === "saving" ? "Saving…" : logStatus === "saved" ? "Saved" : logStatus === "error" ? "Save failed" : ""}
                 </span>
               </div>
@@ -312,7 +312,7 @@ export default function DayView({
                             background: active ? "rgba(74,222,128,0.16)" : "rgba(255,255,255,0.05)",
                             border: active ? "1px solid rgba(74,222,128,0.5)" : "1px solid var(--c-border-strong)",
                             color: active ? "var(--c-accent)" : "var(--c-text-muted)",
-                            fontFamily: "'Courier New', monospace", fontSize: 12, letterSpacing: 0.5,
+                            fontFamily: "var(--font-ui)", fontSize: 12, letterSpacing: 0.5,
                             cursor: "pointer", whiteSpace: "nowrap",
                           }}
                         >
@@ -341,7 +341,7 @@ export default function DayView({
                 {sumWater(logEntry.water_plants) && (
                   <div style={{
                     marginTop: 10, textAlign: "right",
-                    fontFamily: "'Courier New', monospace", fontSize: 12,
+                    fontFamily: "var(--font-ui)", fontSize: 12,
                     letterSpacing: 0.5, color: "var(--c-text-faint)",
                   }}>
                     Total: {sumWater(logEntry.water_plants)} gal
@@ -399,7 +399,7 @@ export default function DayView({
           {tab === "notes" && (
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <label htmlFor="day-note" style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase" }}>
+                <label htmlFor="day-note" style={{ fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase" }}>
                   Your notes & concerns
                 </label>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -419,7 +419,7 @@ export default function DayView({
                       <Pencil size={13} strokeWidth={1.8} />
                     </button>
                   )}
-                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: statusColor, minHeight: 12 }}>
+                  <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: statusColor, minHeight: 12 }}>
                     {statusLabel}
                   </span>
                 </div>
@@ -441,11 +441,11 @@ export default function DayView({
                       background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
                       border: "1px solid var(--c-border-strong)", borderRadius: 10,
                       padding: "12px 14px", fontSize: 16, lineHeight: 1.7,
-                      fontFamily: "'Georgia', 'Times New Roman', serif", outline: "none",
+                      fontFamily: "var(--font-ui)", outline: "none",
                       boxSizing: "border-box",
                     }}
                   />
-                  <div style={{ marginTop: 6, fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-text-ghost)", lineHeight: 1.8 }}>
+                  <div style={{ marginTop: 6, fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--c-text-ghost)", lineHeight: 1.8 }}>
                     **bold** · *italic* · - bullet list
                   </div>
                 </>
@@ -458,7 +458,7 @@ export default function DayView({
                     background: "rgba(0,0,0,0.2)",
                     border: "1px solid var(--c-surface-2)", borderRadius: 10,
                     padding: "12px 14px", fontSize: 14, lineHeight: 1.8,
-                    fontFamily: "'Georgia', 'Times New Roman', serif",
+                    fontFamily: "var(--font-ui)",
                     color: "var(--c-text-dim)",
                   }}
                   dangerouslySetInnerHTML={{ __html: renderNote(note) }}
@@ -472,7 +472,7 @@ export default function DayView({
               {isCurrentOrFuture && <WeatherCard weather={weather} loading={weatherLoading} />}
 
               {threats.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "24px 0", color: "var(--c-text-ghost)", fontFamily: "'Courier New', monospace", fontSize: 13, lineHeight: 1.8 }}>
+                <div style={{ textAlign: "center", padding: "24px 0", color: "var(--c-text-ghost)", fontFamily: "var(--font-ui)", fontSize: 13, lineHeight: 1.8 }}>
                   Smooth sailing for now.<br />
                   <span style={{ opacity: 0.7 }}>No active threats this phase.</span>
                 </div>
@@ -514,7 +514,7 @@ export default function DayView({
             color: "var(--c-accent)",
             borderRadius: 999, padding: "10px 16px",
             fontSize: 12, fontWeight: 700, letterSpacing: 1,
-            fontFamily: "'Courier New', monospace", cursor: "pointer",
+            fontFamily: "var(--font-ui)", cursor: "pointer",
             boxShadow: "0 8px 24px rgba(0,0,0,0.45)",
             backdropFilter: "blur(6px)",
             WebkitBackdropFilter: "blur(6px)",

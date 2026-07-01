@@ -54,7 +54,7 @@ export default function AdminPanel({ onClose }) {
   const members = users.filter(u => u.status === "approved");
 
   return (
-    <div style={{ minHeight: "100vh", fontFamily: "'Courier New', monospace", color: "var(--c-text)" }}>
+    <div style={{ minHeight: "100vh", fontFamily: "var(--font-ui)", color: "var(--c-text)" }}>
       {/* Header — safe-area-aware so the X button clears the notch */}
       <div style={{
         display: "flex", alignItems: "center", gap: 12,
@@ -115,7 +115,7 @@ export default function AdminPanel({ onClose }) {
             </div>
             <input readOnly value={resetLink.url} onFocus={e => e.target.select()}
               style={{
-                width: "100%", boxSizing: "border-box", fontFamily: "'Courier New', monospace",
+                width: "100%", boxSizing: "border-box", fontFamily: "var(--font-ui)",
                 fontSize: 12, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--c-border)",
                 background: "var(--c-input-bg)", color: "var(--c-text)", marginBottom: 10,
               }} />
@@ -223,7 +223,7 @@ function ActionBtn({ color, onClick, children }) {
         color: palette.fg,
         cursor: "pointer",
         fontSize: 11, letterSpacing: 0.5,
-        fontFamily: "'Courier New', monospace",
+        fontFamily: "var(--font-ui)",
         minHeight: 36,
       }}
     >

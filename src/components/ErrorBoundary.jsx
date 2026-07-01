@@ -23,7 +23,7 @@ export default class ErrorBoundary extends Component {
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
         background: "var(--c-bg)",
-        fontFamily: "'Courier New', monospace",
+        fontFamily: "var(--font-ui)",
         color: "var(--c-text)",
         padding: 24,
         textAlign: "center",

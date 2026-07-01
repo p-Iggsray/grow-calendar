@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, Trash2, ArrowUp, Loader, Camera, X } from "lucide-react";
+import { Trash2, ArrowUp, Loader, Camera, X } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { MONO, SERIF } from "./constants.js";
 import { fmtContextDate, compressImage } from "./helpers.js";
 import ThreadStrip from "./ThreadStrip.jsx";
 import Bubble from "./Bubble.jsx";
 import { Skeleton } from "../Skeleton.jsx";
+import ScreenHeader from "../ScreenHeader.jsx";
 
 // When the daily message cap is hit, MJ "clocks out" with a bit of personality
 // instead of showing a cold error. One line is picked at random each time.
@@ -233,65 +234,37 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
         fontFamily: SERIF, color: "var(--c-text)",
       }}
     >
-      {/* Header */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 12, padding: "12px 14px",
-        borderBottom: showStrip ? "none" : "1px solid var(--c-surface-2)",
-        background: "var(--c-header-bg)",
-        flexShrink: 0,
-      }}>
-        <button type="button" onClick={onClose} style={{
-          background: "var(--c-border-faint)", border: "1px solid var(--c-border-strong)",
-          borderRadius: 10, padding: "10px 14px", color: "var(--c-text-dim)",
-          cursor: "pointer", minHeight: 44,
-          display: "flex", alignItems: "center", gap: 4,
-        }}>
-          <ChevronLeft size={16} strokeWidth={2} />
-          <span style={{ fontFamily: MONO, fontSize: 13, letterSpacing: 1 }}>Back</span>
-        </button>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-muted)", textTransform: "uppercase" }}>MJ</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>
-              {resting ? "Resting until tomorrow 😴" : "Your grow assistant"}
-            </div>
-            {contextDate && (
-              <span style={{
-                fontFamily: MONO, fontSize: 11, letterSpacing: 1,
-                color: "var(--c-accent)", background: "rgba(34,197,94,0.12)",
-                border: "1px solid rgba(34,197,94,0.25)", borderRadius: 6, padding: "2px 7px",
-              }}>
-                📅 {fmtContextDate(contextDate)}
-              </span>
-            )}
-          </div>
-        </div>
-        {messages.length > 0 && (
+      <ScreenHeader
+        eyebrow={contextDate ? `MJ · ${fmtContextDate(contextDate)}` : "MJ"}
+        title={resting ? "Resting until tomorrow 😴" : "Your grow assistant"}
+        onBack={onClose}
+        sticky={false}
+        right={messages.length > 0 && (
           confirmClear ? (
             <div style={{ display: "flex", gap: 5, alignItems: "center", flexShrink: 0 }}>
               <button type="button" className="touch-target" onClick={handleClear} style={{
                 background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)",
-                borderRadius: 8, padding: "6px 10px", color: "var(--c-danger)",
-                cursor: "pointer", fontSize: 11, fontFamily: MONO, letterSpacing: 0.5,
+                borderRadius: 10, padding: "7px 11px", color: "var(--c-danger)",
+                cursor: "pointer", fontSize: 12, fontWeight: 600,
               }}>Clear</button>
               <button type="button" className="touch-target" onClick={() => setConfirmClear(false)} style={{
                 background: "none", border: "1px solid var(--c-border)",
-                borderRadius: 8, padding: "6px 10px", color: "var(--c-text-faint)",
-                cursor: "pointer", fontSize: 11, fontFamily: MONO, letterSpacing: 0.5,
+                borderRadius: 10, padding: "7px 11px", color: "var(--c-text-faint)",
+                cursor: "pointer", fontSize: 12, fontWeight: 600,
               }}>Cancel</button>
             </div>
           ) : (
             <button type="button" className="touch-target" onClick={() => setConfirmClear(true)} aria-label="Clear conversation" style={{
-              background: "none", border: "1px solid var(--c-border)",
-              borderRadius: 8, padding: "8px 10px", color: "var(--c-text-faint)",
+              background: "var(--c-surface-2)", border: "none",
+              width: 38, height: 38, borderRadius: "50%", color: "var(--c-text-faint)",
               cursor: "pointer", flexShrink: 0,
-              display: "flex", alignItems: "center",
+              display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <Trash2 size={14} strokeWidth={1.8} />
+              <Trash2 size={15} strokeWidth={1.8} />
             </button>
           )
         )}
-      </div>
+      />
 
       {/* Thread strip */}
       {showStrip && (

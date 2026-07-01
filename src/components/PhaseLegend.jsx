@@ -29,7 +29,7 @@ export default function PhaseLegend() {
           listStyle: "none", padding: "10px 14px",
           cursor: "pointer",
           fontSize: 11, letterSpacing: 2, color: "var(--c-text-faint)",
-          textTransform: "uppercase", fontFamily: "'Courier New', monospace",
+          textTransform: "uppercase", fontFamily: "var(--font-ui)",
           display: "flex", alignItems: "center", gap: 6,
         }}>
           <span aria-hidden="true">›</span> What do the colors mean?
@@ -39,7 +39,7 @@ export default function PhaseLegend() {
             {entries.map(([k, v]) => (
               <div key={k} style={{ display: "flex", alignItems: "center", gap: 7 }}>
                 <div style={{ width: 8, height: 8, borderRadius: "50%", background: v.color, flexShrink: 0 }} />
-                <span style={{ fontSize: 11, color: "var(--c-text-muted)", fontFamily: "'Courier New', monospace" }}>{v.label}</span>
+                <span style={{ fontSize: 11, color: "var(--c-text-muted)", fontFamily: "var(--font-ui)" }}>{v.label}</span>
               </div>
             ))}
           </div>

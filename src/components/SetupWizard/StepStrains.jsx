@@ -113,7 +113,7 @@ function StrainRow({ index, strain, catalog, canRemove, onChange, onRemove }) {
               width: "100%", boxSizing: "border-box",
               background: "rgba(0,0,0,0.3)", color: "var(--c-text)",
               border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10,
-              padding: "12px 14px", fontSize: 16, fontFamily: "'Georgia', serif", outline: "none",
+              padding: "12px 14px", fontSize: 16, fontFamily: "var(--font-ui)", outline: "none",
             }}
           />
           {suggestions.length > 0 && (
@@ -131,7 +131,7 @@ function StrainRow({ index, strain, catalog, canRemove, onChange, onRemove }) {
                     display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10,
                     width: "100%", textAlign: "left", padding: "10px 13px", cursor: "pointer",
                     background: "none", border: "none", borderBottom: "1px solid var(--c-border-faint)",
-                    color: "var(--c-text)", fontFamily: "'Georgia', serif", fontSize: 14,
+                    color: "var(--c-text)", fontFamily: "var(--font-ui)", fontSize: 14,
                   }}>
                   <span>{c.name}</span>
                   <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", textTransform: "uppercase", flexShrink: 0 }}>

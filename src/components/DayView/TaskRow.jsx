@@ -39,7 +39,7 @@ export function TaskRow({ task, index, state, accentColor, onTap, onLongPress, o
             border: `1px solid ${cfg ? cfg.color : accentColor + "44"}`,
             display: "flex", alignItems: "center", justifyContent: "center",
             cursor: "pointer", transition: "background 0.15s, color 0.15s",
-            fontFamily: "'Courier New', monospace", fontSize: 12, fontWeight: 800,
+            fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 800,
           }}>
           {state === "done"    ? <Check size={14} strokeWidth={2.5} />
            : state === "skipped" ? <Minus size={14} strokeWidth={2.5} />
@@ -58,12 +58,12 @@ export function TaskRow({ task, index, state, accentColor, onTap, onLongPress, o
             {task}
           </div>
           {cfg?.label && (
-            <div style={{ fontSize: 11, fontFamily: "'Courier New', monospace", color: cfg.color, letterSpacing: 1, marginTop: 1 }}>
+            <div style={{ fontSize: 11, fontFamily: "var(--font-ui)", color: cfg.color, letterSpacing: 1, marginTop: 1 }}>
               {cfg.label}
             </div>
           )}
           {isEdited && (
-            <div style={{ fontSize: 11, fontFamily: "'Courier New', monospace", color: accentColor + "99", letterSpacing: 0.5, marginTop: 1 }}>
+            <div style={{ fontSize: 11, fontFamily: "var(--font-ui)", color: accentColor + "99", letterSpacing: 0.5, marginTop: 1 }}>
               EDITED
             </div>
           )}

@@ -165,7 +165,7 @@ export default function MjReviewPanel({ activeGrowId, onComplete, onSkip }) {
         paddingTop: "env(safe-area-inset-top, 0px)",
         paddingLeft: "env(safe-area-inset-left, 0px)",
         paddingRight: "env(safe-area-inset-right, 0px)",
-        fontFamily: "'Georgia', 'Times New Roman', serif", color: "var(--c-text)",
+        fontFamily: "var(--font-ui)", color: "var(--c-text)",
       }}
     >
       {/* Header */}
@@ -186,17 +186,17 @@ export default function MjReviewPanel({ activeGrowId, onComplete, onSkip }) {
           }}
         >
           <ChevronLeft size={16} strokeWidth={2} />
-          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 13, letterSpacing: 1 }}>Skip</span>
+          <span style={{ fontFamily: "var(--font-ui)", fontSize: 13, letterSpacing: 1 }}>Skip</span>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 2, color: "var(--c-text-muted)", textTransform: "uppercase" }}>MJ</div>
+          <div style={{ fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 2, color: "var(--c-text-muted)", textTransform: "uppercase" }}>MJ</div>
           <div style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>
             Plan Quality Review
           </div>
         </div>
         {phaseActions.length > 0 && (
           <span style={{
-            fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1,
+            fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1,
             color: "var(--c-accent)", background: "rgba(34,197,94,0.12)",
             border: "1px solid rgba(34,197,94,0.25)", borderRadius: 6, padding: "3px 8px",
           }}>
@@ -225,7 +225,7 @@ export default function MjReviewPanel({ activeGrowId, onComplete, onSkip }) {
         {visibleMessages.length === 0 && busy && (
           <div style={{ margin: "auto", display: "flex", alignItems: "center", gap: 8 }}>
             <Loader size={14} strokeWidth={2} color="var(--c-accent)" style={{ animation: "spin 1s linear infinite" }} />
-            <span style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-text-ghost)", letterSpacing: 2 }}>
+            <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--c-text-ghost)", letterSpacing: 2 }}>
               ANALYZING PLAN
             </span>
           </div>
@@ -266,7 +266,7 @@ export default function MjReviewPanel({ activeGrowId, onComplete, onSkip }) {
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 14 }}>
                 {phaseActions.map((a, i) => (
                   <span key={i} style={{
-                    fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 0.5,
+                    fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 0.5,
                     color: "var(--c-accent)", background: "rgba(34,197,94,0.1)",
                     border: "1px solid rgba(34,197,94,0.25)",
                     borderRadius: 6, padding: "3px 8px",
@@ -280,7 +280,7 @@ export default function MjReviewPanel({ activeGrowId, onComplete, onSkip }) {
               style={{
                 background: "#22c55e", border: "none", borderRadius: 12,
                 padding: "12px 24px", color: "var(--c-bg)",
-                fontFamily: "'Courier New', monospace", fontSize: 13,
+                fontFamily: "var(--font-ui)", fontSize: 13,
                 fontWeight: 700, letterSpacing: 1, cursor: "pointer",
                 minHeight: 44,
               }}
@@ -320,7 +320,7 @@ export default function MjReviewPanel({ activeGrowId, onComplete, onSkip }) {
                 flex: 1, resize: "none", maxHeight: 120,
                 background: "none", border: "none", outline: "none",
                 color: busy ? "var(--c-text-ghost)" : "var(--c-text)", fontSize: 16, lineHeight: 1.5,
-                fontFamily: "'Georgia', 'Times New Roman', serif",
+                fontFamily: "var(--font-ui)",
                 padding: "5px 0",
               }}
             />

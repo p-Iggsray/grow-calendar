@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Users, FileText, Bell, BellOff, BarChart2, Sun, Moon, Monitor, Map, Share2, SlidersHorizontal, Gauge } from "lucide-react";
+import { Users, FileText, Bell, BellOff, BarChart2, Sun, Moon, Monitor, Map, Share2, SlidersHorizontal, Gauge, ChevronRight } from "lucide-react";
 import ShareSheet from "./ShareSheet.jsx";
 import PhaseLegend from "./PhaseLegend.jsx";
 import ThreatsReference from "./ThreatsReference.jsx";
@@ -16,6 +16,55 @@ const THEME_OPTIONS = [
   { value: "light", label: "Light", Icon: Sun },
   { value: "dark",  label: "Dark",  Icon: Moon },
 ];
+
+// iOS-settings-style row: tinted icon square, label, trailing detail + chevron.
+function Row({ icon: Icon, tint, label, detail, onClick, disabled, last, trailing }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        display: "flex", alignItems: "center", gap: 12,
+        width: "100%", padding: "12px 14px",
+        background: "none", border: "none",
+        borderBottom: last ? "none" : "1px solid var(--c-border-faint)",
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+        font: "inherit", textAlign: "left",
+        minHeight: 52,
+      }}>
+      <span style={{
+        width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+        background: `${tint}1f`, color: tint,
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <Icon size={16} strokeWidth={2} />
+      </span>
+      <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: "var(--c-text)" }}>{label}</span>
+      {detail && <span style={{ fontSize: 13, color: "var(--c-text-faint)" }}>{detail}</span>}
+      {trailing ?? <ChevronRight size={17} strokeWidth={2} style={{ color: "var(--c-text-ghost)", flexShrink: 0 }} />}
+    </button>
+  );
+}
+
+function Group({ title, children }) {
+  return (
+    <div style={{ marginTop: 20 }}>
+      {title && (
+        <div style={{
+          fontSize: 12, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase",
+          color: "var(--c-text-faint)", margin: "0 4px 7px",
+        }}>
+          {title}
+        </div>
+      )}
+      <div className="card" style={{ overflow: "hidden" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMap, onOpenEnv, onOpenSettings, onBeforeSignOut, theme, setTheme }) {
   const { survey, activeGrowId } = usePlan();
@@ -52,254 +101,72 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
       setReportBusy(false);
     }
   }
+
   return (
     <div style={{
       paddingTop: "calc(20px + env(safe-area-inset-top, 0px))",
       paddingLeft: "calc(14px + env(safe-area-inset-left, 0px))",
       paddingRight: "calc(14px + env(safe-area-inset-right, 0px))",
     }}>
-      <div style={{
-        paddingBottom: 14,
-        marginBottom: 8,
-        borderBottom: "1px solid var(--c-border-faint)",
-      }}>
-        <div style={{
-          fontSize: 11, letterSpacing: 4, color: "var(--c-text-ghost)",
-          textTransform: "uppercase", marginBottom: 4,
-          fontFamily: "'Courier New', monospace",
-        }}>
-          Grow Log{location ? ` · ${location}` : ""}
+      {/* Large title */}
+      <div style={{ marginBottom: 4 }}>
+        <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.7, color: "var(--c-text)" }}>More</div>
+        <div style={{ fontSize: 12.5, color: "var(--c-text-faint)", marginTop: 3 }}>
+          {location || "Your grow"}{strains ? ` · ${strains}` : ""}
         </div>
-        {strains && (
-          <div style={{ fontSize: 11, color: "var(--c-text-faint)", fontFamily: "'Courier New', monospace" }}>
-            {strains}
-          </div>
-        )}
       </div>
 
-      <PhaseLegend />
-      <ThreatsReference />
+      <Group title="This grow">
+        <Row icon={SlidersHorizontal} tint="#4ade80" label="Grow settings & dates" onClick={onOpenSettings} disabled={!activeGrowId} />
+        <Row icon={Gauge} tint="#38bdf8" label="Environment & sensors" onClick={onOpenEnv} disabled={!activeGrowId} />
+        <Row icon={Map} tint="#f59e0b" label="Garden map" onClick={onOpenMap} />
+        <Row icon={BarChart2} tint="#a855f7" label="Season analytics" onClick={onOpenStats} />
+        <Row icon={Share2} tint="#22c55e" label="Share with a buddy" onClick={() => setShowShare(true)} />
+        <Row
+          icon={FileText} tint="#94a3b8"
+          label={reportBusy ? "Preparing report…" : "Export full report"}
+          onClick={openReport} disabled={!activeGrowId || reportBusy} last
+        />
+      </Group>
 
-      <div style={{ padding: "12px 0 0" }}>
-        <button
-          type="button"
-          onClick={onOpenSettings}
-          disabled={!activeGrowId}
-          style={{
-            display: "flex", alignItems: "center", gap: 10,
-            width: "100%", padding: "14px 16px",
-            background: "var(--c-surface-1)",
-            border: "1px solid var(--c-border)",
-            borderRadius: 12, cursor: activeGrowId ? "pointer" : "default",
-            color: activeGrowId ? "var(--c-text-dim)" : "var(--c-text-ghost)",
-            fontFamily: "'Courier New', monospace",
-            fontSize: 13, letterSpacing: 1,
-            opacity: activeGrowId ? 1 : 0.6,
-            transition: "opacity 0.15s",
-          }}
-        >
-          <SlidersHorizontal size={16} strokeWidth={1.8} />
-          Grow settings &amp; dates
-        </button>
-      </div>
-
-      {isAdmin && (
-        <div style={{ padding: "12px 0 0" }}>
-          <button
-            type="button"
-            onClick={onOpenAdmin}
-            style={{
-              display: "flex", alignItems: "center", gap: 10,
-              width: "100%", padding: "14px 16px",
-              background: "var(--c-surface-1)",
-              border: "1px solid var(--c-border)",
-              borderRadius: 12, cursor: "pointer",
-              color: "var(--c-text-dim)", fontFamily: "'Courier New', monospace",
-              fontSize: 13, letterSpacing: 1,
-            }}
-          >
-            <Users size={16} strokeWidth={1.8} />
-            Manage Members
-          </button>
+      {(notifSupported || isAdmin) && (
+        <Group title="App">
+          {notifSupported && (
+            <Row
+              icon={subscribed ? Bell : BellOff}
+              tint={subscribed ? "#4ade80" : "#94a3b8"}
+              label={notifBusy ? "Working…" : permission === "denied" ? "Notifications blocked" : "Daily reminders"}
+              onClick={subscribed ? unsubscribe : subscribe}
+              disabled={notifBusy || permission === "denied"}
+              last={!isAdmin}
+              trailing={
+                <span style={{
+                  fontSize: 12, fontWeight: 700, letterSpacing: 0.5,
+                  color: subscribed ? "var(--c-accent)" : "var(--c-text-ghost)",
+                }}>
+                  {subscribed ? "ON" : "OFF"}
+                </span>
+              }
+            />
+          )}
+          {isAdmin && <Row icon={Users} tint="#f87171" label="Manage members" onClick={onOpenAdmin} last />}
+        </Group>
+      )}
+      {notifError && (
+        <div style={{ fontSize: 12, color: "var(--c-danger-soft)", marginTop: 6, paddingLeft: 4 }}>
+          {notifError}
         </div>
       )}
 
-      <div style={{ padding: "12px 0 0" }}>
-        <button
-          type="button"
-          onClick={onOpenStats}
-          style={{
-            display: "flex", alignItems: "center", gap: 10,
-            width: "100%", padding: "14px 16px",
-            background: "var(--c-surface-1)",
-            border: "1px solid var(--c-border)",
-            borderRadius: 12, cursor: "pointer",
-            color: "var(--c-text-dim)", fontFamily: "'Courier New', monospace",
-            fontSize: 13, letterSpacing: 1,
-          }}
-        >
-          <BarChart2 size={16} strokeWidth={1.8} />
-          Season Analytics
-        </button>
-      </div>
-
-      <div style={{ padding: "12px 0 0" }}>
-        <button
-          type="button"
-          onClick={onOpenEnv}
-          disabled={!activeGrowId}
-          style={{
-            display: "flex", alignItems: "center", gap: 10,
-            width: "100%", padding: "14px 16px",
-            background: "var(--c-surface-1)",
-            border: "1px solid var(--c-border)",
-            borderRadius: 12, cursor: activeGrowId ? "pointer" : "default",
-            color: activeGrowId ? "var(--c-text-dim)" : "var(--c-text-ghost)",
-            fontFamily: "'Courier New', monospace",
-            fontSize: 13, letterSpacing: 1,
-            opacity: activeGrowId ? 1 : 0.6,
-          }}
-        >
-          <Gauge size={16} strokeWidth={1.8} />
-          Environment &amp; sensor import
-        </button>
-      </div>
-
-      <div style={{ padding: "12px 0 0" }}>
-        <button
-          type="button"
-          onClick={onOpenMap}
-          style={{
-            display: "flex", alignItems: "center", gap: 10,
-            width: "100%", padding: "14px 16px",
-            background: "var(--c-surface-1)",
-            border: "1px solid var(--c-border)",
-            borderRadius: 12, cursor: "pointer",
-            color: "var(--c-text-dim)", fontFamily: "'Courier New', monospace",
-            fontSize: 13, letterSpacing: 1,
-          }}
-        >
-          <Map size={16} strokeWidth={1.8} />
-          Garden Map
-        </button>
-      </div>
-
-      <div style={{ padding: "12px 0 0" }}>
-        <button
-          type="button"
-          onClick={() => setShowShare(true)}
-          style={{
-            display: "flex", alignItems: "center", gap: 10,
-            width: "100%", padding: "14px 16px",
-            background: "var(--c-surface-1)",
-            border: "1px solid var(--c-border)",
-            borderRadius: 12, cursor: "pointer",
-            color: "var(--c-text-dim)", fontFamily: "'Courier New', monospace",
-            fontSize: 13, letterSpacing: 1,
-          }}
-        >
-          <Share2 size={16} strokeWidth={1.8} />
-          Share grow with buddy
-        </button>
-      </div>
-
-      <AnimatePresence>
-        {showShare && <ShareSheet key="share" onClose={() => setShowShare(false)} />}
-      </AnimatePresence>
-
-      <div style={{ padding: "12px 0 0" }}>
-        <button
-          type="button"
-          onClick={openReport}
-          disabled={!activeGrowId || reportBusy}
-          style={{
-            display: "flex", alignItems: "center", gap: 10,
-            width: "100%", padding: "14px 16px",
-            background: "var(--c-surface-1)",
-            border: "1px solid var(--c-border)",
-            borderRadius: 12, cursor: activeGrowId && !reportBusy ? "pointer" : "default",
-            color: activeGrowId ? "var(--c-text-dim)" : "var(--c-text-ghost)",
-            fontFamily: "'Courier New', monospace",
-            fontSize: 13, letterSpacing: 1,
-            opacity: activeGrowId && !reportBusy ? 1 : 0.6,
-            transition: "opacity 0.15s",
-          }}
-        >
-          <FileText size={16} strokeWidth={1.8} />
-          {reportBusy ? "Preparing report…" : "Export full grow report"}
-        </button>
-      </div>
-
-      {notifSupported && (
-        <div style={{ padding: "12px 0 0" }}>
-          <button
-            type="button"
-            onClick={subscribed ? unsubscribe : subscribe}
-            disabled={notifBusy || permission === "denied"}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              width: "100%", padding: "14px 16px",
-              background: "var(--c-surface-1)",
-              border: "1px solid var(--c-border)",
-              borderRadius: 12,
-              cursor: notifBusy || permission === "denied" ? "default" : "pointer",
-              color: permission === "denied" ? "var(--c-text-faint)" : "var(--c-text-dim)",
-              fontFamily: "'Courier New', monospace",
-              fontSize: 13, letterSpacing: 1,
-              opacity: notifBusy ? 0.6 : 1,
-              transition: "opacity 0.15s",
-            }}
-          >
-            <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              {subscribed
-                ? <Bell size={16} strokeWidth={1.8} />
-                : <BellOff size={16} strokeWidth={1.8} />}
-              {notifBusy
-                ? "Working..."
-                : subscribed
-                  ? "Daily reminders on"
-                  : permission === "denied"
-                    ? "Notifications blocked"
-                    : "Enable daily reminders"}
-            </span>
-            <span style={{
-              fontSize: 11, letterSpacing: 1,
-              color: subscribed ? "var(--c-accent)" : "var(--c-text-ghost)",
-            }}>
-              {subscribed ? "ON" : "OFF"}
-            </span>
-          </button>
-          {permission === "denied" && (
-            <div style={{
-              fontSize: 11, color: "var(--c-text-faint)", marginTop: 4, paddingLeft: 4,
-              fontFamily: "'Courier New', monospace",
-            }}>
-              Notifications are blocked — allow them in your browser settings
-            </div>
-          )}
-          {notifError && (
-            <div style={{
-              fontSize: 11, color: "var(--c-danger-soft)", marginTop: 4, paddingLeft: 4,
-              fontFamily: "'Courier New', monospace",
-            }}>
-              {notifError}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div style={{ padding: "12px 0 0" }}>
+      {/* Appearance */}
+      <div style={{ marginTop: 20 }}>
         <div style={{
-          fontSize: 11, letterSpacing: 2, color: "var(--c-text-ghost)",
-          fontFamily: "'Courier New', monospace", textTransform: "uppercase",
-          marginBottom: 8,
+          fontSize: 12, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase",
+          color: "var(--c-text-faint)", margin: "0 4px 7px",
         }}>
           Appearance
         </div>
-        <div style={{
-          display: "flex", borderRadius: 12, overflow: "hidden",
-          border: "1px solid var(--c-border)",
-        }}>
+        <div className="card" style={{ display: "flex", overflow: "hidden", padding: 4, gap: 4 }}>
           {THEME_OPTIONS.map(({ value, label, Icon }) => {
             const active = theme === value;
             return (
@@ -308,14 +175,12 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
                 type="button"
                 onClick={() => setTheme(value)}
                 style={{
-                  flex: 1, padding: "12px 4px",
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
-                  background: active ? "var(--c-accent)" : "var(--c-surface-1)",
+                  flex: 1, padding: "10px 4px", borderRadius: 12,
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                  background: active ? "var(--c-accent)" : "transparent",
                   border: "none",
-                  borderRight: value !== "dark" ? "1px solid var(--c-border)" : "none",
                   color: active ? "var(--c-bg)" : "var(--c-text-dim)",
-                  fontFamily: "'Courier New', monospace",
-                  fontSize: 11, letterSpacing: 1,
+                  fontSize: 12, fontWeight: 600,
                   cursor: "pointer",
                   transition: "background 0.15s, color 0.15s",
                 }}
@@ -328,8 +193,17 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
         </div>
       </div>
 
-      <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--c-surface-2)", fontFamily: "'Courier New', monospace" }}>
-        <p style={{ fontSize: 10, lineHeight: 1.6, color: "var(--c-text-faint)", margin: 0 }}>
+      <div style={{ marginTop: 20 }}>
+        <PhaseLegend />
+        <ThreatsReference />
+      </div>
+
+      <AnimatePresence>
+        {showShare && <ShareSheet key="share" onClose={() => setShowShare(false)} />}
+      </AnimatePresence>
+
+      <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--c-surface-2)" }}>
+        <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--c-text-faint)", margin: 0 }}>
           For educational and personal record-keeping only — not medical, legal, or professional cultivation advice. You are responsible for complying with the cannabis laws in your area. Your data is stored privately and never sold; AI features send your grow details to Google&apos;s Gemini API. Contact the admin to delete your account and data.
         </p>
       </div>

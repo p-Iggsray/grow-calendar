@@ -98,7 +98,7 @@ export default function DryingTracker({ today }) {
                   border: `1px solid ${on ? "rgba(34,197,94,0.4)" : "var(--c-border)"}`,
                   color: on ? "var(--c-accent)" : "var(--c-text-dim)",
                   cursor: busy ? "default" : "pointer", textAlign: "left",
-                  fontFamily: "'Georgia', serif", fontSize: 14,
+                  fontFamily: "var(--font-ui)", fontSize: 14,
                 }}>
                 <span style={{
                   width: 22, height: 22, borderRadius: 6, flexShrink: 0,
@@ -172,7 +172,7 @@ function EnvField({ icon: Icon, label, value, onChange }) {
           width: "100%", boxSizing: "border-box",
           background: "rgba(0,0,0,0.3)", color: "var(--c-text)",
           border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10,
-          padding: "12px 14px", fontSize: 16, fontFamily: "'Georgia', serif", outline: "none",
+          padding: "12px 14px", fontSize: 16, fontFamily: "var(--font-ui)", outline: "none",
         }}
       />
     </label>

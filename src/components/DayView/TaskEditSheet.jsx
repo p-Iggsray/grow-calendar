@@ -43,10 +43,12 @@ export function TaskEditSheet({ currentText, onSave, onClose }) {
       <div style={{
         position: "fixed", left: 0, right: 0, bottom: kbOffset, zIndex: 51,
         background: "var(--c-panel-bg)", borderTop: "1px solid var(--c-border)",
-        borderRadius: "18px 18px 0 0",
-        padding: `20px 20px ${bottomPad}`,
+        borderRadius: "var(--radius-xl) var(--radius-xl) 0 0",
+        boxShadow: "var(--shadow-sheet)",
+        padding: `8px 20px ${bottomPad}`,
       }}>
-        <div style={{ fontFamily: "'Courier New', monospace", fontSize: 11, letterSpacing: 1.5, color: "var(--c-text-muted)", textTransform: "uppercase", marginBottom: 12 }}>
+        <div className="sheet-handle" />
+        <div style={{ fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1.5, color: "var(--c-text-muted)", textTransform: "uppercase", margin: "10px 0 12px" }}>
           Edit task text
         </div>
         <textarea
@@ -59,7 +61,7 @@ export function TaskEditSheet({ currentText, onSave, onClose }) {
             background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
             border: "1px solid var(--c-border-strong)", borderRadius: 10,
             padding: "12px 14px", fontSize: 16, lineHeight: 1.7,
-            fontFamily: "'Georgia', 'Times New Roman', serif", outline: "none",
+            fontFamily: "var(--font-ui)", outline: "none",
           }}
         />
         <div style={{ display: "flex", gap: 10, marginTop: 14 }}>

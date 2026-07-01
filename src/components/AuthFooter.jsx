@@ -21,7 +21,7 @@ export default function AuthFooter({ onBeforeSignOut }) {
     <>
       <div style={{
         padding: "24px 16px 8px", textAlign: "center",
-        fontFamily: "'Courier New', monospace", fontSize: 11, color: "var(--c-text-ghost)",
+        fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--c-text-ghost)",
       }}>
         Signed in as <span style={{ color: "var(--c-text-muted)" }}>{user.username}</span>
         <span style={{ margin: "0 8px" }}>·</span>

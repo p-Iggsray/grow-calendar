@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ChevronLeft, Upload, Thermometer, Droplets, Gauge, Trash2, Loader, ChevronRight } from "lucide-react";
+import { Upload, Thermometer, Droplets, Gauge, Trash2, Loader, ChevronRight } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { usePlan } from "../../lib/usePlan.jsx";
 import { useToast } from "../../lib/useToast.jsx";
 import { parseEnvCsv } from "../../lib/envCsv.js";
 import { Skeleton } from "../Skeleton.jsx";
+import ScreenHeader from "../ScreenHeader.jsx";
 
-const MONO = "'Courier New', monospace";
-const SERIF = "'Georgia', 'Times New Roman', serif";
+const MONO = "var(--font-ui)";
+const SERIF = "var(--font-ui)";
+const NUM = "var(--font-num)"; // numeric readings only
 const TEMP_COLOR = "#f97316";
 const HUM_COLOR = "#38bdf8";
 const VPD_COLOR = "#a855f7";
@@ -99,28 +101,11 @@ export default function EnvironmentScreen({ onClose }) {
       position: "fixed", inset: 0, zIndex: 45, background: "var(--c-bg)", overflowY: "auto",
       fontFamily: SERIF, color: "var(--c-text)", paddingBottom: 40,
     }}>
-      {/* Header */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 12, padding: "12px 14px",
-        paddingTop: "calc(12px + env(safe-area-inset-top, 0px))",
-        borderBottom: "1px solid var(--c-surface-2)", background: "var(--c-header-bg)",
-        position: "sticky", top: 0, zIndex: 2,
-      }}>
-        <button type="button" onClick={openDay ? () => setOpenDay(null) : onClose} style={{
-          background: "var(--c-border-faint)", border: "1px solid var(--c-border-strong)",
-          borderRadius: 10, padding: "10px 14px", color: "var(--c-text-dim)", cursor: "pointer",
-          minHeight: 44, display: "flex", alignItems: "center", gap: 4,
-        }}>
-          <ChevronLeft size={16} strokeWidth={2} />
-          <span style={{ fontFamily: MONO, fontSize: 13, letterSpacing: 1 }}>Back</span>
-        </button>
-        <div>
-          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-muted)", textTransform: "uppercase" }}>Environment</div>
-          <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: -0.3 }}>
-            {openDay ? fmtDate(openDay) : "Grow environment"}
-          </div>
-        </div>
-      </div>
+      <ScreenHeader
+        eyebrow="Environment"
+        title={openDay ? fmtDate(openDay) : "Grow environment"}
+        onBack={openDay ? () => setOpenDay(null) : onClose}
+      />
 
       <div style={{ padding: "16px 14px", display: "flex", flexDirection: "column", gap: 14, maxWidth: 560, margin: "0 auto" }}>
         {openDay ? (
@@ -128,7 +113,7 @@ export default function EnvironmentScreen({ onClose }) {
         ) : (
           <>
             {/* Import */}
-            <div style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)", borderRadius: 14, padding: 16 }}>
+            <div className="card" style={{ padding: 16 }}>
               <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} style={{ display: "none" }} />
               <button type="button" onClick={() => fileRef.current?.click()} disabled={importing} style={{
                 width: "100%", padding: "14px", borderRadius: 12, minHeight: 50,
@@ -216,13 +201,13 @@ export default function EnvironmentScreen({ onClose }) {
 function StatCard({ icon: Icon, color, label, stat, dp = 1 }) {
   const v = stat?.avg;
   return (
-    <div style={{ flex: 1, background: "var(--c-surface-1)", border: "1px solid var(--c-border)", borderRadius: 14, padding: "14px 10px", textAlign: "center" }}>
+    <div className="card" style={{ flex: 1, padding: "14px 10px", textAlign: "center" }}>
       <Icon size={16} strokeWidth={1.8} style={{ color, marginBottom: 6 }} />
-      <div style={{ fontFamily: MONO, fontSize: 20, fontWeight: 800, color: "var(--c-text)" }}>
+      <div style={{ fontFamily: NUM, fontSize: 20, fontWeight: 700, color: "var(--c-text)" }}>
         {v == null ? "—" : v.toFixed(dp)}
       </div>
       <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginTop: 2 }}>{label}</div>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-faint)", marginTop: 5 }}>
+      <div style={{ fontFamily: NUM, fontSize: 10, color: "var(--c-text-faint)", marginTop: 5 }}>
         {stat?.min == null ? "" : `${stat.min}–${stat.max}`}
       </div>
     </div>
@@ -231,8 +216,8 @@ function StatCard({ icon: Icon, color, label, stat, dp = 1 }) {
 
 function Totals({ label, value, small }) {
   return (
-    <div style={{ flex: 1, background: "var(--c-surface-1)", border: "1px solid var(--c-border)", borderRadius: 12, padding: "11px 8px", textAlign: "center" }}>
-      <div style={{ fontFamily: MONO, fontSize: small ? 11 : 14, fontWeight: 800, color: "var(--c-text)" }}>{value}</div>
+    <div className="card" style={{ flex: 1, padding: "11px 8px", textAlign: "center" }}>
+      <div style={{ fontFamily: NUM, fontSize: small ? 11 : 14, fontWeight: 700, color: "var(--c-text)" }}>{value}</div>
       <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 0.5, color: "var(--c-text-ghost)", textTransform: "uppercase", marginTop: 4 }}>{label}</div>
     </div>
   );
@@ -242,13 +227,13 @@ function DayRow({ day, onOpen }) {
   return (
     <button type="button" onClick={onOpen} style={{
       display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
-      background: "var(--c-surface-1)", border: "1px solid var(--c-border)", borderRadius: 12, padding: "11px 13px", cursor: "pointer",
+      background: "var(--c-surface-1)", border: "1px solid var(--c-border-faint)", borderRadius: 14, padding: "11px 13px", cursor: "pointer",
     }}>
       <div style={{ minWidth: 52 }}>
         <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--c-text)" }}>{fmtDate(day.date)}</div>
         <div style={{ fontFamily: MONO, fontSize: 9.5, color: "var(--c-text-ghost)" }}>{day.samples} min</div>
       </div>
-      <div style={{ flex: 1, display: "flex", gap: 12, justifyContent: "flex-end", fontFamily: MONO, fontSize: 12 }}>
+      <div style={{ flex: 1, display: "flex", gap: 12, justifyContent: "flex-end", fontFamily: NUM, fontSize: 12 }}>
         <Metric color={TEMP_COLOR} value={`${day.temp.avg}°`} sub={`${day.temp.min}–${day.temp.max}`} />
         <Metric color={HUM_COLOR} value={`${day.humidity.avg}%`} sub={`${day.humidity.min}–${day.humidity.max}`} />
         <Metric color={VPD_COLOR} value={day.vpd.avg} sub="kPa" />

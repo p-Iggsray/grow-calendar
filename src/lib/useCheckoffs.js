@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ymd } from "./api.js";
 import { useToast } from "./useToast.jsx";
 import { queueCheckoff } from "./offlineQueue.js";
+import { tapHaptic } from "./haptics.js";
 
 const VALID_STATES = new Set(["done", "skipped", "blocked"]);
 
@@ -68,6 +69,7 @@ export function useCheckoffs(date, enabled, growId) {
   /** Tap: toggle between "done" and unset. Any other state → unset. */
   const toggle = useCallback(async (idx) => {
     if (!dateKey || !enabled) return;
+    tapHaptic();
     const key = String(idx);
     const next = { ...taskStates };
     if (next[key]) delete next[key];

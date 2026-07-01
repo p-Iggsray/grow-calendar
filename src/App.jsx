@@ -50,7 +50,7 @@ const GrowComplete  = lazy(() => import("./components/Lifecycle/GrowComplete.jsx
 const ManualTasksSheet = lazy(() => import("./components/ManualTasks/ManualTasksSheet.jsx"));
 
 const SHELL_STYLE = {
-  fontFamily: "'Georgia', 'Times New Roman', serif",
+  fontFamily: "var(--font-ui)",
   background: "var(--c-bg)",
   minHeight: "100vh",
   color: "var(--c-text)",
@@ -65,7 +65,7 @@ function NewGrowInitializer({ onReady }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
-    <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "var(--c-text-ghost)", letterSpacing: 4 }}>
+    <div style={{ padding: 24, fontFamily: "var(--font-ui)", color: "var(--c-text-ghost)", letterSpacing: 4 }}>
       SETTING UP…
     </div>
   );
@@ -172,7 +172,7 @@ export default function App() {
   if (planError) {
     return (
       <div style={SHELL_STYLE}>
-        <div style={{ padding: 24, fontFamily: "'Courier New', monospace", color: "var(--c-danger-soft)" }}>
+        <div style={{ padding: 24, fontFamily: "var(--font-ui)", color: "var(--c-danger-soft)" }}>
           Could not load the grow plan. {planError.message}
         </div>
       </div>
@@ -343,7 +343,7 @@ export default function App() {
           position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
           background: "rgba(160,50,50,0.95)", backdropFilter: "blur(8px)",
           padding: "8px 16px", textAlign: "center",
-          fontFamily: "'Courier New', monospace", fontSize: 11,
+          fontFamily: "var(--font-ui)", fontSize: 11,
           letterSpacing: 1.5, color: "#fecaca",
         }}>
           OFFLINE — changes will sync when reconnected
@@ -439,7 +439,7 @@ export default function App() {
                     style={{
                       width: "100%", padding: "12px 14px", borderRadius: 12, minHeight: 46,
                       background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
-                      color: "var(--c-text-dim)", fontFamily: "'Courier New', monospace",
+                      color: "var(--c-text-dim)", fontFamily: "var(--font-ui)",
                       fontSize: 12.5, letterSpacing: 0.5, cursor: "pointer",
                       display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                     }}>

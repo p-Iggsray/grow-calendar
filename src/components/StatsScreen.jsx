@@ -1,11 +1,12 @@
-import { ChevronLeft, Droplets, Thermometer, CheckSquare, BookOpen, BarChart2 } from "lucide-react";
+import { Droplets, Thermometer, CheckSquare, BookOpen } from "lucide-react";
+import ScreenHeader from "./ScreenHeader.jsx";
 import { useStats } from "../lib/useStats.js";
 import { Skeleton } from "./Skeleton.jsx";
 import { usePlan } from "../lib/usePlan.jsx";
 import { distinctStrains, growLocation } from "../lib/growProfile.js";
 
-const MONO  = "'Courier New', monospace";
-const SERIF = "'Georgia', 'Times New Roman', serif";
+const MONO  = "var(--font-ui)";
+const SERIF = "var(--font-ui)";
 
 function ms(a, b) {
   return Math.round((a - b) / 86400000);
@@ -32,7 +33,7 @@ function StatRow({ icon: Icon, label, value, iconColor }) {
       <span style={{ flex: 1, fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)", letterSpacing: 0.4 }}>
         {label}
       </span>
-      <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text)", letterSpacing: 0.8 }}>
+      <span style={{ fontFamily: "var(--font-num)", fontSize: 12, color: "var(--c-text)", letterSpacing: 0.4 }}>
         {value}
       </span>
     </div>
@@ -58,7 +59,7 @@ function StrainCard({ name, harvestDate, today, config }) {
         {name}
       </div>
       <div style={{
-        fontFamily: MONO, fontSize: 26, fontWeight: "bold", lineHeight: 1,
+        fontFamily: "var(--font-num)", fontSize: 26, fontWeight: 700, lineHeight: 1,
         color: harvested ? "var(--c-text-ghost)" : "var(--c-accent)",
         marginBottom: 2,
       }}>
@@ -107,32 +108,12 @@ export default function StatsScreen({ config, today, onClose }) {
   const taskPct   = taskTotal > 0 ? Math.round((taskDone / taskTotal) * 100) : 0;
 
   return (
-    <div style={{
-      paddingTop: "calc(20px + env(safe-area-inset-top, 0px))",
-      paddingLeft: "calc(14px + env(safe-area-inset-left, 0px))",
-      paddingRight: "calc(14px + env(safe-area-inset-right, 0px))",
-      paddingBottom: 48,
-      minHeight: "100vh",
-    }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-        <button
-          type="button"
-          className="touch-target"
-          onClick={onClose}
-          style={{
-            background: "none", border: "none", cursor: "pointer",
-            color: "var(--c-text-muted)", padding: "4px 10px 4px 0",
-            display: "flex", alignItems: "center",
-          }}
-        >
-          <ChevronLeft size={20} strokeWidth={1.8} />
-        </button>
-        <BarChart2 size={15} strokeWidth={1.6} style={{ color: "var(--c-text-ghost)" }} />
-        <span style={{ fontFamily: SERIF, fontSize: 18, color: "var(--c-text)" }}>
-          Season Analytics
-        </span>
-      </div>
+    <div style={{ minHeight: "100vh", paddingBottom: 48 }}>
+      <ScreenHeader eyebrow="Insights" title="Season Analytics" onBack={onClose} />
+      <div style={{
+        paddingLeft: "calc(14px + env(safe-area-inset-left, 0px))",
+        paddingRight: "calc(14px + env(safe-area-inset-right, 0px))",
+      }}>
 
       {/* Season Overview */}
       <SectionTitle>Season Overview</SectionTitle>
@@ -244,6 +225,7 @@ export default function StatsScreen({ config, today, onClose }) {
         <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 4, opacity: 0.7 }}>
           Season comparisons will appear here
         </div>
+      </div>
       </div>
     </div>
   );
