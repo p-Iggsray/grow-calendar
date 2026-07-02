@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ConfirmModal from "./ConfirmModal.jsx";
 import { api } from "../lib/api.js";
+import { clearWizardDraft } from "../lib/wizardDraft.js";
 
 // Two-step ("double reconfirming") destructive confirm for deleting a whole
 // grow. Renders nothing but the modals; the parent mounts it when a delete is
@@ -16,6 +17,7 @@ export default function DeleteGrowConfirm({ growId, growName, onClose, onDeleted
     setBusy(true);
     try {
       await api.deleteGrow(growId);
+      clearWizardDraft(growId); // drop any autosaved setup draft for this grow
       await onDeleted?.(growId);
     } catch {
       setBusy(false); // leave the modal open so the user can retry

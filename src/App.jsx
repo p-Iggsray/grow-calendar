@@ -208,10 +208,12 @@ export default function App() {
     || (needsSetup && activeGrowId && grows.some(g => g.id === activeGrowId) ? activeGrowId : null);
 
   if (setupGrowId) {
-    // Escapable whenever any grow already exists to fall back to - only the
-    // literal first-ever grow must be completed. Canceling deletes the
-    // in-progress empty grow so it can't pile up as junk or trap the app later.
-    const canCancel = grows.length > 0;
+    // Escapable whenever a configured grow exists to land on - only the literal
+    // first-ever grow must be completed. Exiting KEEPS the in-progress grow (it
+    // shows as IN SETUP on the Grows tab) and the wizard's autosaved draft, so
+    // backing out never loses progress; usePlan prefers configured grows on
+    // reload, so the unfinished one can't re-trap the app.
+    const canExit = grows.some(g => g.config);
     return (
       <div style={SHELL_STYLE}>
         <Suspense fallback={<PanelSkeleton />}>
@@ -228,9 +230,9 @@ export default function App() {
             }
             reloadPlan();
           }}
-          onCancel={canCancel ? () => {
+          onCancel={canExit ? () => {
             setWizardGrowId(null);
-            api.deleteGrow(setupGrowId).catch(() => {}).finally(() => reloadPlan());
+            reloadPlan();
           } : undefined}
         />
         </Suspense>

@@ -256,7 +256,7 @@ export default function GrowsListTab({ grows, activeGrowId, setActiveGrowId, onN
       <ConfirmModal
         open={Boolean(resumeGrow)}
         title="Finish setting up this grow?"
-        message={`"${resumeGrow?.displayName || "This grow"}" isn't finished setting up yet, so it doesn't have a calendar. Want to pick up where you left off?`}
+        message={`"${resumeGrow?.displayName || "This grow"}" isn't finished setting up yet, so it doesn't have a calendar. Your answers so far are saved - want to pick up where you left off?`}
         confirmLabel="Finish setup"
         cancelLabel="Not now"
         onConfirm={() => { const id = resumeGrow.id; setResumeGrow(null); onNewGrow(id); }}

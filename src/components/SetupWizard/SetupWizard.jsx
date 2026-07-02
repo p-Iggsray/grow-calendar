@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../../lib/api.js";
 import { resolveSurveyForSetup } from "../../lib/stageAnchor.js";
+import { loadWizardDraft, saveWizardDraft, clearWizardDraft } from "../../lib/wizardDraft.js";
 import ConfirmModal from "../ConfirmModal.jsx";
 import { defaultSurvey } from "./defaultSurvey.js";
 import { MONO, SERIF } from "./styleHelpers.jsx";
@@ -26,15 +27,27 @@ const STEPS = [
 ];
 
 export default function SetupWizard({ onComplete, onCancel, initialSurvey, growId }) {
-  const [step, setStep] = useState(0);
-  const [survey, setSurvey] = useState(() =>
-    initialSurvey ? { ...defaultSurvey(), ...initialSurvey } : defaultSurvey()
-  );
+  // Restore any autosaved draft for this grow so backing out of setup (or the
+  // app closing mid-wizard) never loses progress. Draft answers win over
+  // initialSurvey because they are the user's most recent input.
+  const [draft] = useState(() => loadWizardDraft(growId, STEPS.length));
+  const [step, setStep] = useState(draft ? draft.step : 0);
+  const [survey, setSurvey] = useState(() => ({
+    ...defaultSurvey(),
+    ...(initialSurvey || {}),
+    ...(draft?.survey || {}),
+  }));
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState("");
   // Daily Tasks step: build a heuristic plan, or start empty and add your own.
-  const [wantTasks, setWantTasks] = useState(null);
-  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [wantTasks, setWantTasks] = useState(draft ? draft.wantTasks : null);
+  const [confirmExit, setConfirmExit] = useState(false);
+
+  // Autosave every answer, the current step, and the task-mode choice.
+  useEffect(() => {
+    if (generating) return;
+    saveWizardDraft(growId, { survey, step, wantTasks });
+  }, [growId, survey, step, wantTasks, generating]);
 
   const taskMode = wantTasks === true ? "heuristic" : wantTasks === false ? "manual" : null;
 
@@ -70,6 +83,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
       } else {
         await api.planSetup(resolved);
       }
+      clearWizardDraft(growId);
       onComplete(taskMode || "heuristic");
     } catch (err) {
       setGenError(err.message || "Generation failed. Please try again.");
@@ -96,11 +110,30 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
         background: "rgba(0,0,0,0.2)",
         flexShrink: 0,
       }}>
-        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "var(--c-text-faint)", marginBottom: 4 }}>
-          NEW GROW, STEP {step + 1} OF {STEPS.length}
-        </div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>
-          {STEPS[step].title}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "var(--c-text-faint)", marginBottom: 4 }}>
+              NEW GROW, STEP {step + 1} OF {STEPS.length}
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>
+              {STEPS[step].title}
+            </div>
+          </div>
+          {onCancel && !generating && (
+            <button
+              type="button"
+              className="touch-target"
+              onClick={() => setConfirmExit(true)}
+              style={{
+                flexShrink: 0, padding: "8px 13px", borderRadius: 18,
+                background: "var(--c-border-faint)",
+                border: "1px solid var(--c-border-strong)",
+                color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 11,
+                letterSpacing: 0.5, cursor: "pointer",
+              }}>
+              Save &amp; exit
+            </button>
+          )}
         </div>
         {/* Progress bar */}
         <div style={{
@@ -161,20 +194,6 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
           background: "rgba(0,0,0,0.3)",
           flexShrink: 0,
         }}>
-          {step === 0 && onCancel && (
-            <button
-              type="button"
-              onClick={() => setConfirmCancel(true)}
-              style={{
-                flex: 1, padding: "14px", borderRadius: 12,
-                background: "var(--c-border-faint)",
-                border: "1px solid var(--c-border-strong)",
-                color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 12,
-                letterSpacing: 1, cursor: "pointer",
-              }}>
-              Cancel
-            </button>
-          )}
           {step > 0 && (
             <button
               type="button"
@@ -212,14 +231,13 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
       )}
 
       <ConfirmModal
-        open={confirmCancel}
-        title="Discard this new grow?"
-        message="You will lose everything entered so far: strains, timeline, and setup. This cannot be undone."
-        confirmLabel="Discard"
+        open={confirmExit}
+        title="Save and exit setup?"
+        message="Everything you have entered is saved on this device. This grow will show as In Setup on the Grows tab - tap it anytime to pick up right where you left off."
+        confirmLabel="Save & exit"
         cancelLabel="Keep editing"
-        tone="destructive"
-        onConfirm={() => { setConfirmCancel(false); onCancel?.(); }}
-        onCancel={() => setConfirmCancel(false)}
+        onConfirm={() => { setConfirmExit(false); onCancel?.(); }}
+        onCancel={() => setConfirmExit(false)}
       />
     </div>
   );
