@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { MONTH_NAMES, DOW_SHORT, sameDay } from "../lib/dates.js";
-import { PHASES, getPhase, getDetail, phaseFamily } from "../lib/growData.js";
+import { PHASES, getPhase, phaseFamily } from "../lib/growData.js";
 import { GROW_MIN_MONTH, GROW_MAX_MONTH } from "../lib/appConfig.js";
 
 const YEAR = 2026;
@@ -21,8 +21,8 @@ function ymdKey(date) {
 }
 
 export default function Calendar({
-  today, month, setMonth, selected, config, overrides, generatedPlan, phaseOverrides, eventRules,
-  checkoffCounts, onPickDay, onClearSelection,
+  today, month, setMonth, selected, config,
+  loggedDays, onPickDay, onClearSelection,
 }) {
   const touchStart = useRef(null);
   const firstDow = new Date(YEAR, month, 1).getDay();
@@ -119,29 +119,17 @@ export default function Calendar({
             const isToday = sameDay(date, today);
             const isKey = sameDay(date, config.transplant) || sameDay(date, config.backyardMove) || sameDay(date, config.gdpHarvest) || sameDay(date, config.hazeHarvest);
 
-            // Completion ring: ratio of checked / total tasks for this day.
-            // Only render once the user has checked at least one task on this
-            // day - avoids showing empty 0/N rings on every future cell.
-            let ringRatio = 0;
-            let totalTasks = 0;
-            if (pStyle) {
-              const dayDetail = getDetail(date, config, overrides, generatedPlan, phaseOverrides, eventRules);
-              totalTasks = dayDetail?.tasks?.length ?? 0;
-              const doneCount = checkoffCounts?.[ymdKey(date)] ?? 0;
-              if (totalTasks > 0 && doneCount > 0) {
-                ringRatio = Math.min(1, doneCount / totalTasks);
-              }
-            }
+            // Completion ring tracks the daily LOG, not tasks: a filled-out log
+            // gets a full green ring, an unlogged day gets none. Tasks are
+            // guidance and never gate the ring.
+            const isLogged = Boolean(pStyle && loggedDays?.[ymdKey(date)]);
 
-            const doneCount = checkoffCounts?.[ymdKey(date)] ?? 0;
             const ariaParts = [
               `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`,
               pStyle ? `${pStyle.label} phase` : "outside grow season",
               isToday ? "today" : null,
               isKey ? "key milestone" : null,
-              totalTasks > 0 && doneCount > 0
-                ? `${doneCount} of ${totalTasks} tasks done`
-                : null,
+              isLogged ? "day logged" : null,
               isSel ? "selected" : null,
             ].filter(Boolean);
 
@@ -188,8 +176,8 @@ export default function Calendar({
                 }} aria-hidden="true">
                   {date.getDate()}
                 </span>
-                {ringRatio > 0 && !isSel && (
-                  <CompletionRing ratio={ringRatio} complete={ringRatio >= 1} />
+                {isLogged && !isSel && (
+                  <CompletionRing ratio={1} complete />
                 )}
               </button>
             );
@@ -198,7 +186,7 @@ export default function Calendar({
       </div>
 
       <div style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--c-text-ghost)", textAlign: "center", marginTop: 8, lineHeight: 1.8 }}>
-        Solid border = today · Dashed = key date · Green ring = day complete
+        Solid border = today · Dashed = key date · Green ring = day logged
       </div>
     </div>
   );

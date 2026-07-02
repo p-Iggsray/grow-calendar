@@ -87,6 +87,8 @@ export function useGrowLog(date, enabled, growId) {
       saveTimer.current = null;
       try {
         await api.putGrowLog(key, payload, growId);
+        // Let the calendar's logged-day rings refresh immediately.
+        window.dispatchEvent(new CustomEvent("growlog-mutated"));
         setStatus("saved");
         setTimeout(() => setStatus(s => s === "saved" ? null : s), 2000);
       } catch {

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 
-export function TaskEditSheet({ currentText, onSave, onClose }) {
+export function TaskEditSheet({ currentText = "", mode = "edit", onSave, onRemove, onClose }) {
   const [text, setText] = useState(currentText);
+  const isAdd = mode === "add";
   const [kbOffset, setKbOffset] = useState(0);
   const textareaRef = useRef(null);
 
@@ -27,7 +28,7 @@ export function TaskEditSheet({ currentText, onSave, onClose }) {
     textareaRef.current?.setSelectionRange(len, len);
   }, [currentText]);
 
-  const isDirty = text.trim() && text.trim() !== currentText.trim();
+  const isDirty = isAdd ? Boolean(text.trim()) : (text.trim() && text.trim() !== currentText.trim());
   // When the keyboard is up, safe-area-inset-bottom is 0, so use flat padding.
   const bottomPad = kbOffset > 0 ? "20px" : "calc(24px + env(safe-area-inset-bottom, 0px))";
 
@@ -49,7 +50,7 @@ export function TaskEditSheet({ currentText, onSave, onClose }) {
       }}>
         <div className="sheet-handle" />
         <div style={{ fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1.5, color: "var(--c-text-muted)", textTransform: "uppercase", margin: "10px 0 12px" }}>
-          Edit task text
+          {isAdd ? "Add a task for this day" : "Edit task"}
         </div>
         <textarea
           ref={textareaRef}
@@ -84,9 +85,21 @@ export function TaskEditSheet({ currentText, onSave, onClose }) {
               color: "#000", cursor: "pointer", fontSize: 14, fontWeight: 700,
               opacity: isDirty ? 1 : 0.4,
             }}>
-            Save
+            {isAdd ? "Add task" : "Save"}
           </button>
         </div>
+        {!isAdd && onRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            style={{
+              width: "100%", marginTop: 10, padding: "12px 0", borderRadius: 12,
+              background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)",
+              color: "var(--c-danger-soft)", cursor: "pointer", fontSize: 13, fontWeight: 600,
+            }}>
+            Remove from this day
+          </button>
+        )}
       </div>
     </>
   );

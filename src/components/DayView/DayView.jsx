@@ -43,6 +43,7 @@ export default function DayView({
   onBack, onJumpToday,
   dayEditedTasks,
   onEditTaskForDay, onEditTaskForPhase,
+  onRemoveTaskForDay, onAddTaskForDay,
   onTaskEditActiveChange,
   onPickerActiveChange,
   plants = [],
@@ -52,6 +53,7 @@ export default function DayView({
   const [noteEditing, setNoteEditing] = useState(false);
   const [pickerIdx, setPickerIdx] = useState(null);
   const [editingIdx, setEditingIdx] = useState(null);
+  const [addingTask, setAddingTask] = useState(false);
   const [pendingPhaseApply, setPendingPhaseApply] = useState(null);
   // Which plant the per-plant log sections are scoped to ("all" or a plant id).
   const [logPlant, setLogPlant] = useState("all");
@@ -66,8 +68,8 @@ export default function DayView({
   const textareaRef = useRef(null);
 
   useEffect(() => {
-    onTaskEditActiveChange?.(editingIdx !== null);
-  }, [editingIdx, onTaskEditActiveChange]);
+    onTaskEditActiveChange?.(editingIdx !== null || addingTask);
+  }, [editingIdx, addingTask, onTaskEditActiveChange]);
 
   // The state picker is a bottom sheet rendered inside this fixed overlay, so the
   // global TabBar (higher stacking context) would paint over its lower buttons and
@@ -132,11 +134,24 @@ export default function DayView({
     const idx = editingIdx;
     setEditingIdx(null);
     try {
-      await onEditTaskForDay?.(idx, newText);
-      if (selPhase && selStyle?.label) {
+      const res = await onEditTaskForDay?.(idx, newText);
+      // Only generated tasks can be applied to the whole phase; a task the
+      // grower added by hand belongs to this day alone.
+      if (res?.phaseApplicable !== false && selPhase && selStyle?.label) {
         setPendingPhaseApply({ index: idx, text: newText });
       }
     } catch { /* ignored */ }
+  }
+
+  async function handleRemoveTask() {
+    const idx = editingIdx;
+    setEditingIdx(null);
+    try { await onRemoveTaskForDay?.(idx); } catch { /* ignored */ }
+  }
+
+  async function handleAddTask(text) {
+    setAddingTask(false);
+    try { await onAddTaskForDay?.(text); } catch { /* ignored */ }
   }
 
   async function handleApplyPhase() {
@@ -167,7 +182,16 @@ export default function DayView({
         <TaskEditSheet
           currentText={detail.tasks[editingIdx]}
           onSave={handleSaveTaskEdit}
+          onRemove={handleRemoveTask}
           onClose={() => setEditingIdx(null)}
+        />
+      )}
+
+      {addingTask && (
+        <TaskEditSheet
+          mode="add"
+          onSave={handleAddTask}
+          onClose={() => setAddingTask(false)}
         />
       )}
 
@@ -269,6 +293,22 @@ export default function DayView({
                     isEdited={!!(dayEditedTasks?.[String(i)])}
                   />
                 ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setAddingTask(true)}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                  width: "100%", marginTop: 10, padding: "12px", borderRadius: 12, minHeight: 46,
+                  background: "var(--c-surface-1)", border: "1px dashed var(--c-border-strong)",
+                  color: "var(--c-text-dim)", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                }}>
+                <Pencil size={13} strokeWidth={2} /> Add a task for this day
+              </button>
+
+              <div style={{ fontSize: 11, color: "var(--c-text-ghost)", marginTop: 10, lineHeight: 1.6, textAlign: "center" }}>
+                Tasks are guidance, not homework. Anything left unchecked completes itself after the day ends.
               </div>
 
               {detail.notes && (

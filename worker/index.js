@@ -5,7 +5,7 @@ import { postResetPassword, postAdminResetLink } from "./authReset.js";
 import { getCheckoffs, putCheckoffs, getMonthCheckoffs } from "./checkoffs.js";
 import { ensurePerDayGrowScope, resolveGrowId } from "./perDayScope.js";
 import { getNote, putNote } from "./notes.js";
-import { getGrowLog, putGrowLog, exportGrowLogCsv } from "./growLog.js";
+import { getGrowLog, putGrowLog, exportGrowLogCsv , getMonthGrowLog } from "./growLog.js";
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
 import { postMjReview } from "./mjReview.js";
 import { getHealth, postClientError } from "./health.js";
@@ -242,6 +242,10 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (path === "/api/share" && method === "POST")   return createShareToken(env, user);
   if (path === "/api/share" && method === "DELETE") return deleteShareToken(env, user);
 
+  if (path === "/api/grow-log/month" && method === "GET") {
+    const url = new URL(request.url);
+    return getMonthGrowLog(env, user, await resolveGrowId(env, user, url), url.searchParams.get("month"));
+  }
   if (path === "/api/checkoffs" && method === "GET") {
     const url = new URL(request.url);
     const month = url.searchParams.get("month");

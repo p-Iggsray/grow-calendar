@@ -597,7 +597,8 @@ export async function deleteGrowEvent(env, user, growId, ruleId) {
   return json({ ok: true });
 }
 
-// PATCH /api/grows/:id/day/:date - merge editedTasks into plan_day_overrides for one day
+// PATCH /api/grows/:id/day/:date - merge per-day task changes (edit, remove,
+// add, and edits/removals of user-added tasks) into plan_day_overrides
 export async function patchGrowDayOverride(request, env, user, growId, date) {
   if (!DATE_RE.test(date)) return error(400, "invalid date");
 
@@ -608,10 +609,11 @@ export async function patchGrowDayOverride(request, env, user, growId, date) {
 
   const parsed = await safeJsonBounded(request, 8192);
   if (!parsed.ok) return error(parsed.status, parsed.error);
-  const { editedTasks } = parsed.data ?? {};
-  if (!editedTasks || typeof editedTasks !== "object" || Array.isArray(editedTasks)) {
-    return error(400, "editedTasks must be an object mapping index → text");
-  }
+  const { editedTasks, addTask, removeTask, editAddedTask, removeAddedTask } = parsed.data ?? {};
+  const hasEdit = editedTasks && typeof editedTasks === "object" && !Array.isArray(editedTasks);
+  const hasOp = hasEdit || typeof addTask === "string" || Number.isInteger(removeTask)
+    || (editAddedTask && typeof editAddedTask === "object") || Number.isInteger(removeAddedTask);
+  if (!hasOp) return error(400, "no valid task operation in body");
 
   const existing = await env.DB.prepare(
     "SELECT payload FROM plan_day_overrides WHERE user_id = ? AND grow_id = ? AND date = ?"
@@ -622,12 +624,48 @@ export async function patchGrowDayOverride(request, env, user, growId, date) {
     try { payload = JSON.parse(existing.payload); } catch { /* start fresh */ }
   }
 
-  const merged = { ...(payload.editedTasks ?? {}), ...editedTasks };
-  for (const k of Object.keys(merged)) {
-    if (merged[k] === null || merged[k] === "") delete merged[k];
+  if (hasEdit) {
+    const merged = { ...(payload.editedTasks ?? {}), ...editedTasks };
+    for (const k of Object.keys(merged)) {
+      if (merged[k] === null || merged[k] === "") delete merged[k];
+    }
+    if (Object.keys(merged).length > 0) payload.editedTasks = merged;
+    else delete payload.editedTasks;
   }
-  if (Object.keys(merged).length > 0) payload.editedTasks = merged;
-  else delete payload.editedTasks;
+
+  // Remove a generated task for this day (index into the generated list).
+  if (Number.isInteger(removeTask) && removeTask >= 0 && removeTask < 200) {
+    const set = new Set(payload.removedTasks ?? []);
+    set.add(removeTask);
+    payload.removedTasks = [...set].sort((a, b) => a - b);
+  }
+
+  // User-added tasks for this day (capped, trimmed).
+  if (typeof addTask === "string") {
+    const text = addTask.trim().slice(0, 300);
+    if (!text) return error(400, "addTask must not be empty");
+    const added = Array.isArray(payload.addedTasks) ? payload.addedTasks : [];
+    if (added.length >= 50) return error(400, "too many added tasks for one day");
+    payload.addedTasks = [...added, text];
+  }
+
+  if (editAddedTask && typeof editAddedTask === "object") {
+    const { index, text } = editAddedTask;
+    const added = Array.isArray(payload.addedTasks) ? payload.addedTasks : [];
+    if (!Number.isInteger(index) || index < 0 || index >= added.length) return error(400, "editAddedTask index out of range");
+    const t = typeof text === "string" ? text.trim().slice(0, 300) : "";
+    if (!t) return error(400, "editAddedTask text must not be empty");
+    added[index] = t;
+    payload.addedTasks = added;
+  }
+
+  if (Number.isInteger(removeAddedTask)) {
+    const added = Array.isArray(payload.addedTasks) ? payload.addedTasks : [];
+    if (removeAddedTask < 0 || removeAddedTask >= added.length) return error(400, "removeAddedTask index out of range");
+    added.splice(removeAddedTask, 1);
+    if (added.length > 0) payload.addedTasks = added;
+    else delete payload.addedTasks;
+  }
 
   await env.DB.prepare(
     `INSERT INTO plan_day_overrides (user_id, grow_id, date, payload, updated_at)

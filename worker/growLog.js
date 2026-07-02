@@ -80,6 +80,33 @@ export async function ensureGrowLogSchema(env) {
   _schemaReady = true;
 }
 
+// A day counts as "logged" when any real data was entered: a numeric reading,
+// a feed note, or at least one watering/training/health row. Drives the
+// calendar's completion ring (logged day = full ring).
+export function isLogFilled(row) {
+  if (!row) return false;
+  if (row.water_gal != null || row.temp_high != null || row.temp_low != null || row.humidity != null) return true;
+  if (row.feed) return true;
+  for (const k of ["water_plants", "training", "plant_health"]) {
+    if (tryParseArray(row[k]).length > 0) return true;
+  }
+  return false;
+}
+
+// GET /api/grow-log/month?month=YYYY-MM -> { month, days: { "YYYY-MM-DD": true } }
+export async function getMonthGrowLog(env, user, growId, month) {
+  if (!/^\d{4}-\d{2}$/.test(month || "")) return error(400, "month must be YYYY-MM");
+  await ensureGrowLogSchema(env);
+  const res = await env.DB.prepare(
+    "SELECT * FROM grow_log WHERE user_id = ? AND grow_id = ? AND date LIKE ?"
+  ).bind(user.id, growId, month + "-%").all();
+  const days = {};
+  for (const r of res.results ?? []) {
+    if (isLogFilled(r)) days[r.date] = true;
+  }
+  return json({ month, days });
+}
+
 export async function getGrowLog(env, user, growId, date) {
   await ensureGrowLogSchema(env);
   const row = await env.DB.prepare(

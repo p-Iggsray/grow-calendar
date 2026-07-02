@@ -12,7 +12,8 @@ import {
 import { useAuth } from "./lib/auth.jsx";
 import { usePlan } from "./lib/usePlan.jsx";
 import { useCheckoffs } from "./lib/useCheckoffs.js";
-import { useMonthCheckoffs } from "./lib/useMonthCheckoffs.js";
+import { useMonthLog } from "./lib/useMonthLog.js";
+import { autoCompleteTasks } from "./lib/autoCompleteTasks.js";
 import { useDayNote } from "./lib/useDayNote.js";
 import { api, ymd } from "./lib/api.js";
 import { buildSuggestions } from "./lib/mjSuggestions.js";
@@ -103,7 +104,7 @@ export default function App() {
   const [manualTasksOpen, setManualTasksOpen] = useState(false);
 
   const { taskStates, loading: checkoffsLoading, toggle, setTaskState } = useCheckoffs(selected, Boolean(user), activeGrowId);
-  const { counts: monthCheckoffCounts } = useMonthCheckoffs(today.getFullYear(), month, Boolean(user), activeGrowId);
+  const { days: monthLoggedDays } = useMonthLog(today.getFullYear(), month, Boolean(user), activeGrowId);
   const { note, setNote, status: noteStatus, flush: flushNote } =
     useDayNote(selected, Boolean(user), activeGrowId);
 
@@ -167,6 +168,16 @@ export default function App() {
     if (!online) return;
     flushCheckoffQueue(api.putCheckoffs).catch(() => {});
   }, [online]);
+
+  // Tasks are guidance: anything left unchecked quietly completes itself after
+  // the day ends. Runs on load and again after the midnight rollover.
+  const todayKey = ymd(today);
+  useEffect(() => {
+    if (planLoading || !config || !activeGrowId || lifecyclePhase !== "growing" || !online) return;
+    autoCompleteTasks({ growId: activeGrowId, config, overrides, generatedPlan, phaseOverrides, eventRules, today }).catch(() => {});
+  // Reruns per grow and per day; data deps are read fresh on each run.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeGrowId, planLoading, todayKey, online]);
 
   if (planError) {
     return (
@@ -280,19 +291,65 @@ export default function App() {
     today,
   });
 
+  // The rendered task list = generated tasks minus per-day removals, plus
+  // per-day additions (see applyDayOverride). Map a rendered index back to its
+  // source so edits and removals target the right entry.
+  function mapRenderedTask(renderedIdx) {
+    const ov = selected ? (overrides?.[ymd(selected)] ?? {}) : {};
+    const removed = new Set(ov.removedTasks ?? []);
+    const addedCount = (ov.addedTasks ?? []).length;
+    const renderedCount = detail?.tasks?.length ?? 0;
+    const baseKeptCount = renderedCount - addedCount;
+    if (renderedIdx >= baseKeptCount) {
+      return { kind: "added", idx: renderedIdx - baseKeptCount };
+    }
+    let n = -1;
+    for (let orig = 0; orig < 500; orig++) {
+      if (removed.has(orig)) continue;
+      n++;
+      if (n === renderedIdx) return { kind: "base", idx: orig };
+    }
+    return { kind: "base", idx: renderedIdx };
+  }
+
+  // Returns { phaseApplicable } so DayView only offers "apply to whole phase"
+  // for generated tasks (user-added tasks belong to the day alone).
   async function handleEditTaskForDay(taskIndex, text) {
-    await api.patchGrowDay(activeGrowId, ymd(selected), { editedTasks: { [taskIndex]: text } });
+    const t = mapRenderedTask(taskIndex);
+    if (t.kind === "added") {
+      await api.patchGrowDay(activeGrowId, ymd(selected), { editAddedTask: { index: t.idx, text } });
+    } else {
+      await api.patchGrowDay(activeGrowId, ymd(selected), { editedTasks: { [t.idx]: text } });
+    }
+    reloadPlan();
+    return { phaseApplicable: t.kind === "base" };
+  }
+
+  async function handleRemoveTaskForDay(taskIndex) {
+    const t = mapRenderedTask(taskIndex);
+    if (t.kind === "added") {
+      await api.patchGrowDay(activeGrowId, ymd(selected), { removeAddedTask: t.idx });
+    } else {
+      await api.patchGrowDay(activeGrowId, ymd(selected), { removeTask: t.idx });
+    }
+    reloadPlan();
+  }
+
+  async function handleAddTaskForDay(text) {
+    await api.patchGrowDay(activeGrowId, ymd(selected), { addTask: text });
     reloadPlan();
   }
 
   async function handleEditTaskForPhase(taskIndex, text) {
     if (!selPhase) return;
+    const t = mapRenderedTask(taskIndex);
+    if (t.kind !== "base") return;
     const currentTasks =
       phaseOverrides?.[selPhase]?.tasks ??
       generatedPlan?.phases?.[selPhase]?.tasks ??
       [];
     const newTasks = [...currentTasks];
-    newTasks[taskIndex] = text;
+    newTasks[t.idx] = text;
     await api.saveGrowPhase(activeGrowId, selPhase, { tasks: newTasks });
     reloadPlan();
   }
@@ -458,11 +515,7 @@ export default function App() {
                 setMonth={setMonth}
                 selected={selected}
                 config={config}
-                overrides={overrides}
-                generatedPlan={generatedPlan}
-                phaseOverrides={phaseOverrides}
-                eventRules={eventRules}
-                checkoffCounts={monthCheckoffCounts}
+                loggedDays={monthLoggedDays}
                 onPickDay={pickDay}
                 onClearSelection={() => setSelected(null)}
               />
@@ -506,6 +559,8 @@ export default function App() {
               dayEditedTasks={dayEditedTasks}
               onEditTaskForDay={handleEditTaskForDay}
               onEditTaskForPhase={handleEditTaskForPhase}
+              onRemoveTaskForDay={handleRemoveTaskForDay}
+              onAddTaskForDay={handleAddTaskForDay}
               onTaskEditActiveChange={setTaskEditing}
               onPickerActiveChange={setPickerActive}
               plants={survey?.strains ?? []}
