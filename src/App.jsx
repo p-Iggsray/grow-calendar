@@ -208,6 +208,8 @@ export default function App() {
           growId={setupGrowId}
           onComplete={(taskMode) => {
             setWizardGrowId(null);
+            // Land the user in the grow they just finished setting up.
+            setActiveGrowId(setupGrowId);
             // The guided ("first grow") path gets the MJ plan-review onboarding;
             // auto-fill and manual skip it.
             if (taskMode === "guided") {

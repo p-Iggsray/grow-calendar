@@ -2,6 +2,7 @@ import { useState } from "react";
 import { MoreVertical, SlidersHorizontal, Trash2 } from "lucide-react";
 import { api } from "../lib/api.js";
 import DeleteGrowConfirm from "./DeleteGrowConfirm.jsx";
+import ConfirmModal from "./ConfirmModal.jsx";
 
 const MONO  = "var(--font-ui)";
 const SERIF = "var(--font-ui)";
@@ -21,7 +22,9 @@ function fmtDate(iso) {
 
 function GrowCard({ grow, isActive, onActivate, onEdit, onDelete }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const ss = STATUS_STYLE[grow.status] ?? STATUS_STYLE.active;
+  const ss = !grow.config
+    ? { label: "IN SETUP", color: "var(--c-warn)", bg: "rgba(251,191,36,0.10)" }
+    : (STATUS_STYLE[grow.status] ?? STATUS_STYLE.active);
   const strains = grow.survey?.strains?.map(s => s.name).filter(Boolean) ?? [];
   const cfg     = grow.config;
 
@@ -173,6 +176,16 @@ function menuItemStyle(color) {
 export default function GrowsListTab({ grows, activeGrowId, setActiveGrowId, onNewGrow, onEditGrow, onGrowDeleted }) {
   const [creating, setCreating] = useState(false);
   const [deletingGrow, setDeletingGrow] = useState(null);
+  const [resumeGrow, setResumeGrow] = useState(null); // unfinished grow the user tapped
+
+  // Tapping a grow that never finished setup can't activate it (there's no
+  // calendar to show) — offer to resume the setup wizard instead of silently
+  // bouncing the selection back.
+  function handleActivate(id) {
+    const grow = grows.find(g => g.id === id);
+    if (grow && !grow.config) { setResumeGrow(grow); return; }
+    setActiveGrowId(id);
+  }
 
   async function handleNewGrow() {
     if (creating) return;
@@ -230,12 +243,22 @@ export default function GrowsListTab({ grows, activeGrowId, setActiveGrowId, onN
             key={grow.id}
             grow={grow}
             isActive={grow.id === activeGrowId}
-            onActivate={setActiveGrowId}
+            onActivate={handleActivate}
             onEdit={onEditGrow}
             onDelete={setDeletingGrow}
           />
         ))}
       </div>
+
+      <ConfirmModal
+        open={Boolean(resumeGrow)}
+        title="Finish setting up this grow?"
+        message={`"${resumeGrow?.displayName || "This grow"}" isn't finished setting up yet, so it doesn't have a calendar. Want to pick up where you left off?`}
+        confirmLabel="Finish setup"
+        cancelLabel="Not now"
+        onConfirm={() => { const id = resumeGrow.id; setResumeGrow(null); onNewGrow(id); }}
+        onCancel={() => setResumeGrow(null)}
+      />
 
       {deletingGrow && (
         <DeleteGrowConfirm
