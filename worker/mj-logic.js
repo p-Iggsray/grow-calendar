@@ -78,7 +78,9 @@ When diagnosing a problem, connect the dots first: "Temps at \`95°F\` all week 
 - **get_day** - full task list, notes, completion state for one day
 - **get_week** - 7-day overview with checkoffs and notes
 - **get_grow_log** - water, temp, feed, humidity entries for any date range
-- **get_grow_info** - current grow metadata: name, status, strains, all config dates, phase overrides
+- **get_grow_info** - current grow metadata: name, status, strains, all config dates, phase overrides, event rules, plants
+- **get_environment** - imported sensor data (temp/RH/VPD from the grower's controller): overall summary, last 7 days, or one day
+- **get_plant_log** - one plant's full history: notes, measurements, waterings, training, health, stage changes
 
 **Writing tools - always confirm before calling:**
 - **set_tasks_done** - check or uncheck tasks (call get_day first for indices)
@@ -94,6 +96,9 @@ When diagnosing a problem, connect the dots first: "Temps at \`95°F\` all week 
 - **update_plant** - edit a plant's name, type, photo/auto, flower weeks, or status (by plant id)
 - **delete_plant** - remove a plant from the roster by id (confirm first - deletes its history)
 - **update_grow_profile** - edit profile/setup fields: environment, medium, container type/size, location, experience, watering method, veg length, plants-already-outside, notes
+- **add_plant_log_entry** - write an entry into one plant's history (observation, measurement, training, health)
+- **add_task** / **remove_task** - add or remove a task on one specific day (get_day first for indices)
+- **lifecycle_action** - start drying, move to curing, finish the grow, log a jar burp, or log a dry-space reading. Phase transitions change the whole app view: always confirm first.
 
 When the grower asks to add, rename, remove, or change plants, just do it with these tools - never tell them you can't manage individual plants. The same goes for profile fields: if they want to change the medium, container, location, or any other setup detail, use update_grow_profile rather than saying you can't.
 
@@ -107,6 +112,8 @@ When the grower asks to add, rename, remove, or change plants, just do it with t
 **Never skip the confirmation.** These changes affect the whole calendar.
 
 **Date changes** shift the entire grow timeline downstream - always spell out the knock-on effects before confirming.
+
+**Tasks are guidance, not homework.** The calendar's ring tracks whether the grower filled their daily log, and unchecked tasks quietly complete themselves after the day ends. Never nag about unchecked tasks; help the grower log real data instead.
 
 ## Relative dates
 
@@ -330,6 +337,8 @@ export const MJ_TOOLS = [
         photo:       { type: "boolean", description: "true = photoperiod, false = autoflower." },
         flowerWeeks: { type: "integer", description: "Expected flowering weeks, 4-20." },
         status:      { type: "string",  enum: ["growing", "harvested", "dead"], description: "Plant status." },
+        stage:       { type: "string",  enum: ["germination", "seedling", "vegetative", "flowering", "flushing", "harvest", "drying", "curing", "done"], description: "The plant's current lifecycle stage." },
+        pot_size:    { type: "number",  description: "Pot size in gallons (0-100)." },
       },
       required: ["plant_id"],
     },
@@ -378,6 +387,83 @@ export const MJ_TOOLS = [
         feed:      { type: "string",  description: "Free-text feed description e.g. 'Fox Farm Trio at half dose' (omit if not mentioned)" },
       },
       required: ["date"],
+    },
+  },
+  {
+    name: "get_environment",
+    description: "Read the grow's imported sensor data (controller CSV import: minute-level temperature, humidity, and VPD). Returns the overall summary plus per-day rollups: the last 7 days, or one specific day when date is given. Use this to answer environment questions with real numbers, spot trends, and cross-check against symptoms. If nothing was imported it says so.",
+    parameters: {
+      type: "object",
+      properties: {
+        date: { type: "string", description: "Optional single day to inspect, as YYYY-MM-DD. Omit for the overall summary plus the last 7 days." },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "get_plant_log",
+    description: "Read one plant's history entries (notes, measurements, waterings, nutrients, training, trims, health observations, stage changes), newest first. Get plant ids from get_grow_info. Use this to answer questions about a specific plant or track its progress over time.",
+    parameters: {
+      type: "object",
+      properties: {
+        plant_id: { type: "string",  description: "The plant id from get_grow_info (starts with 'p_')." },
+        limit:    { type: "integer", description: "Max entries to return, 1-50. Defaults to 25." },
+      },
+      required: ["plant_id"],
+    },
+  },
+  {
+    name: "add_plant_log_entry",
+    description: "Add an entry to one plant's history: an observation, measurement, training note, health note, and so on. Get plant ids from get_grow_info. Confirm the entry with the grower before writing.",
+    parameters: {
+      type: "object",
+      properties: {
+        plant_id:    { type: "string", description: "The plant id from get_grow_info (starts with 'p_')." },
+        date:        { type: "string", description: "Entry date as YYYY-MM-DD. Defaults to today." },
+        kind:        { type: "string", enum: ["note", "measurement", "watering", "nutrients", "training", "trim", "environment", "health"], description: "Entry category. Defaults to note." },
+        body:        { type: "string", description: "The entry text (max 2000 chars)." },
+        height:      { type: "number", description: "Plant height measurement, if given." },
+        height_unit: { type: "string", enum: ["in", "cm"], description: "Unit for height." },
+        health:      { type: "string", enum: ["thriving", "healthy", "stressed", "sick"], description: "Health rating, if assessing health." },
+      },
+      required: ["plant_id"],
+    },
+  },
+  {
+    name: "lifecycle_action",
+    description: "Drive the grow's post-harvest lifecycle or log to its trackers. Actions: start_drying (harvest is done, calendar hands off to the drying tracker), move_to_curing (buds go into jars), finish_grow (curing complete, grow wraps up), log_burp (record a jar burp today, optionally with jar RH), log_dry_reading (record today's dry-space temp/RH). Phase transitions are big moments: ALWAYS confirm with the grower before start_drying, move_to_curing, or finish_grow. Logging actions just need the values confirmed.",
+    parameters: {
+      type: "object",
+      properties: {
+        action: { type: "string", enum: ["start_drying", "move_to_curing", "finish_grow", "log_burp", "log_dry_reading"], description: "What to do." },
+        temp_f: { type: "number", description: "Temperature in F, for log_dry_reading." },
+        rh:     { type: "number", description: "Relative humidity percent, for log_dry_reading or log_burp." },
+      },
+      required: ["action"],
+    },
+  },
+  {
+    name: "add_task",
+    description: "Add a task to one specific day's task list. For a task that should repeat across many days, use create_event_rule instead. Confirm the wording with the grower first.",
+    parameters: {
+      type: "object",
+      properties: {
+        date: { type: "string", description: "Target day as YYYY-MM-DD." },
+        task: { type: "string", description: "The task text to add (max 300 chars)." },
+      },
+      required: ["date", "task"],
+    },
+  },
+  {
+    name: "remove_task",
+    description: "Remove one task from a specific day's task list by its index from get_day. Call get_day first so the index is current, show the grower which task will be removed, and confirm before calling.",
+    parameters: {
+      type: "object",
+      properties: {
+        date:       { type: "string",  description: "Target day as YYYY-MM-DD." },
+        task_index: { type: "integer", description: "The task's index from get_day." },
+      },
+      required: ["date", "task_index"],
     },
   },
 ];

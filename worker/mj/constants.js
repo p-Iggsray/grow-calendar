@@ -3,7 +3,7 @@
 
 export const MAX_MSG_LEN = 4000;
 
-export const MAX_TOOL_ITERATIONS = 8;
+export const MAX_TOOL_ITERATIONS = 12;
 export const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export const GEMINI_MODEL = "gemini-2.5-flash";
 export const GEMINI_PRO_MODEL = "gemini-2.5-pro";

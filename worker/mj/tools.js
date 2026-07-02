@@ -10,8 +10,11 @@ import { mergeChecked, appendNoteText, buildDayView, VALID_GROW_PHASES, VALID_CO
 import { validateEventRule, MAX_RULES_PER_GROW } from "../eventRulesValidate.js";
 import {
   ensurePlantIds, validatePlantFields, addPlantToSurvey,
-  updatePlantInSurvey, removePlantFromSurvey,
+  updatePlantInSurvey, removePlantFromSurvey, normalizeLogEntry,
 } from "../plantsRoster.js";
+import { validateLifecycle } from "../grows.js";
+import { normalizeLifecycle } from "../../src/lib/lifecycle.js";
+import { todayInET } from "./usage.js";
 import { ensurePlantLogSchema } from "../plants.js";
 import { geocode } from "../geocode.js";
 import { logError } from "../log.js";
@@ -256,7 +259,9 @@ export async function executeTool(name, input, env, userId, config, overrides, g
       if (!growId) return { error: "No active grow selected." };
       const plantId = input?.plant_id;
       if (typeof plantId !== "string" || !plantId) return { error: "plant_id is required - get it from get_grow_info." };
-      const v = validatePlantFields(input ?? {}, true);
+      const mapped = { ...(input ?? {}) };
+      if (mapped.pot_size !== undefined) { mapped.potSize = mapped.pot_size; delete mapped.pot_size; }
+      const v = validatePlantFields(mapped, true);
       if (!v.ok) return { error: v.error };
       if (Object.keys(v.value).length === 0) return { error: "No valid fields to update." };
       const survey = await readSurvey(env, userId, growId);
@@ -523,6 +528,204 @@ export async function executeTool(name, input, env, userId, config, overrides, g
       await writeNote(env, userId, dayGrowId, date, text);
       actions.push({ type: "replace_note", date, summary: `Replaced ${date} note` });
       return { date, note: text };
+    }
+
+
+    if (name === "get_environment") {
+      const date = typeof input?.date === "string" && DATE_RE.test(input.date) ? input.date : null;
+      try {
+        const overall = await env.DB.prepare(
+          `SELECT COUNT(*) AS samples, MIN(date) AS first_day, MAX(date) AS last_day,
+             ROUND(AVG(temp_f),1) AS t_avg, MIN(temp_f) AS t_min, MAX(temp_f) AS t_max,
+             ROUND(AVG(humidity),1) AS h_avg, MIN(humidity) AS h_min, MAX(humidity) AS h_max,
+             ROUND(AVG(vpd),2) AS v_avg, MIN(vpd) AS v_min, MAX(vpd) AS v_max
+           FROM env_readings WHERE user_id = ? AND grow_id = ?`
+        ).bind(userId, dayGrowId).first();
+        if (!overall || Number(overall.samples) === 0) {
+          return { imported: false, message: "No sensor data has been imported for this grow. The grower can import a controller CSV under More, Environment." };
+        }
+        const dayQuery = date
+          ? env.DB.prepare(
+              `SELECT date, COUNT(*) AS samples, ROUND(AVG(temp_f),1) AS temp_avg, MIN(temp_f) AS temp_min, MAX(temp_f) AS temp_max,
+                 ROUND(AVG(humidity),1) AS rh_avg, MIN(humidity) AS rh_min, MAX(humidity) AS rh_max, ROUND(AVG(vpd),2) AS vpd_avg
+               FROM env_readings WHERE user_id = ? AND grow_id = ? AND date = ? GROUP BY date`
+            ).bind(userId, dayGrowId, date)
+          : env.DB.prepare(
+              `SELECT date, COUNT(*) AS samples, ROUND(AVG(temp_f),1) AS temp_avg, MIN(temp_f) AS temp_min, MAX(temp_f) AS temp_max,
+                 ROUND(AVG(humidity),1) AS rh_avg, MIN(humidity) AS rh_min, MAX(humidity) AS rh_max, ROUND(AVG(vpd),2) AS vpd_avg
+               FROM env_readings WHERE user_id = ? AND grow_id = ? GROUP BY date ORDER BY date DESC LIMIT 7`
+            ).bind(userId, dayGrowId);
+        const daysRes = await dayQuery.all();
+        return {
+          imported: true,
+          overall: {
+            minutesLogged: overall.samples, firstDay: overall.first_day, lastDay: overall.last_day,
+            temp: { avg: overall.t_avg, min: overall.t_min, max: overall.t_max },
+            humidity: { avg: overall.h_avg, min: overall.h_min, max: overall.h_max },
+            vpd: { avg: overall.v_avg, min: overall.v_min, max: overall.v_max },
+          },
+          days: daysRes.results ?? [],
+        };
+      } catch {
+        return { imported: false, message: "No sensor data has been imported for this grow yet." };
+      }
+    }
+
+    if (name === "get_plant_log") {
+      const plantId = input?.plant_id;
+      if (typeof plantId !== "string" || !plantId) return { error: "plant_id is required - get it from get_grow_info." };
+      const limit = Math.max(1, Math.min(50, Number(input?.limit) || 25));
+      await ensurePlantLogSchema(env);
+      const res = await env.DB.prepare(
+        `SELECT date, kind, detail, body, height, height_unit, health FROM plant_log
+         WHERE user_id = ? AND grow_id = ? AND plant_id = ? ORDER BY date DESC, id DESC LIMIT ?`
+      ).bind(userId, dayGrowId, plantId, limit).all();
+      const entries = (res.results ?? []).map(r => {
+        let detail = null;
+        if (r.detail) { try { detail = JSON.parse(r.detail); } catch { /* skip */ } }
+        return { date: r.date, kind: r.kind ?? "note", detail, body: r.body, height: r.height, heightUnit: r.height_unit, health: r.health };
+      });
+      return { entries, count: entries.length };
+    }
+
+    if (name === "add_plant_log_entry") {
+      if (!growId) return { error: "No active grow selected." };
+      const plantId = input?.plant_id;
+      if (typeof plantId !== "string" || !plantId) return { error: "plant_id is required - get it from get_grow_info." };
+      const survey = await readSurvey(env, userId, growId);
+      if (survey === null) return { error: "Grow not found." };
+      const plant = (survey.strains ?? []).find(sp => sp.id === plantId);
+      if (!plant) return { error: `No plant with id ${plantId}. Call get_grow_info to see plant ids.` };
+      const todayIso = todayInET();
+      const norm = normalizeLogEntry({
+        date: input?.date ?? todayIso,
+        kind: input?.kind ?? "note",
+        body: input?.body ?? "",
+        ...(input?.height !== undefined ? { height: input.height } : {}),
+        ...(input?.height_unit !== undefined ? { heightUnit: input.height_unit } : {}),
+        ...(input?.health !== undefined ? { health: input.health } : {}),
+      }, false, todayIso);
+      if (!norm.ok) return { error: norm.error };
+      await ensurePlantLogSchema(env);
+      const now = new Date().toISOString();
+      await env.DB.prepare(
+        `INSERT INTO plant_log (user_id, grow_id, plant_id, date, kind, detail, body, height, height_unit, health, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(
+        userId, growId, plantId,
+        norm.value.date, norm.value.kind, norm.value.detail ?? null, norm.value.body ?? "",
+        norm.value.height ?? null, norm.value.height_unit ?? null, norm.value.health ?? null,
+        now, now,
+      ).run();
+      actions.push({ type: "add_plant_log_entry", summary: `Logged for ${plant.name}: ${(norm.value.body || norm.value.kind).slice(0, 50)}` });
+      return { ok: true, plant: plant.name, date: norm.value.date, kind: norm.value.kind };
+    }
+
+    if (name === "lifecycle_action") {
+      if (!growId || !rawGrow) return { error: "No active grow selected." };
+      const action = input?.action;
+      const todayIso = todayInET();
+      const lc = normalizeLifecycle(rawGrow.lifecycle);
+      let next;
+      let summary;
+      if (action === "start_drying") {
+        next = { ...lc, phase: "drying", dryStartedAt: todayIso };
+        summary = "Started the drying tracker";
+      } else if (action === "move_to_curing") {
+        next = { ...lc, phase: "curing", cureStartedAt: todayIso };
+        summary = "Moved to curing";
+      } else if (action === "finish_grow") {
+        next = { ...lc, phase: "done", finishedAt: todayIso };
+        summary = "Finished the grow";
+      } else if (action === "log_burp") {
+        const rh = Number.isFinite(Number(input?.rh)) ? Number(input.rh) : null;
+        next = { ...lc, cureLogs: [...lc.cureLogs, { date: todayIso, rh, burped: true, note: "" }] };
+        summary = "Logged a jar burp";
+      } else if (action === "log_dry_reading") {
+        const tempF = Number.isFinite(Number(input?.temp_f)) ? Number(input.temp_f) : null;
+        const rh = Number.isFinite(Number(input?.rh)) ? Number(input.rh) : null;
+        if (tempF === null && rh === null) return { error: "log_dry_reading needs temp_f or rh." };
+        const rest = lc.dryLogs.filter(l => l.date !== todayIso);
+        next = { ...lc, dryLogs: [...rest, { date: todayIso, tempF, rh, note: "" }] };
+        summary = "Logged a dry-space reading";
+      } else {
+        return { error: "Unknown lifecycle action." };
+      }
+      const v = validateLifecycle(next);
+      if (!v.ok) return { error: v.error };
+      const now = new Date().toISOString();
+      if (v.value.phase === "done") {
+        await env.DB.prepare(
+          "UPDATE grows SET lifecycle = ?, status = 'harvested', updated_at = ? WHERE id = ? AND user_id = ?"
+        ).bind(JSON.stringify(v.value), now, growId, userId).run();
+      } else {
+        await env.DB.prepare(
+          "UPDATE grows SET lifecycle = ?, updated_at = ? WHERE id = ? AND user_id = ?"
+        ).bind(JSON.stringify(v.value), now, growId, userId).run();
+      }
+      actions.push({ type: "lifecycle_action", summary });
+      return { ok: true, phase: v.value.phase, action };
+    }
+
+    if (name === "add_task" || name === "remove_task") {
+      if (!growId) return { error: "No active grow selected." };
+      const date = input?.date;
+      if (typeof date !== "string" || !DATE_RE.test(date)) return { error: "date must be YYYY-MM-DD" };
+
+      const existing = await env.DB.prepare(
+        "SELECT payload FROM plan_day_overrides WHERE user_id = ? AND grow_id = ? AND date = ?"
+      ).bind(userId, growId, date).first();
+      let payload = {};
+      if (existing?.payload) { try { payload = JSON.parse(existing.payload); } catch { /* fresh */ } }
+
+      let summary;
+      if (name === "add_task") {
+        const text = typeof input?.task === "string" ? input.task.trim().slice(0, 300) : "";
+        if (!text) return { error: "task text is required" };
+        const added = Array.isArray(payload.addedTasks) ? payload.addedTasks : [];
+        if (added.length >= 50) return { error: "too many added tasks on that day" };
+        payload.addedTasks = [...added, text];
+        summary = `Added task on ${date}: ${text.slice(0, 50)}`;
+      } else {
+        const renderedIdx = input?.task_index;
+        const dt = parseDate(date);
+        const detail = getDetail(dt, config, overrides ?? {}, generatedPlan, phaseOverrides ?? {}, eventRules);
+        const renderedCount = detail?.tasks?.length ?? 0;
+        if (!Number.isInteger(renderedIdx) || renderedIdx < 0 || renderedIdx >= renderedCount) {
+          return { error: `task_index out of range - the day has ${renderedCount} tasks. Call get_day first.` };
+        }
+        // Rendered list = generated tasks minus removals, plus additions. Map the
+        // rendered index back to its source before writing the override.
+        const removed = new Set(payload.removedTasks ?? []);
+        const addedCount = (payload.addedTasks ?? []).length;
+        const baseKeptCount = renderedCount - addedCount;
+        const removedText = detail.tasks[renderedIdx] ?? "";
+        if (renderedIdx >= baseKeptCount) {
+          const addedIdx = renderedIdx - baseKeptCount;
+          const added = [...(payload.addedTasks ?? [])];
+          added.splice(addedIdx, 1);
+          if (added.length > 0) payload.addedTasks = added; else delete payload.addedTasks;
+        } else {
+          let n = -1;
+          let origIdx = renderedIdx;
+          for (let orig = 0; orig < 500; orig++) {
+            if (removed.has(orig)) continue;
+            n++;
+            if (n === renderedIdx) { origIdx = orig; break; }
+          }
+          removed.add(origIdx);
+          payload.removedTasks = [...removed].sort((a, b) => a - b);
+        }
+        summary = `Removed task on ${date}: ${removedText.slice(0, 50)}`;
+      }
+
+      await env.DB.prepare(
+        `INSERT INTO plan_day_overrides (user_id, grow_id, date, payload, updated_at)
+         VALUES (?, ?, ?, ?, datetime('now'))
+         ON CONFLICT(user_id, grow_id, date) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at`
+      ).bind(userId, growId, date, JSON.stringify(payload)).run();
+      actions.push({ type: name, summary });
+      return { ok: true, date };
     }
 
     return { error: `unknown tool: ${name}` };

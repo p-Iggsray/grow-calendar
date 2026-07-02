@@ -111,6 +111,38 @@ export async function buildStatsContext(env, userId, growId) {
   }
 }
 
+// Imported sensor data (controller CSV) in one compact block so MJ answers
+// environment questions with real numbers without a tool call.
+export async function buildEnvContext(env, userId, growId) {
+  try {
+    const overall = await env.DB.prepare(
+      `SELECT COUNT(*) AS samples, ROUND(AVG(temp_f),1) AS t_avg, ROUND(AVG(humidity),1) AS h_avg, ROUND(AVG(vpd),2) AS v_avg
+       FROM env_readings WHERE user_id = ? AND grow_id = ?`
+    ).bind(userId, growId).first();
+    if (!overall || Number(overall.samples) === 0) return "";
+    const recent = await env.DB.prepare(
+      `SELECT date, ROUND(AVG(temp_f),1) AS t, ROUND(AVG(humidity),1) AS h, ROUND(AVG(vpd),2) AS v
+       FROM env_readings WHERE user_id = ? AND grow_id = ? GROUP BY date ORDER BY date DESC LIMIT 3`
+    ).bind(userId, growId).all();
+    const lines = [`SENSOR DATA (imported controller readings, ${overall.samples} minutes total; averages ${overall.t_avg} F, ${overall.h_avg}% RH, ${overall.v_avg} kPa VPD):`];
+    for (const d of recent.results ?? []) {
+      lines.push(`  ${d.date}: avg ${d.t} F, ${d.h}% RH, ${d.v} kPa`);
+    }
+    lines.push("  (use get_environment for full history or a specific day)");
+    return lines.join("\n");
+  } catch {
+    return "";
+  }
+}
+
+// Compact roster line with per-plant stages so MJ knows where each plant is.
+export function buildRosterContext(survey) {
+  const plants = Array.isArray(survey?.strains) ? survey.strains.filter(p => (p.status ?? "growing") === "growing") : [];
+  if (plants.length === 0) return "";
+  const parts = plants.slice(0, 12).map(p => `${p.name || "Unnamed"}${p.stage ? ` [${p.stage}]` : ""}`);
+  return `ROSTER: ${parts.join(", ")}${plants.length > 12 ? ` and ${plants.length - 12} more` : ""}.`;
+}
+
 export function buildSupplyContext(survey) {
   if (!survey?.supplies) return "";
   const LABELS = {

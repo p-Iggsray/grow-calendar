@@ -20,7 +20,7 @@ import {
 } from "./constants.js";
 import { todayInET, bumpUserUsage, bumpModelUsage, readMjModelUsage, readMjUsageForUser } from "./usage.js";
 import { ensureMjThreadSchema, loadHistory, saveConversation } from "./history.js";
-import { buildGrowLogContext, buildWeatherContext, buildStatsContext, buildSupplyContext, buildGrowsContext } from "./context.js";
+import { buildGrowLogContext, buildWeatherContext, buildStatsContext, buildSupplyContext, buildGrowsContext, buildEnvContext, buildRosterContext } from "./context.js";
 import { executeTool } from "./tools.js";
 
 export async function postMj(request, env, user) {
@@ -110,11 +110,12 @@ export async function postMj(request, env, user) {
   const dayGrowId = activeGrowId ?? await firstGrowId(env, user.id);
 
   // Load all rich context in parallel.
-  const [grows, growLogContext, weatherContext, statsContext] = await Promise.all([
+  const [grows, growLogContext, weatherContext, statsContext, envContext] = await Promise.all([
     loadRawGrows(env, user.id).catch(() => []),
     buildGrowLogContext(env, user.id, dayGrowId),
     buildWeatherContext(env),
     buildStatsContext(env, user.id, dayGrowId),
+    buildEnvContext(env, user.id, dayGrowId),
   ]);
 
   const supplyContext  = buildSupplyContext(raw.survey);
@@ -146,9 +147,13 @@ export async function postMj(request, env, user) {
   const planText  = buildPlanText(config, overrides, raw.generatedPlan, phaseOverrides, eventRules);
   const baseBlock = [MJ_PERSONA, "", planText, "", supplyContext].filter(s => s !== "").join("\n");
 
+  const rosterContext = buildRosterContext(raw.survey);
+
   const dynamicParts = [
     growProfile,
+    rosterContext,
     lifecycleContext,
+    envContext,
     growsContext,
     growLogContext,
     weatherContext,
