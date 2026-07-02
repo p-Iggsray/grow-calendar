@@ -16,7 +16,7 @@ function tryParseArray(s) {
   try { const v = JSON.parse(s); return Array.isArray(v) ? v : []; } catch { return []; }
 }
 
-function rowToEntry(row) {
+export function rowToEntry(row) {
   return {
     water_gal:    row.water_gal    ?? null,
     feed:         row.feed         ?? null,

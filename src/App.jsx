@@ -32,6 +32,8 @@ import MoreScreen from "./components/MoreScreen.jsx";
 import GrowsListTab from "./components/GrowsListTab.jsx";
 import PlantsTab from "./components/PlantsTab/PlantsTab.jsx";
 import PhasePrompt from "./components/Lifecycle/PhasePrompt.jsx";
+import ViewSwitch from "./components/Journal/ViewSwitch.jsx";
+import JournalScreen from "./components/Journal/JournalScreen.jsx";
 import { AppShellSkeleton, PanelSkeleton } from "./components/LoadingScreens.jsx";
 
 // Heavy, rarely-on-screen panels load on demand so they stay out of the
@@ -102,6 +104,10 @@ export default function App() {
   const [reviewPending, setReviewPending] = useState(false);
   const [wizardGrowId,  setWizardGrowId]  = useState(null); // growId for SetupWizard
   const [manualTasksOpen, setManualTasksOpen] = useState(false);
+  // Main screen sections: month grid or day-by-day journal. The journal follows
+  // the last day the user viewed, so the two stay directly connected.
+  const [mainView,    setMainView]    = useState("calendar");
+  const [journalDate, setJournalDate] = useState(null);
 
   const { taskStates, loading: checkoffsLoading, toggle, setTaskState } = useCheckoffs(selected, Boolean(user), activeGrowId);
   const { days: monthLoggedDays } = useMonthLog(today.getFullYear(), month, Boolean(user), activeGrowId);
@@ -110,6 +116,7 @@ export default function App() {
 
   const openDay = useCallback((date) => {
     setSelected(date);
+    setJournalDate(date); // keep the journal on the day the user last viewed
     window.history.pushState({ growDay: ymd(date) }, "", `?d=${ymd(date)}`);
   }, []);
 
@@ -494,6 +501,19 @@ export default function App() {
               {/* Drying entry point - always available, but only prominent once
                   final harvest has passed (`due`). */}
               <PhasePrompt today={today} due={Boolean(config?.hazeHarvest && today >= config.hazeHarvest)} />
+              <ViewSwitch view={mainView} onChange={setMainView} />
+              {mainView === "journal" ? (
+                <JournalScreen
+                  today={today}
+                  date={journalDate ?? today}
+                  onChangeDate={(d) => { setJournalDate(d); setMonth(d.getMonth()); }}
+                  config={config}
+                  growId={activeGrowId}
+                  onOpenDay={(d) => { setMonth(d.getMonth()); openDay(d); }}
+                  active={!selected}
+                />
+              ) : (
+                <>
               {generatedPlan?.manual && (
                 <div style={{ padding: "8px 14px 0" }}>
                   <button
@@ -521,6 +541,8 @@ export default function App() {
                 onPickDay={pickDay}
                 onClearSelection={() => setSelected(null)}
               />
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

@@ -5,6 +5,7 @@ import { postResetPassword, postAdminResetLink } from "./authReset.js";
 import { getCheckoffs, putCheckoffs, getMonthCheckoffs } from "./checkoffs.js";
 import { ensurePerDayGrowScope, resolveGrowId } from "./perDayScope.js";
 import { getNote, putNote } from "./notes.js";
+import { getJournalDay, getJournalMonth } from "./journal.js";
 import { getGrowLog, putGrowLog, exportGrowLogCsv , getMonthGrowLog } from "./growLog.js";
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
 import { postMjReview } from "./mjReview.js";
@@ -278,6 +279,18 @@ async function authenticatedRoute(request, env, path, method, user) {
     const growId = await resolveGrowId(env, user, new URL(request.url));
     if (method === "GET") return getGrowLog(env, user, growId, date);
     if (method === "PUT") return putGrowLog(request, env, user, growId, date);
+  }
+
+  if (path === "/api/journal/month" && method === "GET") {
+    const url = new URL(request.url);
+    const growId = await resolveGrowId(env, user, url);
+    return getJournalMonth(env, user, growId, url.searchParams.get("month"));
+  }
+
+  const journalMatch = path.match(/^\/api\/journal\/(\d{4}-\d{2}-\d{2})$/);
+  if (journalMatch && method === "GET") {
+    const growId = await resolveGrowId(env, user, new URL(request.url));
+    return getJournalDay(env, user, growId, journalMatch[1]);
   }
 
   return error(404, "not found");
