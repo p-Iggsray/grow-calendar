@@ -422,6 +422,7 @@ export default function App() {
             >
               <Header
                 growName={grows.find(g => g.id === activeGrowId)?.displayName}
+                environment={survey?.environment}
                 todayPhase={todayPhase}
                 todayStyle={todayStyle}
                 nextMs={nextMs}
@@ -508,6 +509,7 @@ export default function App() {
               onTaskEditActiveChange={setTaskEditing}
               onPickerActiveChange={setPickerActive}
               plants={survey?.strains ?? []}
+              environment={survey?.environment ?? "outdoor"}
             />
           </motion.div>
         )}

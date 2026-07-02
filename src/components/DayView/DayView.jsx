@@ -3,6 +3,8 @@ import { ChevronLeft, Pencil } from "lucide-react";
 import { fmtL, getToday, daysBetween } from "../../lib/dates.js";
 import { useGrowLog } from "../../lib/useGrowLog.js";
 import { useWeather } from "../../lib/useWeather.js";
+import { useEnvDay } from "../../lib/useEnvDay.js";
+import { ymd } from "../../lib/api.js";
 import { renderNote } from "./renderNote.js";
 import { StatePicker } from "./StatePicker.jsx";
 import { TaskRow } from "./TaskRow.jsx";
@@ -13,6 +15,7 @@ import {
   WaterEntry, TrainingEntry, PlantHealthEntry,
 } from "./logEntries.jsx";
 import { WeatherCard } from "./WeatherCard.jsx";
+import EnvSensorCard from "./EnvSensorCard.jsx";
 
 // ── Shared input styles ────────────────────────────────────────────────────
 
@@ -43,6 +46,7 @@ export default function DayView({
   onTaskEditActiveChange,
   onPickerActiveChange,
   plants = [],
+  environment = "outdoor",
 }) {
   const [tab, setTab] = useState("tasks");
   const [noteEditing, setNoteEditing] = useState(false);
@@ -92,7 +96,13 @@ export default function DayView({
   // (daysBetween normalizes to local Y/M/D) - comparing a Date against a string
   // here always coerced to NaN, which silently disabled the weather/frost panel.
   const isCurrentOrFuture = selected ? daysBetween(selected, getToday()) >= 0 : false;
-  const { data: weather, loading: weatherLoading } = useWeather(isCurrentOrFuture && tab === "threats", activeGrowId);
+  const wantsWeather = environment !== "indoor";
+  const { data: weather, loading: weatherLoading } = useWeather(wantsWeather && isCurrentOrFuture && tab === "threats", activeGrowId);
+
+  // Indoor and greenhouse grows pull the day's environment from the controller
+  // import (temp/RH/VPD) instead of hand-typed numbers.
+  const sensorGrow = environment !== "outdoor";
+  const { day: envDay } = useEnvDay(activeGrowId, selected ? ymd(selected) : null, sensorGrow && tab === "log");
 
   useEffect(() => {
     if (noteEditing) textareaRef.current?.focus();
@@ -286,13 +296,24 @@ export default function DayView({
 
               {/* ── Environment ── */}
               <LogSection label="Environment" first>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-                  <LogField label="Temp High (°F)" name="temp_high" entry={logEntry} setField={setLogField} step={1} min={0} max={130} inputMode="numeric" />
-                  <LogField label="Temp Low (°F)"  name="temp_low"  entry={logEntry} setField={setLogField} step={1} min={0} max={130} inputMode="numeric" />
-                </div>
-                <div style={{ maxWidth: "50%", paddingRight: 5 }}>
-                  <LogField label="Humidity (%)" name="humidity" entry={logEntry} setField={setLogField} step={1} min={0} max={100} inputMode="numeric" />
-                </div>
+                {sensorGrow && envDay ? (
+                  <EnvSensorCard day={envDay} logEntry={logEntry} onFill={setLogFields} />
+                ) : (
+                  <>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                      <LogField label="Temp High (°F)" name="temp_high" entry={logEntry} setField={setLogField} step={1} min={0} max={130} inputMode="numeric" />
+                      <LogField label="Temp Low (°F)"  name="temp_low"  entry={logEntry} setField={setLogField} step={1} min={0} max={130} inputMode="numeric" />
+                    </div>
+                    <div style={{ maxWidth: "50%", paddingRight: 5 }}>
+                      <LogField label="Humidity (%)" name="humidity" entry={logEntry} setField={setLogField} step={1} min={0} max={100} inputMode="numeric" />
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--c-text-ghost)", marginTop: 8, lineHeight: 1.6 }}>
+                      {sensorGrow
+                        ? "No imported readings for this day. Import your controller CSV in More, Environment and this fills in automatically."
+                        : "Outdoor grow: log the day's conditions by hand."}
+                    </div>
+                  </>
+                )}
               </LogSection>
 
               {/* ── Plant selector for the per-plant sections below ── */}
@@ -469,7 +490,7 @@ export default function DayView({
 
           {tab === "threats" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {isCurrentOrFuture && <WeatherCard weather={weather} loading={weatherLoading} />}
+              {wantsWeather && isCurrentOrFuture && <WeatherCard weather={weather} loading={weatherLoading} />}
 
               {threats.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "24px 0", color: "var(--c-text-ghost)", fontFamily: "var(--font-ui)", fontSize: 13, lineHeight: 1.8 }}>

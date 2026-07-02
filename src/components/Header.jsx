@@ -3,7 +3,10 @@ import { phaseFamily } from "../lib/growData.js";
 
 // The home hero. Shows the grower's own grow (name, phase, season progress) - // not the app's name - like a real mobile app. The season range is computed
 // from the grow's config, and the current phase drives the accent color.
-export default function Header({ growName, todayPhase, todayStyle, nextMs, daysToNext, location, strains, config, today }) {
+const ENV_LABEL = { indoor: "Indoor", outdoor: "Outdoor", greenhouse: "Greenhouse" };
+
+export default function Header({ growName, environment, todayPhase, todayStyle, nextMs, daysToNext, location, strains, config, today }) {
+  const envLabel = ENV_LABEL[environment] ?? null;
   const seasonStart = config?.germinate ?? config?.start;
   const seasonEnd = config?.hazeHarvest;
   const totalDays = seasonStart && seasonEnd ? daysBetween(seasonEnd, seasonStart) + 1 : null;
@@ -40,7 +43,7 @@ export default function Header({ growName, todayPhase, todayStyle, nextMs, daysT
           fontSize: 11, fontWeight: 600, letterSpacing: 1.2, textTransform: "uppercase",
           color: "var(--c-text-faint)", marginBottom: 3,
         }}>
-          Grow Log{location ? ` · ${location}` : ""}
+          Grow Log{envLabel ? ` · ${envLabel}` : ""}{location ? ` · ${location}` : ""}
         </div>
         <div style={{
           fontSize: 27, fontWeight: 800, letterSpacing: -0.7, lineHeight: 1.12,

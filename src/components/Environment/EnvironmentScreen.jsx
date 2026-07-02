@@ -31,7 +31,8 @@ function fmtTime(ts) {
 }
 
 export default function EnvironmentScreen({ onClose }) {
-  const { activeGrowId } = usePlan();
+  const { activeGrowId, survey } = usePlan();
+  const indoorish = survey?.environment && survey.environment !== "outdoor";
   const { addToast } = useToast();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -127,8 +128,10 @@ export default function EnvironmentScreen({ onClose }) {
                   : <><Upload size={16} strokeWidth={2} /> Import controller report (.csv)</>}
               </button>
               <div style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--c-text-ghost)", marginTop: 10, lineHeight: 1.6 }}>
-                Temp / humidity / VPD logs from your controller export. Re-importing the same period
-                just updates it - minutes are never double-counted.
+                {indoorish
+                  ? "Import the CSV export from your grow controller (VIVOSUN style) and this grow's temp, humidity, and VPD fill in automatically, including each day's log."
+                  : "Outdoor grow: conditions are usually logged by hand on each day, but you can still import a sensor CSV here if you run one outside."}
+                {" "}Re-importing the same period just updates it - minutes are never double-counted.
               </div>
             </div>
 
