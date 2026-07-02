@@ -4,8 +4,11 @@ export function StepBasics({ survey, update }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
-        <Label>Grow name</Label>
+        <Label>Grow name (optional)</Label>
         <Input value={survey.growName} onChange={v => update("growName", v)} placeholder="e.g. Summer 2026 Outdoor" />
+        <div style={{ fontSize: 11, color: "var(--c-text-ghost)", marginTop: 5, lineHeight: 1.6 }}>
+          Leave it blank and we name it after your first strain.
+        </div>
       </div>
       <div>
         <Label>Environment</Label>

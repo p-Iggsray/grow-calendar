@@ -189,6 +189,9 @@ export default function GrowsListTab({ grows, activeGrowId, setActiveGrowId, onN
 
   async function handleNewGrow() {
     if (creating) return;
+    // Resume an existing unfinished grow instead of stacking another empty one.
+    const unfinished = grows.find(g => !g.config);
+    if (unfinished) { onNewGrow(unfinished.id); return; }
     setCreating(true);
     try {
       const { id } = await api.createGrow({ displayName: "New Grow" });

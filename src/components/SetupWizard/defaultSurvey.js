@@ -1,5 +1,12 @@
 import { SUPPLY_ITEMS } from "./supplyChecklist.js";
 
+function todayIso() {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
 // ─── Default wizard state ───────────────────────────────────────────────────
 
 export function defaultSurvey() {
@@ -15,7 +22,7 @@ export function defaultSurvey() {
     ],
     startType: "seed",
     currentStage: "germination",
-    stageStartDate: "",
+    stageStartDate: todayIso(),
     transplantDate: "",
     plantsAlreadyOutside: false,
     vegWeeks: 4,

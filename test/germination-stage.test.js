@@ -85,3 +85,35 @@ test("back-compat: a config without the new keys behaves like before", () => {
   assert.equal(getPhase(D("2026-06-10"), cfg), null);
   assert.equal(typeof getGrowProgress(D("2026-07-01"), cfg), "number");
 });
+
+// ── Server-side survey resolution (stale/odd client shapes must never 500) ──
+test("resolving is idempotent: re-resolving a resolved survey changes nothing", () => {
+  const first = resolveSurveyForSetup({
+    currentStage: "germination", stageStartDate: "2026-07-02",
+    strains: [{ name: "Northern Lights", type: "indica", flowerWeeks: 8, count: 2 }],
+  });
+  const second = resolveSurveyForSetup(first);
+  assert.equal(second.transplantDate, first.transplantDate);
+  assert.equal(second.strains.length, first.strains.length); // no re-expansion
+  assert.equal(second.plantCount, first.plantCount);
+});
+
+test("stage-only survey (no transplantDate) resolves to a full valid timeline", () => {
+  const resolved = resolveSurveyForSetup({
+    currentStage: "vegetative", stageStartDate: "2026-06-15",
+    environment: "indoor", vegWeeks: 4,
+    strains: [{ name: "A", type: "hybrid", photo: true, flowerWeeks: 9 }],
+  });
+  assert.match(resolved.transplantDate, /^\d{4}-\d{2}-\d{2}$/);
+  const config = { transplant: resolved.transplantDate };
+  fillMissingConfigKeys(config, resolved);
+  const REQUIRED = ["germinate", "seedlingStart", "start", "transplant", "calMag", "feedStart",
+    "fullDose", "flush1", "flush2", "flush3", "backyardMove", "preFlower", "flowerStart",
+    "gdpFlush", "gdpHarvest", "hazeFlush", "hazeHarvest"];
+  assert.deepEqual(REQUIRED.filter(k => !config[k]), []);
+});
+
+test("a survey missing both dates resolves to an empty transplantDate (server rejects cleanly)", () => {
+  const resolved = resolveSurveyForSetup({ currentStage: "seedling", strains: [{ name: "A" }] });
+  assert.ok(!resolved.transplantDate);
+});

@@ -11,6 +11,7 @@ import { validateEventRule, MAX_RULES_PER_GROW } from "./eventRulesValidate.js";
 import { LIFECYCLE_PHASES } from "../src/lib/lifecycle.js";
 import { recordStrains } from "./strains.js";
 import { buildHeuristicPlan } from "../src/lib/heuristicPlan.js";
+import { resolveSurveyForSetup } from "../src/lib/stageAnchor.js";
 
 const VALID_PHASES = new Set([
   "transplant", "early_veg", "veg_cm", "veg_half", "veg_full",
@@ -406,21 +407,35 @@ export async function setupGrow(request, env, user, growId) {
   let body;
   { const p = await safeJsonBounded(request, 65536); if (!p.ok) return error(p.status, p.error); body = p.data; }
 
-  const survey = body?.survey;
+  let survey = body?.survey;
   if (!survey || typeof survey !== "object") return error(400, "survey required");
-  if (!survey.transplantDate) return error(400, "survey.transplantDate required");
+
+  // Derive the timeline anchor SERVER-SIDE. The wizard answers "which stage are
+  // you in and when did it start"; deriving transplantDate here (instead of
+  // trusting the client to have done it) means any client version - including a
+  // stale cached PWA bundle - produces a valid timeline.
+  if (survey.currentStage || survey.stageStartDate || !survey.transplantDate) {
+    survey = resolveSurveyForSetup(survey);
+  }
   if (!Array.isArray(survey.strains) || survey.strains.length === 0)
-    return error(400, "survey.strains required");
+    return error(400, "Add at least one strain before finishing setup.");
+  if (typeof survey.transplantDate !== "string" || !DATE_RE.test(survey.transplantDate))
+    return error(400, "Set the date your current stage started (the Where You're At step) and try again.");
 
   // The whole timeline is built from the survey with no AI call (no quota, no
   // failures). Manual mode stores a sentinel so getDetail renders no auto tasks;
   // any other mode gets a heuristic, environment-aware task rundown.
   const config = {};
-  fillMissingConfigKeys(config, survey);
+  try {
+    fillMissingConfigKeys(config, survey);
+  } catch (e) {
+    logError("grows-setup-fill-failed", { message: String(e?.message), transplantDate: survey.transplantDate });
+    return error(400, "That stage start date does not look right. Double-check it and try again.");
+  }
   const missing = REQUIRED_CONFIG_KEYS.filter(k => !config[k]);
   if (missing.length > 0) {
-    logError("grows-setup-missing-keys", { missing });
-    return error(500, "Could not build the calendar timeline. Check your transplant date.");
+    logError("grows-setup-missing-keys", { missing, transplantDate: survey.transplantDate });
+    return error(400, "Could not build the calendar timeline from your answers. Re-check the Where You're At step and try again.");
   }
 
   // Resolve coordinates for weather/frost if the GPS button didn't already
@@ -431,7 +446,9 @@ export async function setupGrow(request, env, user, growId) {
   }
 
   const generatedPlan = body.taskMode === "manual" ? { manual: true } : buildHeuristicPlan(survey);
-  const displayName = survey.growName || "My Grow";
+  const displayName = (survey.growName || "").trim()
+    || [survey.strains?.[0]?.name, String(new Date().getFullYear())].filter(Boolean).join(" ").trim()
+    || "My Grow";
   const now = new Date().toISOString();
 
   await env.DB.prepare(

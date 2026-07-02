@@ -42,13 +42,21 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
     setSurvey(s => ({ ...s, [field]: value }));
   }
 
-  function canAdvance() {
-    if (step === 0) return survey.growName.trim().length > 0;
-    if (step === 1) return survey.strains.every(s => s.name.trim().length > 0);
-    if (step === 2) return (survey.stageStartDate || "").length > 0;
-    if (STEPS[step].id === "tasks") return taskMode !== null;
-    return true;
+  // Returns null when the step is complete, or a short hint explaining what is
+  // still needed - shown next to the Next button instead of a dead disabled state.
+  function advanceHint() {
+    if (step === 1 && !survey.strains.every(s => s.name.trim().length > 0)) {
+      return "Name each strain to continue";
+    }
+    if (step === 2 && !(survey.stageStartDate || "").length) {
+      return "Pick when your current stage started";
+    }
+    if (STEPS[step].id === "tasks" && taskMode === null) {
+      return "Choose how tasks should work";
+    }
+    return null;
   }
+  function canAdvance() { return advanceHint() === null; }
 
   async function generate() {
     setGenerating(true);
@@ -133,6 +141,15 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
           </>
         )}
       </div>
+
+      {!generating && advanceHint() && (
+        <div style={{
+          textAlign: "center", fontSize: 12, color: "var(--c-text-faint)",
+          padding: "0 16px 6px",
+        }}>
+          {advanceHint()}
+        </div>
+      )}
 
       {/* Navigation */}
       {!generating && (
