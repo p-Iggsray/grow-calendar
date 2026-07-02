@@ -72,7 +72,7 @@ function toSVG(cx, cy) {
   return { x: YARD.x + cx * YARD.w, y: YARD.y + cy * YARD.h };
 }
 
-// Sun path: quadratic bezier E→S→W (Ohio 39°N — sun paths through south sky)
+// Sun path: quadratic bezier E→S→W (Ohio 39°N - sun paths through south sky)
 const SUN_E  = { x: YARD.x + YARD.w + 18, y: YARD.y + YARD.h * 0.55 };
 const SUN_W  = { x: YARD.x - 18,          y: YARD.y + YARD.h * 0.55 };
 const SUN_CP = { x: YARD.x + YARD.w * 0.5, y: YARD.y + YARD.h + 72 };

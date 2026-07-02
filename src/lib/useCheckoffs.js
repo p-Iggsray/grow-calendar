@@ -7,7 +7,7 @@ import { tapHaptic } from "./haptics.js";
 const VALID_STATES = new Set(["done", "skipped", "blocked"]);
 
 export function useCheckoffs(date, enabled, growId) {
-  // taskStates: { "0": "done", "2": "skipped" } — keyed by string task index
+  // taskStates: { "0": "done", "2": "skipped" } - keyed by string task index
   const [taskStates, setTaskStates] = useState({});
   const [loading, setLoading] = useState(false);
   const dateKey = date ? ymd(date) : null;
@@ -58,7 +58,7 @@ export function useCheckoffs(date, enabled, growId) {
       if (!navigator.onLine) {
         // Network is down: keep the optimistic state and queue for later replay.
         queueCheckoff(dateKey, nextStates, growId);
-        addToast("Saved offline — will sync when reconnected");
+        addToast("Saved offline - will sync when reconnected");
       } else {
         addToast("Couldn't save. Your change was reversed");
         fetchNow();

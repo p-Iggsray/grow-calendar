@@ -1,5 +1,5 @@
 // @ts-check
-// POST /mj/undo — reverts task check-offs and note appends made by MJ tools.
+// POST /mj/undo - reverts task check-offs and note appends made by MJ tools.
 import { json, error, safeJsonBounded } from "../util.js";
 import { loadRawPlan } from "../plan.js";
 import { loadRawGrow } from "../grows.js";

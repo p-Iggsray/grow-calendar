@@ -179,7 +179,7 @@ export default function GrowsListTab({ grows, activeGrowId, setActiveGrowId, onN
   const [resumeGrow, setResumeGrow] = useState(null); // unfinished grow the user tapped
 
   // Tapping a grow that never finished setup can't activate it (there's no
-  // calendar to show) — offer to resume the setup wizard instead of silently
+  // calendar to show) - offer to resume the setup wizard instead of silently
   // bouncing the selection back.
   function handleActivate(id) {
     const grow = grows.find(g => g.id === id);

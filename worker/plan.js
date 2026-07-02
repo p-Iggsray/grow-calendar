@@ -8,7 +8,7 @@ const VALID_PHASES = new Set([
   "flower_haze", "flush_haze", "harvest_haze",
 ]);
 
-// GET /api/plan — returns { config, overrides, generatedPlan, phaseOverrides, survey, needsSetup }
+// GET /api/plan - returns { config, overrides, generatedPlan, phaseOverrides, survey, needsSetup }
 export async function loadRawPlan(env, userId) {
   const row = await env.DB.prepare(
     "SELECT * FROM plan_config WHERE user_id = ?"
@@ -57,7 +57,7 @@ export async function getPlan(env, user) {
   return json(data);
 }
 
-// PATCH /api/plan/config — update driving dates without regenerating AI content.
+// PATCH /api/plan/config - update driving dates without regenerating AI content.
 export async function patchPlanConfig(request, env, user) {
   let body;
   { const p = await safeJsonBounded(request, 65536); if (!p.ok) return error(p.status, p.error); body = p.data; }
@@ -68,11 +68,11 @@ export async function patchPlanConfig(request, env, user) {
     "UPDATE plan_config SET config = ?, updated_at = ? WHERE user_id = ?"
   ).bind(JSON.stringify(config), new Date().toISOString(), user.id).run();
 
-  if (updated.meta.changes === 0) return error(404, "plan not found — run setup first");
+  if (updated.meta.changes === 0) return error(404, "plan not found - run setup first");
   return json({ ok: true });
 }
 
-// PUT /api/plan/phase/:phase — save a full task-array override for one phase.
+// PUT /api/plan/phase/:phase - save a full task-array override for one phase.
 export async function putPlanPhase(request, env, user, phase) {
   if (!VALID_PHASES.has(phase)) return error(400, "invalid phase");
 
@@ -103,7 +103,7 @@ export async function putPlanPhase(request, env, user, phase) {
   return json({ ok: true });
 }
 
-// DELETE /api/plan/phase/:phase — clear a phase override, reverting to AI content.
+// DELETE /api/plan/phase/:phase - clear a phase override, reverting to AI content.
 export async function deletePlanPhase(env, user, phase) {
   if (!VALID_PHASES.has(phase)) return error(400, "invalid phase");
 

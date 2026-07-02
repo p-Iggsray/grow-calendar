@@ -51,11 +51,10 @@ document.addEventListener(
 );
 
 // Lazy-load the full calendar app so logged-out and pending users only receive
-// the auth/login chunk — not the entire calendar engine.
+// the auth/login chunk - not the entire calendar engine.
 const App = lazy(() => import("./App.jsx"));
 
-// Minimum time the opening animation is held so it always plays fully through —
-// even on a warm/instant load — before fading out to reveal the app. Reduced-
+// Minimum time the opening animation is held so it always plays fully through - // even on a warm/instant load - before fading out to reveal the app. Reduced-
 // motion users skip the wait (there's no animation to watch).
 const INTRO_HOLD_MS = 1900;
 

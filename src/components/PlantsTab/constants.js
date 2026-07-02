@@ -67,7 +67,7 @@ export function summarizeEntry(e) {
       if (d.ec_out) parts.push(`EC out ${d.ec_out}`);
       return parts.join(" · ");
     }
-    case "nutrients": return [d.mix, d.dose].filter(Boolean).join(" — ");
+    case "nutrients": return [d.mix, d.dose].filter(Boolean).join(" - ");
     case "training":  return d.action || "";
     case "environment": {
       const parts = [];

@@ -8,7 +8,7 @@ function genToken() {
   return bytesToBase64Url(bytes);
 }
 
-// GET /api/share — return the caller's current token (or null)
+// GET /api/share - return the caller's current token (or null)
 export async function getShareToken(env, user) {
   const row = await env.DB.prepare(
     "SELECT token, created_at FROM share_tokens WHERE user_id = ?"
@@ -16,7 +16,7 @@ export async function getShareToken(env, user) {
   return json({ token: row?.token ?? null, createdAt: row?.created_at ?? null });
 }
 
-// POST /api/share — create or rotate the token
+// POST /api/share - create or rotate the token
 export async function createShareToken(env, user) {
   const token = genToken();
   const now = nowIso();
@@ -27,13 +27,13 @@ export async function createShareToken(env, user) {
   return json({ token, createdAt: now });
 }
 
-// DELETE /api/share — revoke
+// DELETE /api/share - revoke
 export async function deleteShareToken(env, user) {
   await env.DB.prepare("DELETE FROM share_tokens WHERE user_id = ?").bind(user.id).run();
   return json({ ok: true });
 }
 
-// GET /api/share/:token — public endpoint, no auth required.
+// GET /api/share/:token - public endpoint, no auth required.
 // Returns a read-only snapshot: config + generatedPlan + phaseOverrides only.
 // No personal info (email, role, logs, media).
 export async function getSharedView(env, token) {

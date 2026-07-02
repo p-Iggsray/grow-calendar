@@ -1,5 +1,5 @@
 // Light haptic feedback on supported phones (Android Chrome; iOS Safari ignores
-// navigator.vibrate, which is fine — the visual press feedback still lands).
+// navigator.vibrate, which is fine - the visual press feedback still lands).
 // Keep patterns short so actions feel crisp, not buzzy.
 
 export function tapHaptic() {

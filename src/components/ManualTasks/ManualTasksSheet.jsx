@@ -134,7 +134,7 @@ export default function ManualTasksSheet({ onClose }) {
           <Label>Current tasks ({tasks.length})</Label>
           {tasks.length === 0 && (
             <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-ghost)", padding: "10px 2px", lineHeight: 1.6 }}>
-              No tasks yet. Add one above — it&rsquo;ll show on every day across the phases you pick.
+              No tasks yet. Add one above - it&rsquo;ll show on every day across the phases you pick.
             </div>
           )}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

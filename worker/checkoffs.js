@@ -99,7 +99,7 @@ export async function getMonthCheckoffs(env, user, growId, month) {
 /**
  * PUT /api/checkoffs/:date
  * Body: { taskStates: { "0": "done", "1": "skipped" } }
- *   — or legacy — { checked: [0, 1] }  (treated as all "done")
+ * - or legacy - { checked: [0, 1] }  (treated as all "done")
  */
 export async function putCheckoffs(request, env, user, growId, date) {
   if (!DATE_RE.test(date)) return error(400, "invalid date format, expected YYYY-MM-DD");

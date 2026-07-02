@@ -125,7 +125,7 @@ export async function getWeather(request, env, user) {
   const growId = url.searchParams.get("growId") || null;
 
   const coords = await resolveGrowCoords(env, user, growId);
-  // No location on file (or geocoding failed) — return empty so the UI hides
+  // No location on file (or geocoding failed) - return empty so the UI hides
   // the weather card rather than showing the wrong city's forecast.
   if (!coords) {
     return json({ alerts: [], hourly: [], highLow: { high: null, low: null } });
@@ -157,7 +157,7 @@ export async function getWeather(request, env, user) {
     }
   } catch (err) {
     logError("weather-fetch-failed", { message: String(err?.message) });
-    // Return whatever we have — partial data is better than an error page.
+    // Return whatever we have - partial data is better than an error page.
   }
 
   return json({

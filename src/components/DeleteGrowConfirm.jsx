@@ -27,7 +27,7 @@ export default function DeleteGrowConfirm({ growId, growName, onClose, onDeleted
       <ConfirmModal
         open={step === 1}
         title={`Delete "${name}"?`}
-        message="This permanently removes the entire grow — its calendar, tasks, notes, grow log, plants, and per-plant history. This cannot be undone."
+        message="This permanently removes the entire grow - its calendar, tasks, notes, grow log, plants, and per-plant history. This cannot be undone."
         confirmLabel="Delete…"
         cancelLabel="Cancel"
         tone="destructive"
@@ -37,7 +37,7 @@ export default function DeleteGrowConfirm({ growId, growName, onClose, onDeleted
       <ConfirmModal
         open={step === 2}
         title="Are you absolutely sure?"
-        message={`Last chance — "${name}" and everything in it will be gone for good.`}
+        message={`Last chance - "${name}" and everything in it will be gone for good.`}
         confirmLabel={busy ? "Deleting…" : "Delete forever"}
         cancelLabel="Keep grow"
         tone="destructive"

@@ -79,7 +79,7 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
   // (it has a built-in "Save as PDF / Print" button). We fetch + save rather
   // than navigating to the URL: this is an installed standalone PWA (scope "/"),
   // so a same-origin window.open is captured by the app window and replaces the
-  // running app — which looked like a hard refresh. Requires an active grow.
+  // running app - which looked like a hard refresh. Requires an active grow.
   async function openReport() {
     if (!activeGrowId || reportBusy) return;
     setReportBusy(true);
@@ -204,7 +204,7 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
 
       <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--c-surface-2)" }}>
         <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--c-text-faint)", margin: 0 }}>
-          For educational and personal record-keeping only — not medical, legal, or professional cultivation advice. You are responsible for complying with the cannabis laws in your area. Your data is stored privately and never sold; AI features send your grow details to Google&apos;s Gemini API. Contact the admin to delete your account and data.
+          For educational and personal record-keeping only - not medical, legal, or professional cultivation advice. You are responsible for complying with the cannabis laws in your area. Your data is stored privately and never sold; AI features send your grow details to Google&apos;s Gemini API. Contact the admin to delete your account and data.
         </p>
       </div>
 

@@ -89,7 +89,7 @@ export default function DayView({
   function removeHealth(i)            { const a = [...(logEntry.plant_health ?? [])]; a.splice(i, 1); setLogField("plant_health", a); }
 
   // Weather: only fetch for today or future dates. Compare by local calendar day
-  // (daysBetween normalizes to local Y/M/D) — comparing a Date against a string
+  // (daysBetween normalizes to local Y/M/D) - comparing a Date against a string
   // here always coerced to NaN, which silently disabled the weather/frost panel.
   const isCurrentOrFuture = selected ? daysBetween(selected, getToday()) >= 0 : false;
   const { data: weather, loading: weatherLoading } = useWeather(isCurrentOrFuture && tab === "threats", activeGrowId);

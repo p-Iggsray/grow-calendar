@@ -1,4 +1,4 @@
-// Per-grow display helpers — derive the location label and strain summary from
+// Per-grow display helpers - derive the location label and strain summary from
 // a grow's stored survey / AI-generated plan, so the UI reflects the active
 // grow instead of the old hardcoded appConfig constants.
 

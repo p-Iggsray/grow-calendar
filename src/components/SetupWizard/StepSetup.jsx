@@ -19,7 +19,7 @@ export function StepSetup({ survey, update }) {
         try {
           const { place } = await api.reverseGeocode(lat, lon);
           if (place) { update("location", place); setGeoStatus("done"); return; }
-        } catch { /* fall through — coordinates are still saved */ }
+        } catch { /* fall through - coordinates are still saved */ }
         setGeoStatus("nolabel");
       },
       () => setGeoStatus("error"),

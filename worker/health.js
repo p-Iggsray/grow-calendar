@@ -7,14 +7,14 @@ export async function getHealth(env) {
   try {
     await env.DB.prepare("SELECT 1").first();
     dbOk = true;
-  } catch { /* swallow — health check must never throw */ }
+  } catch { /* swallow - health check must never throw */ }
   return json({ ok: dbOk, ts: new Date().toISOString() });
 }
 
 const MAX_ERR_BYTES = 8192;
 
 export async function postClientError(request, env, user) {
-  // Always return ok — errors here must never cascade into UI failures.
+  // Always return ok - errors here must never cascade into UI failures.
   try {
     const parsed = await safeJsonBounded(request, MAX_ERR_BYTES);
     if (!parsed.ok) return json({ ok: true });

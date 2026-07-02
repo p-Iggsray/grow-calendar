@@ -101,7 +101,7 @@ export default function StatsScreen({ config, today, onClose }) {
 
   const tempVal = stats?.log.tempMin != null
     ? `${stats.log.tempMax}° / ${stats.log.tempMin}°F`
-    : "—";
+    : "-";
 
   const taskTotal = stats?.checkoffs.total ?? 0;
   const taskDone  = stats?.checkoffs.done  ?? 0;

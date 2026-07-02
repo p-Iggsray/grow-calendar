@@ -28,7 +28,7 @@ export function buildGeminiBody({ systemSegments, tools, contents }) {
         name: t.name, description: t.description, parameters: t.parameters,
       })),
     }],
-    // Let Gemini 2.5 use its default reasoning budget — this is what makes
+    // Let Gemini 2.5 use its default reasoning budget - this is what makes
     // the model thoughtful rather than reflexive. Lower temperature keeps
     // grow advice consistent and grounded.
     generationConfig: { temperature: 0.5 },
@@ -37,7 +37,7 @@ export function buildGeminiBody({ systemSegments, tools, contents }) {
 
 export function parseGeminiResponse(data) {
   const parts = data?.candidates?.[0]?.content?.parts || [];
-  // Do NOT trim here — trimming per streaming chunk strips leading/trailing spaces
+  // Do NOT trim here - trimming per streaming chunk strips leading/trailing spaces
   // at word boundaries, causing adjacent words to be joined together in the output.
   // The final accumulated text is trimmed once in streamGeminiCall.
   const text = parts.filter(p => typeof p.text === "string").map(p => p.text).join("");
@@ -48,7 +48,7 @@ export function parseGeminiResponse(data) {
 }
 
 // Makes a streaming request to :streamGenerateContent?alt=sse.
-// Calls onChunk(textDelta) in real-time for text parts — but ONLY if no
+// Calls onChunk(textDelta) in real-time for text parts - but ONLY if no
 // function calls have been seen yet in this response. Gemini never mixes
 // text and function calls in the same turn, so this is always safe.
 // Returns the full { text, functionCalls, parts } for the caller to use.

@@ -7,7 +7,7 @@ import { MAX_HISTORY_ROWS } from "./constants.js";
 export async function ensureMjThreadSchema(env) {
   try {
     await env.DB.prepare("ALTER TABLE mj_conversations ADD COLUMN grow_id TEXT").run();
-  } catch { /* column already exists — normal */ }
+  } catch { /* column already exists - normal */ }
   try {
     await env.DB.prepare(
       "CREATE INDEX IF NOT EXISTS idx_mj_conv_user_grow ON mj_conversations(user_id, grow_id, id DESC)"

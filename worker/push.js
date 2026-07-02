@@ -155,7 +155,7 @@ export async function getPushToday(env, user) {
     return json({
       title: detail.title ?? "Grow Calendar",
       body: n > 0
-        ? `${n} task${n === 1 ? "" : "s"} today — ${(detail.summary ?? "").slice(0, 80)}`
+        ? `${n} task${n === 1 ? "" : "s"} today - ${(detail.summary ?? "").slice(0, 80)}`
         : "Check in on your grow today.",
       url: `/?d=${today}`,
     });

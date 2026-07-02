@@ -1,8 +1,7 @@
 import { daysBetween, fmt } from "../lib/dates.js";
 import { phaseFamily } from "../lib/growData.js";
 
-// The home hero. Shows the grower's own grow (name, phase, season progress) —
-// not the app's name — like a real mobile app. The season range is computed
+// The home hero. Shows the grower's own grow (name, phase, season progress) - // not the app's name - like a real mobile app. The season range is computed
 // from the grow's config, and the current phase drives the accent color.
 export default function Header({ growName, todayPhase, todayStyle, nextMs, daysToNext, location, strains, config, today }) {
   const seasonStart = config?.germinate ?? config?.start;
@@ -111,7 +110,7 @@ export default function Header({ growName, todayPhase, todayStyle, nextMs, daysT
         </div>
       </div>
 
-      {/* Next milestone — one clean pill, no wrapping chip soup. */}
+      {/* Next milestone - one clean pill, no wrapping chip soup. */}
       {nextMs && (
         <div style={{ position: "relative", marginTop: 10, display: "flex" }}>
           {nextMs.done ? (

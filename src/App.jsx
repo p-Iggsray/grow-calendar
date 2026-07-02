@@ -190,14 +190,14 @@ export default function App() {
   }
 
   // Show the setup wizard for an explicitly-created new grow (wizardGrowId) OR an
-  // existing grow that still needs setup — reuse that grow instead of spawning a
+  // existing grow that still needs setup - reuse that grow instead of spawning a
   // duplicate. Only create a brand-new grow (NewGrowInitializer) when there's
   // genuinely nothing to resume.
   const setupGrowId = wizardGrowId
     || (needsSetup && activeGrowId && grows.some(g => g.id === activeGrowId) ? activeGrowId : null);
 
   if (setupGrowId) {
-    // Escapable whenever any grow already exists to fall back to — only the
+    // Escapable whenever any grow already exists to fall back to - only the
     // literal first-ever grow must be completed. Canceling deletes the
     // in-progress empty grow so it can't pile up as junk or trap the app later.
     const canCancel = grows.length > 0;
@@ -228,7 +228,7 @@ export default function App() {
   }
 
   if (needsSetup) {
-    // No grow to resume — create the very first one, then open the wizard for it.
+    // No grow to resume - create the very first one, then open the wizard for it.
     return (
       <div style={SHELL_STYLE}>
         <NewGrowInitializer onReady={(id) => setWizardGrowId(id)} />
@@ -332,7 +332,7 @@ export default function App() {
     }
   }
 
-  // Key for the tab content AnimatePresence — drives crossfade between screens.
+  // Key for the tab content AnimatePresence - drives crossfade between screens.
   const tabKey = activeTab === "plan" ? "plan" : activeTab === "more" ? "more" : activeTab === "plants" ? "plants" : "calendar";
 
   return (
@@ -346,11 +346,11 @@ export default function App() {
           fontFamily: "var(--font-ui)", fontSize: 11,
           letterSpacing: 1.5, color: "#fecaca",
         }}>
-          OFFLINE — changes will sync when reconnected
+          OFFLINE - changes will sync when reconnected
         </div>
       )}
 
-      {/* Tab content — crossfades between Calendar, Plan, and More */}
+      {/* Tab content - crossfades between Calendar, Plan, and More */}
       <div style={{ paddingBottom: TAB_CLEARANCE }}>
         <AnimatePresence mode="wait">
           {tabKey === "more" ? (
@@ -431,7 +431,7 @@ export default function App() {
                 config={config}
                 today={today}
               />
-              {/* Drying entry point — always available, but only prominent once
+              {/* Drying entry point - always available, but only prominent once
                   final harvest has passed (`due`). */}
               <PhasePrompt today={today} due={Boolean(config?.hazeHarvest && today >= config.hazeHarvest)} />
               {generatedPlan?.manual && (
@@ -470,7 +470,7 @@ export default function App() {
         </AnimatePresence>
       </div>
 
-      {/* DayView — slides up as a fixed overlay over everything */}
+      {/* DayView - slides up as a fixed overlay over everything */}
       <AnimatePresence>
         {activeTab === "calendar" && lifecyclePhase === "growing" && selected && (
           <motion.div
@@ -513,7 +513,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Manual task manager — slides up over the calendar (manual grows) */}
+      {/* Manual task manager - slides up over the calendar (manual grows) */}
       <AnimatePresence>
         {manualTasksOpen && (
           <Suspense key="manual-tasks" fallback={null}>
@@ -522,7 +522,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Chat panel — slides up as a fixed full-screen overlay */}
+      {/* Chat panel - slides up as a fixed full-screen overlay */}
       <AnimatePresence>
         {chatOpen && (
           <Suspense key="chat" fallback={null}>
@@ -538,7 +538,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Full-screen panels — slide in from the right */}
+      {/* Full-screen panels - slide in from the right */}
       <AnimatePresence>
         {showAdmin && (
           <motion.div
@@ -617,7 +617,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Tab bar — hidden while chat, task-edit sheet, or state picker is open */}
+      {/* Tab bar - hidden while chat, task-edit sheet, or state picker is open */}
       {!chatOpen && !taskEditing && !pickerActive && (
         <TabBar
           activeTab={activeTab}

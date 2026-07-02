@@ -1,7 +1,7 @@
 // @ts-check
 // A global strain catalog shared across all users. Every strain a grower enters
 // at setup is recorded here so anyone can autofill it when naming a plant. Names
-// only — no user association — so it's a simple shared dictionary.
+// only - no user association - so it's a simple shared dictionary.
 import { json } from "./util.js";
 
 const TYPES = new Set(["indica", "sativa", "hybrid"]);

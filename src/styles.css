@@ -85,7 +85,7 @@
   ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
 }
 
-/* Manual light — beats OS preference in either direction */
+/* Manual light - beats OS preference in either direction */
 :root[data-theme="light"] {
   color-scheme: light;
 
@@ -134,7 +134,7 @@ body,
 
 html,
 body {
-  /* pan only — no pinch-to-zoom or double-tap zoom */
+  /* pan only - no pinch-to-zoom or double-tap zoom */
   touch-action: pan-x pan-y;
   /* kill pull-to-refresh / rubber-band that lets the page drift */
   overscroll-behavior: none;

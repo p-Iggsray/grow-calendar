@@ -32,7 +32,7 @@ export async function buildGrowLogContext(env, userId, growId) {
 
 export async function buildWeatherContext(env) {
   try {
-    // Read from cache directly — avoid importing getWeather which returns a Response.
+    // Read from cache directly - avoid importing getWeather which returns a Response.
     const row = await env.DB.prepare(
       "SELECT value, updated_at FROM weather_cache WHERE key LIKE 'weather:hourly:%' LIMIT 1"
     ).first();
@@ -49,7 +49,7 @@ export async function buildWeatherContext(env) {
         }
         const current = periods?.[0];
         if (current) {
-          lines.push(`  Now: ${current.temp}°F — ${current.shortForecast}`);
+          lines.push(`  Now: ${current.temp}°F - ${current.shortForecast}`);
         }
         const next = periods?.slice(1, 4);
         if (next?.length) {
@@ -69,7 +69,7 @@ export async function buildWeatherContext(env) {
         }
       } catch { /* corrupt cache */ }
     }
-    if (lines.length === 1) lines.push("  (no recent weather data — cache may be cold)");
+    if (lines.length === 1) lines.push("  (no recent weather data - cache may be cold)");
     return lines.join("\n");
   } catch {
     return "CURRENT WEATHER: unavailable";
@@ -144,7 +144,7 @@ export function buildGrowsContext(grows, activeGrowId) {
       || g.survey?.strains?.map(s => s.name).filter(Boolean).join(" × ")
       || "";
     const statusLabel = g.status === "active" ? "active" : g.status;
-    lines.push(`  - "${g.displayName}" [${statusLabel}]${strains ? ` — ${strains}` : ""}${isActive ? " ← ACTIVE GROW (calendar context)" : ""}`);
+    lines.push(`  - "${g.displayName}" [${statusLabel}]${strains ? ` - ${strains}` : ""}${isActive ? " ← ACTIVE GROW (calendar context)" : ""}`);
   }
   lines.push("When asked about a specific grow other than the active one, acknowledge which one you're discussing.");
   return lines.join("\n");

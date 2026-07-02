@@ -39,8 +39,7 @@ export async function getReverseGeocode(request, _env, _user) {
 
 // Resolve a free-text location ("Central Ohio, USA") to { lat, lon } using
 // OpenStreetMap's Nominatim geocoder. Returns null on any failure or empty
-// input. Nominatim asks for a descriptive User-Agent and low request volume —
-// we only call this once per grow (at setup, or lazily the first time weather
+// input. Nominatim asks for a descriptive User-Agent and low request volume - // we only call this once per grow (at setup, or lazily the first time weather
 // is requested for a grow that has location text but no coordinates yet).
 export async function geocode(locationText) {
   const q = (locationText || "").trim();

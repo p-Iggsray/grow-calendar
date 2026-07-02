@@ -74,9 +74,9 @@ export default function GrowComplete({ onStartNewGrow }) {
           </div>
         )}
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-          <Stat label="Dried" value={dryDays != null ? `${dryDays}d` : "—"} />
-          <Stat label="Cured" value={cureDays != null ? `${cureDays}d` : "—"} />
-          <Stat label="Plants" value={Array.isArray(survey?.strains) ? survey.strains.length : "—"} />
+          <Stat label="Dried" value={dryDays != null ? `${dryDays}d` : "-"} />
+          <Stat label="Cured" value={cureDays != null ? `${cureDays}d` : "-"} />
+          <Stat label="Plants" value={Array.isArray(survey?.strains) ? survey.strains.length : "-"} />
         </div>
       </Card>
 
@@ -87,7 +87,7 @@ export default function GrowComplete({ onStartNewGrow }) {
             Final dry weight (g)
           </span>
           <input
-            type="number" inputMode="decimal" value={weight} onChange={e => setWeight(e.target.value)} placeholder="—"
+            type="number" inputMode="decimal" value={weight} onChange={e => setWeight(e.target.value)} placeholder="-"
             style={inputStyle}
           />
         </label>

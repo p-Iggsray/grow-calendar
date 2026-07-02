@@ -12,7 +12,7 @@ import {
   ReadyBadge, CTAButton, Stat, useLifecycleSave,
 } from "./shared.jsx";
 
-const DRY_ACCENT = "#f59e0b"; // amber — drying
+const DRY_ACCENT = "#f59e0b"; // amber - drying
 
 export default function DryingTracker({ today }) {
   const { lifecycle } = usePlan();
@@ -54,7 +54,7 @@ export default function DryingTracker({ today }) {
   return (
     <PhaseScreen>
       <Card style={{ borderColor: "rgba(245,158,11,0.3)" }}>
-        <Eyebrow color={DRY_ACCENT}>Drying · {DRY_MIN}–{DRY_MAX} day window</Eyebrow>
+        <Eyebrow color={DRY_ACCENT}>Drying · {DRY_MIN}-{DRY_MAX} day window</Eyebrow>
         <DayHero
           dayNum={prog?.dayNum ?? 1}
           accent={DRY_ACCENT}
@@ -167,7 +167,7 @@ function EnvField({ icon: Icon, label, value, onChange }) {
         inputMode="decimal"
         value={value}
         onChange={e => onChange(e.target.value)}
-        placeholder="—"
+        placeholder="-"
         style={{
           width: "100%", boxSizing: "border-box",
           background: "rgba(0,0,0,0.3)", color: "var(--c-text)",

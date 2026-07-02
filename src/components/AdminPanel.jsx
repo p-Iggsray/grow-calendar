@@ -55,7 +55,7 @@ export default function AdminPanel({ onClose }) {
 
   return (
     <div style={{ minHeight: "100vh", fontFamily: "var(--font-ui)", color: "var(--c-text)" }}>
-      {/* Header — safe-area-aware so the X button clears the notch */}
+      {/* Header - safe-area-aware so the X button clears the notch */}
       <div style={{
         display: "flex", alignItems: "center", gap: 12,
         padding: "14px 16px",

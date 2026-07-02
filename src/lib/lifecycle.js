@@ -1,17 +1,17 @@
-// Post-harvest lifecycle helpers — pure, no React/DOM, safe to import in the
+// Post-harvest lifecycle helpers - pure, no React/DOM, safe to import in the
 // Cloudflare Worker (like dates-core.js / growData.js).
 //
 // A grow advances through phases: growing → drying → curing → done. The calendar
 // only covers "growing" (start → final harvest); these helpers drive the drying
 // and curing trackers that finish the grow. State lives in a grow's `lifecycle`
-// JSON field (see worker/grows.js) — never inside `config`, which is date-parsed.
+// JSON field (see worker/grows.js) - never inside `config`, which is date-parsed.
 import { daysBetween } from "./dates-core.js";
 import { parseDate } from "./planConfig.js";
 
 export const PHASE_ORDER = ["growing", "drying", "curing", "done"];
 export const LIFECYCLE_PHASES = new Set(PHASE_ORDER);
 
-// Drying guidance: hang at ~60°F / 60% RH ("60/60"), 7–14 days (target ~10);
+// Drying guidance: hang at ~60°F / 60% RH ("60/60"), 7-14 days (target ~10);
 // ready when small stems snap instead of bending.
 export const DRY_MIN = 7;
 export const DRY_TARGET = 10;
@@ -119,17 +119,17 @@ export function dryReadiness(lifecycle, today) {
   const avgRh = recentAvg(lifecycle.dryLogs, "rh");
 
   if (stemSnap && elapsed >= DRY_MIN) {
-    return { status: "ready", reason: "Stems snap and you're past the minimum — jar it up." };
+    return { status: "ready", reason: "Stems snap and you're past the minimum - jar it up." };
   }
   if (elapsed >= DRY_MAX) {
-    return { status: "ready", reason: "Past 14 days — move to jars now to avoid over-drying." };
+    return { status: "ready", reason: "Past 14 days - move to jars now to avoid over-drying." };
   }
   if (elapsed >= DRY_MIN) {
     const rhNote = avgRh != null && avgRh > 65 ? " Humidity is a touch high, so check stems before moving." : "";
-    return { status: "window", reason: `In the ideal window — move once small stems snap.${rhNote}` };
+    return { status: "window", reason: `In the ideal window - move once small stems snap.${rhNote}` };
   }
   const daysLeft = DRY_MIN - elapsed;
-  return { status: "early", reason: `Keep drying — about ${daysLeft} more day${daysLeft === 1 ? "" : "s"} before the move window opens.` };
+  return { status: "early", reason: `Keep drying - about ${daysLeft} more day${daysLeft === 1 ? "" : "s"} before the move window opens.` };
 }
 
 // ── Curing ──────────────────────────────────────────────────────────────────
@@ -148,8 +148,8 @@ export function cureProgress(lifecycle, today) {
 // Today's recommended burp cadence based on how long it's been curing.
 export function burpCadence(elapsed) {
   if (elapsed < 14) return "Burp jars daily (~10 min) and check moisture.";
-  if (elapsed < 28) return "Burp every 2–3 days now.";
-  return "Burp about once a week — it's well underway.";
+  if (elapsed < 28) return "Burp every 2-3 days now.";
+  return "Burp about once a week - it's well underway.";
 }
 
 export function cureReadiness(lifecycle, today) {
@@ -159,10 +159,10 @@ export function cureReadiness(lifecycle, today) {
   const burp = burpCadence(elapsed);
   if (elapsed < CURE_MIN) {
     const daysLeft = CURE_MIN - elapsed;
-    return { status: "early", reason: `Keep curing — ${daysLeft} more day${daysLeft === 1 ? "" : "s"} to reach the 2-week minimum.`, burp };
+    return { status: "early", reason: `Keep curing - ${daysLeft} more day${daysLeft === 1 ? "" : "s"} to reach the 2-week minimum.`, burp };
   }
   if (elapsed < CURE_GOOD) {
     return { status: "window", reason: "Smokable now, but it keeps improving toward the 4-week mark.", burp };
   }
-  return { status: "ready", reason: "Well cured — finish whenever you're ready.", burp };
+  return { status: "ready", reason: "Well cured - finish whenever you're ready.", burp };
 }

@@ -293,7 +293,7 @@ export default function MjReviewPanel({ activeGrowId, onComplete, onSkip }) {
         <div ref={bottomRef} style={{ height: 1, flexShrink: 0 }} />
       </div>
 
-      {/* Input bar — hidden once review is done */}
+      {/* Input bar - hidden once review is done */}
       {!reviewDone && (
         <div style={{
           padding: "8px 12px",

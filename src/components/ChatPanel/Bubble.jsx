@@ -1,8 +1,17 @@
 import { MONO } from "./constants.js";
 import MdInline from "./MdInline.jsx";
 
+// The app shows no em or en dashes. MJ's model output (and older stored chat
+// history) can contain them, so scrub assistant text at render time. User text
+// is left exactly as typed.
+function deDash(s) {
+  if (typeof s !== "string") return s;
+  return s.replace(/\s*\u2014\s*/g, " - ").replace(/\s+\u2013\s+/g, " - ").replace(/\u2013/g, "-");
+}
+
 export default function Bubble({ role, text, dim, imagePreview, actions, showUndo, onUndo }) {
   const isUser = role === "user";
+  const shown = isUser ? text : deDash(text);
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: isUser ? "flex-end" : "flex-start" }}>
       {/* Photo thumbnail in user bubble */}
@@ -27,7 +36,7 @@ export default function Bubble({ role, text, dim, imagePreview, actions, showUnd
           borderBottomRightRadius: isUser ? 4 : 18,
           borderBottomLeftRadius: isUser ? 18 : 4,
         }}>
-          {isUser || dim ? text : <MdInline text={text} />}
+          {isUser ? shown : dim ? shown : <MdInline text={shown} />}
         </div>
       )}
       {actions && actions.length > 0 && (

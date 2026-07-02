@@ -199,7 +199,7 @@ export async function executeTool(name, input, env, userId, config, overrides, g
       ).bind(JSON.stringify(currentOverrides), new Date().toISOString(), growId, userId).run();
       const summary = tasks?.length
         ? `Updated ${phase} tasks (${tasks.length} task${tasks.length === 1 ? "" : "s"})`
-        : `Cleared ${phase} task overrides — defaults restored`;
+        : `Cleared ${phase} task overrides - defaults restored`;
       actions.push({ type: "update_phase_tasks", summary, undoPayload: null });
       return { ok: true, phase, taskCount: tasks?.length ?? 0 };
     }
@@ -255,7 +255,7 @@ export async function executeTool(name, input, env, userId, config, overrides, g
     if (name === "update_plant") {
       if (!growId) return { error: "No active grow selected." };
       const plantId = input?.plant_id;
-      if (typeof plantId !== "string" || !plantId) return { error: "plant_id is required — get it from get_grow_info." };
+      if (typeof plantId !== "string" || !plantId) return { error: "plant_id is required - get it from get_grow_info." };
       const v = validatePlantFields(input ?? {}, true);
       if (!v.ok) return { error: v.error };
       if (Object.keys(v.value).length === 0) return { error: "No valid fields to update." };
@@ -272,7 +272,7 @@ export async function executeTool(name, input, env, userId, config, overrides, g
     if (name === "delete_plant") {
       if (!growId) return { error: "No active grow selected." };
       const plantId = input?.plant_id;
-      if (typeof plantId !== "string" || !plantId) return { error: "plant_id is required — get it from get_grow_info." };
+      if (typeof plantId !== "string" || !plantId) return { error: "plant_id is required - get it from get_grow_info." };
       const survey = await readSurvey(env, userId, growId);
       if (survey === null) return { error: "Grow not found." };
       const ensured = ensurePlantIds(survey);

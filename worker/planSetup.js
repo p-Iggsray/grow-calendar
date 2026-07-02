@@ -26,8 +26,8 @@ GROW SURVEY:
 ${JSON.stringify(survey, null, 2)}
 
 PHASE SYSTEM (your dates must be compatible with these phase keys):
-- "germination": seed start only — from germinate until seedlingStart (warm, dark, damp; no nutrients)
-- "seedling": seed start only — from seedlingStart until pre/transplant (gentle light, careful watering, high humidity, no nutrients)
+- "germination": seed start only - from germinate until seedlingStart (warm, dark, damp; no nutrients)
+- "seedling": seed start only - from seedlingStart until pre/transplant (gentle light, careful watering, high humidity, no nutrients)
 - "pre": before transplant (hardening off)
 - "transplant": transplant day
 - "early_veg": days 1-13 post-transplant (plain water only)
@@ -44,13 +44,13 @@ PHASE SYSTEM (your dates must be compatible with these phase keys):
 - "harvest_haze": secondary strain harvest
 
 DATE CALCULATION RULES:
-- germinate / seedlingStart: ONLY for seed starts (survey.startType === "seed"). seedlingStart = transplant - 14, germinate = transplant - 19. For clone/veg starts there is no germination or seedling window — set germinate = seedlingStart = start.
+- germinate / seedlingStart: ONLY for seed starts (survey.startType === "seed"). seedlingStart = transplant - 14, germinate = transplant - 19. For clone/veg starts there is no germination or seedling window - set germinate = seedlingStart = start.
 - start = 2-3 days before transplant for hardening off (or = transplant if skipping)
 - calMag = transplant + 14 days
 - feedStart = transplant + 28 days
 - fullDose = transplant + 42 days
 - flush1/flush2/flush3: routine flushes ~30 days apart (flush1 ≈ feedStart + 3 days, flush2 ≈ flush1 + 30, flush3 ≈ flush2 + 30)
-- backyardMove: ONLY for outdoor grows whose plants start indoors and are relocated to their final spot later — set it to that move date. For indoor grows, greenhouse grows, or any grow where survey.plantsAlreadyOutside is true (plants already in their final spot), set backyardMove = transplant (there is no separate move-outside step)
+- backyardMove: ONLY for outdoor grows whose plants start indoors and are relocated to their final spot later - set it to that move date. For indoor grows, greenhouse grows, or any grow where survey.plantsAlreadyOutside is true (plants already in their final spot), set backyardMove = transplant (there is no separate move-outside step)
 - preFlower: for outdoor photo-period plants, late July/early August in northern hemisphere; for indoor: when 12/12 schedule starts
 - flowerStart: preFlower + 10-14 days (when flowers clearly set)
 - gdpFlush: gdpHarvest minus 7-14 days (indica: 7d, sativa: 14d)
@@ -92,9 +92,9 @@ All tasks must be actionable, specific to this grower's actual strains, nutrient
     "seedling": { "summary": "1-2 sentences (seed starts only): fragile seedling care under gentle light.", "tasks": ["6-8 tasks: gentle light, careful watering, humidity, no nutrients yet, damping-off watch, spotting first true leaves"], "notes": "optional tip" },
     "pre": {
       "days": [
-        { "title": "Pre-Transplant — Prep Day", "summary": "1-2 sentences: what to accomplish today before hardening begins.", "tasks": ["6-8 detailed prep tasks specific to this grow (supplies check, space setup, etc.)"], "notes": "optional tip or reminder" },
-        { "title": "Harden Off — Day 1 of 3", "summary": "1-2 sentences about first outdoor exposure.", "tasks": ["6-8 tasks: temperature check, duration, what to watch for, etc."], "notes": "optional tip" },
-        { "title": "Harden Off — Day 2 of 3", "summary": "1-2 sentences about extended hardening + final transplant prep.", "tasks": ["6-8 tasks: extended sun time, moisture management, pre-transplant checklist"], "notes": "optional tip" }
+        { "title": "Pre-Transplant - Prep Day", "summary": "1-2 sentences: what to accomplish today before hardening begins.", "tasks": ["6-8 detailed prep tasks specific to this grow (supplies check, space setup, etc.)"], "notes": "optional tip or reminder" },
+        { "title": "Harden Off - Day 1 of 3", "summary": "1-2 sentences about first outdoor exposure.", "tasks": ["6-8 tasks: temperature check, duration, what to watch for, etc."], "notes": "optional tip" },
+        { "title": "Harden Off - Day 2 of 3", "summary": "1-2 sentences about extended hardening + final transplant prep.", "tasks": ["6-8 tasks: extended sun time, moisture management, pre-transplant checklist"], "notes": "optional tip" }
       ]
     },
     "transplant": {
@@ -120,7 +120,7 @@ All tasks must be actionable, specific to this grower's actual strains, nutrient
       "notes": "Target trichome ratio and harvest window."
     },
     "harvest_gdp": {
-      "title": "HARVEST — [Primary strain name]",
+      "title": "HARVEST - [Primary strain name]",
       "summary": "1-2 sentences: the primary strain comes down today.",
       "tasks": ["8-10 ordered steps: final trichome check, tool prep/sanitation, harvest technique (whole plant vs. branch by branch), fan leaf removal, wet vs. dry trim decision, drying setup with target temp/RH, what the remaining strain(s) need today"],
       "notes": "Drying duration target and curing overview."
@@ -134,7 +134,7 @@ All tasks must be actionable, specific to this grower's actual strains, nutrient
 For grows with TWO strains, also include these keys inside "phases":
   "flower_haze": { "summary": "...", "tasks": ["6-7 tasks: secondary strain late flower while primary has been harvested"], "notes": "..." },
   "flush_haze": { "summary": "...", "tasks": ["6-7 tasks"], "notes": "..." },
-  "harvest_haze": { "title": "HARVEST — [Secondary strain name]", "summary": "...", "tasks": ["8-10 ordered steps"], "notes": "Curing notes." }
+  "harvest_haze": { "title": "HARVEST - [Secondary strain name]", "summary": "...", "tasks": ["8-10 ordered steps"], "notes": "Curing notes." }
 
 QUALITY REQUIREMENTS:
 - Use the grower's exact strain names and product names throughout all tasks
@@ -176,7 +176,7 @@ export function fillMissingConfigKeys(config, survey) {
   if (!config.flush3)      config.flush3      = addDays(base, 91);
   // A "move outside" milestone only applies to outdoor grows whose plants start
   // indoors and get relocated to their final spot later. Indoor/greenhouse grows
-  // — and outdoor grows whose plants are already in place — have no such step, so
+  // - and outdoor grows whose plants are already in place - have no such step, so
   // collapse backyardMove onto transplant. milestones.js hides the milestone when
   // backyardMove === transplant. This is authoritative: it overrides any move date
   // the AI may have invented, so the event can't reappear for these grows.
@@ -320,7 +320,7 @@ export async function generatePlanJson(env, user, survey, logPrefix) {
   }
 
   // The Gemini request succeeded (and consumed free-tier quota), so count it
-  // before parsing — a parse failure shouldn't let the call go untracked.
+  // before parsing - a parse failure shouldn't let the call go untracked.
   await bumpPlanGenUsage(env, user.id);
 
   let generatedPlan;
@@ -362,7 +362,7 @@ export async function postPlanSetup(request, env, user) {
   }
 
   // Resolve coordinates for weather/frost if the GPS button didn't provide
-  // them. Best-effort — a failure never blocks setup.
+  // them. Best-effort - a failure never blocks setup.
   if ((survey.lat == null || survey.lon == null) && survey.location) {
     const geo = await geocode(survey.location);
     if (geo) { survey.lat = geo.lat; survey.lon = geo.lon; }
@@ -387,24 +387,24 @@ export async function postPlanSetup(request, env, user) {
   return json({ ok: true, config, generatedPlan });
 }
 
-// POST /api/plan/regenerate — re-run AI with the stored survey (dates unchanged).
+// POST /api/plan/regenerate - re-run AI with the stored survey (dates unchanged).
 // Overwrites generated_plan but leaves phase_overrides intact.
 export async function postPlanRegenerate(request, env, user) {
   const row = await env.DB.prepare(
     "SELECT survey FROM plan_config WHERE user_id = ?"
   ).bind(user.id).first();
 
-  if (!row?.survey) return error(400, "no survey on file — complete initial setup first");
+  if (!row?.survey) return error(400, "no survey on file - complete initial setup first");
 
   let survey;
   try { survey = JSON.parse(row.survey); }
-  catch { return error(500, "stored survey is corrupt — re-run full setup"); }
+  catch { return error(500, "stored survey is corrupt - re-run full setup"); }
 
   const r = await generatePlanJson(env, user, survey, "plan-regen");
   if (r.status) return error(r.status, r.message);
   const generatedPlan = r.generatedPlan;
 
-  // Only update generated_plan — leave config and phase_overrides as-is.
+  // Only update generated_plan - leave config and phase_overrides as-is.
   await env.DB.prepare(
     "UPDATE plan_config SET generated_plan = ?, updated_at = ? WHERE user_id = ?"
   ).bind(JSON.stringify(generatedPlan), new Date().toISOString(), user.id).run();

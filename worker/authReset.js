@@ -2,7 +2,7 @@ import { json, error, bytesToBase64Url, safeJsonBounded } from "./util.js";
 import { hashPassword, hashToken } from "./auth.js";
 
 // Admin-generated reset links are sent to the user out-of-band (text/DM), so
-// give them a comfortable window — there is no self-service email reset.
+// give them a comfortable window - there is no self-service email reset.
 const RESET_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // POST /api/admin/users/:id/reset-link
@@ -46,7 +46,7 @@ export async function postResetPassword(request, env) {
   if (!row) return error(400, "invalid or expired reset link");
   if (new Date(row.expires_at).getTime() < Date.now()) {
     await env.DB.prepare("DELETE FROM password_reset_tokens WHERE token = ?").bind(tokenHash).run();
-    return error(400, "reset link has expired — please ask the admin for a new one");
+    return error(400, "reset link has expired - please ask the admin for a new one");
   }
 
   const { salt, hash } = await hashPassword(newPassword);

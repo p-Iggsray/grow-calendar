@@ -1,6 +1,6 @@
 import { MONO } from "./constants.js";
 
-// Horizontal scrollable thread pill strip — one pill per grow + "General".
+// Horizontal scrollable thread pill strip - one pill per grow + "General".
 export default function ThreadStrip({ grows, threadGrowId, activeGrowId, onSelect }) {
   const threads = [
     { id: null, label: "General" },

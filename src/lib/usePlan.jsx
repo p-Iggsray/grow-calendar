@@ -55,8 +55,7 @@ export function PlanProvider({ children }) {
         }
 
         // Resolve which grow to show. PREFER a grow that's actually been set up
-        // (has config) so a half-finished/abandoned grow — which has no config —
-        // can never route the app into an inescapable setup wizard on load or
+        // (has config) so a half-finished/abandoned grow - which has no config - // can never route the app into an inescapable setup wizard on load or
         // after a reset. Only fall into first-time setup when NO grow is
         // configured yet, and then resume an existing unconfigured grow rather
         // than leaving the choice ambiguous.

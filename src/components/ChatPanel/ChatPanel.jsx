@@ -13,10 +13,10 @@ import ScreenHeader from "../ScreenHeader.jsx";
 // instead of showing a cold error. One line is picked at random each time.
 const REST_LINES = [
   "I'm tired, boss… let me rest for the day. 😴",
-  "Whew — that's all the brainpower I've got today. Catch me tomorrow. 🌙",
+  "Whew - that's all the brainpower I've got today. Catch me tomorrow. 🌙",
   "These leaves are wilting and so am I. Powering down 'til morning. 🌿💤",
   "My circuits need a nap, boss. Let's pick this back up tomorrow. 😴",
-  "I've been in the garden all day. Time to rest — see you tomorrow! 🌱💤",
+  "I've been in the garden all day. Time to rest - see you tomorrow! 🌱💤",
 ];
 function pickRestLine() {
   return REST_LINES[Math.floor(Math.random() * REST_LINES.length)];
@@ -302,7 +302,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
           <div style={{ margin: "auto", maxWidth: 440, textAlign: "center" }}>
             <div style={{ fontSize: 34, marginBottom: 10 }}>🌿</div>
             <div style={{ fontSize: 15, color: "var(--c-text-dim)", marginBottom: 14, lineHeight: 1.6 }}>
-              Ask anything about your grow — or send a photo for a diagnosis.
+              Ask anything about your grow - or send a photo for a diagnosis.
               I know your full plan, grow log, and current weather.
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

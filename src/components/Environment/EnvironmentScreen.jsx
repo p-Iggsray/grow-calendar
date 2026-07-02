@@ -16,7 +16,7 @@ const VPD_COLOR = "#a855f7";
 const IMPORT_CHUNK = 1000;
 
 function fmtDate(iso) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
@@ -128,7 +128,7 @@ export default function EnvironmentScreen({ onClose }) {
               </button>
               <div style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--c-text-ghost)", marginTop: 10, lineHeight: 1.6 }}>
                 Temp / humidity / VPD logs from your controller export. Re-importing the same period
-                just updates it — minutes are never double-counted.
+                just updates it - minutes are never double-counted.
               </div>
             </div>
 
@@ -157,7 +157,7 @@ export default function EnvironmentScreen({ onClose }) {
                 <div style={{ display: "flex", gap: 10 }}>
                   <Totals label="Minutes logged" value={overall.samples.toLocaleString()} />
                   <Totals label="Days" value={days.length} />
-                  <Totals label="Range" value={`${fmtDate(overall.firstTs)} – ${fmtDate(overall.lastTs)}`} small />
+                  <Totals label="Range" value={`${fmtDate(overall.firstTs)} - ${fmtDate(overall.lastTs)}`} small />
                 </div>
 
                 {/* Per-day log */}
@@ -204,11 +204,11 @@ function StatCard({ icon: Icon, color, label, stat, dp = 1 }) {
     <div className="card" style={{ flex: 1, padding: "14px 10px", textAlign: "center" }}>
       <Icon size={16} strokeWidth={1.8} style={{ color, marginBottom: 6 }} />
       <div style={{ fontFamily: NUM, fontSize: 20, fontWeight: 700, color: "var(--c-text)" }}>
-        {v == null ? "—" : v.toFixed(dp)}
+        {v == null ? "-" : v.toFixed(dp)}
       </div>
       <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginTop: 2 }}>{label}</div>
       <div style={{ fontFamily: NUM, fontSize: 10, color: "var(--c-text-faint)", marginTop: 5 }}>
-        {stat?.min == null ? "" : `${stat.min}–${stat.max}`}
+        {stat?.min == null ? "" : `${stat.min}-${stat.max}`}
       </div>
     </div>
   );
@@ -234,8 +234,8 @@ function DayRow({ day, onOpen }) {
         <div style={{ fontFamily: MONO, fontSize: 9.5, color: "var(--c-text-ghost)" }}>{day.samples} min</div>
       </div>
       <div style={{ flex: 1, display: "flex", gap: 12, justifyContent: "flex-end", fontFamily: NUM, fontSize: 12 }}>
-        <Metric color={TEMP_COLOR} value={`${day.temp.avg}°`} sub={`${day.temp.min}–${day.temp.max}`} />
-        <Metric color={HUM_COLOR} value={`${day.humidity.avg}%`} sub={`${day.humidity.min}–${day.humidity.max}`} />
+        <Metric color={TEMP_COLOR} value={`${day.temp.avg}°`} sub={`${day.temp.min}-${day.temp.max}`} />
+        <Metric color={HUM_COLOR} value={`${day.humidity.avg}%`} sub={`${day.humidity.min}-${day.humidity.max}`} />
         <Metric color={VPD_COLOR} value={day.vpd.avg} sub="kPa" />
       </div>
       <ChevronRight size={16} strokeWidth={1.8} style={{ color: "var(--c-text-ghost)", flexShrink: 0 }} />

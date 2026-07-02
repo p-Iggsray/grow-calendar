@@ -33,7 +33,7 @@ export default function PhasePrompt({ today, due }) {
     />
   );
 
-  // Quiet mode: a real, tappable button — just styled calmly so it doesn't
+  // Quiet mode: a real, tappable button - just styled calmly so it doesn't
   // compete with the calendar. Shown before harvest, or after the bright banner
   // is dismissed.
   if (!due || dismissed) {
@@ -70,7 +70,7 @@ export default function PhasePrompt({ today, due }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)" }}>Time to dry?</div>
           <div style={{ fontSize: 12.5, color: "var(--c-text-dim)", lineHeight: 1.5 }}>
-            The calendar&rsquo;s done its job — switch to the drying tracker once you&rsquo;ve cut.
+            The calendar&rsquo;s done its job - switch to the drying tracker once you&rsquo;ve cut.
           </div>
         </div>
         <motion.button

@@ -1,4 +1,4 @@
-// Offline checkoff queue — persists writes that fail when the network is
+// Offline checkoff queue - persists writes that fail when the network is
 // unavailable and replays them when connectivity returns.
 // Latest write wins per date (full taskStates object, not a diff).
 

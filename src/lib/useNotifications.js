@@ -4,7 +4,7 @@ import { api } from "./api.js";
 const STORED_KEY = "push_subscribed";
 
 // localStorage access throws in some mobile contexts (iOS Safari private mode),
-// and these devices still pass the push-support gate — so never let it crash.
+// and these devices still pass the push-support gate - so never let it crash.
 function readSubscribed() {
   try { return localStorage.getItem(STORED_KEY) === "true"; } catch { return false; }
 }

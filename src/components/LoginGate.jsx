@@ -119,12 +119,12 @@ export default function LoginGate() {
         )}
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {/* Username — login / signup only */}
+            {/* Username - login / signup only */}
             {(mode === "login" || mode === "signup") && (
               <Field label="Username" value={username} onChange={setUsername} autoComplete="username" autoFocus={mode === "login"} />
             )}
 
-            {/* Name fields — signup only */}
+            {/* Name fields - signup only */}
             {mode === "signup" && (
               <>
                 <Field label="First name" value={firstName} onChange={setFirstName} autoComplete="given-name" />
@@ -132,7 +132,7 @@ export default function LoginGate() {
               </>
             )}
 
-            {/* Password — login / signup / reset */}
+            {/* Password - login / signup / reset */}
             {(mode === "login" || mode === "signup") && (
               <PasswordField
                 label="Password"
@@ -171,7 +171,7 @@ export default function LoginGate() {
               {submitLabel}
             </button>
 
-            {/* No self-service reset — the admin issues reset links by hand */}
+            {/* No self-service reset - the admin issues reset links by hand */}
             {mode === "login" && (
               <div style={{ fontSize: 11, letterSpacing: 0.5, color: "var(--c-text-faint)", fontFamily: "var(--font-ui)", textAlign: "center", lineHeight: 1.6, marginTop: 2 }}>
                 Forgot your password? Contact the admin to get a reset link.
@@ -179,7 +179,7 @@ export default function LoginGate() {
             )}
           </form>
 
-        {/* Mode toggle — login ↔ signup */}
+        {/* Mode toggle - login ↔ signup */}
         {(mode === "login" || mode === "signup") && (
           <button
             type="button"
@@ -189,18 +189,18 @@ export default function LoginGate() {
           </button>
         )}
 
-        {/* Back to login — reset */}
+        {/* Back to login - reset */}
         {mode === "reset" && (
           <button type="button" onClick={() => switchMode("login")} style={{ ...linkBtnStyle, marginTop: 14, width: "100%" }}>
             Back to login
           </button>
         )}
 
-        {/* Legal / privacy disclaimer — signup screen only */}
+        {/* Legal / privacy disclaimer - signup screen only */}
         {mode === "signup" && (
           <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--c-surface-2)", fontFamily: "var(--font-ui)" }}>
             <p style={{ fontSize: 10, lineHeight: 1.6, color: "var(--c-text-faint)", margin: 0 }}>
-              For educational and personal record-keeping only — not medical, legal, or professional cultivation advice. Intended for adults of legal age. You are responsible for complying with the cannabis laws in your area.
+              For educational and personal record-keeping only - not medical, legal, or professional cultivation advice. Intended for adults of legal age. You are responsible for complying with the cannabis laws in your area.
             </p>
             <details style={{ marginTop: 8 }}>
               <summary style={{ fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", cursor: "pointer", textTransform: "uppercase" }}>Privacy</summary>

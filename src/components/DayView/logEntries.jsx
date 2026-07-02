@@ -19,7 +19,7 @@ export function LogSection({ label, first = false, children }) {
   );
 }
 
-export function LogField({ label, name, entry, setField, step, min, max, placeholder = "—", inputMode = "decimal" }) {
+export function LogField({ label, name, entry, setField, step, min, max, placeholder = "-", inputMode = "decimal" }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
       <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase" }}>
@@ -170,7 +170,7 @@ export function TrainingEntry({ entry, onChangeField, onRemove, hidePlant }) {
 
 const LEAF_COLORS = ["Dark Green", "Green", "Light Green", "Yellow-Green", "Yellow", "Rust / Brown", "Spotted", "Purple"];
 const TRICHOME_STAGES = [
-  { value: "",       label: "— not checked —" },
+  { value: "",       label: " -  not checked  - " },
   { value: "clear",  label: "Clear (too early)" },
   { value: "cloudy", label: "Cloudy / Milky (peak THC)" },
   { value: "mixed",  label: "Mixed Cloudy + Amber" },
@@ -203,7 +203,7 @@ export function PlantHealthEntry({ entry, onChangeField, onRemove, hidePlant }) 
         <div>
           <span style={_entryLabel}>Leaf Color</span>
           <select value={entry.color ?? ""} onChange={e => onChangeField("color", e.target.value)} style={_selectInput}>
-            <option value="">—</option>
+            <option value=""> - </option>
             {LEAF_COLORS.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>

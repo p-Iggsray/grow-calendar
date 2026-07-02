@@ -1,6 +1,5 @@
 // @ts-check
-// Barrel for the MJ assistant. Implementation lives in worker/mj/ —
-// this file only re-exports the public API so existing import paths
+// Barrel for the MJ assistant. Implementation lives in worker/mj/ - // this file only re-exports the public API so existing import paths
 // (worker/index.js, tests) keep working unchanged.
 export { postMj } from "./mj/chat.js";
 export { getMjUsage } from "./mj/usage.js";

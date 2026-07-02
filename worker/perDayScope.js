@@ -13,7 +13,7 @@ let _ready = false;
 
 // Each rebuild only runs if the table is still missing its grow_id column.
 // grow_id is backfilled to the user's earliest grow; rows for users with no
-// grow are dropped (unreachable — the calendar requires a grow to render).
+// grow are dropped (unreachable - the calendar requires a grow to render).
 const REBUILDS = [
   {
     table: "grow_log",
@@ -78,7 +78,7 @@ const REBUILDS = [
 
 // grow_id for an existing row: the user's earliest grow, or '' when the user
 // has no grow row yet. We assign a sentinel rather than DROPPING the row, so a
-// grow that is created lazily later never causes silent data loss — such rows
+// grow that is created lazily later never causes silent data loss - such rows
 // simply aren't shown until reassigned.
 const GROW_ID_EXPR = "COALESCE((SELECT g.id FROM grows g WHERE g.user_id = t.user_id ORDER BY g.created_at ASC LIMIT 1), '')";
 

@@ -1,10 +1,10 @@
-// Generic fallback threats — only used when an AI-generated plan doesn't
+// Generic fallback threats - only used when an AI-generated plan doesn't
 // supply its own location-specific threat list. Intentionally free of any
 // strain, brand, or location specifics so they're safe for any grower.
 export const THREATS = [
   {
     id:"heat", icon:"🌡️", title:"Extreme Heat (90°F+)",
-    desc:"Move pots to afternoon shade or provide cover during extreme heat. Don't bring them fully indoors — limit to morning sun until the heat breaks. Spider mites thrive in sustained heat, so check the undersides of all leaves daily during a heat event.",
+    desc:"Move pots to afternoon shade or provide cover during extreme heat. Don't bring them fully indoors - limit to morning sun until the heat breaks. Spider mites thrive in sustained heat, so check the undersides of all leaves daily during a heat event.",
     phases:["veg_cm","veg_half","veg_full","pre_flower","flower"],
   },
   {
@@ -14,7 +14,7 @@ export const THREATS = [
   },
   {
     id:"frost", icon:"❄️", title:"Frost Warning",
-    desc:"On any frost warning, bring every pot inside immediately — a single hard frost can be fatal. Late-finishing harvests often sit right on the edge of the first frost, so check the forecast every night once fall begins.",
+    desc:"On any frost warning, bring every pot inside immediately - a single hard frost can be fatal. Late-finishing harvests often sit right on the edge of the first frost, so check the forecast every night once fall begins.",
     phases:["flush_haze","harvest_haze","flower_haze"],
   },
   {
@@ -24,12 +24,12 @@ export const THREATS = [
   },
   {
     id:"humidity", icon:"💧", title:"High Humidity + No Airflow",
-    desc:"High humidity with no airflow is bud-rot weather. Open up the canopy by removing dense interior fan leaves that trap moisture, and make sure each pot has open air on all sides. You usually don't need to move them — just improve airflow.",
+    desc:"High humidity with no airflow is bud-rot weather. Open up the canopy by removing dense interior fan leaves that trap moisture, and make sure each pot has open air on all sides. You usually don't need to move them - just improve airflow.",
     phases:["flower","flush_gdp","flower_haze","flush_haze"],
   },
   {
     id:"hail", icon:"⛈️", title:"Hail Forecast",
-    desc:"Severe storms with hail can shred leaves and snap branches, with no recovery from a direct hit during flower. If your plants aren't under permanent cover, move them under a porch or into a garage when hail is forecast — you usually get an hour or two of warning.",
+    desc:"Severe storms with hail can shred leaves and snap branches, with no recovery from a direct hit during flower. If your plants aren't under permanent cover, move them under a porch or into a garage when hail is forecast - you usually get an hour or two of warning.",
     phases:["early_veg","veg_cm","veg_half","veg_full","pre_flower","flower","flush_gdp","flower_haze","flush_haze"],
   },
   {

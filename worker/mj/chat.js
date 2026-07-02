@@ -40,7 +40,7 @@ export async function postMj(request, env, user) {
     if (typeof mimeType !== "string" || !mimeType.startsWith("image/"))
       return error(400, "imageData.mimeType must be an image/* type");
     if (data.length > MAX_IMAGE_B64_LEN)
-      return error(413, "image too large — please use a smaller photo");
+      return error(413, "image too large - please use a smaller photo");
     imageData = { data, mimeType };
   }
 
@@ -63,7 +63,7 @@ export async function postMj(request, env, user) {
   const today = todayInET();
 
   // Fail fast (no increment) so a capped user doesn't trigger context-building
-  // work. The shared global flash ceiling is enforced here too — previously it
+  // work. The shared global flash ceiling is enforced here too - previously it
   // relied entirely on Google returning 429.
   if (user.role !== "admin") {
     const [flashGlobal, userCount] = await Promise.all([
@@ -90,7 +90,7 @@ export async function postMj(request, env, user) {
   }
   const messages = [...contextMessages, currentMsg];
 
-  // Load the active grow — prefer the grows table, fall back to plan_config.
+  // Load the active grow - prefer the grows table, fall back to plan_config.
   let raw;
   if (activeGrowId) {
     raw = await loadRawGrow(env, user.id, activeGrowId);
@@ -126,7 +126,7 @@ export async function postMj(request, env, user) {
     growLocation(raw.survey) ? `Location: ${growLocation(raw.survey)}` : "",
     strainSummary(raw.survey, raw.generatedPlan) ? `Plants: ${strainSummary(raw.survey, raw.generatedPlan)}` : "",
   ].filter(Boolean);
-  const growProfile = profileParts.length ? `Active grow profile — ${profileParts.join(" · ")}.` : "";
+  const growProfile = profileParts.length ? `Active grow profile - ${profileParts.join(" · ")}.` : "";
 
   // Tell MJ which post-harvest phase the grow is in so advice matches reality
   // (the calendar is hidden once drying/curing starts).
@@ -215,7 +215,7 @@ export async function postMj(request, env, user) {
         }
 
         if (reply === null || modelUsed === null) {
-          // The call never succeeded — release the reserved per-user slot so a
+          // The call never succeeded - release the reserved per-user slot so a
           // service outage doesn't burn the user's daily message quota.
           if (user.role !== "admin") {
             await env.DB.prepare(

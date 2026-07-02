@@ -23,10 +23,10 @@ const REVIEW_PERSONA = `You are MJ, a master cannabis cultivation advisor perfor
 
 REVIEW PROCESS:
 1. Call get_plan_data immediately to read the full plan, survey, and generated phases.
-2. Identify 3-6 high-impact areas where the plan could be more specific or better tailored — consider the grower's exact strains (vigor, typical flower time), their environment (outdoor region, climate risks), medium, nutrients, and container size.
-3. Ask 1-4 targeted clarifying questions ONE AT A TIME — wait for each answer before asking the next. Only ask about things the setup form didn't capture that would meaningfully change the plan, e.g.:
+2. Identify 3-6 high-impact areas where the plan could be more specific or better tailored - consider the grower's exact strains (vigor, typical flower time), their environment (outdoor region, climate risks), medium, nutrients, and container size.
+3. Ask 1-4 targeted clarifying questions ONE AT A TIME - wait for each answer before asking the next. Only ask about things the setup form didn't capture that would meaningfully change the plan, e.g.:
    - Daily sun hours at the grow spot in midsummer
-   - Water source (tap, well, filtered RO) — affects nutrient burn risk and pH approach
+   - Water source (tap, well, filtered RO) - affects nutrient burn risk and pH approach
    - Local summer temperature range (heat stress threshold)
    - Previous grow experience with these strains
    - Preferred training method (topping, LST, none)
@@ -38,13 +38,13 @@ QUALITY STANDARDS:
 - Tasks must be specific and actionable: "Water with 1 gal pH 6.3-6.5 plain water, watch for run-off appearing within 30 sec (indicates proper moisture)" beats "water the plant"
 - Reference exact strain names in timing notes: "GDP typically shows pre-flowers by week 5 outdoors in your climate"
 - Address local climate directly: heat-wave protocols, humidity windows, rain during harvest
-- Nutrient references must use the grower's specific brand/products — never invent or substitute brands
+- Nutrient references must use the grower's specific brand/products - never invent or substitute brands
 - For outdoor grows, reference the specific location's season, pests, and typical weather patterns
 - Container-lift moisture checks should name the container size: "A saturated 5-gal pot feels significantly heavier than a dry one"
 
 RULES:
-- Do NOT change config dates — only phase content (summary, tasks, notes, title)
-- Keep questions short and focused — one question per message
+- Do NOT change config dates - only phase content (summary, tasks, notes, title)
+- Keep questions short and focused - one question per message
 - Improve at least 4-6 phases
 - Be warm and coach-like. The grower trusts you with their season.`;
 
@@ -62,7 +62,7 @@ const REVIEW_TOOLS = [
       properties: {
         phase: {
           type: "string",
-          description: "Phase key — one of: transplant, early_veg, veg_cm, veg_half, veg_full, pre_flower, flower, flush, flush_gdp, harvest_gdp, flower_haze, flush_haze, harvest_haze",
+          description: "Phase key - one of: transplant, early_veg, veg_cm, veg_half, veg_full, pre_flower, flower, flush, flush_gdp, harvest_gdp, flower_haze, flush_haze, harvest_haze",
         },
         title: {
           type: "string",
@@ -203,7 +203,7 @@ export async function postMjReview(request, env, user) {
     return error(400, "Complete your grow setup before running a plan review.");
   }
 
-  // Plan review runs the expensive Pro model — gate it on the same shared
+  // Plan review runs the expensive Pro model - gate it on the same shared
   // (global Pro) and per-user daily caps as plan generation.
   const capErr = await checkPlanGenCaps(env, user.id);
   if (capErr) return error(capErr.status, capErr.message);

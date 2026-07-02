@@ -10,7 +10,7 @@ import { successHaptic } from "../../lib/haptics.js";
 export const MONO = "var(--font-ui)";
 export const SERIF = "var(--font-ui)";
 
-// Local YYYY-MM-DD (matches parseDate's local-date contract — never toISOString,
+// Local YYYY-MM-DD (matches parseDate's local-date contract - never toISOString,
 // which would shift the day in negative-offset timezones).
 export function ymd(date) {
   const y = date.getFullYear();

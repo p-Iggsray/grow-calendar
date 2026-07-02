@@ -6,7 +6,7 @@ import DeleteGrowConfirm from "./DeleteGrowConfirm.jsx";
 import { Skeleton } from "./Skeleton.jsx";
 
 // Full timeline, grouped for scanning. Each row edits one config date key
-// independently — nothing cascades, the grower has full manual control.
+// independently - nothing cascades, the grower has full manual control.
 const DATE_GROUPS = [
   {
     title: "Timeline",

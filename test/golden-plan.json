@@ -3,11 +3,11 @@
     "date": "2026-05-21",
     "phase": "pre",
     "detail": {
-      "title": "Pre-Transplant — Prep Day",
+      "title": "Pre-Transplant - Prep Day",
       "summary": "Get your space, containers, and supplies ready before transplant.",
       "tasks": [
         "Give plants their brightest available light and keep handling to a minimum today.",
-        "Check moisture — water only if the medium is nearly dry. No nutrients.",
+        "Check moisture - water only if the medium is nearly dry. No nutrients.",
         "Confirm your containers, medium, and any amendments are on hand.",
         "Prepare and clear the spot where the plants will live, leaving room for airflow around each pot."
       ],
@@ -18,7 +18,7 @@
     "date": "2026-05-22",
     "phase": "pre",
     "detail": {
-      "title": "Harden Off — Day 1",
+      "title": "Harden Off - Day 1",
       "summary": "Begin introducing plants to their outdoor (or final) conditions with short exposure.",
       "tasks": [
         "Move plants into gentle morning sun for 2 to 3 hours, then return them to shelter.",
@@ -33,11 +33,11 @@
     "date": "2026-05-23",
     "phase": "pre",
     "detail": {
-      "title": "Harden Off — Day 2",
+      "title": "Harden Off - Day 2",
       "summary": "Extend outdoor time and finish transplant-day prep.",
       "tasks": [
         "Give 4 to 5 hours of sun today, including some afternoon exposure.",
-        "Keep the medium lightly moist — not wet — so the root ball holds together tomorrow.",
+        "Keep the medium lightly moist - not wet - so the root ball holds together tomorrow.",
         "Lay out everything you'll need for transplant: medium, containers, water, stakes, and a trowel.",
         "Run through your supply checklist so transplant goes quickly and cleanly."
       ],
@@ -54,26 +54,26 @@
         "Prepare your medium and fill each container about one-third full, leaving a central hole for the root ball.",
         "Pre-water plants 45 to 60 minutes before transplanting so the root ball holds together.",
         "Support the stem base, slide the root ball free (don't pull the stem), and set it level with or just below the surface.",
-        "Backfill around the root ball and firm gently to close air pockets — don't compact.",
+        "Backfill around the root ball and firm gently to close air pockets - don't compact.",
         "Label each container, and add stakes or support now if your plants will get tall, avoiding the central root ball.",
         "Water in slowly with plain water until it drains from the bottom. No nutrients.",
-        "Leave plants alone afterward — mild droop for a day or two is normal transplant shock."
+        "Leave plants alone afterward - mild droop for a day or two is normal transplant shock."
       ],
-      "notes": "Hold nutrients for the first couple of weeks while roots establish — most quality potting mixes carry enough charge for early growth."
+      "notes": "Hold nutrients for the first couple of weeks while roots establish - most quality potting mixes carry enough charge for early growth."
     }
   },
   {
     "date": "2026-05-25",
     "phase": "early_veg",
     "detail": {
-      "title": "Day 1 — Early Veg",
+      "title": "Day 1 - Early Veg",
       "summary": "Week 1 of establishment. Roots are developing; top growth is slow for now.",
       "tasks": [
-        "Moisture check: lift the pot or feel 2 inches deep — water only when it's getting dry. Fabric pots dry faster than plastic.",
+        "Moisture check: lift the pot or feel 2 inches deep - water only when it's getting dry. Fabric pots dry faster than plastic.",
         "If it needs water, use plain water to runoff. No nutrients yet.",
-        "If the pot still feels heavy, wait — small plants in large pots are easy to overwater.",
-        "Early droop or curl is normal transplant shock, not a watering problem — leave plants alone.",
-        "Check leaf undersides for pests daily — tiny moving dots, clustered insects, or anything unusual.",
+        "If the pot still feels heavy, wait - small plants in large pots are easy to overwater.",
+        "Early droop or curl is normal transplant shock, not a watering problem - leave plants alone.",
+        "Check leaf undersides for pests daily - tiny moving dots, clustered insects, or anything unusual.",
         "Make sure pots aren't sitting in pooled water."
       ],
       "notes": "Plain water only until feeding begins around Jun 21. Let the medium dry between waterings to encourage root growth."
@@ -83,14 +83,14 @@
     "date": "2026-05-26",
     "phase": "early_veg",
     "detail": {
-      "title": "Day 2 — Early Veg",
+      "title": "Day 2 - Early Veg",
       "summary": "Week 1 of establishment. Roots are developing; top growth is slow for now.",
       "tasks": [
-        "Moisture check: lift the pot or feel 2 inches deep — water only when it's getting dry. Fabric pots dry faster than plastic.",
+        "Moisture check: lift the pot or feel 2 inches deep - water only when it's getting dry. Fabric pots dry faster than plastic.",
         "If it needs water, use plain water to runoff. No nutrients yet.",
-        "If the pot still feels heavy, wait — small plants in large pots are easy to overwater.",
-        "Early droop or curl is normal transplant shock, not a watering problem — leave plants alone.",
-        "Check leaf undersides for pests daily — tiny moving dots, clustered insects, or anything unusual.",
+        "If the pot still feels heavy, wait - small plants in large pots are easy to overwater.",
+        "Early droop or curl is normal transplant shock, not a watering problem - leave plants alone.",
+        "Check leaf undersides for pests daily - tiny moving dots, clustered insects, or anything unusual.",
         "Make sure pots aren't sitting in pooled water."
       ],
       "notes": "Plain water only until feeding begins around Jun 21. Let the medium dry between waterings to encourage root growth."
@@ -100,14 +100,14 @@
     "date": "2026-05-27",
     "phase": "early_veg",
     "detail": {
-      "title": "Day 3 — Early Veg",
+      "title": "Day 3 - Early Veg",
       "summary": "Week 1 of establishment. Roots are developing; top growth is slow for now.",
       "tasks": [
-        "Moisture check: lift the pot or feel 2 inches deep — water only when it's getting dry. Fabric pots dry faster than plastic.",
+        "Moisture check: lift the pot or feel 2 inches deep - water only when it's getting dry. Fabric pots dry faster than plastic.",
         "If it needs water, use plain water to runoff. No nutrients yet.",
-        "If the pot still feels heavy, wait — small plants in large pots are easy to overwater.",
-        "Early droop or curl is normal transplant shock, not a watering problem — leave plants alone.",
-        "Check leaf undersides for pests daily — tiny moving dots, clustered insects, or anything unusual.",
+        "If the pot still feels heavy, wait - small plants in large pots are easy to overwater.",
+        "Early droop or curl is normal transplant shock, not a watering problem - leave plants alone.",
+        "Check leaf undersides for pests daily - tiny moving dots, clustered insects, or anything unusual.",
         "Make sure pots aren't sitting in pooled water."
       ],
       "notes": "Plain water only until feeding begins around Jun 21. Let the medium dry between waterings to encourage root growth."
@@ -117,14 +117,14 @@
     "date": "2026-05-28",
     "phase": "early_veg",
     "detail": {
-      "title": "Day 4 — Early Veg",
+      "title": "Day 4 - Early Veg",
       "summary": "Week 1 of establishment. Roots are developing; top growth is slow for now.",
       "tasks": [
-        "Moisture check: lift the pot or feel 2 inches deep — water only when it's getting dry. Fabric pots dry faster than plastic.",
+        "Moisture check: lift the pot or feel 2 inches deep - water only when it's getting dry. Fabric pots dry faster than plastic.",
         "If it needs water, use plain water to runoff. No nutrients yet.",
-        "If the pot still feels heavy, wait — small plants in large pots are easy to overwater.",
+        "If the pot still feels heavy, wait - small plants in large pots are easy to overwater.",
         "Look for new leaves or nodes at the tips, confirming roots have established.",
-        "Check leaf undersides for pests daily — tiny moving dots, clustered insects, or anything unusual.",
+        "Check leaf undersides for pests daily - tiny moving dots, clustered insects, or anything unusual.",
         "Make sure pots aren't sitting in pooled water."
       ],
       "notes": "Plain water only until feeding begins around Jun 21. Let the medium dry between waterings to encourage root growth."
@@ -134,14 +134,14 @@
     "date": "2026-05-29",
     "phase": "early_veg",
     "detail": {
-      "title": "Day 5 — Early Veg",
+      "title": "Day 5 - Early Veg",
       "summary": "Week 1 of establishment. Roots are developing; top growth is slow for now.",
       "tasks": [
-        "Moisture check: lift the pot or feel 2 inches deep — water only when it's getting dry. Fabric pots dry faster than plastic.",
+        "Moisture check: lift the pot or feel 2 inches deep - water only when it's getting dry. Fabric pots dry faster than plastic.",
         "If it needs water, use plain water to runoff. No nutrients yet.",
-        "If the pot still feels heavy, wait — small plants in large pots are easy to overwater.",
+        "If the pot still feels heavy, wait - small plants in large pots are easy to overwater.",
         "Look for new leaves or nodes at the tips, confirming roots have established.",
-        "Check leaf undersides for pests daily — tiny moving dots, clustered insects, or anything unusual.",
+        "Check leaf undersides for pests daily - tiny moving dots, clustered insects, or anything unusual.",
         "Make sure pots aren't sitting in pooled water."
       ],
       "notes": "Plain water only until feeding begins around Jun 21. Let the medium dry between waterings to encourage root growth."
@@ -151,14 +151,14 @@
     "date": "2026-05-30",
     "phase": "early_veg",
     "detail": {
-      "title": "Day 6 — Early Veg",
+      "title": "Day 6 - Early Veg",
       "summary": "Week 1 of establishment. Roots are developing; top growth is slow for now.",
       "tasks": [
-        "Moisture check: lift the pot or feel 2 inches deep — water only when it's getting dry. Fabric pots dry faster than plastic.",
+        "Moisture check: lift the pot or feel 2 inches deep - water only when it's getting dry. Fabric pots dry faster than plastic.",
         "If it needs water, use plain water to runoff. No nutrients yet.",
-        "If the pot still feels heavy, wait — small plants in large pots are easy to overwater.",
+        "If the pot still feels heavy, wait - small plants in large pots are easy to overwater.",
         "Look for new leaves or nodes at the tips, confirming roots have established.",
-        "Check leaf undersides for pests daily — tiny moving dots, clustered insects, or anything unusual.",
+        "Check leaf undersides for pests daily - tiny moving dots, clustered insects, or anything unusual.",
         "Make sure pots aren't sitting in pooled water."
       ],
       "notes": "Plain water only until feeding begins around Jun 21. Let the medium dry between waterings to encourage root growth."
@@ -168,14 +168,14 @@
     "date": "2026-05-31",
     "phase": "early_veg",
     "detail": {
-      "title": "Day 7 — Early Veg",
+      "title": "Day 7 - Early Veg",
       "summary": "Week 1 of establishment. Roots are developing; top growth is slow for now.",
       "tasks": [
-        "Moisture check: lift the pot or feel 2 inches deep — water only when it's getting dry. Fabric pots dry faster than plastic.",
+        "Moisture check: lift the pot or feel 2 inches deep - water only when it's getting dry. Fabric pots dry faster than plastic.",
         "If it needs water, use plain water to runoff. No nutrients yet.",
-        "If the pot still feels heavy, wait — small plants in large pots are easy to overwater.",
+        "If the pot still feels heavy, wait - small plants in large pots are easy to overwater.",
         "Look for new leaves or nodes at the tips, confirming roots have established.",
-        "Check leaf undersides for pests daily — tiny moving dots, clustered insects, or anything unusual.",
+        "Check leaf undersides for pests daily - tiny moving dots, clustered insects, or anything unusual.",
         "Make sure pots aren't sitting in pooled water."
       ],
       "notes": "Plain water only until feeding begins around Jun 21. Let the medium dry between waterings to encourage root growth."
@@ -185,14 +185,14 @@
     "date": "2026-06-01",
     "phase": "early_veg",
     "detail": {
-      "title": "Day 8 — Early Veg",
+      "title": "Day 8 - Early Veg",
       "summary": "Week 2 of establishment. Roots are developing; top growth is slow for now.",
       "tasks": [
-        "Moisture check: lift the pot or feel 2 inches deep — water only when it's getting dry. Fabric pots dry faster than plastic.",
+        "Moisture check: lift the pot or feel 2 inches deep - water only when it's getting dry. Fabric pots dry faster than plastic.",
         "If it needs water, use plain water to runoff. No nutrients yet.",
-        "If the pot still feels heavy, wait — small plants in large pots are easy to overwater.",
+        "If the pot still feels heavy, wait - small plants in large pots are easy to overwater.",
         "Look for new leaves or nodes at the tips, confirming roots have established.",
-        "Check leaf undersides for pests daily — tiny moving dots, clustered insects, or anything unusual.",
+        "Check leaf undersides for pests daily - tiny moving dots, clustered insects, or anything unusual.",
         "Make sure pots aren't sitting in pooled water."
       ],
       "notes": "Plain water only until feeding begins around Jun 21. Let the medium dry between waterings to encourage root growth."
@@ -202,14 +202,14 @@
     "date": "2026-06-02",
     "phase": "early_veg",
     "detail": {
-      "title": "Day 9 — Early Veg",
+      "title": "Day 9 - Early Veg",
       "summary": "Week 2 of establishment. Roots are developing; top growth is slow for now.",
       "tasks": [
-        "Moisture check: lift the pot or feel 2 inches deep — water only when it's getting dry. Fabric pots dry faster than plastic.",
+        "Moisture check: lift the pot or feel 2 inches deep - water only when it's getting dry. Fabric pots dry faster than plastic.",
         "If it needs water, use plain water to runoff. No nutrients yet.",
-        "If the pot still feels heavy, wait — small plants in large pots are easy to overwater.",
+        "If the pot still feels heavy, wait - small plants in large pots are easy to overwater.",
         "Look for new leaves or nodes at the tips, confirming roots have established.",
-        "Check leaf undersides for pests daily — tiny moving dots, clustered insects, or anything unusual.",
+        "Check leaf undersides for pests daily - tiny moving dots, clustered insects, or anything unusual.",
         "Make sure pots aren't sitting in pooled water."
       ],
       "notes": "Plain water only until feeding begins around Jun 21. Let the medium dry between waterings to encourage root growth."
@@ -219,14 +219,14 @@
     "date": "2026-06-03",
     "phase": "early_veg",
     "detail": {
-      "title": "Day 10 — Early Veg",
+      "title": "Day 10 - Early Veg",
       "summary": "Week 2 of establishment. Roots are developing; top growth is slow for now.",
       "tasks": [
-        "Moisture check: lift the pot or feel 2 inches deep — water only when it's getting dry. Fabric pots dry faster than plastic.",
+        "Moisture check: lift the pot or feel 2 inches deep - water only when it's getting dry. Fabric pots dry faster than plastic.",
         "If it needs water, use plain water to runoff. No nutrients yet.",
-        "If the pot still feels heavy, wait — small plants in large pots are easy to overwater.",
+        "If the pot still feels heavy, wait - small plants in large pots are easy to overwater.",
         "Look for new leaves or nodes at the tips, confirming roots have established.",
-        "Check leaf undersides for pests daily — tiny moving dots, clustered insects, or anything unusual.",
+        "Check leaf undersides for pests daily - tiny moving dots, clustered insects, or anything unusual.",
         "Make sure pots aren't sitting in pooled water."
       ],
       "notes": "Plain water only until feeding begins around Jun 21. Let the medium dry between waterings to encourage root growth."
@@ -236,14 +236,14 @@
     "date": "2026-06-04",
     "phase": "early_veg",
     "detail": {
-      "title": "Day 11 — Early Veg",
+      "title": "Day 11 - Early Veg",
       "summary": "Week 2 of establishment. Roots are developing; top growth is slow for now.",
       "tasks": [
-        "Moisture check: lift the pot or feel 2 inches deep — water only when it's getting dry. Fabric pots dry faster than plastic.",
+        "Moisture check: lift the pot or feel 2 inches deep - water only when it's getting dry. Fabric pots dry faster than plastic.",
         "If it needs water, use plain water to runoff. No nutrients yet.",
-        "If the pot still feels heavy, wait — small plants in large pots are easy to overwater.",
+        "If the pot still feels heavy, wait - small plants in large pots are easy to overwater.",
         "Look for new leaves or nodes at the tips, confirming roots have established.",
-        "Check leaf undersides for pests daily — tiny moving dots, clustered insects, or anything unusual.",
+        "Check leaf undersides for pests daily - tiny moving dots, clustered insects, or anything unusual.",
         "Make sure pots aren't sitting in pooled water."
       ],
       "notes": "Plain water only until feeding begins around Jun 21. Let the medium dry between waterings to encourage root growth."
@@ -253,14 +253,14 @@
     "date": "2026-06-05",
     "phase": "early_veg",
     "detail": {
-      "title": "Day 12 — Early Veg",
+      "title": "Day 12 - Early Veg",
       "summary": "Week 2 of establishment. Roots are developing; top growth is slow for now.",
       "tasks": [
-        "Moisture check: lift the pot or feel 2 inches deep — water only when it's getting dry. Fabric pots dry faster than plastic.",
+        "Moisture check: lift the pot or feel 2 inches deep - water only when it's getting dry. Fabric pots dry faster than plastic.",
         "If it needs water, use plain water to runoff. No nutrients yet.",
-        "If the pot still feels heavy, wait — small plants in large pots are easy to overwater.",
+        "If the pot still feels heavy, wait - small plants in large pots are easy to overwater.",
         "Look for new leaves or nodes at the tips, confirming roots have established.",
-        "Check leaf undersides for pests daily — tiny moving dots, clustered insects, or anything unusual.",
+        "Check leaf undersides for pests daily - tiny moving dots, clustered insects, or anything unusual.",
         "Make sure pots aren't sitting in pooled water."
       ],
       "notes": "Plain water only until feeding begins around Jun 21. Let the medium dry between waterings to encourage root growth."
@@ -270,14 +270,14 @@
     "date": "2026-06-06",
     "phase": "early_veg",
     "detail": {
-      "title": "Day 13 — Early Veg",
+      "title": "Day 13 - Early Veg",
       "summary": "Week 2 of establishment. Roots are developing; top growth is slow for now.",
       "tasks": [
-        "Moisture check: lift the pot or feel 2 inches deep — water only when it's getting dry. Fabric pots dry faster than plastic.",
+        "Moisture check: lift the pot or feel 2 inches deep - water only when it's getting dry. Fabric pots dry faster than plastic.",
         "If it needs water, use plain water to runoff. No nutrients yet.",
-        "If the pot still feels heavy, wait — small plants in large pots are easy to overwater.",
+        "If the pot still feels heavy, wait - small plants in large pots are easy to overwater.",
         "Look for new leaves or nodes at the tips, confirming roots have established.",
-        "Check leaf undersides for pests daily — tiny moving dots, clustered insects, or anything unusual.",
+        "Check leaf undersides for pests daily - tiny moving dots, clustered insects, or anything unusual.",
         "Make sure pots aren't sitting in pooled water."
       ],
       "notes": "Plain water only until feeding begins around Jun 21. Let the medium dry between waterings to encourage root growth."
@@ -287,13 +287,13 @@
     "date": "2026-06-07",
     "phase": "veg_cm",
     "detail": {
-      "title": "Day 14 — Vegetative Growth",
+      "title": "Day 14 - Vegetative Growth",
       "summary": "Plants are actively growing and drinking more.",
       "tasks": [
-        "Moisture check daily — you may be watering every 1 to 2 days now.",
+        "Moisture check daily - you may be watering every 1 to 2 days now.",
         "Begin light supplementation per your nutrient line's early-veg schedule, using clean water to mix.",
         "Watch for steady new node development.",
-        "Inspect leaf undersides for pests every day — catching problems early saves plants.",
+        "Inspect leaf undersides for pests every day - catching problems early saves plants.",
         "Check any ties or supports and adjust them toward where each plant is growing."
       ],
       "notes": "Follow your nutrient brand's feed chart. Full feeding typically begins around Jun 21."
@@ -303,13 +303,13 @@
     "date": "2026-06-08",
     "phase": "veg_cm",
     "detail": {
-      "title": "Day 15 — Vegetative Growth",
+      "title": "Day 15 - Vegetative Growth",
       "summary": "Plants are actively growing and drinking more.",
       "tasks": [
-        "Moisture check daily — you may be watering every 1 to 2 days now.",
+        "Moisture check daily - you may be watering every 1 to 2 days now.",
         "Begin light supplementation per your nutrient line's early-veg schedule, using clean water to mix.",
         "Watch for steady new node development.",
-        "Inspect leaf undersides for pests every day — catching problems early saves plants.",
+        "Inspect leaf undersides for pests every day - catching problems early saves plants.",
         "Check any ties or supports and adjust them toward where each plant is growing."
       ],
       "notes": "Follow your nutrient brand's feed chart. Full feeding typically begins around Jun 21."
@@ -319,13 +319,13 @@
     "date": "2026-06-09",
     "phase": "veg_cm",
     "detail": {
-      "title": "Day 16 — Vegetative Growth",
+      "title": "Day 16 - Vegetative Growth",
       "summary": "Plants are actively growing and drinking more.",
       "tasks": [
-        "Moisture check daily — you may be watering every 1 to 2 days now.",
+        "Moisture check daily - you may be watering every 1 to 2 days now.",
         "Begin light supplementation per your nutrient line's early-veg schedule, using clean water to mix.",
         "Watch for steady new node development.",
-        "Inspect leaf undersides for pests every day — catching problems early saves plants.",
+        "Inspect leaf undersides for pests every day - catching problems early saves plants.",
         "Check any ties or supports and adjust them toward where each plant is growing."
       ],
       "notes": "Follow your nutrient brand's feed chart. Full feeding typically begins around Jun 21."
@@ -335,13 +335,13 @@
     "date": "2026-06-10",
     "phase": "veg_cm",
     "detail": {
-      "title": "Day 17 — Vegetative Growth",
+      "title": "Day 17 - Vegetative Growth",
       "summary": "Plants are actively growing and drinking more.",
       "tasks": [
-        "Moisture check daily — you may be watering every 1 to 2 days now.",
+        "Moisture check daily - you may be watering every 1 to 2 days now.",
         "Begin light supplementation per your nutrient line's early-veg schedule, using clean water to mix.",
         "Watch for steady new node development.",
-        "Inspect leaf undersides for pests every day — catching problems early saves plants.",
+        "Inspect leaf undersides for pests every day - catching problems early saves plants.",
         "Check any ties or supports and adjust them toward where each plant is growing."
       ],
       "notes": "Follow your nutrient brand's feed chart. Full feeding typically begins around Jun 21."
@@ -351,13 +351,13 @@
     "date": "2026-06-11",
     "phase": "veg_cm",
     "detail": {
-      "title": "Day 18 — Vegetative Growth",
+      "title": "Day 18 - Vegetative Growth",
       "summary": "Plants are actively growing and drinking more.",
       "tasks": [
-        "Moisture check daily — you may be watering every 1 to 2 days now.",
+        "Moisture check daily - you may be watering every 1 to 2 days now.",
         "Begin light supplementation per your nutrient line's early-veg schedule, using clean water to mix.",
         "Watch for steady new node development.",
-        "Inspect leaf undersides for pests every day — catching problems early saves plants.",
+        "Inspect leaf undersides for pests every day - catching problems early saves plants.",
         "Check any ties or supports and adjust them toward where each plant is growing."
       ],
       "notes": "Follow your nutrient brand's feed chart. Full feeding typically begins around Jun 21."
@@ -367,13 +367,13 @@
     "date": "2026-06-12",
     "phase": "veg_cm",
     "detail": {
-      "title": "Day 19 — Vegetative Growth",
+      "title": "Day 19 - Vegetative Growth",
       "summary": "Plants are actively growing and drinking more.",
       "tasks": [
-        "Moisture check daily — you may be watering every 1 to 2 days now.",
+        "Moisture check daily - you may be watering every 1 to 2 days now.",
         "Begin light supplementation per your nutrient line's early-veg schedule, using clean water to mix.",
         "Watch for steady new node development.",
-        "Inspect leaf undersides for pests every day — catching problems early saves plants.",
+        "Inspect leaf undersides for pests every day - catching problems early saves plants.",
         "Check any ties or supports and adjust them toward where each plant is growing."
       ],
       "notes": "Follow your nutrient brand's feed chart. Full feeding typically begins around Jun 21."
@@ -383,13 +383,13 @@
     "date": "2026-06-13",
     "phase": "veg_cm",
     "detail": {
-      "title": "Day 20 — Vegetative Growth",
+      "title": "Day 20 - Vegetative Growth",
       "summary": "Plants are actively growing and drinking more.",
       "tasks": [
-        "Moisture check daily — you may be watering every 1 to 2 days now.",
+        "Moisture check daily - you may be watering every 1 to 2 days now.",
         "Begin light supplementation per your nutrient line's early-veg schedule, using clean water to mix.",
         "Watch for steady new node development.",
-        "Inspect leaf undersides for pests every day — catching problems early saves plants.",
+        "Inspect leaf undersides for pests every day - catching problems early saves plants.",
         "Check any ties or supports and adjust them toward where each plant is growing."
       ],
       "notes": "Follow your nutrient brand's feed chart. Full feeding typically begins around Jun 21."
@@ -399,13 +399,13 @@
     "date": "2026-06-14",
     "phase": "veg_cm",
     "detail": {
-      "title": "Day 21 — Vegetative Growth",
+      "title": "Day 21 - Vegetative Growth",
       "summary": "Plants are actively growing and drinking more.",
       "tasks": [
-        "Moisture check daily — you may be watering every 1 to 2 days now.",
+        "Moisture check daily - you may be watering every 1 to 2 days now.",
         "Begin light supplementation per your nutrient line's early-veg schedule, using clean water to mix.",
         "Watch for steady new node development.",
-        "Inspect leaf undersides for pests every day — catching problems early saves plants.",
+        "Inspect leaf undersides for pests every day - catching problems early saves plants.",
         "Check any ties or supports and adjust them toward where each plant is growing."
       ],
       "notes": "Follow your nutrient brand's feed chart. Full feeding typically begins around Jun 21."
@@ -415,13 +415,13 @@
     "date": "2026-06-15",
     "phase": "veg_cm",
     "detail": {
-      "title": "Day 22 — Vegetative Growth",
+      "title": "Day 22 - Vegetative Growth",
       "summary": "Plants are actively growing and drinking more.",
       "tasks": [
-        "Moisture check daily — you may be watering every 1 to 2 days now.",
+        "Moisture check daily - you may be watering every 1 to 2 days now.",
         "Begin light supplementation per your nutrient line's early-veg schedule, using clean water to mix.",
         "Watch for steady new node development.",
-        "Inspect leaf undersides for pests every day — catching problems early saves plants.",
+        "Inspect leaf undersides for pests every day - catching problems early saves plants.",
         "Check any ties or supports and adjust them toward where each plant is growing."
       ],
       "notes": "Follow your nutrient brand's feed chart. Full feeding typically begins around Jun 21."
@@ -431,13 +431,13 @@
     "date": "2026-06-16",
     "phase": "veg_cm",
     "detail": {
-      "title": "Day 23 — Vegetative Growth",
+      "title": "Day 23 - Vegetative Growth",
       "summary": "Plants are actively growing and drinking more.",
       "tasks": [
-        "Moisture check daily — you may be watering every 1 to 2 days now.",
+        "Moisture check daily - you may be watering every 1 to 2 days now.",
         "Begin light supplementation per your nutrient line's early-veg schedule, using clean water to mix.",
         "Watch for steady new node development.",
-        "Inspect leaf undersides for pests every day — catching problems early saves plants.",
+        "Inspect leaf undersides for pests every day - catching problems early saves plants.",
         "Check any ties or supports and adjust them toward where each plant is growing."
       ],
       "notes": "Follow your nutrient brand's feed chart. Full feeding typically begins around Jun 21."
@@ -447,13 +447,13 @@
     "date": "2026-06-17",
     "phase": "veg_cm",
     "detail": {
-      "title": "Day 24 — Vegetative Growth",
+      "title": "Day 24 - Vegetative Growth",
       "summary": "Plants are actively growing and drinking more.",
       "tasks": [
-        "Moisture check daily — you may be watering every 1 to 2 days now.",
+        "Moisture check daily - you may be watering every 1 to 2 days now.",
         "Begin light supplementation per your nutrient line's early-veg schedule, using clean water to mix.",
         "Watch for steady new node development.",
-        "Inspect leaf undersides for pests every day — catching problems early saves plants.",
+        "Inspect leaf undersides for pests every day - catching problems early saves plants.",
         "Check any ties or supports and adjust them toward where each plant is growing."
       ],
       "notes": "Follow your nutrient brand's feed chart. Full feeding typically begins around Jun 21."
@@ -463,13 +463,13 @@
     "date": "2026-06-18",
     "phase": "veg_cm",
     "detail": {
-      "title": "Day 25 — Vegetative Growth",
+      "title": "Day 25 - Vegetative Growth",
       "summary": "Plants are actively growing and drinking more.",
       "tasks": [
-        "Moisture check daily — you may be watering every 1 to 2 days now.",
+        "Moisture check daily - you may be watering every 1 to 2 days now.",
         "Begin light supplementation per your nutrient line's early-veg schedule, using clean water to mix.",
         "Watch for steady new node development.",
-        "Inspect leaf undersides for pests every day — catching problems early saves plants.",
+        "Inspect leaf undersides for pests every day - catching problems early saves plants.",
         "Check any ties or supports and adjust them toward where each plant is growing."
       ],
       "notes": "Follow your nutrient brand's feed chart. Full feeding typically begins around Jun 21."
@@ -479,13 +479,13 @@
     "date": "2026-06-19",
     "phase": "veg_cm",
     "detail": {
-      "title": "Day 26 — Vegetative Growth",
+      "title": "Day 26 - Vegetative Growth",
       "summary": "Plants are actively growing and drinking more.",
       "tasks": [
-        "Moisture check daily — you may be watering every 1 to 2 days now.",
+        "Moisture check daily - you may be watering every 1 to 2 days now.",
         "Begin light supplementation per your nutrient line's early-veg schedule, using clean water to mix.",
         "Watch for steady new node development.",
-        "Inspect leaf undersides for pests every day — catching problems early saves plants.",
+        "Inspect leaf undersides for pests every day - catching problems early saves plants.",
         "Check any ties or supports and adjust them toward where each plant is growing."
       ],
       "notes": "Follow your nutrient brand's feed chart. Full feeding typically begins around Jun 21."
@@ -495,13 +495,13 @@
     "date": "2026-06-20",
     "phase": "veg_cm",
     "detail": {
-      "title": "Day 27 — Vegetative Growth",
+      "title": "Day 27 - Vegetative Growth",
       "summary": "Plants are actively growing and drinking more.",
       "tasks": [
-        "Moisture check daily — you may be watering every 1 to 2 days now.",
+        "Moisture check daily - you may be watering every 1 to 2 days now.",
         "Begin light supplementation per your nutrient line's early-veg schedule, using clean water to mix.",
         "Watch for steady new node development.",
-        "Inspect leaf undersides for pests every day — catching problems early saves plants.",
+        "Inspect leaf undersides for pests every day - catching problems early saves plants.",
         "Check any ties or supports and adjust them toward where each plant is growing."
       ],
       "notes": "Follow your nutrient brand's feed chart. Full feeding typically begins around Jun 21."
@@ -511,13 +511,13 @@
     "date": "2026-06-21",
     "phase": "veg_half",
     "detail": {
-      "title": "Day 28 — Feeding Begins (Half Dose)",
+      "title": "Day 28 - Feeding Begins (Half Dose)",
       "summary": "Start nutrients today at about half the recommended dose.",
       "tasks": [
         "Moisture check: you should be watering every 1 to 2 days now.",
         "Feed at roughly half the label dose for your nutrient line; water to runoff.",
-        "Check the newest leaf tips — crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
-        "If the canopy center is crowded with no airflow, remove a few interior fan leaves — never more than 10 to 15% at once.",
+        "Check the newest leaf tips - crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
+        "If the canopy center is crowded with no airflow, remove a few interior fan leaves - never more than 10 to 15% at once.",
         "Loosely tie any heavily leaning branches to a support; never cinch ties tight against the stem."
       ],
       "notes": "Starting light gives you a baseline to gauge response. Full dose typically begins around Jul 5 if plants respond well with no tip burn."
@@ -527,13 +527,13 @@
     "date": "2026-06-22",
     "phase": "veg_half",
     "detail": {
-      "title": "Day 29 — Feeding",
+      "title": "Day 29 - Feeding",
       "summary": "Active veg. Build nutrient strength gradually as the plants respond.",
       "tasks": [
         "Moisture check: you should be watering every 1 to 2 days now.",
         "Feed at roughly half the label dose for your nutrient line; water to runoff.",
-        "Check the newest leaf tips — crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
-        "If the canopy center is crowded with no airflow, remove a few interior fan leaves — never more than 10 to 15% at once.",
+        "Check the newest leaf tips - crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
+        "If the canopy center is crowded with no airflow, remove a few interior fan leaves - never more than 10 to 15% at once.",
         "Loosely tie any heavily leaning branches to a support; never cinch ties tight against the stem."
       ],
       "notes": "Starting light gives you a baseline to gauge response. Full dose typically begins around Jul 5 if plants respond well with no tip burn."
@@ -543,13 +543,13 @@
     "date": "2026-06-23",
     "phase": "veg_half",
     "detail": {
-      "title": "Day 30 — Feeding",
+      "title": "Day 30 - Feeding",
       "summary": "Active veg. Build nutrient strength gradually as the plants respond.",
       "tasks": [
         "Moisture check: you should be watering every 1 to 2 days now.",
         "Feed at roughly half the label dose for your nutrient line; water to runoff.",
-        "Check the newest leaf tips — crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
-        "If the canopy center is crowded with no airflow, remove a few interior fan leaves — never more than 10 to 15% at once.",
+        "Check the newest leaf tips - crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
+        "If the canopy center is crowded with no airflow, remove a few interior fan leaves - never more than 10 to 15% at once.",
         "Loosely tie any heavily leaning branches to a support; never cinch ties tight against the stem."
       ],
       "notes": "Starting light gives you a baseline to gauge response. Full dose typically begins around Jul 5 if plants respond well with no tip burn."
@@ -559,11 +559,11 @@
     "date": "2026-06-24",
     "phase": "flush",
     "detail": {
-      "title": "Flush Day #1 — June 24",
+      "title": "Flush Day #1 - June 24",
       "summary": "A plain-water flush clears accumulated nutrient salts from the medium.",
       "tasks": [
-        "Only flush when the pot is actually ready for water — otherwise postpone a day.",
-        "Use plain water only — no nutrients or supplements.",
+        "Only flush when the pot is actually ready for water - otherwise postpone a day.",
+        "Use plain water only - no nutrients or supplements.",
         "Water generously to runoff to push accumulated salts through the medium, then let it drain fully.",
         "Resume your normal feed on the very next watering.",
         "While flushing, inspect leaves top and bottom for discoloration, spots, webbing, or pests.",
@@ -576,13 +576,13 @@
     "date": "2026-06-25",
     "phase": "veg_half",
     "detail": {
-      "title": "Day 32 — Feeding",
+      "title": "Day 32 - Feeding",
       "summary": "Active veg. Build nutrient strength gradually as the plants respond.",
       "tasks": [
         "Moisture check: you should be watering every 1 to 2 days now.",
         "Feed at roughly half the label dose for your nutrient line; water to runoff.",
-        "Check the newest leaf tips — crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
-        "If the canopy center is crowded with no airflow, remove a few interior fan leaves — never more than 10 to 15% at once.",
+        "Check the newest leaf tips - crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
+        "If the canopy center is crowded with no airflow, remove a few interior fan leaves - never more than 10 to 15% at once.",
         "Loosely tie any heavily leaning branches to a support; never cinch ties tight against the stem."
       ],
       "notes": "Starting light gives you a baseline to gauge response. Full dose typically begins around Jul 5 if plants respond well with no tip burn."
@@ -592,13 +592,13 @@
     "date": "2026-06-26",
     "phase": "veg_half",
     "detail": {
-      "title": "Day 33 — Feeding",
+      "title": "Day 33 - Feeding",
       "summary": "Active veg. Build nutrient strength gradually as the plants respond.",
       "tasks": [
         "Moisture check: you should be watering every 1 to 2 days now.",
         "Feed at roughly half the label dose for your nutrient line; water to runoff.",
-        "Check the newest leaf tips — crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
-        "If the canopy center is crowded with no airflow, remove a few interior fan leaves — never more than 10 to 15% at once.",
+        "Check the newest leaf tips - crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
+        "If the canopy center is crowded with no airflow, remove a few interior fan leaves - never more than 10 to 15% at once.",
         "Loosely tie any heavily leaning branches to a support; never cinch ties tight against the stem."
       ],
       "notes": "Starting light gives you a baseline to gauge response. Full dose typically begins around Jul 5 if plants respond well with no tip burn."
@@ -608,13 +608,13 @@
     "date": "2026-06-27",
     "phase": "veg_half",
     "detail": {
-      "title": "Day 34 — Feeding",
+      "title": "Day 34 - Feeding",
       "summary": "Active veg. Build nutrient strength gradually as the plants respond.",
       "tasks": [
         "Moisture check: you should be watering every 1 to 2 days now.",
         "Feed at roughly half the label dose for your nutrient line; water to runoff.",
-        "Check the newest leaf tips — crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
-        "If the canopy center is crowded with no airflow, remove a few interior fan leaves — never more than 10 to 15% at once.",
+        "Check the newest leaf tips - crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
+        "If the canopy center is crowded with no airflow, remove a few interior fan leaves - never more than 10 to 15% at once.",
         "Loosely tie any heavily leaning branches to a support; never cinch ties tight against the stem."
       ],
       "notes": "Starting light gives you a baseline to gauge response. Full dose typically begins around Jul 5 if plants respond well with no tip burn."
@@ -624,13 +624,13 @@
     "date": "2026-06-28",
     "phase": "veg_half",
     "detail": {
-      "title": "Day 35 — Feeding",
+      "title": "Day 35 - Feeding",
       "summary": "Active veg. Build nutrient strength gradually as the plants respond.",
       "tasks": [
         "Moisture check: you should be watering every 1 to 2 days now.",
         "Feed at roughly half the label dose for your nutrient line; water to runoff.",
-        "Check the newest leaf tips — crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
-        "If the canopy center is crowded with no airflow, remove a few interior fan leaves — never more than 10 to 15% at once.",
+        "Check the newest leaf tips - crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
+        "If the canopy center is crowded with no airflow, remove a few interior fan leaves - never more than 10 to 15% at once.",
         "Loosely tie any heavily leaning branches to a support; never cinch ties tight against the stem."
       ],
       "notes": "Starting light gives you a baseline to gauge response. Full dose typically begins around Jul 5 if plants respond well with no tip burn."
@@ -640,13 +640,13 @@
     "date": "2026-06-29",
     "phase": "veg_half",
     "detail": {
-      "title": "Day 36 — Feeding",
+      "title": "Day 36 - Feeding",
       "summary": "Active veg. Build nutrient strength gradually as the plants respond.",
       "tasks": [
         "Moisture check: you should be watering every 1 to 2 days now.",
         "Feed at roughly half the label dose for your nutrient line; water to runoff.",
-        "Check the newest leaf tips — crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
-        "If the canopy center is crowded with no airflow, remove a few interior fan leaves — never more than 10 to 15% at once.",
+        "Check the newest leaf tips - crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
+        "If the canopy center is crowded with no airflow, remove a few interior fan leaves - never more than 10 to 15% at once.",
         "Loosely tie any heavily leaning branches to a support; never cinch ties tight against the stem."
       ],
       "notes": "Starting light gives you a baseline to gauge response. Full dose typically begins around Jul 5 if plants respond well with no tip burn."
@@ -656,13 +656,13 @@
     "date": "2026-06-30",
     "phase": "veg_half",
     "detail": {
-      "title": "Day 37 — Feeding",
+      "title": "Day 37 - Feeding",
       "summary": "Active veg. Build nutrient strength gradually as the plants respond.",
       "tasks": [
         "Moisture check: you should be watering every 1 to 2 days now.",
         "Feed at roughly half the label dose for your nutrient line; water to runoff.",
-        "Check the newest leaf tips — crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
-        "If the canopy center is crowded with no airflow, remove a few interior fan leaves — never more than 10 to 15% at once.",
+        "Check the newest leaf tips - crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
+        "If the canopy center is crowded with no airflow, remove a few interior fan leaves - never more than 10 to 15% at once.",
         "Loosely tie any heavily leaning branches to a support; never cinch ties tight against the stem."
       ],
       "notes": "Starting light gives you a baseline to gauge response. Full dose typically begins around Jul 5 if plants respond well with no tip burn."
@@ -672,13 +672,13 @@
     "date": "2026-07-01",
     "phase": "veg_half",
     "detail": {
-      "title": "Day 38 — Feeding",
+      "title": "Day 38 - Feeding",
       "summary": "Active veg. Build nutrient strength gradually as the plants respond.",
       "tasks": [
         "Moisture check: you should be watering every 1 to 2 days now.",
         "Feed at roughly half the label dose for your nutrient line; water to runoff.",
-        "Check the newest leaf tips — crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
-        "If the canopy center is crowded with no airflow, remove a few interior fan leaves — never more than 10 to 15% at once.",
+        "Check the newest leaf tips - crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
+        "If the canopy center is crowded with no airflow, remove a few interior fan leaves - never more than 10 to 15% at once.",
         "Loosely tie any heavily leaning branches to a support; never cinch ties tight against the stem."
       ],
       "notes": "Starting light gives you a baseline to gauge response. Full dose typically begins around Jul 5 if plants respond well with no tip burn."
@@ -688,13 +688,13 @@
     "date": "2026-07-02",
     "phase": "veg_half",
     "detail": {
-      "title": "Day 39 — Feeding",
+      "title": "Day 39 - Feeding",
       "summary": "Active veg. Build nutrient strength gradually as the plants respond.",
       "tasks": [
         "Moisture check: you should be watering every 1 to 2 days now.",
         "Feed at roughly half the label dose for your nutrient line; water to runoff.",
-        "Check the newest leaf tips — crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
-        "If the canopy center is crowded with no airflow, remove a few interior fan leaves — never more than 10 to 15% at once.",
+        "Check the newest leaf tips - crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
+        "If the canopy center is crowded with no airflow, remove a few interior fan leaves - never more than 10 to 15% at once.",
         "Loosely tie any heavily leaning branches to a support; never cinch ties tight against the stem."
       ],
       "notes": "Starting light gives you a baseline to gauge response. Full dose typically begins around Jul 5 if plants respond well with no tip burn."
@@ -704,13 +704,13 @@
     "date": "2026-07-03",
     "phase": "veg_half",
     "detail": {
-      "title": "Day 40 — Feeding",
+      "title": "Day 40 - Feeding",
       "summary": "Active veg. Build nutrient strength gradually as the plants respond.",
       "tasks": [
         "Moisture check: you should be watering every 1 to 2 days now.",
         "Feed at roughly half the label dose for your nutrient line; water to runoff.",
-        "Check the newest leaf tips — crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
-        "If the canopy center is crowded with no airflow, remove a few interior fan leaves — never more than 10 to 15% at once.",
+        "Check the newest leaf tips - crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
+        "If the canopy center is crowded with no airflow, remove a few interior fan leaves - never more than 10 to 15% at once.",
         "Loosely tie any heavily leaning branches to a support; never cinch ties tight against the stem."
       ],
       "notes": "Starting light gives you a baseline to gauge response. Full dose typically begins around Jul 5 if plants respond well with no tip burn."
@@ -720,13 +720,13 @@
     "date": "2026-07-04",
     "phase": "veg_half",
     "detail": {
-      "title": "Day 41 — Feeding",
+      "title": "Day 41 - Feeding",
       "summary": "Active veg. Build nutrient strength gradually as the plants respond.",
       "tasks": [
         "Moisture check: you should be watering every 1 to 2 days now.",
         "Feed at roughly half the label dose for your nutrient line; water to runoff.",
-        "Check the newest leaf tips — crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
-        "If the canopy center is crowded with no airflow, remove a few interior fan leaves — never more than 10 to 15% at once.",
+        "Check the newest leaf tips - crispy brown or yellow tips mean slight overfeeding, so drop the dose next time.",
+        "If the canopy center is crowded with no airflow, remove a few interior fan leaves - never more than 10 to 15% at once.",
         "Loosely tie any heavily leaning branches to a support; never cinch ties tight against the stem."
       ],
       "notes": "Starting light gives you a baseline to gauge response. Full dose typically begins around Jul 5 if plants respond well with no tip burn."
@@ -736,14 +736,14 @@
     "date": "2026-07-05",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 42 — Full Dose Feeding Begins",
+      "title": "Day 42 - Full Dose Feeding Begins",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -754,14 +754,14 @@
     "date": "2026-07-06",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 43 — Full Dose Feeding",
+      "title": "Day 43 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -772,14 +772,14 @@
     "date": "2026-07-07",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 44 — Full Dose Feeding",
+      "title": "Day 44 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -790,14 +790,14 @@
     "date": "2026-07-08",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 45 — Full Dose Feeding",
+      "title": "Day 45 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -808,14 +808,14 @@
     "date": "2026-07-09",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 46 — Full Dose Feeding",
+      "title": "Day 46 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -826,14 +826,14 @@
     "date": "2026-07-10",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 47 — Full Dose Feeding",
+      "title": "Day 47 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -844,14 +844,14 @@
     "date": "2026-07-11",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 48 — Full Dose Feeding",
+      "title": "Day 48 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -862,14 +862,14 @@
     "date": "2026-07-12",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 49 — Full Dose Feeding",
+      "title": "Day 49 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -880,14 +880,14 @@
     "date": "2026-07-13",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 50 — Full Dose Feeding",
+      "title": "Day 50 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -898,14 +898,14 @@
     "date": "2026-07-14",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 51 — Full Dose Feeding",
+      "title": "Day 51 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -916,14 +916,14 @@
     "date": "2026-07-15",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 52 — Full Dose Feeding",
+      "title": "Day 52 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -934,14 +934,14 @@
     "date": "2026-07-16",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 53 — Full Dose Feeding",
+      "title": "Day 53 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -952,14 +952,14 @@
     "date": "2026-07-17",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 54 — Full Dose Feeding",
+      "title": "Day 54 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -970,14 +970,14 @@
     "date": "2026-07-18",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 55 — Full Dose Feeding",
+      "title": "Day 55 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -988,14 +988,14 @@
     "date": "2026-07-19",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 56 — Full Dose Feeding",
+      "title": "Day 56 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -1006,14 +1006,14 @@
     "date": "2026-07-20",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 57 — Full Dose Feeding",
+      "title": "Day 57 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -1024,14 +1024,14 @@
     "date": "2026-07-21",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 58 — Full Dose Feeding",
+      "title": "Day 58 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -1042,14 +1042,14 @@
     "date": "2026-07-22",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 59 — Full Dose Feeding",
+      "title": "Day 59 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -1060,14 +1060,14 @@
     "date": "2026-07-23",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 60 — Full Dose Feeding",
+      "title": "Day 60 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -1078,11 +1078,11 @@
     "date": "2026-07-24",
     "phase": "flush",
     "detail": {
-      "title": "Flush Day #2 — July 24",
+      "title": "Flush Day #2 - July 24",
       "summary": "A plain-water flush clears accumulated nutrient salts from the medium.",
       "tasks": [
-        "Only flush when the pot is actually ready for water — otherwise postpone a day.",
-        "Use plain water only — no nutrients or supplements.",
+        "Only flush when the pot is actually ready for water - otherwise postpone a day.",
+        "Use plain water only - no nutrients or supplements.",
         "Water generously to runoff to push accumulated salts through the medium, then let it drain fully.",
         "Resume your normal feed on the very next watering.",
         "While flushing, inspect leaves top and bottom for discoloration, spots, webbing, or pests.",
@@ -1095,14 +1095,14 @@
     "date": "2026-07-25",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 62 — Full Dose Feeding",
+      "title": "Day 62 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -1113,14 +1113,14 @@
     "date": "2026-07-26",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 63 — Full Dose Feeding",
+      "title": "Day 63 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -1131,14 +1131,14 @@
     "date": "2026-07-27",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 64 — Full Dose Feeding",
+      "title": "Day 64 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -1149,14 +1149,14 @@
     "date": "2026-07-28",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 65 — Full Dose Feeding",
+      "title": "Day 65 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -1167,14 +1167,14 @@
     "date": "2026-07-29",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 66 — Full Dose Feeding",
+      "title": "Day 66 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -1185,14 +1185,14 @@
     "date": "2026-07-30",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 67 — Full Dose Feeding",
+      "title": "Day 67 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -1203,14 +1203,14 @@
     "date": "2026-07-31",
     "phase": "veg_full",
     "detail": {
-      "title": "Day 68 — Full Dose Feeding",
+      "title": "Day 68 - Full Dose Feeding",
       "summary": "Peak vegetative growth. Plants are drinking heavily.",
       "tasks": [
-        "Moisture check daily — in heat, fabric pots can need water every 24 hours.",
+        "Moisture check daily - in heat, fabric pots can need water every 24 hours.",
         "Feed at full label dose for your nutrient line on feed days; water to runoff.",
         "Finish major training or topping to shape the canopy before flower begins.",
-        "Remove a few interior fan leaves if the center has no airflow — a little at a time, never all at once.",
-        "If air temperature consistently exceeds 90°F, consider afternoon shade — sustained heat slows growth and invites spider mites.",
+        "Remove a few interior fan leaves if the center has no airflow - a little at a time, never all at once.",
+        "If air temperature consistently exceeds 90°F, consider afternoon shade - sustained heat slows growth and invites spider mites.",
         "Check ties and supports weekly and add higher tie points as plants grow upward.",
         "From late veg, start checking the nodes for the first tiny white pistils that signal the transition toward flower."
       ],
@@ -1221,15 +1221,15 @@
     "date": "2026-08-01",
     "phase": "pre_flower",
     "detail": {
-      "title": "Day 69 — Pre-Flower / Transition",
+      "title": "Day 69 - Pre-Flower / Transition",
       "summary": "Plants are shifting energy toward flower. White pistils should start appearing at the nodes.",
       "tasks": [
-        "Continue daily moisture checks — watering frequency stays similar to peak veg.",
+        "Continue daily moisture checks - watering frequency stays similar to peak veg.",
         "Begin shifting toward bloom nutrients per your line, easing off heavy veg nitrogen.",
         "Inspect the nodes where branches meet the main stem for white pistils confirming the transition to flower.",
-        "Finish any heavy training now — avoid major stress once flowering starts.",
+        "Finish any heavy training now - avoid major stress once flowering starts.",
         "Plants stretch significantly in early flower, so make sure your stakes or supports can handle the final height.",
-        "Open up the canopy by removing large interior fan leaves that block airflow — good airflow is your main bud-rot defense."
+        "Open up the canopy by removing large interior fan leaves that block airflow - good airflow is your main bud-rot defense."
       ],
       "notes": "Full flower begins around Aug 15. Shift fully to your bloom feeding schedule at that point."
     }
@@ -1238,15 +1238,15 @@
     "date": "2026-08-02",
     "phase": "pre_flower",
     "detail": {
-      "title": "Day 70 — Pre-Flower / Transition",
+      "title": "Day 70 - Pre-Flower / Transition",
       "summary": "Plants are shifting energy toward flower. White pistils should start appearing at the nodes.",
       "tasks": [
-        "Continue daily moisture checks — watering frequency stays similar to peak veg.",
+        "Continue daily moisture checks - watering frequency stays similar to peak veg.",
         "Begin shifting toward bloom nutrients per your line, easing off heavy veg nitrogen.",
         "Inspect the nodes where branches meet the main stem for white pistils confirming the transition to flower.",
-        "Finish any heavy training now — avoid major stress once flowering starts.",
+        "Finish any heavy training now - avoid major stress once flowering starts.",
         "Plants stretch significantly in early flower, so make sure your stakes or supports can handle the final height.",
-        "Open up the canopy by removing large interior fan leaves that block airflow — good airflow is your main bud-rot defense."
+        "Open up the canopy by removing large interior fan leaves that block airflow - good airflow is your main bud-rot defense."
       ],
       "notes": "Full flower begins around Aug 15. Shift fully to your bloom feeding schedule at that point."
     }
@@ -1255,15 +1255,15 @@
     "date": "2026-08-03",
     "phase": "pre_flower",
     "detail": {
-      "title": "Day 71 — Pre-Flower / Transition",
+      "title": "Day 71 - Pre-Flower / Transition",
       "summary": "Plants are shifting energy toward flower. White pistils should start appearing at the nodes.",
       "tasks": [
-        "Continue daily moisture checks — watering frequency stays similar to peak veg.",
+        "Continue daily moisture checks - watering frequency stays similar to peak veg.",
         "Begin shifting toward bloom nutrients per your line, easing off heavy veg nitrogen.",
         "Inspect the nodes where branches meet the main stem for white pistils confirming the transition to flower.",
-        "Finish any heavy training now — avoid major stress once flowering starts.",
+        "Finish any heavy training now - avoid major stress once flowering starts.",
         "Plants stretch significantly in early flower, so make sure your stakes or supports can handle the final height.",
-        "Open up the canopy by removing large interior fan leaves that block airflow — good airflow is your main bud-rot defense."
+        "Open up the canopy by removing large interior fan leaves that block airflow - good airflow is your main bud-rot defense."
       ],
       "notes": "Full flower begins around Aug 15. Shift fully to your bloom feeding schedule at that point."
     }
@@ -1272,15 +1272,15 @@
     "date": "2026-08-04",
     "phase": "pre_flower",
     "detail": {
-      "title": "Day 72 — Pre-Flower / Transition",
+      "title": "Day 72 - Pre-Flower / Transition",
       "summary": "Plants are shifting energy toward flower. White pistils should start appearing at the nodes.",
       "tasks": [
-        "Continue daily moisture checks — watering frequency stays similar to peak veg.",
+        "Continue daily moisture checks - watering frequency stays similar to peak veg.",
         "Begin shifting toward bloom nutrients per your line, easing off heavy veg nitrogen.",
         "Inspect the nodes where branches meet the main stem for white pistils confirming the transition to flower.",
-        "Finish any heavy training now — avoid major stress once flowering starts.",
+        "Finish any heavy training now - avoid major stress once flowering starts.",
         "Plants stretch significantly in early flower, so make sure your stakes or supports can handle the final height.",
-        "Open up the canopy by removing large interior fan leaves that block airflow — good airflow is your main bud-rot defense."
+        "Open up the canopy by removing large interior fan leaves that block airflow - good airflow is your main bud-rot defense."
       ],
       "notes": "Full flower begins around Aug 15. Shift fully to your bloom feeding schedule at that point."
     }
@@ -1289,15 +1289,15 @@
     "date": "2026-08-05",
     "phase": "pre_flower",
     "detail": {
-      "title": "Day 73 — Pre-Flower / Transition",
+      "title": "Day 73 - Pre-Flower / Transition",
       "summary": "Plants are shifting energy toward flower. White pistils should start appearing at the nodes.",
       "tasks": [
-        "Continue daily moisture checks — watering frequency stays similar to peak veg.",
+        "Continue daily moisture checks - watering frequency stays similar to peak veg.",
         "Begin shifting toward bloom nutrients per your line, easing off heavy veg nitrogen.",
         "Inspect the nodes where branches meet the main stem for white pistils confirming the transition to flower.",
-        "Finish any heavy training now — avoid major stress once flowering starts.",
+        "Finish any heavy training now - avoid major stress once flowering starts.",
         "Plants stretch significantly in early flower, so make sure your stakes or supports can handle the final height.",
-        "Open up the canopy by removing large interior fan leaves that block airflow — good airflow is your main bud-rot defense."
+        "Open up the canopy by removing large interior fan leaves that block airflow - good airflow is your main bud-rot defense."
       ],
       "notes": "Full flower begins around Aug 15. Shift fully to your bloom feeding schedule at that point."
     }
@@ -1306,15 +1306,15 @@
     "date": "2026-08-06",
     "phase": "pre_flower",
     "detail": {
-      "title": "Day 74 — Pre-Flower / Transition",
+      "title": "Day 74 - Pre-Flower / Transition",
       "summary": "Plants are shifting energy toward flower. White pistils should start appearing at the nodes.",
       "tasks": [
-        "Continue daily moisture checks — watering frequency stays similar to peak veg.",
+        "Continue daily moisture checks - watering frequency stays similar to peak veg.",
         "Begin shifting toward bloom nutrients per your line, easing off heavy veg nitrogen.",
         "Inspect the nodes where branches meet the main stem for white pistils confirming the transition to flower.",
-        "Finish any heavy training now — avoid major stress once flowering starts.",
+        "Finish any heavy training now - avoid major stress once flowering starts.",
         "Plants stretch significantly in early flower, so make sure your stakes or supports can handle the final height.",
-        "Open up the canopy by removing large interior fan leaves that block airflow — good airflow is your main bud-rot defense."
+        "Open up the canopy by removing large interior fan leaves that block airflow - good airflow is your main bud-rot defense."
       ],
       "notes": "Full flower begins around Aug 15. Shift fully to your bloom feeding schedule at that point."
     }
@@ -1323,15 +1323,15 @@
     "date": "2026-08-07",
     "phase": "pre_flower",
     "detail": {
-      "title": "Day 75 — Pre-Flower / Transition",
+      "title": "Day 75 - Pre-Flower / Transition",
       "summary": "Plants are shifting energy toward flower. White pistils should start appearing at the nodes.",
       "tasks": [
-        "Continue daily moisture checks — watering frequency stays similar to peak veg.",
+        "Continue daily moisture checks - watering frequency stays similar to peak veg.",
         "Begin shifting toward bloom nutrients per your line, easing off heavy veg nitrogen.",
         "Inspect the nodes where branches meet the main stem for white pistils confirming the transition to flower.",
-        "Finish any heavy training now — avoid major stress once flowering starts.",
+        "Finish any heavy training now - avoid major stress once flowering starts.",
         "Plants stretch significantly in early flower, so make sure your stakes or supports can handle the final height.",
-        "Open up the canopy by removing large interior fan leaves that block airflow — good airflow is your main bud-rot defense."
+        "Open up the canopy by removing large interior fan leaves that block airflow - good airflow is your main bud-rot defense."
       ],
       "notes": "Full flower begins around Aug 15. Shift fully to your bloom feeding schedule at that point."
     }
@@ -1340,15 +1340,15 @@
     "date": "2026-08-08",
     "phase": "pre_flower",
     "detail": {
-      "title": "Day 76 — Pre-Flower / Transition",
+      "title": "Day 76 - Pre-Flower / Transition",
       "summary": "Plants are shifting energy toward flower. White pistils should start appearing at the nodes.",
       "tasks": [
-        "Continue daily moisture checks — watering frequency stays similar to peak veg.",
+        "Continue daily moisture checks - watering frequency stays similar to peak veg.",
         "Begin shifting toward bloom nutrients per your line, easing off heavy veg nitrogen.",
         "Inspect the nodes where branches meet the main stem for white pistils confirming the transition to flower.",
-        "Finish any heavy training now — avoid major stress once flowering starts.",
+        "Finish any heavy training now - avoid major stress once flowering starts.",
         "Plants stretch significantly in early flower, so make sure your stakes or supports can handle the final height.",
-        "Open up the canopy by removing large interior fan leaves that block airflow — good airflow is your main bud-rot defense."
+        "Open up the canopy by removing large interior fan leaves that block airflow - good airflow is your main bud-rot defense."
       ],
       "notes": "Full flower begins around Aug 15. Shift fully to your bloom feeding schedule at that point."
     }
@@ -1357,15 +1357,15 @@
     "date": "2026-08-09",
     "phase": "pre_flower",
     "detail": {
-      "title": "Day 77 — Pre-Flower / Transition",
+      "title": "Day 77 - Pre-Flower / Transition",
       "summary": "Plants are shifting energy toward flower. White pistils should start appearing at the nodes.",
       "tasks": [
-        "Continue daily moisture checks — watering frequency stays similar to peak veg.",
+        "Continue daily moisture checks - watering frequency stays similar to peak veg.",
         "Begin shifting toward bloom nutrients per your line, easing off heavy veg nitrogen.",
         "Inspect the nodes where branches meet the main stem for white pistils confirming the transition to flower.",
-        "Finish any heavy training now — avoid major stress once flowering starts.",
+        "Finish any heavy training now - avoid major stress once flowering starts.",
         "Plants stretch significantly in early flower, so make sure your stakes or supports can handle the final height.",
-        "Open up the canopy by removing large interior fan leaves that block airflow — good airflow is your main bud-rot defense."
+        "Open up the canopy by removing large interior fan leaves that block airflow - good airflow is your main bud-rot defense."
       ],
       "notes": "Full flower begins around Aug 15. Shift fully to your bloom feeding schedule at that point."
     }
@@ -1374,15 +1374,15 @@
     "date": "2026-08-10",
     "phase": "pre_flower",
     "detail": {
-      "title": "Day 78 — Pre-Flower / Transition",
+      "title": "Day 78 - Pre-Flower / Transition",
       "summary": "Plants are shifting energy toward flower. White pistils should start appearing at the nodes.",
       "tasks": [
-        "Continue daily moisture checks — watering frequency stays similar to peak veg.",
+        "Continue daily moisture checks - watering frequency stays similar to peak veg.",
         "Begin shifting toward bloom nutrients per your line, easing off heavy veg nitrogen.",
         "Inspect the nodes where branches meet the main stem for white pistils confirming the transition to flower.",
-        "Finish any heavy training now — avoid major stress once flowering starts.",
+        "Finish any heavy training now - avoid major stress once flowering starts.",
         "Plants stretch significantly in early flower, so make sure your stakes or supports can handle the final height.",
-        "Open up the canopy by removing large interior fan leaves that block airflow — good airflow is your main bud-rot defense."
+        "Open up the canopy by removing large interior fan leaves that block airflow - good airflow is your main bud-rot defense."
       ],
       "notes": "Full flower begins around Aug 15. Shift fully to your bloom feeding schedule at that point."
     }
@@ -1391,15 +1391,15 @@
     "date": "2026-08-11",
     "phase": "pre_flower",
     "detail": {
-      "title": "Day 79 — Pre-Flower / Transition",
+      "title": "Day 79 - Pre-Flower / Transition",
       "summary": "Plants are shifting energy toward flower. White pistils should start appearing at the nodes.",
       "tasks": [
-        "Continue daily moisture checks — watering frequency stays similar to peak veg.",
+        "Continue daily moisture checks - watering frequency stays similar to peak veg.",
         "Begin shifting toward bloom nutrients per your line, easing off heavy veg nitrogen.",
         "Inspect the nodes where branches meet the main stem for white pistils confirming the transition to flower.",
-        "Finish any heavy training now — avoid major stress once flowering starts.",
+        "Finish any heavy training now - avoid major stress once flowering starts.",
         "Plants stretch significantly in early flower, so make sure your stakes or supports can handle the final height.",
-        "Open up the canopy by removing large interior fan leaves that block airflow — good airflow is your main bud-rot defense."
+        "Open up the canopy by removing large interior fan leaves that block airflow - good airflow is your main bud-rot defense."
       ],
       "notes": "Full flower begins around Aug 15. Shift fully to your bloom feeding schedule at that point."
     }
@@ -1408,15 +1408,15 @@
     "date": "2026-08-12",
     "phase": "pre_flower",
     "detail": {
-      "title": "Day 80 — Pre-Flower / Transition",
+      "title": "Day 80 - Pre-Flower / Transition",
       "summary": "Plants are shifting energy toward flower. White pistils should start appearing at the nodes.",
       "tasks": [
-        "Continue daily moisture checks — watering frequency stays similar to peak veg.",
+        "Continue daily moisture checks - watering frequency stays similar to peak veg.",
         "Begin shifting toward bloom nutrients per your line, easing off heavy veg nitrogen.",
         "Inspect the nodes where branches meet the main stem for white pistils confirming the transition to flower.",
-        "Finish any heavy training now — avoid major stress once flowering starts.",
+        "Finish any heavy training now - avoid major stress once flowering starts.",
         "Plants stretch significantly in early flower, so make sure your stakes or supports can handle the final height.",
-        "Open up the canopy by removing large interior fan leaves that block airflow — good airflow is your main bud-rot defense."
+        "Open up the canopy by removing large interior fan leaves that block airflow - good airflow is your main bud-rot defense."
       ],
       "notes": "Full flower begins around Aug 15. Shift fully to your bloom feeding schedule at that point."
     }
@@ -1425,15 +1425,15 @@
     "date": "2026-08-13",
     "phase": "pre_flower",
     "detail": {
-      "title": "Day 81 — Pre-Flower / Transition",
+      "title": "Day 81 - Pre-Flower / Transition",
       "summary": "Plants are shifting energy toward flower. White pistils should start appearing at the nodes.",
       "tasks": [
-        "Continue daily moisture checks — watering frequency stays similar to peak veg.",
+        "Continue daily moisture checks - watering frequency stays similar to peak veg.",
         "Begin shifting toward bloom nutrients per your line, easing off heavy veg nitrogen.",
         "Inspect the nodes where branches meet the main stem for white pistils confirming the transition to flower.",
-        "Finish any heavy training now — avoid major stress once flowering starts.",
+        "Finish any heavy training now - avoid major stress once flowering starts.",
         "Plants stretch significantly in early flower, so make sure your stakes or supports can handle the final height.",
-        "Open up the canopy by removing large interior fan leaves that block airflow — good airflow is your main bud-rot defense."
+        "Open up the canopy by removing large interior fan leaves that block airflow - good airflow is your main bud-rot defense."
       ],
       "notes": "Full flower begins around Aug 15. Shift fully to your bloom feeding schedule at that point."
     }
@@ -1442,15 +1442,15 @@
     "date": "2026-08-14",
     "phase": "pre_flower",
     "detail": {
-      "title": "Day 82 — Pre-Flower / Transition",
+      "title": "Day 82 - Pre-Flower / Transition",
       "summary": "Plants are shifting energy toward flower. White pistils should start appearing at the nodes.",
       "tasks": [
-        "Continue daily moisture checks — watering frequency stays similar to peak veg.",
+        "Continue daily moisture checks - watering frequency stays similar to peak veg.",
         "Begin shifting toward bloom nutrients per your line, easing off heavy veg nitrogen.",
         "Inspect the nodes where branches meet the main stem for white pistils confirming the transition to flower.",
-        "Finish any heavy training now — avoid major stress once flowering starts.",
+        "Finish any heavy training now - avoid major stress once flowering starts.",
         "Plants stretch significantly in early flower, so make sure your stakes or supports can handle the final height.",
-        "Open up the canopy by removing large interior fan leaves that block airflow — good airflow is your main bud-rot defense."
+        "Open up the canopy by removing large interior fan leaves that block airflow - good airflow is your main bud-rot defense."
       ],
       "notes": "Full flower begins around Aug 15. Shift fully to your bloom feeding schedule at that point."
     }
@@ -1459,12 +1459,12 @@
     "date": "2026-08-15",
     "phase": "flower",
     "detail": {
-      "title": "Day 83 — Flower Week 1",
+      "title": "Day 83 - Flower Week 1",
       "summary": "Flower day 1. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Bud sites should be visibly forming across the canopy.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1475,12 +1475,12 @@
     "date": "2026-08-16",
     "phase": "flower",
     "detail": {
-      "title": "Day 84 — Flower Week 1",
+      "title": "Day 84 - Flower Week 1",
       "summary": "Flower day 2. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Bud sites should be visibly forming across the canopy.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1491,12 +1491,12 @@
     "date": "2026-08-17",
     "phase": "flower",
     "detail": {
-      "title": "Day 85 — Flower Week 1",
+      "title": "Day 85 - Flower Week 1",
       "summary": "Flower day 3. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Bud sites should be visibly forming across the canopy.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1507,12 +1507,12 @@
     "date": "2026-08-18",
     "phase": "flower",
     "detail": {
-      "title": "Day 86 — Flower Week 1",
+      "title": "Day 86 - Flower Week 1",
       "summary": "Flower day 4. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Bud sites should be visibly forming across the canopy.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1523,12 +1523,12 @@
     "date": "2026-08-19",
     "phase": "flower",
     "detail": {
-      "title": "Day 87 — Flower Week 1",
+      "title": "Day 87 - Flower Week 1",
       "summary": "Flower day 5. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Bud sites should be visibly forming across the canopy.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1539,12 +1539,12 @@
     "date": "2026-08-20",
     "phase": "flower",
     "detail": {
-      "title": "Day 88 — Flower Week 1",
+      "title": "Day 88 - Flower Week 1",
       "summary": "Flower day 6. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Bud sites should be visibly forming across the canopy.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1555,12 +1555,12 @@
     "date": "2026-08-21",
     "phase": "flower",
     "detail": {
-      "title": "Day 89 — Flower Week 1",
+      "title": "Day 89 - Flower Week 1",
       "summary": "Flower day 7. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Bud sites should be visibly forming across the canopy.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1571,12 +1571,12 @@
     "date": "2026-08-22",
     "phase": "flower",
     "detail": {
-      "title": "Day 90 — Flower Week 2",
+      "title": "Day 90 - Flower Week 2",
       "summary": "Flower day 8. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Bud sites should be visibly forming across the canopy.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1587,12 +1587,12 @@
     "date": "2026-08-23",
     "phase": "flower",
     "detail": {
-      "title": "Day 91 — Flower Week 2",
+      "title": "Day 91 - Flower Week 2",
       "summary": "Flower day 9. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Bud sites should be visibly forming across the canopy.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1603,11 +1603,11 @@
     "date": "2026-08-24",
     "phase": "flush",
     "detail": {
-      "title": "Flush Day #3 — August 24",
+      "title": "Flush Day #3 - August 24",
       "summary": "A plain-water flush clears accumulated nutrient salts from the medium.",
       "tasks": [
-        "Only flush when the pot is actually ready for water — otherwise postpone a day.",
-        "Use plain water only — no nutrients or supplements.",
+        "Only flush when the pot is actually ready for water - otherwise postpone a day.",
+        "Use plain water only - no nutrients or supplements.",
         "Water generously to runoff to push accumulated salts through the medium, then let it drain fully.",
         "Resume your normal feed on the very next watering.",
         "While flushing, inspect leaves top and bottom for discoloration, spots, webbing, or pests.",
@@ -1620,12 +1620,12 @@
     "date": "2026-08-25",
     "phase": "flower",
     "detail": {
-      "title": "Day 93 — Flower Week 2",
+      "title": "Day 93 - Flower Week 2",
       "summary": "Flower day 11. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Bud sites should be visibly forming across the canopy.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1636,12 +1636,12 @@
     "date": "2026-08-26",
     "phase": "flower",
     "detail": {
-      "title": "Day 94 — Flower Week 2",
+      "title": "Day 94 - Flower Week 2",
       "summary": "Flower day 12. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Bud sites should be visibly forming across the canopy.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1652,12 +1652,12 @@
     "date": "2026-08-27",
     "phase": "flower",
     "detail": {
-      "title": "Day 95 — Flower Week 2",
+      "title": "Day 95 - Flower Week 2",
       "summary": "Flower day 13. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Bud sites should be visibly forming across the canopy.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1668,12 +1668,12 @@
     "date": "2026-08-28",
     "phase": "flower",
     "detail": {
-      "title": "Day 96 — Flower Week 2",
+      "title": "Day 96 - Flower Week 2",
       "summary": "Flower day 14. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Bud sites should be visibly forming across the canopy.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1684,12 +1684,12 @@
     "date": "2026-08-29",
     "phase": "flower",
     "detail": {
-      "title": "Day 97 — Flower Week 3",
+      "title": "Day 97 - Flower Week 3",
       "summary": "Flower day 15. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1700,12 +1700,12 @@
     "date": "2026-08-30",
     "phase": "flower",
     "detail": {
-      "title": "Day 98 — Flower Week 3",
+      "title": "Day 98 - Flower Week 3",
       "summary": "Flower day 16. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1716,12 +1716,12 @@
     "date": "2026-08-31",
     "phase": "flower",
     "detail": {
-      "title": "Day 99 — Flower Week 3",
+      "title": "Day 99 - Flower Week 3",
       "summary": "Flower day 17. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1732,12 +1732,12 @@
     "date": "2026-09-01",
     "phase": "flower",
     "detail": {
-      "title": "Day 100 — Flower Week 3",
+      "title": "Day 100 - Flower Week 3",
       "summary": "Flower day 18. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1748,12 +1748,12 @@
     "date": "2026-09-02",
     "phase": "flower",
     "detail": {
-      "title": "Day 101 — Flower Week 3",
+      "title": "Day 101 - Flower Week 3",
       "summary": "Flower day 19. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1764,12 +1764,12 @@
     "date": "2026-09-03",
     "phase": "flower",
     "detail": {
-      "title": "Day 102 — Flower Week 3",
+      "title": "Day 102 - Flower Week 3",
       "summary": "Flower day 20. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1780,12 +1780,12 @@
     "date": "2026-09-04",
     "phase": "flower",
     "detail": {
-      "title": "Day 103 — Flower Week 3",
+      "title": "Day 103 - Flower Week 3",
       "summary": "Flower day 21. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1796,12 +1796,12 @@
     "date": "2026-09-05",
     "phase": "flower",
     "detail": {
-      "title": "Day 104 — Flower Week 4",
+      "title": "Day 104 - Flower Week 4",
       "summary": "Flower day 22. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1812,12 +1812,12 @@
     "date": "2026-09-06",
     "phase": "flower",
     "detail": {
-      "title": "Day 105 — Flower Week 4",
+      "title": "Day 105 - Flower Week 4",
       "summary": "Flower day 23. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1828,12 +1828,12 @@
     "date": "2026-09-07",
     "phase": "flower",
     "detail": {
-      "title": "Day 106 — Flower Week 4",
+      "title": "Day 106 - Flower Week 4",
       "summary": "Flower day 24. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1844,12 +1844,12 @@
     "date": "2026-09-08",
     "phase": "flower",
     "detail": {
-      "title": "Day 107 — Flower Week 4",
+      "title": "Day 107 - Flower Week 4",
       "summary": "Flower day 25. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1860,12 +1860,12 @@
     "date": "2026-09-09",
     "phase": "flower",
     "detail": {
-      "title": "Day 108 — Flower Week 4",
+      "title": "Day 108 - Flower Week 4",
       "summary": "Flower day 26. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1876,12 +1876,12 @@
     "date": "2026-09-10",
     "phase": "flower",
     "detail": {
-      "title": "Day 109 — Flower Week 4",
+      "title": "Day 109 - Flower Week 4",
       "summary": "Flower day 27. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1892,12 +1892,12 @@
     "date": "2026-09-11",
     "phase": "flower",
     "detail": {
-      "title": "Day 110 — Flower Week 4",
+      "title": "Day 110 - Flower Week 4",
       "summary": "Flower day 28. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1908,12 +1908,12 @@
     "date": "2026-09-12",
     "phase": "flower",
     "detail": {
-      "title": "Day 111 — Flower Week 5",
+      "title": "Day 111 - Flower Week 5",
       "summary": "Flower day 29. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1924,12 +1924,12 @@
     "date": "2026-09-13",
     "phase": "flower",
     "detail": {
-      "title": "Day 112 — Flower Week 5",
+      "title": "Day 112 - Flower Week 5",
       "summary": "Flower day 30. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1940,12 +1940,12 @@
     "date": "2026-09-14",
     "phase": "flower",
     "detail": {
-      "title": "Day 113 — Flower Week 5",
+      "title": "Day 113 - Flower Week 5",
       "summary": "Flower day 31. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1956,12 +1956,12 @@
     "date": "2026-09-15",
     "phase": "flower",
     "detail": {
-      "title": "Day 114 — Flower Week 5",
+      "title": "Day 114 - Flower Week 5",
       "summary": "Flower day 32. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1972,12 +1972,12 @@
     "date": "2026-09-16",
     "phase": "flower",
     "detail": {
-      "title": "Day 115 — Flower Week 5",
+      "title": "Day 115 - Flower Week 5",
       "summary": "Flower day 33. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -1988,12 +1988,12 @@
     "date": "2026-09-17",
     "phase": "flower",
     "detail": {
-      "title": "Day 116 — Flower Week 5",
+      "title": "Day 116 - Flower Week 5",
       "summary": "Flower day 34. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -2004,12 +2004,12 @@
     "date": "2026-09-18",
     "phase": "flower",
     "detail": {
-      "title": "Day 117 — Flower Week 5",
+      "title": "Day 117 - Flower Week 5",
       "summary": "Flower day 35. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -2020,12 +2020,12 @@
     "date": "2026-09-19",
     "phase": "flower",
     "detail": {
-      "title": "Day 118 — Flower Week 6",
+      "title": "Day 118 - Flower Week 6",
       "summary": "Flower day 36. Buds are forming and building.",
       "tasks": [
-        "Let each pot dry down noticeably between waterings — don't keep the medium continuously wet during flower.",
+        "Let each pot dry down noticeably between waterings - don't keep the medium continuously wet during flower.",
         "Feed bloom nutrients per your line on feed days; water to runoff.",
-        "Inspect dense bud clusters for any grey or brown mushy rot inside — cut out affected sections with clean scissors and improve airflow if found.",
+        "Inspect dense bud clusters for any grey or brown mushy rot inside - cut out affected sections with clean scissors and improve airflow if found.",
         "Check trichomes with a loupe or phone macro: clear = not ready, milky/cloudy = approaching, mostly milky with 10-20% amber = harvest window. Pre-harvest flush starts around Sep 20.",
         "Keep humidity moderate and air moving through the canopy. Move pots under cover if multi-day rain is forecast during flower."
       ],
@@ -2036,12 +2036,12 @@
     "date": "2026-09-20",
     "phase": "flush_gdp",
     "detail": {
-      "title": "Pre-Harvest Flush — Day 1",
+      "title": "Pre-Harvest Flush - Day 1",
       "summary": "Your primary strain gets plain water only as harvest approaches.",
       "tasks": [
-        "Primary strain: plain water only — no nutrients or supplements. Water to runoff.",
+        "Primary strain: plain water only - no nutrients or supplements. Water to runoff.",
         "Any later-finishing strains continue their normal flower feeding.",
-        "Check trichomes across several bud sites — aim for mostly milky/cloudy with 10 to 20% amber, consistent across sites.",
+        "Check trichomes across several bud sites - aim for mostly milky/cloudy with 10 to 20% amber, consistent across sites.",
         "Yellowing, dropping fan leaves are normal now as the plant pulls stored nitrogen to finish the buds.",
         "6 flush days remaining for this strain."
       ],
@@ -2052,12 +2052,12 @@
     "date": "2026-09-21",
     "phase": "flush_gdp",
     "detail": {
-      "title": "Pre-Harvest Flush — Day 2",
+      "title": "Pre-Harvest Flush - Day 2",
       "summary": "Your primary strain gets plain water only as harvest approaches.",
       "tasks": [
-        "Primary strain: plain water only — no nutrients or supplements. Water to runoff.",
+        "Primary strain: plain water only - no nutrients or supplements. Water to runoff.",
         "Any later-finishing strains continue their normal flower feeding.",
-        "Check trichomes across several bud sites — aim for mostly milky/cloudy with 10 to 20% amber, consistent across sites.",
+        "Check trichomes across several bud sites - aim for mostly milky/cloudy with 10 to 20% amber, consistent across sites.",
         "Yellowing, dropping fan leaves are normal now as the plant pulls stored nitrogen to finish the buds.",
         "5 flush days remaining for this strain."
       ],
@@ -2068,12 +2068,12 @@
     "date": "2026-09-22",
     "phase": "flush_gdp",
     "detail": {
-      "title": "Pre-Harvest Flush — Day 3",
+      "title": "Pre-Harvest Flush - Day 3",
       "summary": "Your primary strain gets plain water only as harvest approaches.",
       "tasks": [
-        "Primary strain: plain water only — no nutrients or supplements. Water to runoff.",
+        "Primary strain: plain water only - no nutrients or supplements. Water to runoff.",
         "Any later-finishing strains continue their normal flower feeding.",
-        "Check trichomes across several bud sites — aim for mostly milky/cloudy with 10 to 20% amber, consistent across sites.",
+        "Check trichomes across several bud sites - aim for mostly milky/cloudy with 10 to 20% amber, consistent across sites.",
         "Yellowing, dropping fan leaves are normal now as the plant pulls stored nitrogen to finish the buds.",
         "4 flush days remaining for this strain."
       ],
@@ -2084,12 +2084,12 @@
     "date": "2026-09-23",
     "phase": "flush_gdp",
     "detail": {
-      "title": "Pre-Harvest Flush — Day 4",
+      "title": "Pre-Harvest Flush - Day 4",
       "summary": "Your primary strain gets plain water only as harvest approaches.",
       "tasks": [
-        "Primary strain: plain water only — no nutrients or supplements. Water to runoff.",
+        "Primary strain: plain water only - no nutrients or supplements. Water to runoff.",
         "Any later-finishing strains continue their normal flower feeding.",
-        "Check trichomes across several bud sites — aim for mostly milky/cloudy with 10 to 20% amber, consistent across sites.",
+        "Check trichomes across several bud sites - aim for mostly milky/cloudy with 10 to 20% amber, consistent across sites.",
         "Yellowing, dropping fan leaves are normal now as the plant pulls stored nitrogen to finish the buds.",
         "3 flush days remaining for this strain."
       ],
@@ -2100,14 +2100,14 @@
     "date": "2026-09-24",
     "phase": "flush_gdp",
     "detail": {
-      "title": "Pre-Harvest Flush — Day 5",
+      "title": "Pre-Harvest Flush - Day 5",
       "summary": "Your primary strain gets plain water only as harvest approaches.",
       "tasks": [
-        "Primary strain: plain water only — no nutrients or supplements. Water to runoff.",
+        "Primary strain: plain water only - no nutrients or supplements. Water to runoff.",
         "Any later-finishing strains continue their normal flower feeding.",
-        "Check trichomes across several bud sites — aim for mostly milky/cloudy with 10 to 20% amber, consistent across sites.",
+        "Check trichomes across several bud sites - aim for mostly milky/cloudy with 10 to 20% amber, consistent across sites.",
         "Yellowing, dropping fan leaves are normal now as the plant pulls stored nitrogen to finish the buds.",
-        "Harvest is very close — do a thorough trichome check today and tomorrow before cutting."
+        "Harvest is very close - do a thorough trichome check today and tomorrow before cutting."
       ],
       "notes": "Primary harvest target: September 27. The flush clears residual nutrients for a cleaner final product."
     }
@@ -2116,14 +2116,14 @@
     "date": "2026-09-25",
     "phase": "flush_gdp",
     "detail": {
-      "title": "Pre-Harvest Flush — Day 6",
+      "title": "Pre-Harvest Flush - Day 6",
       "summary": "Your primary strain gets plain water only as harvest approaches.",
       "tasks": [
-        "Primary strain: plain water only — no nutrients or supplements. Water to runoff.",
+        "Primary strain: plain water only - no nutrients or supplements. Water to runoff.",
         "Any later-finishing strains continue their normal flower feeding.",
-        "Check trichomes across several bud sites — aim for mostly milky/cloudy with 10 to 20% amber, consistent across sites.",
+        "Check trichomes across several bud sites - aim for mostly milky/cloudy with 10 to 20% amber, consistent across sites.",
         "Yellowing, dropping fan leaves are normal now as the plant pulls stored nitrogen to finish the buds.",
-        "Harvest is very close — do a thorough trichome check today and tomorrow before cutting."
+        "Harvest is very close - do a thorough trichome check today and tomorrow before cutting."
       ],
       "notes": "Primary harvest target: September 27. The flush clears residual nutrients for a cleaner final product."
     }
@@ -2132,14 +2132,14 @@
     "date": "2026-09-26",
     "phase": "flush_gdp",
     "detail": {
-      "title": "Pre-Harvest Flush — Day 7",
+      "title": "Pre-Harvest Flush - Day 7",
       "summary": "Your primary strain gets plain water only as harvest approaches.",
       "tasks": [
-        "Primary strain: plain water only — no nutrients or supplements. Water to runoff.",
+        "Primary strain: plain water only - no nutrients or supplements. Water to runoff.",
         "Any later-finishing strains continue their normal flower feeding.",
-        "Check trichomes across several bud sites — aim for mostly milky/cloudy with 10 to 20% amber, consistent across sites.",
+        "Check trichomes across several bud sites - aim for mostly milky/cloudy with 10 to 20% amber, consistent across sites.",
         "Yellowing, dropping fan leaves are normal now as the plant pulls stored nitrogen to finish the buds.",
-        "Harvest is very close — do a thorough trichome check today and tomorrow before cutting."
+        "Harvest is very close - do a thorough trichome check today and tomorrow before cutting."
       ],
       "notes": "Primary harvest target: September 27. The flush clears residual nutrients for a cleaner final product."
     }
@@ -2148,30 +2148,30 @@
     "date": "2026-09-27",
     "phase": "harvest_gdp",
     "detail": {
-      "title": "Harvest — Primary Strain",
+      "title": "Harvest - Primary Strain",
       "summary": "Your primary strain is ready to come down. Work through the steps carefully.",
       "tasks": [
-        "Final trichome check across the whole plant — mostly milky/cloudy with 10 to 20% amber. If still mostly clear, wait 1 to 2 more days.",
+        "Final trichome check across the whole plant - mostly milky/cloudy with 10 to 20% amber. If still mostly clear, wait 1 to 2 more days.",
         "Wipe scissors or shears with isopropyl alcohol before starting.",
         "Harvest at the base or work branch by branch, starting with the most mature colas.",
-        "Remove large fan leaves right away — they slow airflow around the buds.",
+        "Remove large fan leaves right away - they slow airflow around the buds.",
         "Decide on wet trim (now, while fresh) or dry trim (after drying).",
         "Hang branches in a dark space with gentle airflow at 60 to 70°F and 55 to 65% humidity; drying takes about 7 to 14 days.",
         "Any later-finishing strains continue their normal late-flower care."
       ],
-      "notes": "Dry slowly over 10 to 14 days at proper humidity, then cure in jars — too humid causes mold, too dry makes it harsh. Aim for 55 to 65% RH."
+      "notes": "Dry slowly over 10 to 14 days at proper humidity, then cure in jars - too humid causes mold, too dry makes it harsh. Aim for 55 to 65% RH."
     }
   },
   {
     "date": "2026-09-28",
     "phase": "flower_haze",
     "detail": {
-      "title": "Day 127 — Late Flower (Later Strain)",
+      "title": "Day 127 - Late Flower (Later Strain)",
       "summary": "Your later-finishing strain continues flowering after the primary harvest.",
       "tasks": [
         "Moisture check and continue the wet/dry cycle.",
         "Continue bloom feeding on feed days per your nutrient line.",
-        "Check trichomes as harvest approaches — you want mostly milky/cloudy with amber beginning before flushing.",
+        "Check trichomes as harvest approaches - you want mostly milky/cloudy with amber beginning before flushing.",
         "Inspect dense colas for bud rot daily, especially in cool or humid weather.",
         "If frost is possible in your area, watch the forecast and be ready to move pots inside overnight. Flush starts around Oct 4."
       ],
@@ -2182,12 +2182,12 @@
     "date": "2026-09-29",
     "phase": "flower_haze",
     "detail": {
-      "title": "Day 128 — Late Flower (Later Strain)",
+      "title": "Day 128 - Late Flower (Later Strain)",
       "summary": "Your later-finishing strain continues flowering after the primary harvest.",
       "tasks": [
         "Moisture check and continue the wet/dry cycle.",
         "Continue bloom feeding on feed days per your nutrient line.",
-        "Check trichomes as harvest approaches — you want mostly milky/cloudy with amber beginning before flushing.",
+        "Check trichomes as harvest approaches - you want mostly milky/cloudy with amber beginning before flushing.",
         "Inspect dense colas for bud rot daily, especially in cool or humid weather.",
         "If frost is possible in your area, watch the forecast and be ready to move pots inside overnight. Flush starts around Oct 4."
       ],
@@ -2198,12 +2198,12 @@
     "date": "2026-09-30",
     "phase": "flower_haze",
     "detail": {
-      "title": "Day 129 — Late Flower (Later Strain)",
+      "title": "Day 129 - Late Flower (Later Strain)",
       "summary": "Your later-finishing strain continues flowering after the primary harvest.",
       "tasks": [
         "Moisture check and continue the wet/dry cycle.",
         "Continue bloom feeding on feed days per your nutrient line.",
-        "Check trichomes as harvest approaches — you want mostly milky/cloudy with amber beginning before flushing.",
+        "Check trichomes as harvest approaches - you want mostly milky/cloudy with amber beginning before flushing.",
         "Inspect dense colas for bud rot daily, especially in cool or humid weather.",
         "If frost is possible in your area, watch the forecast and be ready to move pots inside overnight. Flush starts around Oct 4."
       ],
@@ -2214,12 +2214,12 @@
     "date": "2026-10-01",
     "phase": "flower_haze",
     "detail": {
-      "title": "Day 130 — Late Flower (Later Strain)",
+      "title": "Day 130 - Late Flower (Later Strain)",
       "summary": "Your later-finishing strain continues flowering after the primary harvest.",
       "tasks": [
         "Moisture check and continue the wet/dry cycle.",
         "Continue bloom feeding on feed days per your nutrient line.",
-        "Check trichomes as harvest approaches — you want mostly milky/cloudy with amber beginning before flushing.",
+        "Check trichomes as harvest approaches - you want mostly milky/cloudy with amber beginning before flushing.",
         "Inspect dense colas for bud rot daily, especially in cool or humid weather.",
         "If frost is possible in your area, watch the forecast and be ready to move pots inside overnight. Flush starts around Oct 4."
       ],
@@ -2230,12 +2230,12 @@
     "date": "2026-10-02",
     "phase": "flower_haze",
     "detail": {
-      "title": "Day 131 — Late Flower (Later Strain)",
+      "title": "Day 131 - Late Flower (Later Strain)",
       "summary": "Your later-finishing strain continues flowering after the primary harvest.",
       "tasks": [
         "Moisture check and continue the wet/dry cycle.",
         "Continue bloom feeding on feed days per your nutrient line.",
-        "Check trichomes as harvest approaches — you want mostly milky/cloudy with amber beginning before flushing.",
+        "Check trichomes as harvest approaches - you want mostly milky/cloudy with amber beginning before flushing.",
         "Inspect dense colas for bud rot daily, especially in cool or humid weather.",
         "If frost is possible in your area, watch the forecast and be ready to move pots inside overnight. Flush starts around Oct 4."
       ],
@@ -2246,12 +2246,12 @@
     "date": "2026-10-03",
     "phase": "flower_haze",
     "detail": {
-      "title": "Day 132 — Late Flower (Later Strain)",
+      "title": "Day 132 - Late Flower (Later Strain)",
       "summary": "Your later-finishing strain continues flowering after the primary harvest.",
       "tasks": [
         "Moisture check and continue the wet/dry cycle.",
         "Continue bloom feeding on feed days per your nutrient line.",
-        "Check trichomes as harvest approaches — you want mostly milky/cloudy with amber beginning before flushing.",
+        "Check trichomes as harvest approaches - you want mostly milky/cloudy with amber beginning before flushing.",
         "Inspect dense colas for bud rot daily, especially in cool or humid weather.",
         "If frost is possible in your area, watch the forecast and be ready to move pots inside overnight. Flush starts around Oct 4."
       ],
@@ -2262,253 +2262,253 @@
     "date": "2026-10-04",
     "phase": "flush_haze",
     "detail": {
-      "title": "Pre-Harvest Flush (Later Strain) — Day 1",
+      "title": "Pre-Harvest Flush (Later Strain) - Day 1",
       "summary": "Your later-finishing strain gets plain water only. Harvest is approaching.",
       "tasks": [
-        "Plain water only — no nutrients or supplements. Water to runoff.",
-        "Check trichomes across multiple bud sites — mostly milky/cloudy with 10 to 20% amber.",
-        "If a hard frost is forecast before your harvest date, harvest immediately — a partial or full harvest beats losing the crop to cold.",
+        "Plain water only - no nutrients or supplements. Water to runoff.",
+        "Check trichomes across multiple bud sites - mostly milky/cloudy with 10 to 20% amber.",
+        "If a hard frost is forecast before your harvest date, harvest immediately - a partial or full harvest beats losing the crop to cold.",
         "Yellowing, dropping fan leaves are expected and correct now.",
         "Keep checking inside colas for bud rot daily, especially in cool, humid weather.",
         "13 flush days remaining."
       ],
-      "notes": "Harvest target: October 18. A partial harvest — cutting the most mature colas first — is always a valid option."
+      "notes": "Harvest target: October 18. A partial harvest - cutting the most mature colas first - is always a valid option."
     }
   },
   {
     "date": "2026-10-05",
     "phase": "flush_haze",
     "detail": {
-      "title": "Pre-Harvest Flush (Later Strain) — Day 2",
+      "title": "Pre-Harvest Flush (Later Strain) - Day 2",
       "summary": "Your later-finishing strain gets plain water only. Harvest is approaching.",
       "tasks": [
-        "Plain water only — no nutrients or supplements. Water to runoff.",
-        "Check trichomes across multiple bud sites — mostly milky/cloudy with 10 to 20% amber.",
-        "If a hard frost is forecast before your harvest date, harvest immediately — a partial or full harvest beats losing the crop to cold.",
+        "Plain water only - no nutrients or supplements. Water to runoff.",
+        "Check trichomes across multiple bud sites - mostly milky/cloudy with 10 to 20% amber.",
+        "If a hard frost is forecast before your harvest date, harvest immediately - a partial or full harvest beats losing the crop to cold.",
         "Yellowing, dropping fan leaves are expected and correct now.",
         "Keep checking inside colas for bud rot daily, especially in cool, humid weather.",
         "12 flush days remaining."
       ],
-      "notes": "Harvest target: October 18. A partial harvest — cutting the most mature colas first — is always a valid option."
+      "notes": "Harvest target: October 18. A partial harvest - cutting the most mature colas first - is always a valid option."
     }
   },
   {
     "date": "2026-10-06",
     "phase": "flush_haze",
     "detail": {
-      "title": "Pre-Harvest Flush (Later Strain) — Day 3",
+      "title": "Pre-Harvest Flush (Later Strain) - Day 3",
       "summary": "Your later-finishing strain gets plain water only. Harvest is approaching.",
       "tasks": [
-        "Plain water only — no nutrients or supplements. Water to runoff.",
-        "Check trichomes across multiple bud sites — mostly milky/cloudy with 10 to 20% amber.",
-        "If a hard frost is forecast before your harvest date, harvest immediately — a partial or full harvest beats losing the crop to cold.",
+        "Plain water only - no nutrients or supplements. Water to runoff.",
+        "Check trichomes across multiple bud sites - mostly milky/cloudy with 10 to 20% amber.",
+        "If a hard frost is forecast before your harvest date, harvest immediately - a partial or full harvest beats losing the crop to cold.",
         "Yellowing, dropping fan leaves are expected and correct now.",
         "Keep checking inside colas for bud rot daily, especially in cool, humid weather.",
         "11 flush days remaining."
       ],
-      "notes": "Harvest target: October 18. A partial harvest — cutting the most mature colas first — is always a valid option."
+      "notes": "Harvest target: October 18. A partial harvest - cutting the most mature colas first - is always a valid option."
     }
   },
   {
     "date": "2026-10-07",
     "phase": "flush_haze",
     "detail": {
-      "title": "Pre-Harvest Flush (Later Strain) — Day 4",
+      "title": "Pre-Harvest Flush (Later Strain) - Day 4",
       "summary": "Your later-finishing strain gets plain water only. Harvest is approaching.",
       "tasks": [
-        "Plain water only — no nutrients or supplements. Water to runoff.",
-        "Check trichomes across multiple bud sites — mostly milky/cloudy with 10 to 20% amber.",
-        "If a hard frost is forecast before your harvest date, harvest immediately — a partial or full harvest beats losing the crop to cold.",
+        "Plain water only - no nutrients or supplements. Water to runoff.",
+        "Check trichomes across multiple bud sites - mostly milky/cloudy with 10 to 20% amber.",
+        "If a hard frost is forecast before your harvest date, harvest immediately - a partial or full harvest beats losing the crop to cold.",
         "Yellowing, dropping fan leaves are expected and correct now.",
         "Keep checking inside colas for bud rot daily, especially in cool, humid weather.",
         "10 flush days remaining."
       ],
-      "notes": "Harvest target: October 18. A partial harvest — cutting the most mature colas first — is always a valid option."
+      "notes": "Harvest target: October 18. A partial harvest - cutting the most mature colas first - is always a valid option."
     }
   },
   {
     "date": "2026-10-08",
     "phase": "flush_haze",
     "detail": {
-      "title": "Pre-Harvest Flush (Later Strain) — Day 5",
+      "title": "Pre-Harvest Flush (Later Strain) - Day 5",
       "summary": "Your later-finishing strain gets plain water only. Harvest is approaching.",
       "tasks": [
-        "Plain water only — no nutrients or supplements. Water to runoff.",
-        "Check trichomes across multiple bud sites — mostly milky/cloudy with 10 to 20% amber.",
-        "If a hard frost is forecast before your harvest date, harvest immediately — a partial or full harvest beats losing the crop to cold.",
+        "Plain water only - no nutrients or supplements. Water to runoff.",
+        "Check trichomes across multiple bud sites - mostly milky/cloudy with 10 to 20% amber.",
+        "If a hard frost is forecast before your harvest date, harvest immediately - a partial or full harvest beats losing the crop to cold.",
         "Yellowing, dropping fan leaves are expected and correct now.",
         "Keep checking inside colas for bud rot daily, especially in cool, humid weather.",
         "9 flush days remaining."
       ],
-      "notes": "Harvest target: October 18. A partial harvest — cutting the most mature colas first — is always a valid option."
+      "notes": "Harvest target: October 18. A partial harvest - cutting the most mature colas first - is always a valid option."
     }
   },
   {
     "date": "2026-10-09",
     "phase": "flush_haze",
     "detail": {
-      "title": "Pre-Harvest Flush (Later Strain) — Day 6",
+      "title": "Pre-Harvest Flush (Later Strain) - Day 6",
       "summary": "Your later-finishing strain gets plain water only. Harvest is approaching.",
       "tasks": [
-        "Plain water only — no nutrients or supplements. Water to runoff.",
-        "Check trichomes across multiple bud sites — mostly milky/cloudy with 10 to 20% amber.",
-        "If a hard frost is forecast before your harvest date, harvest immediately — a partial or full harvest beats losing the crop to cold.",
+        "Plain water only - no nutrients or supplements. Water to runoff.",
+        "Check trichomes across multiple bud sites - mostly milky/cloudy with 10 to 20% amber.",
+        "If a hard frost is forecast before your harvest date, harvest immediately - a partial or full harvest beats losing the crop to cold.",
         "Yellowing, dropping fan leaves are expected and correct now.",
         "Keep checking inside colas for bud rot daily, especially in cool, humid weather.",
         "8 flush days remaining."
       ],
-      "notes": "Harvest target: October 18. A partial harvest — cutting the most mature colas first — is always a valid option."
+      "notes": "Harvest target: October 18. A partial harvest - cutting the most mature colas first - is always a valid option."
     }
   },
   {
     "date": "2026-10-10",
     "phase": "flush_haze",
     "detail": {
-      "title": "Pre-Harvest Flush (Later Strain) — Day 7",
+      "title": "Pre-Harvest Flush (Later Strain) - Day 7",
       "summary": "Your later-finishing strain gets plain water only. Harvest is approaching.",
       "tasks": [
-        "Plain water only — no nutrients or supplements. Water to runoff.",
-        "Check trichomes across multiple bud sites — mostly milky/cloudy with 10 to 20% amber.",
-        "If a hard frost is forecast before your harvest date, harvest immediately — a partial or full harvest beats losing the crop to cold.",
+        "Plain water only - no nutrients or supplements. Water to runoff.",
+        "Check trichomes across multiple bud sites - mostly milky/cloudy with 10 to 20% amber.",
+        "If a hard frost is forecast before your harvest date, harvest immediately - a partial or full harvest beats losing the crop to cold.",
         "Yellowing, dropping fan leaves are expected and correct now.",
         "Keep checking inside colas for bud rot daily, especially in cool, humid weather.",
         "7 flush days remaining."
       ],
-      "notes": "Harvest target: October 18. A partial harvest — cutting the most mature colas first — is always a valid option."
+      "notes": "Harvest target: October 18. A partial harvest - cutting the most mature colas first - is always a valid option."
     }
   },
   {
     "date": "2026-10-11",
     "phase": "flush_haze",
     "detail": {
-      "title": "Pre-Harvest Flush (Later Strain) — Day 8",
+      "title": "Pre-Harvest Flush (Later Strain) - Day 8",
       "summary": "Your later-finishing strain gets plain water only. Harvest is approaching.",
       "tasks": [
-        "Plain water only — no nutrients or supplements. Water to runoff.",
-        "Check trichomes across multiple bud sites — mostly milky/cloudy with 10 to 20% amber.",
-        "If a hard frost is forecast before your harvest date, harvest immediately — a partial or full harvest beats losing the crop to cold.",
+        "Plain water only - no nutrients or supplements. Water to runoff.",
+        "Check trichomes across multiple bud sites - mostly milky/cloudy with 10 to 20% amber.",
+        "If a hard frost is forecast before your harvest date, harvest immediately - a partial or full harvest beats losing the crop to cold.",
         "Yellowing, dropping fan leaves are expected and correct now.",
         "Keep checking inside colas for bud rot daily, especially in cool, humid weather.",
         "6 flush days remaining."
       ],
-      "notes": "Harvest target: October 18. A partial harvest — cutting the most mature colas first — is always a valid option."
+      "notes": "Harvest target: October 18. A partial harvest - cutting the most mature colas first - is always a valid option."
     }
   },
   {
     "date": "2026-10-12",
     "phase": "flush_haze",
     "detail": {
-      "title": "Pre-Harvest Flush (Later Strain) — Day 9",
+      "title": "Pre-Harvest Flush (Later Strain) - Day 9",
       "summary": "Your later-finishing strain gets plain water only. Harvest is approaching.",
       "tasks": [
-        "Plain water only — no nutrients or supplements. Water to runoff.",
-        "Check trichomes across multiple bud sites — mostly milky/cloudy with 10 to 20% amber.",
-        "If a hard frost is forecast before your harvest date, harvest immediately — a partial or full harvest beats losing the crop to cold.",
+        "Plain water only - no nutrients or supplements. Water to runoff.",
+        "Check trichomes across multiple bud sites - mostly milky/cloudy with 10 to 20% amber.",
+        "If a hard frost is forecast before your harvest date, harvest immediately - a partial or full harvest beats losing the crop to cold.",
         "Yellowing, dropping fan leaves are expected and correct now.",
         "Keep checking inside colas for bud rot daily, especially in cool, humid weather.",
         "5 flush days remaining."
       ],
-      "notes": "Harvest target: October 18. A partial harvest — cutting the most mature colas first — is always a valid option."
+      "notes": "Harvest target: October 18. A partial harvest - cutting the most mature colas first - is always a valid option."
     }
   },
   {
     "date": "2026-10-13",
     "phase": "flush_haze",
     "detail": {
-      "title": "Pre-Harvest Flush (Later Strain) — Day 10",
+      "title": "Pre-Harvest Flush (Later Strain) - Day 10",
       "summary": "Your later-finishing strain gets plain water only. Harvest is approaching.",
       "tasks": [
-        "Plain water only — no nutrients or supplements. Water to runoff.",
-        "Check trichomes across multiple bud sites — mostly milky/cloudy with 10 to 20% amber.",
-        "If a hard frost is forecast before your harvest date, harvest immediately — a partial or full harvest beats losing the crop to cold.",
+        "Plain water only - no nutrients or supplements. Water to runoff.",
+        "Check trichomes across multiple bud sites - mostly milky/cloudy with 10 to 20% amber.",
+        "If a hard frost is forecast before your harvest date, harvest immediately - a partial or full harvest beats losing the crop to cold.",
         "Yellowing, dropping fan leaves are expected and correct now.",
         "Keep checking inside colas for bud rot daily, especially in cool, humid weather.",
-        "Harvest is near — if trichomes look right, don't wait."
+        "Harvest is near - if trichomes look right, don't wait."
       ],
-      "notes": "Harvest target: October 18. A partial harvest — cutting the most mature colas first — is always a valid option."
+      "notes": "Harvest target: October 18. A partial harvest - cutting the most mature colas first - is always a valid option."
     }
   },
   {
     "date": "2026-10-14",
     "phase": "flush_haze",
     "detail": {
-      "title": "Pre-Harvest Flush (Later Strain) — Day 11",
+      "title": "Pre-Harvest Flush (Later Strain) - Day 11",
       "summary": "Your later-finishing strain gets plain water only. Harvest is approaching.",
       "tasks": [
-        "Plain water only — no nutrients or supplements. Water to runoff.",
-        "Check trichomes across multiple bud sites — mostly milky/cloudy with 10 to 20% amber.",
-        "If a hard frost is forecast before your harvest date, harvest immediately — a partial or full harvest beats losing the crop to cold.",
+        "Plain water only - no nutrients or supplements. Water to runoff.",
+        "Check trichomes across multiple bud sites - mostly milky/cloudy with 10 to 20% amber.",
+        "If a hard frost is forecast before your harvest date, harvest immediately - a partial or full harvest beats losing the crop to cold.",
         "Yellowing, dropping fan leaves are expected and correct now.",
         "Keep checking inside colas for bud rot daily, especially in cool, humid weather.",
-        "Harvest is near — if trichomes look right, don't wait."
+        "Harvest is near - if trichomes look right, don't wait."
       ],
-      "notes": "Harvest target: October 18. A partial harvest — cutting the most mature colas first — is always a valid option."
+      "notes": "Harvest target: October 18. A partial harvest - cutting the most mature colas first - is always a valid option."
     }
   },
   {
     "date": "2026-10-15",
     "phase": "flush_haze",
     "detail": {
-      "title": "Pre-Harvest Flush (Later Strain) — Day 12",
+      "title": "Pre-Harvest Flush (Later Strain) - Day 12",
       "summary": "Your later-finishing strain gets plain water only. Harvest is approaching.",
       "tasks": [
-        "Plain water only — no nutrients or supplements. Water to runoff.",
-        "Check trichomes across multiple bud sites — mostly milky/cloudy with 10 to 20% amber.",
-        "If a hard frost is forecast before your harvest date, harvest immediately — a partial or full harvest beats losing the crop to cold.",
+        "Plain water only - no nutrients or supplements. Water to runoff.",
+        "Check trichomes across multiple bud sites - mostly milky/cloudy with 10 to 20% amber.",
+        "If a hard frost is forecast before your harvest date, harvest immediately - a partial or full harvest beats losing the crop to cold.",
         "Yellowing, dropping fan leaves are expected and correct now.",
         "Keep checking inside colas for bud rot daily, especially in cool, humid weather.",
-        "Harvest is near — if trichomes look right, don't wait."
+        "Harvest is near - if trichomes look right, don't wait."
       ],
-      "notes": "Harvest target: October 18. A partial harvest — cutting the most mature colas first — is always a valid option."
+      "notes": "Harvest target: October 18. A partial harvest - cutting the most mature colas first - is always a valid option."
     }
   },
   {
     "date": "2026-10-16",
     "phase": "flush_haze",
     "detail": {
-      "title": "Pre-Harvest Flush (Later Strain) — Day 13",
+      "title": "Pre-Harvest Flush (Later Strain) - Day 13",
       "summary": "Your later-finishing strain gets plain water only. Harvest is approaching.",
       "tasks": [
-        "Plain water only — no nutrients or supplements. Water to runoff.",
-        "Check trichomes across multiple bud sites — mostly milky/cloudy with 10 to 20% amber.",
-        "If a hard frost is forecast before your harvest date, harvest immediately — a partial or full harvest beats losing the crop to cold.",
+        "Plain water only - no nutrients or supplements. Water to runoff.",
+        "Check trichomes across multiple bud sites - mostly milky/cloudy with 10 to 20% amber.",
+        "If a hard frost is forecast before your harvest date, harvest immediately - a partial or full harvest beats losing the crop to cold.",
         "Yellowing, dropping fan leaves are expected and correct now.",
         "Keep checking inside colas for bud rot daily, especially in cool, humid weather.",
-        "Harvest is near — if trichomes look right, don't wait."
+        "Harvest is near - if trichomes look right, don't wait."
       ],
-      "notes": "Harvest target: October 18. A partial harvest — cutting the most mature colas first — is always a valid option."
+      "notes": "Harvest target: October 18. A partial harvest - cutting the most mature colas first - is always a valid option."
     }
   },
   {
     "date": "2026-10-17",
     "phase": "flush_haze",
     "detail": {
-      "title": "Pre-Harvest Flush (Later Strain) — Day 14",
+      "title": "Pre-Harvest Flush (Later Strain) - Day 14",
       "summary": "Your later-finishing strain gets plain water only. Harvest is approaching.",
       "tasks": [
-        "Plain water only — no nutrients or supplements. Water to runoff.",
-        "Check trichomes across multiple bud sites — mostly milky/cloudy with 10 to 20% amber.",
-        "If a hard frost is forecast before your harvest date, harvest immediately — a partial or full harvest beats losing the crop to cold.",
+        "Plain water only - no nutrients or supplements. Water to runoff.",
+        "Check trichomes across multiple bud sites - mostly milky/cloudy with 10 to 20% amber.",
+        "If a hard frost is forecast before your harvest date, harvest immediately - a partial or full harvest beats losing the crop to cold.",
         "Yellowing, dropping fan leaves are expected and correct now.",
         "Keep checking inside colas for bud rot daily, especially in cool, humid weather.",
-        "Harvest is near — if trichomes look right, don't wait."
+        "Harvest is near - if trichomes look right, don't wait."
       ],
-      "notes": "Harvest target: October 18. A partial harvest — cutting the most mature colas first — is always a valid option."
+      "notes": "Harvest target: October 18. A partial harvest - cutting the most mature colas first - is always a valid option."
     }
   },
   {
     "date": "2026-10-18",
     "phase": "harvest_haze",
     "detail": {
-      "title": "Harvest — Later Strain",
-      "summary": "Your later-finishing strain comes down today — the grow is complete.",
+      "title": "Harvest - Later Strain",
+      "summary": "Your later-finishing strain comes down today - the grow is complete.",
       "tasks": [
-        "Final trichome check — mostly milky/cloudy with 10 to 20% amber across several bud sites before cutting.",
+        "Final trichome check - mostly milky/cloudy with 10 to 20% amber across several bud sites before cutting.",
         "Wipe scissors or shears with isopropyl alcohol before starting.",
         "Harvest one plant at a time, at the base or branch by branch.",
         "Remove all large fan leaves right away.",
         "Hang to dry in darkness with gentle airflow at 60 to 70°F and 55 to 65% humidity.",
-        "Once small stems snap cleanly, pack loosely into labeled jars and cure — burp jars daily at first, then taper over several weeks. A longer cure is better.",
+        "Once small stems snap cleanly, pack loosely into labeled jars and cure - burp jars daily at first, then taper over several weeks. A longer cure is better.",
         "Rinse containers, let them dry fully, and store for next season."
       ],
       "notes": "Cure each strain separately in labeled jars. A long, patient cure is one of the most underrated steps of the whole grow."

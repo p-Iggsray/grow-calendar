@@ -83,8 +83,8 @@ export default function LogEntryForm({ initial, onSave, onCancel, saving }) {
       {kind === "watering" && (
         <div style={{ display: "flex", gap: 10 }}>
           <div style={{ flex: 1 }}><Label>Water (gal)</Label><Input type="number" value={d.gal ?? ""} onChange={(v) => sd("gal", v)} placeholder="0" /></div>
-          <div style={{ flex: 1 }}><Label>EC in</Label><Input type="number" value={d.ec_in ?? ""} onChange={(v) => sd("ec_in", v)} placeholder="—" /></div>
-          <div style={{ flex: 1 }}><Label>EC out</Label><Input type="number" value={d.ec_out ?? ""} onChange={(v) => sd("ec_out", v)} placeholder="—" /></div>
+          <div style={{ flex: 1 }}><Label>EC in</Label><Input type="number" value={d.ec_in ?? ""} onChange={(v) => sd("ec_in", v)} placeholder="-" /></div>
+          <div style={{ flex: 1 }}><Label>EC out</Label><Input type="number" value={d.ec_out ?? ""} onChange={(v) => sd("ec_out", v)} placeholder="-" /></div>
         </div>
       )}
 

@@ -2,7 +2,7 @@ import { motion, useReducedMotion } from "framer-motion";
 
 // The app's launch screen: a branded, animated sprout on the deep-green
 // background. Shown on first boot (auth check) and while the main bundle loads,
-// so it doubles as the Suspense fallback. Kept lightweight — no data, no fonts
+// so it doubles as the Suspense fallback. Kept lightweight - no data, no fonts
 // beyond the system stack already in use.
 export default function Splash() {
   const reduce = useReducedMotion();

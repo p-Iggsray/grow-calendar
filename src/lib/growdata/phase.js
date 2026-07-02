@@ -4,7 +4,7 @@ export const dpt = (date, config) => daysBetween(date, config.transplant);
 
 // A second strain only exists when it finishes later than the primary. For
 // single-strain grows fillMissingConfigKeys sets hazeFlush/hazeHarvest equal to
-// the primary's, so we must NOT emit the secondary-strain phases — otherwise the
+// the primary's, so we must NOT emit the secondary-strain phases - otherwise the
 // primary flush/harvest window renders as phantom "Late Flush"/"Final Harvest".
 export function hasSecondaryStrain(config) {
   return config.hazeHarvest > config.gdpHarvest;

@@ -12,7 +12,7 @@ import {
   ReadyBadge, CTAButton, Stat, useLifecycleSave,
 } from "./shared.jsx";
 
-const CURE_ACCENT = "#a855f7"; // violet — curing
+const CURE_ACCENT = "#a855f7"; // violet - curing
 
 export default function CuringTracker({ today }) {
   const { lifecycle } = usePlan();
@@ -80,7 +80,7 @@ export default function CuringTracker({ today }) {
             <Droplets size={12} strokeWidth={1.8} /> Jar RH % (optional · target {CURE_IDEAL_RH}%)
           </span>
           <input
-            type="number" inputMode="decimal" value={rh} onChange={e => setRh(e.target.value)} placeholder="—"
+            type="number" inputMode="decimal" value={rh} onChange={e => setRh(e.target.value)} placeholder="-"
             style={{
               width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,0.3)", color: "var(--c-text)",
               border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10, padding: "12px 14px",
@@ -99,7 +99,7 @@ export default function CuringTracker({ today }) {
             color: burpedToday ? "var(--c-text-dim)" : CURE_ACCENT,
             fontFamily: MONO, fontSize: 13, letterSpacing: 1, cursor: busy ? "default" : "pointer",
           }}>
-          {burpedToday ? "Burped today ✓ — log another" : "Log a burp"}
+          {burpedToday ? "Burped today ✓ - log another" : "Log a burp"}
         </button>
         <div style={{ marginTop: 10, fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)" }}>
           {burps.length} burp{burps.length === 1 ? "" : "s"} logged{lastBurp ? ` · last ${fmtL(parseLocal(lastBurp))}` : ""}

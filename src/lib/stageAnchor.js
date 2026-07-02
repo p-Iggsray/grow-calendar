@@ -44,7 +44,7 @@ export function resolveSurveyForSetup(survey) {
   const currentStage = survey.currentStage || "seedling";
   const transplantDate = deriveTransplantDate(currentStage, survey.stageStartDate) || survey.transplantDate || survey.stageStartDate;
 
-  // Expand each strain into `count` roster entries (same strain name — they're
+  // Expand each strain into `count` roster entries (same strain name - they're
   // the same strain, just different plants, distinguished by id). Keeping the
   // plain name means the shared strain catalog records the clean base name.
   const strains = [];

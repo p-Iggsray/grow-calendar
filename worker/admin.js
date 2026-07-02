@@ -59,7 +59,7 @@ export async function deleteUser(env, actingUser, targetId) {
 }
 
 // Every table that stores rows keyed by user_id, deleted when an account is
-// removed (GDPR "delete my data"). Order doesn't matter — it's one batch.
+// removed (GDPR "delete my data"). Order doesn't matter - it's one batch.
 const USER_OWNED_TABLES = [
   "sessions", "password_reset_tokens", "share_tokens", "push_subscriptions",
   "task_checkoffs", "task_notes", "day_notes", "grow_log", "plant_log",

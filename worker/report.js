@@ -272,7 +272,7 @@ function renderReport(ctx) {
     const phaseCards = ranges.map(r => {
       const detail = getDetail(r.start, config, overrides, generatedPlan, phaseOverrides, eventRules);
       if (!detail) return "";
-      const range = r.start.getTime() === r.end.getTime() ? fmtNice(r.start) : `${fmtNice(r.start)} – ${fmtNice(r.end)}`;
+      const range = r.start.getTime() === r.end.getTime() ? fmtNice(r.start) : `${fmtNice(r.start)} - ${fmtNice(r.end)}`;
       const tasks = (detail.tasks ?? []).map(t => `<li>${esc(t)}</li>`).join("");
       return `<div class="phase">
         <div class="phase-head">${chip(r.phase)}<span class="phase-range">${range}</span></div>
@@ -388,11 +388,11 @@ function renderReport(ctx) {
   return `<!doctype html><html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(name)} — Grow Report</title>
+<title>${esc(name)} - Grow Report</title>
 <style>${CSS}</style>
 </head><body>
 <div class="toolbar no-print">
-  <div class="tb-name">${esc(name)} — Grow Report</div>
+  <div class="tb-name">${esc(name)} - Grow Report</div>
   <button onclick="window.print()" class="tb-btn">Save as PDF / Print</button>
 </div>
 <main>
@@ -415,7 +415,7 @@ function renderReport(ctx) {
   ${statsSection}
   <footer class="foot">
     Generated ${esc(generated)} · The Grow Calendar. For educational and personal
-    record-keeping only — not medical, legal, or professional cultivation advice.
+    record-keeping only - not medical, legal, or professional cultivation advice.
   </footer>
 </main>
 </body></html>`;

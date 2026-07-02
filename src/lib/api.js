@@ -169,7 +169,7 @@ export const api = {
   },
   // Full print-ready grow report (self-contained HTML). Fetched (not navigated
   // to) so an installed standalone PWA doesn't capture the navigation and
-  // replace the running app — see MoreScreen.openReport.
+  // replace the running app - see MoreScreen.openReport.
   getGrowReport: async (growId) => {
     const res = await fetch(`/api/grows/${encodeURIComponent(growId)}/report`, { credentials: "same-origin" });
     if (!res.ok) throw new Error(`Report failed: ${res.status}`);

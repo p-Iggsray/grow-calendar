@@ -25,7 +25,7 @@ function newGrowId() {
 
 // Auto-migrate plan_config → grows table if user has no grows yet.
 async function ensureMigrated(env, userId) {
-  // Try to create the grows table via prepare().run() — more reliable than exec() for DDL.
+  // Try to create the grows table via prepare().run() - more reliable than exec() for DDL.
   // Both calls are wrapped individually; CREATE INDEX may legitimately fail if it already exists.
   try {
     await env.DB.prepare(
@@ -47,7 +47,7 @@ async function ensureMigrated(env, userId) {
     ).run();
   } catch (e) {
     logError("grows-ddl-create-table", { message: String(e?.message) });
-    // If table creation failed, nothing below can succeed — bail out.
+    // If table creation failed, nothing below can succeed - bail out.
     return;
   }
   try {
@@ -101,7 +101,7 @@ function parseField(raw) {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
-// Returns raw grow data without a Response wrapper — for internal use by other handlers.
+// Returns raw grow data without a Response wrapper - for internal use by other handlers.
 export async function loadRawGrow(env, userId, growId) {
   const row = await env.DB.prepare(
     "SELECT * FROM grows WHERE id = ? AND user_id = ?"
@@ -357,7 +357,7 @@ export function validateLifecycle(input) {
   };
 }
 
-// PATCH /api/grows/:id/lifecycle — full-replace write of the validated lifecycle.
+// PATCH /api/grows/:id/lifecycle - full-replace write of the validated lifecycle.
 export async function patchGrowLifecycle(request, env, user, growId) {
   const row = await env.DB.prepare(
     "SELECT id FROM grows WHERE id = ? AND user_id = ?"
@@ -396,7 +396,7 @@ export async function deleteGrow(env, user, growId) {
   return json({ ok: true });
 }
 
-// POST /api/grows/:id/setup — AI-generate plan for a specific grow
+// POST /api/grows/:id/setup - AI-generate plan for a specific grow
 export async function setupGrow(request, env, user, growId) {
   const row = await env.DB.prepare(
     "SELECT id FROM grows WHERE id = ? AND user_id = ?"
@@ -452,7 +452,7 @@ export async function setupGrow(request, env, user, growId) {
   return json({ ok: true, config, generatedPlan, displayName });
 }
 
-// POST /api/grows/:id/regenerate — rebuild the heuristic task plan from the
+// POST /api/grows/:id/regenerate - rebuild the heuristic task plan from the
 // stored survey (no AI). Leaves config and phase overrides as they are.
 export async function regenerateGrow(request, env, user, growId) {
   const row = await env.DB.prepare(
@@ -597,7 +597,7 @@ export async function deleteGrowEvent(env, user, growId, ruleId) {
   return json({ ok: true });
 }
 
-// PATCH /api/grows/:id/day/:date — merge editedTasks into plan_day_overrides for one day
+// PATCH /api/grows/:id/day/:date - merge editedTasks into plan_day_overrides for one day
 export async function patchGrowDayOverride(request, env, user, growId, date) {
   if (!DATE_RE.test(date)) return error(400, "invalid date");
 
