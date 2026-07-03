@@ -98,6 +98,48 @@ export function partitionPlants(survey) {
   return { active, archived };
 }
 
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// "Jun 10" from a YYYY-MM-DD key.
+export function fmtDateKey(key) {
+  const [y, m, d] = (key || "").split("-").map(Number);
+  if (!y || !m || !d) return key || "";
+  return `${MONTHS_SHORT[m - 1]} ${d}`;
+}
+
+// Whole days between a YYYY-MM-DD key and today (positive = past).
+export function daysAgo(key, today) {
+  const [y, m, d] = (key || "").split("-").map(Number);
+  if (!y || !m || !d || !today) return null;
+  const a = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const b = new Date(y, m - 1, d);
+  return Math.round((a - b) / 86400000);
+}
+
+export function relDayLabel(key, today) {
+  const n = daysAgo(key, today);
+  if (n == null) return "";
+  if (n === 0) return "today";
+  if (n === 1) return "yesterday";
+  if (n < 0) return `in ${-n}d`;
+  return `${n}d ago`;
+}
+
+// Stats derived from a plant's combined history (newest first): how long the
+// plant has been in its current stage, and the latest height with the change
+// since the previous measurement.
+export function plantHistoryStats(entries, today) {
+  const list = entries ?? [];
+  const stageEntry = list.find((e) => (e.kind || "") === "stage");
+  const stageDays = stageEntry ? daysAgo(stageEntry.date, today) : null;
+  const withHeight = list.filter((e) => e.height != null);
+  const height = withHeight[0] ?? null;
+  const prev = withHeight[1] ?? null;
+  const heightDelta = height && prev ? Math.round((height.height - prev.height) * 10) / 10 : null;
+  const lastHealth = list.find((e) => e.health)?.health ?? null;
+  return { stageDays, height, heightDelta, lastHealth };
+}
+
 // Most recent height + health from a plant's log entries (already date DESC).
 export function latestMetrics(entries) {
   let height = null;

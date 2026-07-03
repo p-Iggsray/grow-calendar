@@ -1,22 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Timeline from "./Timeline.jsx";
 import DaySpread from "./DaySpread.jsx";
 
 // The Journal section of the main screen. Like a paper journal it opens on
-// today's page, which is edited in place and swiped through day by day;
-// zooming out shows the timeline of every journaled day (with stats and
-// search), and tapping any day dives back into its page.
-export default function JournalScreen({ today, date, onChangeDate, config, growId, onOpenDay, active = true }) {
+// today's page (App resets the date whenever the section is entered), edited
+// in place and swiped through day by day; zooming out shows the timeline of
+// every journaled day (with stats and search), and tapping any day dives back
+// into its page.
+export default function JournalScreen({ today, date, onChangeDate, config, growId, onOpenDay, onOpenPlant, active = true }) {
   const [mode, setMode] = useState("day");
   const [focusSignal, setFocusSignal] = useState(0);
-  const opened = useRef(false);
-
-  // A journal opens to today's page every time you come back to it.
-  useEffect(() => {
-    if (opened.current) return;
-    opened.current = true;
-    onChangeDate(today);
-  }, [today, onChangeDate]);
 
   return mode === "timeline" ? (
     <Timeline
@@ -35,6 +28,7 @@ export default function JournalScreen({ today, date, onChangeDate, config, growI
       config={config}
       growId={growId}
       onOpenDay={onOpenDay}
+      onOpenPlant={onOpenPlant}
       onZoomOut={() => setMode("timeline")}
       focusSignal={focusSignal}
       active={active}

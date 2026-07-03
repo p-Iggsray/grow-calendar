@@ -240,21 +240,30 @@ export async function dailyLogForPlant(env, user, growId, plantId) {
   return json({ entries: out });
 }
 
-// GET /api/grows/:id/plant-log-summary -- latest metric row per plant in one query.
+// GET /api/grows/:id/plant-log-summary -- latest metric row + entry count per
+// plant, in two grouped queries.
 export async function plantLogSummary(env, user, growId) {
   const row = await ownedGrowRow(env, user.id, growId);
   if (!row) return error(404, "grow not found");
   await ensurePlantLogSchema(env);
-  const res = await env.DB.prepare(
-    `SELECT plant_id, date, height, height_unit, health FROM (
-       SELECT plant_id, date, height, height_unit, health,
-              ROW_NUMBER() OVER (PARTITION BY plant_id ORDER BY date DESC, id DESC) AS rn
-       FROM plant_log WHERE user_id = ? AND grow_id = ?
-     ) WHERE rn = 1`
-  ).bind(user.id, growId).all();
+  const [latest, counts] = await Promise.all([
+    env.DB.prepare(
+      `SELECT plant_id, date, height, height_unit, health FROM (
+         SELECT plant_id, date, height, height_unit, health,
+                ROW_NUMBER() OVER (PARTITION BY plant_id ORDER BY date DESC, id DESC) AS rn
+         FROM plant_log WHERE user_id = ? AND grow_id = ?
+       ) WHERE rn = 1`
+    ).bind(user.id, growId).all(),
+    env.DB.prepare(
+      "SELECT plant_id, COUNT(*) AS n FROM plant_log WHERE user_id = ? AND grow_id = ? GROUP BY plant_id"
+    ).bind(user.id, growId).all(),
+  ]);
   const summary = {};
-  for (const r of res.results ?? []) {
+  for (const r of latest.results ?? []) {
     summary[r.plant_id] = { date: r.date, height: r.height, heightUnit: r.height_unit, health: r.health };
+  }
+  for (const r of counts.results ?? []) {
+    (summary[r.plant_id] ??= {}).entries = r.n;
   }
   return json({ summary });
 }

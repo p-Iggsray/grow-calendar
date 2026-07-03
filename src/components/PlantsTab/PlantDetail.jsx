@@ -1,24 +1,36 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Trash2, Archive, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Archive, Pencil, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
 import { usePlantLog } from "../../lib/usePlantLog.js";
 import { api } from "../../lib/api.js";
-import { MONO, SERIF, TYPE_LABEL, HEALTH_MAP, STAGE_ORDER, stageLabel, nextStage, prevStage, LOG_KINDS, kindLabel, summarizeEntry } from "./constants.js";
+import { dayOfGrow } from "../../lib/journalStats.js";
+import {
+  MONO, SERIF, TYPE_LABEL, HEALTH_MAP, STAGE_ORDER, stageLabel, nextStage, prevStage,
+  LOG_KINDS, kindLabel, summarizeEntry, fmtDateKey, plantHistoryStats,
+} from "./constants.js";
 import LogEntryForm from "./LogEntryForm.jsx";
 import AddPlantSheet from "./AddPlantSheet.jsx";
 import StageTimeline from "./StageTimeline.jsx";
 import { Skeleton } from "../Skeleton.jsx";
 
-function Meta({ label, value }) {
+function Meta({ label, value, accent }) {
   return (
-    <div>
+    <div style={{
+      flex: "1 1 30%", minWidth: 92, padding: "9px 11px", borderRadius: 10,
+      background: "var(--c-surface-1)", border: "1px solid var(--c-border-faint)",
+    }}>
       <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 3 }}>{label}</div>
-      <div style={{ fontFamily: MONO, fontSize: 13, color: "var(--c-text-dim)" }}>{value}</div>
+      <div style={{ fontFamily: MONO, fontSize: 14, color: accent || "var(--c-text)" }}>{value}</div>
     </div>
   );
 }
 
-export default function PlantDetail({ growId, plant, harvestLabel, onClose, onArchive, onDelete, onLogChange, onChanged }) {
+function keyToDate(key) {
+  const [y, m, d] = (key || "").split("-").map(Number);
+  return y && m && d ? new Date(y, m - 1, d) : null;
+}
+
+export default function PlantDetail({ growId, plant, harvestLabel, today, config, onOpenJournalDay, onClose, onArchive, onDelete, onLogChange, onChanged }) {
   const { entries, loading: logLoading, addEntry, removeEntry } = usePlantLog(growId, plant.id, true);
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -44,6 +56,11 @@ export default function PlantDetail({ growId, plant, harvestLabel, onClose, onAr
 
   const stage = plant.stage || "seedling";
   const stageIdx = STAGE_ORDER.indexOf(stage);
+
+  // At-a-glance numbers derived from the history + grow timeline.
+  const age = today && config ? dayOfGrow(today, config) : null;
+  const { stageDays, height, heightDelta, lastHealth } = plantHistoryStats(combined, today);
+  const healthInfo = lastHealth ? HEALTH_MAP[lastHealth] : null;
 
   async function handleSave(entry) {
     setSaving(true);
@@ -143,7 +160,16 @@ export default function PlantDetail({ growId, plant, harvestLabel, onClose, onAr
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 28, marginTop: 18 }}>
+        {/* At a glance */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 18 }}>
+          {age && <Meta label="Age" value={`Day ${age}`} />}
+          <Meta label="In stage" value={stageDays != null ? `${stageDays}d` : "-"} />
+          <Meta
+            label="Height"
+            value={height ? `${height.height}${height.height_unit || ""}${heightDelta != null && heightDelta !== 0 ? ` (${heightDelta > 0 ? "+" : ""}${heightDelta})` : ""}` : "-"}
+          />
+          <Meta label="Entries" value={combined.length} />
+          {healthInfo && <Meta label="Health" value={healthInfo.label} accent={healthInfo.color} />}
           <Meta label="Est. harvest" value={harvestLabel || "-"} />
         </div>
 
@@ -204,7 +230,27 @@ export default function PlantDetail({ growId, plant, harvestLabel, onClose, onAr
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "var(--c-text-faint)", textTransform: "uppercase", background: "var(--c-surface-2)", borderRadius: 5, padding: "2px 6px" }}>{kindLabel(kind)}</span>
-                    <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-dim)" }}>{e.date}</span>
+                    {/* The date links into that day's journal page. */}
+                    <button
+                      type="button"
+                      disabled={!onOpenJournalDay}
+                      onClick={() => {
+                        const d = keyToDate(e.date);
+                        if (d && onOpenJournalDay) onOpenJournalDay(d);
+                      }}
+                      title="Open this day in the journal"
+                      style={{
+                        display: "flex", alignItems: "center", gap: 5,
+                        background: "none", border: "none", padding: 0,
+                        cursor: onOpenJournalDay ? "pointer" : "default",
+                        fontFamily: MONO, fontSize: 11, color: "var(--c-text-dim)",
+                      }}>
+                      {fmtDateKey(e.date)}
+                      {config && keyToDate(e.date) && dayOfGrow(keyToDate(e.date), config) && (
+                        <span style={{ color: "var(--c-text-ghost)" }}>· Day {dayOfGrow(keyToDate(e.date), config)}</span>
+                      )}
+                      {onOpenJournalDay && <BookOpen size={11} strokeWidth={2} style={{ color: "var(--c-text-ghost)" }} />}
+                    </button>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     {h && <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: h.color, textTransform: "uppercase" }}>{h.label}</span>}

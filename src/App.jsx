@@ -108,6 +108,8 @@ export default function App() {
   // the last day the user viewed, so the two stay directly connected.
   const [mainView,    setMainView]    = useState("calendar");
   const [journalDate, setJournalDate] = useState(null);
+  // Cross-tab handoff: a plant the Plants tab should open on arrival.
+  const [plantsOpenId, setPlantsOpenId] = useState(null);
 
   const { taskStates, loading: checkoffsLoading, toggle, setTaskState } = useCheckoffs(selected, Boolean(user), activeGrowId);
   const { days: monthLoggedDays } = useMonthLog(today.getFullYear(), month, Boolean(user), activeGrowId);
@@ -367,6 +369,23 @@ export default function App() {
   function pickMilestone(date) { setMonth(date.getMonth()); openDay(date); }
   function jumpToday()         { setMonth(today.getMonth()); openDay(today); }
 
+  // From anywhere in the app (plant history, MJ, ...) straight to a day's
+  // journal page.
+  function openJournalAt(date) {
+    setJournalDate(date);
+    setMonth(date.getMonth());
+    setMainView("journal");
+    setActiveTab("calendar");
+    if (chatOpen) closeChat();
+  }
+  // From a journal page's plant entries straight to that plant's detail.
+  function openPlantFromJournal(plantId) {
+    if (!plantId) return;
+    setSelected(null);
+    setPlantsOpenId(plantId);
+    setActiveTab("plants");
+  }
+
   function openChat() {
     setChatContext(selected ? ymd(selected) : null);
     setChatOpen(true);
@@ -464,7 +483,11 @@ export default function App() {
               exit={{ opacity: 0 }}
               transition={FADE_DURATION}
             >
-              <PlantsTab />
+              <PlantsTab
+                openPlantId={plantsOpenId}
+                onOpenPlantConsumed={() => setPlantsOpenId(null)}
+                onOpenJournalDay={openJournalAt}
+              />
             </motion.div>
           ) : lifecyclePhase === "drying" ? (
             <motion.div key="drying" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FADE_DURATION}>
@@ -501,7 +524,14 @@ export default function App() {
               {/* Drying entry point - always available, but only prominent once
                   final harvest has passed (`due`). */}
               <PhasePrompt today={today} due={Boolean(config?.hazeHarvest && today >= config.hazeHarvest)} />
-              <ViewSwitch view={mainView} onChange={setMainView} />
+              <ViewSwitch
+                view={mainView}
+                onChange={(v) => {
+                  // Like a paper journal, toggling into it opens today's page.
+                  if (v === "journal") setJournalDate(today);
+                  setMainView(v);
+                }}
+              />
               {mainView === "journal" ? (
                 <JournalScreen
                   today={today}
@@ -510,6 +540,7 @@ export default function App() {
                   config={config}
                   growId={activeGrowId}
                   onOpenDay={(d) => { setMonth(d.getMonth()); openDay(d); }}
+                  onOpenPlant={openPlantFromJournal}
                   active={!selected}
                 />
               ) : (

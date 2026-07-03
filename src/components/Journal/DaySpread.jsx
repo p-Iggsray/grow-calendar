@@ -90,7 +90,7 @@ function PlantRow({ name, children }) {
 // LayoutGrid button zooms out to the all-days timeline. `active` goes false
 // while the DayView overlay covers this; flipping back refetches.
 export default function DaySpread({
-  today, date, onChangeDate, config, growId, onOpenDay, onZoomOut, focusSignal = 0, active = true,
+  today, date, onChangeDate, config, growId, onOpenDay, onOpenPlant, onZoomOut, focusSignal = 0, active = true,
 }) {
   const dateKey = ymd(date);
   const monthKey = dateKey.slice(0, 7);
@@ -355,9 +355,21 @@ export default function DaySpread({
               <Card title="Plant journal" icon={<Sprout size={13} strokeWidth={2} style={{ color: "#c084fc" }} />}>
                 {groups.map((g, gi) => (
                   <div key={g.name + gi} style={{ marginTop: gi === 0 ? 0 : 13 }}>
-                    <div style={{ fontFamily: UI, fontSize: 13.5, fontWeight: 750, color: "var(--c-text)", marginBottom: 4 }}>
+                    <button
+                      type="button"
+                      onClick={() => { tapHaptic(); onOpenPlant?.(g.entries[0]?.plantId); }}
+                      disabled={!onOpenPlant || !g.entries[0]?.plantId}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 4, marginBottom: 4,
+                        background: "none", border: "none", padding: 0,
+                        cursor: onOpenPlant && g.entries[0]?.plantId ? "pointer" : "default",
+                        fontFamily: UI, fontSize: 13.5, fontWeight: 750, color: "var(--c-text)",
+                      }}>
                       {g.name}
-                    </div>
+                      {onOpenPlant && g.entries[0]?.plantId && (
+                        <ChevronRight size={13} strokeWidth={2.2} style={{ color: "var(--c-text-ghost)" }} />
+                      )}
+                    </button>
                     {g.entries.map(e => {
                       const summary = summarizeEntry(e);
                       return (

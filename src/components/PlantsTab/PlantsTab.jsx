@@ -5,7 +5,7 @@ import { usePlan } from "../../lib/usePlan.jsx";
 import { useToday } from "../../lib/dates.js";
 import { getPhase, PHASES } from "../../lib/growData.js";
 import { api } from "../../lib/api.js";
-import { MONO, partitionPlants } from "./constants.js";
+import { MONO, partitionPlants, stageLabel } from "./constants.js";
 import PlantCard from "./PlantCard.jsx";
 import PlantDetail from "./PlantDetail.jsx";
 import AddPlantSheet from "./AddPlantSheet.jsx";
@@ -21,7 +21,7 @@ function EmptyMsg({ text }) {
   return <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-ghost)", padding: "40px 16px", textAlign: "center" }}>{text}</div>;
 }
 
-export default function PlantsTab() {
+export default function PlantsTab({ openPlantId, onOpenPlantConsumed, onOpenJournalDay }) {
   const { activeGrowId, survey, config, needsSetup, reload } = usePlan();
   const today = useToday();
   const [selectedId, setSelectedId] = useState(null);
@@ -39,6 +39,13 @@ export default function PlantsTab() {
   }, [activeGrowId]);
 
   useEffect(() => { loadSummary(); }, [loadSummary, survey]);
+
+  // Cross-tab handoff: the journal (or MJ) asked us to open a specific plant.
+  useEffect(() => {
+    if (!openPlantId) return;
+    setSelectedId(openPlantId);
+    onOpenPlantConsumed?.();
+  }, [openPlantId, onOpenPlantConsumed]);
 
   if (needsSetup) return <EmptyMsg text="Finish setting up this grow first." />;
 
@@ -73,10 +80,33 @@ export default function PlantsTab() {
         </button>
       </div>
 
+      {/* Garden at a glance: counts, stage mix, and the grow's current phase. */}
+      {active.length > 0 && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: "0 16px 12px" }}>
+          {[
+            `${active.length} growing`,
+            ...Object.entries(active.reduce((acc, p) => {
+              const s = stageLabel(p.stage);
+              acc[s] = (acc[s] || 0) + 1;
+              return acc;
+            }, {})).map(([label, n]) => `${n} ${label.toLowerCase()}`),
+            currentPhaseLabel ? `Phase: ${currentPhaseLabel}` : null,
+          ].filter(Boolean).map((text) => (
+            <span key={text} style={{
+              padding: "5px 10px", borderRadius: 10,
+              background: "var(--c-surface-1)", border: "1px solid var(--c-border-faint)",
+              fontFamily: MONO, fontSize: 10.5, color: "var(--c-text-dim)", letterSpacing: 0.4,
+            }}>
+              {text}
+            </span>
+          ))}
+        </div>
+      )}
+
       <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "0 16px" }}>
         {active.length === 0 && <EmptyMsg text="No plants yet. Add your first one." />}
         {active.map((p) => (
-          <PlantCard key={p.id} plant={p} currentPhaseLabel={currentPhaseLabel} metrics={summary[p.id]} onOpen={() => setSelectedId(p.id)} />
+          <PlantCard key={p.id} plant={p} metrics={summary[p.id]} today={today} config={config} onOpen={() => setSelectedId(p.id)} />
         ))}
 
         {archived.length > 0 && (
@@ -87,7 +117,7 @@ export default function PlantsTab() {
             {showArchived && (
               <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8, opacity: 0.7 }}>
                 {archived.map((p) => (
-                  <PlantCard key={p.id} plant={p} currentPhaseLabel={null} metrics={summary[p.id]} onOpen={() => setSelectedId(p.id)} />
+                  <PlantCard key={p.id} plant={p} metrics={summary[p.id]} today={today} config={config} onOpen={() => setSelectedId(p.id)} />
                 ))}
               </div>
             )}
@@ -113,6 +143,9 @@ export default function PlantsTab() {
             growId={activeGrowId}
             plant={selectedPlant}
             harvestLabel={selectedPlant.status === "growing" ? harvestLabel : null}
+            today={today}
+            config={config}
+            onOpenJournalDay={onOpenJournalDay}
             onClose={() => setSelectedId(null)}
             onArchive={handleArchive}
             onDelete={(p) => setConfirmDelete(p)}
