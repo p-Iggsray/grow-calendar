@@ -1,51 +1,43 @@
-import { useState } from "react";
-import { AnimatePresence } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import Timeline from "./Timeline.jsx";
 import DaySpread from "./DaySpread.jsx";
-import ComposerSheet from "./ComposerSheet.jsx";
 
-// The Journal section of the main screen. Two levels, like dedicated journal
-// apps: a timeline home (every journaled day, newest first, with stats and
-// search) and a single-day spread you can flip through. A full-screen
-// composer writes the day's entry from either level.
+// The Journal section of the main screen. Like a paper journal it opens on
+// today's page, which is edited in place and swiped through day by day;
+// zooming out shows the timeline of every journaled day (with stats and
+// search), and tapping any day dives back into its page.
 export default function JournalScreen({ today, date, onChangeDate, config, growId, onOpenDay, active = true }) {
-  const [mode, setMode] = useState("timeline"); // "timeline" | "day"
-  const [composerDate, setComposerDate] = useState(null); // Date | null
+  const [mode, setMode] = useState("day");
+  const [focusSignal, setFocusSignal] = useState(0);
+  const opened = useRef(false);
 
-  return (
-    <>
-      {mode === "timeline" ? (
-        <Timeline
-          today={today}
-          config={config}
-          growId={growId}
-          active={active && !composerDate}
-          onOpenDate={(d) => { onChangeDate(d); setMode("day"); }}
-          onWrite={(d) => setComposerDate(d)}
-        />
-      ) : (
-        <DaySpread
-          today={today}
-          date={date}
-          onChangeDate={onChangeDate}
-          config={config}
-          growId={growId}
-          onOpenDay={onOpenDay}
-          onBack={() => setMode("timeline")}
-          onWrite={(d) => setComposerDate(d)}
-          active={active && !composerDate}
-        />
-      )}
+  // A journal opens to today's page every time you come back to it.
+  useEffect(() => {
+    if (opened.current) return;
+    opened.current = true;
+    onChangeDate(today);
+  }, [today, onChangeDate]);
 
-      <AnimatePresence>
-        {composerDate && (
-          <ComposerSheet
-            date={composerDate}
-            growId={growId}
-            onClose={() => setComposerDate(null)}
-          />
-        )}
-      </AnimatePresence>
-    </>
+  return mode === "timeline" ? (
+    <Timeline
+      today={today}
+      config={config}
+      growId={growId}
+      active={active}
+      onOpenDate={(d) => { setFocusSignal(0); onChangeDate(d); setMode("day"); }}
+      onWrite={(d) => { onChangeDate(d); setMode("day"); setFocusSignal(s => s + 1); }}
+    />
+  ) : (
+    <DaySpread
+      today={today}
+      date={date}
+      onChangeDate={onChangeDate}
+      config={config}
+      growId={growId}
+      onOpenDay={onOpenDay}
+      onZoomOut={() => setMode("timeline")}
+      focusSignal={focusSignal}
+      active={active}
+    />
   );
 }

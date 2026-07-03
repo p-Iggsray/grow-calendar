@@ -1,9 +1,11 @@
-import { useRef } from "react";
-import { ChevronLeft, ChevronRight, BookOpen, PenLine, Droplets, StickyNote, Sprout, CalendarDays } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { ChevronLeft, ChevronRight, PenLine, Droplets, Sprout, CalendarDays, LayoutGrid } from "lucide-react";
 import { ymd } from "../../lib/api.js";
 import { sameDay, MONTH_NAMES } from "../../lib/dates.js";
 import { getPhase, PHASES, phaseFamily } from "../../lib/growData.js";
 import { useJournalDay, useJournalMonth } from "../../lib/useJournal.js";
+import { useDayNote } from "../../lib/useDayNote.js";
 import { dayOfGrow } from "../../lib/journalStats.js";
 import { kindLabel, summarizeEntry, HEALTH_MAP } from "../PlantsTab/constants.js";
 import { Skeleton } from "../Skeleton.jsx";
@@ -83,32 +85,55 @@ function PlantRow({ name, children }) {
   );
 }
 
-// A single day's spread: written entry (day note) in book type, the daily log,
-// and every plant's entries, with flip navigation and jump-to-any-day.
-// `active` goes false while the DayView overlay covers this; flipping back
-// refetches so overlay edits appear immediately.
+// A single day's page: the written entry edited in place, the daily log, and
+// every plant's entries. Swipe (or use the arrows) to turn the page; the
+// LayoutGrid button zooms out to the all-days timeline. `active` goes false
+// while the DayView overlay covers this; flipping back refetches.
 export default function DaySpread({
-  today, date, onChangeDate, config, growId, onOpenDay, onBack, onWrite, active = true,
+  today, date, onChangeDate, config, growId, onOpenDay, onZoomOut, focusSignal = 0, active = true,
 }) {
   const dateKey = ymd(date);
   const monthKey = dateKey.slice(0, 7);
   const { day, loading } = useJournalDay(dateKey, active, growId);
   const monthDays = useJournalMonth(monthKey, active, growId);
+  const { note, setNote, status: noteStatus } = useDayNote(date, active, growId);
   const dateInputRef = useRef(null);
+  const editorRef = useRef(null);
+  const [dir, setDir] = useState(0); // -1 back, 1 forward: drives the page-turn slide
 
   const phase = config ? getPhase(date, config) : null;
   const famColor = phase ? phaseFamily(phase)?.color : null;
   const isToday = sameDay(date, today);
   const growDay = dayOfGrow(date, config);
 
-  function shift(delta) {
+  // Grow the editor with its text so the page reads as one written sheet.
+  useEffect(() => {
+    const el = editorRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.max(el.scrollHeight, 88) + "px";
+  }, [note, dateKey]);
+
+  // Focus the editor when the user asked to write (timeline prompt).
+  useEffect(() => {
+    if (focusSignal > 0) editorRef.current?.focus();
+  }, [focusSignal]);
+
+  // Let the timeline (and this page's own summaries) refresh after a save.
+  useEffect(() => {
+    if (noteStatus === "saved") window.dispatchEvent(new CustomEvent("journal-mutated"));
+  }, [noteStatus]);
+
+  function go(delta) {
     tapHaptic();
+    setDir(delta);
     onChangeDate(new Date(date.getFullYear(), date.getMonth(), date.getDate() + delta));
   }
   function jumpTo(key) {
     const [y, m, d] = (key || "").split("-").map(Number);
     if (!y || !m || !d) return;
     tapHaptic();
+    setDir(key > dateKey ? 1 : -1);
     onChangeDate(new Date(y, m - 1, d));
   }
   function openPicker() {
@@ -135,26 +160,31 @@ export default function DaySpread({
     }
   }
 
-  const isEmpty = !loading && !log && !day.note && day.plantEntries.length === 0;
-
   return (
     <div style={{ padding: "4px 14px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
-      {/* Back to the timeline */}
-      <button
-        type="button"
-        onClick={() => { tapHaptic(); onBack(); }}
-        style={{
-          display: "flex", alignItems: "center", gap: 3, alignSelf: "flex-start",
-          background: "none", border: "none", cursor: "pointer", padding: "6px 4px 0 0",
-          color: "var(--c-text-muted)", fontFamily: UI, fontSize: 12.5, fontWeight: 600,
-        }}>
-        <ChevronLeft size={16} strokeWidth={2.2} />
-        Journal
-      </button>
+      {/* Masthead: journal label + zoom out to all days */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ fontFamily: UI, fontSize: 11, letterSpacing: 3, textTransform: "uppercase", color: "var(--c-text-muted)" }}>
+          Grow Journal
+        </div>
+        <button
+          type="button"
+          className="touch-target"
+          onClick={() => { tapHaptic(); onZoomOut(); }}
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "8px 13px", borderRadius: 18, cursor: "pointer",
+            background: "var(--c-surface-1)", border: "1px solid var(--c-border-faint)",
+            color: "var(--c-text-dim)", fontFamily: UI, fontSize: 11.5, fontWeight: 600,
+          }}>
+          <LayoutGrid size={13} strokeWidth={2} />
+          All days
+        </button>
+      </div>
 
       {/* Date pager */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <NavButton label="Previous day" onClick={() => shift(-1)}>
+        <NavButton label="Previous day" onClick={() => go(-1)}>
           <ChevronLeft size={19} strokeWidth={2} />
         </NavButton>
         <button
@@ -181,7 +211,7 @@ export default function DaySpread({
             <span>Tap to jump</span>
           </div>
         </button>
-        <NavButton label="Next day" onClick={() => shift(1)}>
+        <NavButton label="Next day" onClick={() => go(1)}>
           <ChevronRight size={19} strokeWidth={2} />
         </NavButton>
         {/* Hidden native date input drives jump-to-any-day. */}
@@ -227,155 +257,144 @@ export default function DaySpread({
         </div>
       )}
 
-      {loading ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <Skeleton height={92} radius={14} />
-          <Skeleton height={64} radius={14} />
-        </div>
-      ) : (
-        <>
-          {/* The written entry leads the spread, like a real journal page. */}
-          {day.note ? (
-            <Card
-              title="Entry"
-              icon={<StickyNote size={13} strokeWidth={2} style={{ color: "#60a5fa" }} />}
-              action={
-                <button
-                  type="button"
-                  aria-label="Edit this entry"
-                  onClick={() => { tapHaptic(); onWrite(date); }}
-                  style={{
-                    background: "none", border: "none", cursor: "pointer", padding: 4,
-                    color: "var(--c-text-muted)", display: "flex",
-                  }}>
-                  <PenLine size={14} strokeWidth={2} />
-                </button>
-              }>
-              <div style={{ fontFamily: BOOK, fontSize: 15.5, color: "var(--c-text)", lineHeight: 1.8, whiteSpace: "pre-wrap", overflowWrap: "break-word" }}>
-                {day.note}
-              </div>
-            </Card>
-          ) : !isEmpty && (
-            <button
-              type="button"
-              onClick={() => { tapHaptic(); onWrite(date); }}
-              style={{
-                width: "100%", padding: "13px 14px", borderRadius: 12,
-                background: "none", border: "1px dashed var(--c-border-strong)",
-                color: "var(--c-text-muted)", cursor: "pointer", textAlign: "left",
-                display: "flex", alignItems: "center", gap: 9,
-                fontFamily: BOOK, fontSize: 13.5, fontStyle: "italic",
-              }}>
-              <PenLine size={14} strokeWidth={2} style={{ flexShrink: 0 }} />
-              Write about this day…
-            </button>
-          )}
+      {/* The page itself: swipe horizontally to turn to the previous/next day.
+          key change slides the new page in from the swipe direction. */}
+      <motion.div
+        key={dateKey}
+        initial={dir === 0 ? false : { x: dir > 0 ? 56 : -56, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.16}
+        onDragEnd={(e, info) => {
+          if (info.offset.x < -70 || info.velocity.x < -600) go(1);
+          else if (info.offset.x > 70 || info.velocity.x > 600) go(-1);
+        }}
+        style={{ display: "flex", flexDirection: "column", gap: 12 }}
+      >
+        {/* The written entry, edited in place like a real journal page. */}
+        <Card
+          title="Entry"
+          icon={<PenLine size={13} strokeWidth={2} style={{ color: "#60a5fa" }} />}
+          action={
+            <span style={{ fontFamily: UI, fontSize: 10, letterSpacing: 1, color: noteStatus === "error" ? "var(--c-danger-soft)" : "var(--c-text-ghost)" }}>
+              {noteStatus === "saving" ? "Saving…" : noteStatus === "saved" ? "Saved" : noteStatus === "error" ? "Save failed" : ""}
+            </span>
+          }>
+          <textarea
+            ref={editorRef}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={isToday ? "Write about today in the garden…" : "Write about this day…"}
+            maxLength={20000}
+            rows={3}
+            onPointerDownCapture={(e) => e.stopPropagation()}
+            style={{
+              width: "100%", boxSizing: "border-box", display: "block",
+              background: "none", border: "none", outline: "none", resize: "none",
+              padding: 0, overflow: "hidden",
+              fontFamily: BOOK, fontSize: 15.5, lineHeight: 1.8,
+              color: "var(--c-text)", caretColor: "var(--c-accent)",
+            }}
+          />
+        </Card>
 
-          {isEmpty && (
-            <div className="card" style={{ padding: "34px 20px", textAlign: "center" }}>
-              <BookOpen size={26} strokeWidth={1.5} style={{ color: "var(--c-text-ghost)" }} />
-              <div style={{ fontFamily: UI, fontSize: 14.5, fontWeight: 700, color: "var(--c-text)", marginTop: 10 }}>
-                A blank page
-              </div>
-              <div style={{ fontFamily: UI, fontSize: 12.5, color: "var(--c-text-muted)", marginTop: 6, lineHeight: 1.6 }}>
-                Nothing was recorded on this day. Write an entry, or open the day view to log it.
-              </div>
-              <button
-                type="button"
-                onClick={() => { tapHaptic(); onWrite(date); }}
-                style={{
-                  marginTop: 14, padding: "10px 18px", borderRadius: 11,
-                  background: "rgba(34,197,94,0.14)", border: "1px solid rgba(34,197,94,0.4)",
-                  color: "var(--c-accent)", fontFamily: UI, fontSize: 12.5, fontWeight: 700,
-                  cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7,
-                }}>
-                <PenLine size={13} strokeWidth={2.2} />
-                Write an entry
-              </button>
-            </div>
-          )}
-
-          {log && (
-            <Card title="Daily log" icon={<Droplets size={13} strokeWidth={2} style={{ color: "var(--c-accent)" }} />}>
-              {hasStats && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-                  {log.water_gal != null && <Stat label="Water" value={log.water_gal} unit="gal" />}
-                  {log.temp_high != null && <Stat label="Temp high" value={log.temp_high} unit="F" />}
-                  {log.temp_low != null && <Stat label="Temp low" value={log.temp_low} unit="F" />}
-                  {log.humidity != null && <Stat label="Humidity" value={log.humidity} unit="%" />}
-                </div>
-              )}
-              {log.feed && (
-                <div style={{ fontFamily: UI, fontSize: 12.5, color: "var(--c-text-dim)", marginTop: hasStats ? 10 : 0, lineHeight: 1.6 }}>
-                  <span style={{ color: "var(--c-text-muted)", textTransform: "uppercase", fontSize: 10.5, letterSpacing: 1.2, marginRight: 6 }}>Feed</span>
-                  {log.feed}
-                </div>
-              )}
-              {waterPlants.length > 0 && (
-                <div style={{ marginTop: 11 }}>
-                  {waterPlants.map((w, i) => (
-                    <PlantRow key={i} name={w.plant || "Plant"}>
-                      watered{w.gal ? ` ${w.gal} gal` : ""}
-                    </PlantRow>
-                  ))}
-                </div>
-              )}
-              {trainingRows.length > 0 && (
-                <div style={{ marginTop: waterPlants.length ? 0 : 11 }}>
-                  {trainingRows.map((t, i) => (
-                    <PlantRow key={i} name={t.plant || "Plant"}>{t.action}</PlantRow>
-                  ))}
-                </div>
-              )}
-              {healthRows.length > 0 && (
-                <div style={{ marginTop: waterPlants.length || trainingRows.length ? 0 : 11 }}>
-                  {healthRows.map((h, i) => (
-                    <PlantRow key={i} name={h.plant || "Plant"}>
-                      {[h.color, h.trichomes ? `${h.trichomes} trichomes` : null, h.notes].filter(Boolean).join(" · ") || "health check"}
-                    </PlantRow>
-                  ))}
-                </div>
-              )}
-            </Card>
-          )}
-
-          {groups.length > 0 && (
-            <Card title="Plant journal" icon={<Sprout size={13} strokeWidth={2} style={{ color: "#c084fc" }} />}>
-              {groups.map((g, gi) => (
-                <div key={g.name + gi} style={{ marginTop: gi === 0 ? 0 : 13 }}>
-                  <div style={{ fontFamily: UI, fontSize: 13.5, fontWeight: 750, color: "var(--c-text)", marginBottom: 4 }}>
-                    {g.name}
+        {loading ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <Skeleton height={92} radius={14} />
+            <Skeleton height={64} radius={14} />
+          </div>
+        ) : (
+          <>
+            {log && (
+              <Card title="Daily log" icon={<Droplets size={13} strokeWidth={2} style={{ color: "var(--c-accent)" }} />}>
+                {hasStats && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                    {log.water_gal != null && <Stat label="Water" value={log.water_gal} unit="gal" />}
+                    {log.temp_high != null && <Stat label="Temp high" value={log.temp_high} unit="F" />}
+                    {log.temp_low != null && <Stat label="Temp low" value={log.temp_low} unit="F" />}
+                    {log.humidity != null && <Stat label="Humidity" value={log.humidity} unit="%" />}
                   </div>
-                  {g.entries.map(e => {
-                    const summary = summarizeEntry(e);
-                    return (
-                      <div key={e.id} style={{ padding: "7px 0", borderTop: "1px solid var(--c-border-faint)" }}>
-                        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                          <span style={{
-                            fontFamily: UI, fontSize: 10, letterSpacing: 1.2, textTransform: "uppercase",
-                            color: e.kind === "health" && e.health ? (HEALTH_MAP[e.health]?.color ?? "var(--c-text-muted)") : "var(--c-text-muted)",
-                            flexShrink: 0,
-                          }}>
-                            {kindLabel(e.kind)}
-                          </span>
-                          {summary && (
-                            <span style={{ fontFamily: UI, fontSize: 12.5, color: "var(--c-text-dim)" }}>{summary}</span>
+                )}
+                {log.feed && (
+                  <div style={{ fontFamily: UI, fontSize: 12.5, color: "var(--c-text-dim)", marginTop: hasStats ? 10 : 0, lineHeight: 1.6 }}>
+                    <span style={{ color: "var(--c-text-muted)", textTransform: "uppercase", fontSize: 10.5, letterSpacing: 1.2, marginRight: 6 }}>Feed</span>
+                    {log.feed}
+                  </div>
+                )}
+                {waterPlants.length > 0 && (
+                  <div style={{ marginTop: 11 }}>
+                    {waterPlants.map((w, i) => (
+                      <PlantRow key={i} name={w.plant || "Plant"}>
+                        watered{w.gal ? ` ${w.gal} gal` : ""}
+                      </PlantRow>
+                    ))}
+                  </div>
+                )}
+                {trainingRows.length > 0 && (
+                  <div style={{ marginTop: waterPlants.length ? 0 : 11 }}>
+                    {trainingRows.map((t, i) => (
+                      <PlantRow key={i} name={t.plant || "Plant"}>{t.action}</PlantRow>
+                    ))}
+                  </div>
+                )}
+                {healthRows.length > 0 && (
+                  <div style={{ marginTop: waterPlants.length || trainingRows.length ? 0 : 11 }}>
+                    {healthRows.map((h, i) => (
+                      <PlantRow key={i} name={h.plant || "Plant"}>
+                        {[h.color, h.trichomes ? `${h.trichomes} trichomes` : null, h.notes].filter(Boolean).join(" · ") || "health check"}
+                      </PlantRow>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )}
+
+            {groups.length > 0 && (
+              <Card title="Plant journal" icon={<Sprout size={13} strokeWidth={2} style={{ color: "#c084fc" }} />}>
+                {groups.map((g, gi) => (
+                  <div key={g.name + gi} style={{ marginTop: gi === 0 ? 0 : 13 }}>
+                    <div style={{ fontFamily: UI, fontSize: 13.5, fontWeight: 750, color: "var(--c-text)", marginBottom: 4 }}>
+                      {g.name}
+                    </div>
+                    {g.entries.map(e => {
+                      const summary = summarizeEntry(e);
+                      return (
+                        <div key={e.id} style={{ padding: "7px 0", borderTop: "1px solid var(--c-border-faint)" }}>
+                          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                            <span style={{
+                              fontFamily: UI, fontSize: 10, letterSpacing: 1.2, textTransform: "uppercase",
+                              color: e.kind === "health" && e.health ? (HEALTH_MAP[e.health]?.color ?? "var(--c-text-muted)") : "var(--c-text-muted)",
+                              flexShrink: 0,
+                            }}>
+                              {kindLabel(e.kind)}
+                            </span>
+                            {summary && (
+                              <span style={{ fontFamily: UI, fontSize: 12.5, color: "var(--c-text-dim)" }}>{summary}</span>
+                            )}
+                          </div>
+                          {e.body && (
+                            <div style={{ fontFamily: BOOK, fontSize: 13.5, color: "var(--c-text-dim)", lineHeight: 1.65, marginTop: 3, whiteSpace: "pre-wrap", overflowWrap: "break-word" }}>
+                              {e.body}
+                            </div>
                           )}
                         </div>
-                        {e.body && (
-                          <div style={{ fontFamily: BOOK, fontSize: 13.5, color: "var(--c-text-dim)", lineHeight: 1.65, marginTop: 3, whiteSpace: "pre-wrap", overflowWrap: "break-word" }}>
-                            {e.body}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-            </Card>
-          )}
-        </>
-      )}
+                      );
+                    })}
+                  </div>
+                ))}
+              </Card>
+            )}
+
+            {!log && groups.length === 0 && (
+              <div style={{ fontFamily: UI, fontSize: 11.5, color: "var(--c-text-ghost)", textAlign: "center", padding: "2px 0" }}>
+                No log or plant entries on this day. Swipe to turn the page.
+              </div>
+            )}
+          </>
+        )}
+      </motion.div>
 
       {/* One tap into the full day view: tasks, weather, and structured logging. */}
       <button
