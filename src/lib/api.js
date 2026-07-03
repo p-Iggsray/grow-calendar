@@ -194,18 +194,6 @@ export const api = {
   reportError: ({ message, stack, url }) =>
     request("/api/errors", { method: "POST", body: JSON.stringify({ message, stack, url }) }).catch(() => {}),
 
-  getPlan: () => request("/api/plan"),
-  planSetup: (survey) =>
-    request("/api/plan/setup", { method: "POST", body: JSON.stringify({ survey }) }),
-  regeneratePlan: () =>
-    request("/api/plan/regenerate", { method: "POST" }),
-  updatePlanConfig: (config) =>
-    request("/api/plan/config", { method: "PATCH", body: JSON.stringify({ config }) }),
-  savePlanPhase: (phase, data) =>
-    request(`/api/plan/phase/${phase}`, { method: "PUT", body: JSON.stringify(data) }),
-  clearPlanPhase: (phase) =>
-    request(`/api/plan/phase/${phase}`, { method: "DELETE" }),
-
   getStats: (growId) => request(withGrow("/api/stats", growId)),
 
   listGrows: () => request("/api/grows"),

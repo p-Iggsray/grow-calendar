@@ -21,11 +21,6 @@ export function queueCheckoff(date, taskStates, growId) {
   writeQueue(q);
 }
 
-/** True if there are any pending offline writes. */
-export function hasPendingCheckoffs() {
-  return Object.keys(readQueue()).length > 0;
-}
-
 /**
  * Flush all queued writes using `putFn(date, taskStates) → Promise`.
  * Successfully written entries are removed; failed entries remain for the

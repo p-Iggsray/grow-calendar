@@ -12,8 +12,6 @@ import { postMjReview } from "./mjReview.js";
 import { getHealth, postClientError } from "./health.js";
 import { getWeather } from "./weather.js";
 import { getPushVapidKey, postPushSubscribe, deletePushSubscribe, getPushToday, sendDailyReminders } from "./push.js";
-import { getPlan, patchPlanConfig, putPlanPhase, deletePlanPhase } from "./plan.js";
-import { postPlanSetup, postPlanRegenerate } from "./planSetup.js";
 import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, patchGrowLifecycle, setupGrow, regenerateGrow, putGrowPhase, deleteGrowPhase, patchGrowDayOverride, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./grows.js";
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
 import { getReverseGeocode } from "./geocode.js";
@@ -149,16 +147,6 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (path === "/api/mj/usage"        && method === "GET")    return getMjUsage(env, user);
   if (path === "/api/mj/history"      && method === "GET")    return getMjHistory(request, env, user);
   if (path === "/api/mj/history"      && method === "DELETE") return deleteMjHistory(request, env, user);
-  if (path === "/api/plan"           && method === "GET")   return getPlan(env, user);
-  if (path === "/api/plan/setup"     && method === "POST")  return postPlanSetup(request, env, user);
-  if (path === "/api/plan/regenerate"&& method === "POST")  return postPlanRegenerate(request, env, user);
-  if (path === "/api/plan/config"    && method === "PATCH") return patchPlanConfig(request, env, user);
-  const planPhaseMatch = path.match(/^\/api\/plan\/phase\/([a-z_]+)$/);
-  if (planPhaseMatch) {
-    const phase = planPhaseMatch[1];
-    if (method === "PUT")    return putPlanPhase(request, env, user, phase);
-    if (method === "DELETE") return deletePlanPhase(env, user, phase);
-  }
   if (path === "/api/errors"    && method === "POST") return postClientError(request, env, user);
 
   if (path === "/api/stats"         && method === "GET")  return getStats(env, user, await resolveGrowId(env, user, new URL(request.url)));

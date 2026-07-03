@@ -78,11 +78,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
       // Convert the "current stage + start date" answer into transplantDate,
       // startType, and per-plant stages before sending.
       const resolved = resolveSurveyForSetup(survey);
-      if (growId) {
-        await api.setupGrow(growId, resolved, taskMode || "heuristic");
-      } else {
-        await api.planSetup(resolved);
-      }
+      await api.setupGrow(growId, resolved, taskMode || "heuristic");
       clearWizardDraft(growId);
       onComplete(taskMode || "heuristic");
     } catch (err) {
