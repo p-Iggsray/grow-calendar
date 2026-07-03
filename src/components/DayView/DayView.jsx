@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronLeft, Pencil } from "lucide-react";
+import { ChevronLeft, Pencil, BookOpen } from "lucide-react";
 import { fmtL, getToday, daysBetween } from "../../lib/dates.js";
 import { useGrowLog } from "../../lib/useGrowLog.js";
 import { useWeather } from "../../lib/useWeather.js";
 import { useEnvDay } from "../../lib/useEnvDay.js";
 import { ymd } from "../../lib/api.js";
-import { renderNote } from "./renderNote.js";
 import { StatePicker } from "./StatePicker.jsx";
 import { TaskRow } from "./TaskRow.jsx";
 import { TaskEditSheet } from "./TaskEditSheet.jsx";
@@ -40,7 +39,7 @@ export default function DayView({
   selected, detail, selStyle, selPhase, threats,
   taskStates, checkoffsLoading, onToggle, onSetTaskState,
   note, onChangeNote, onFlushNote, noteStatus,
-  onBack, onJumpToday,
+  onBack, onJumpToday, onOpenJournal,
   dayEditedTasks,
   onEditTaskForDay, onEditTaskForPhase,
   onRemoveTaskForDay, onAddTaskForDay,
@@ -50,7 +49,6 @@ export default function DayView({
   environment = "outdoor",
 }) {
   const [tab, setTab] = useState("tasks");
-  const [noteEditing, setNoteEditing] = useState(false);
   const [pickerIdx, setPickerIdx] = useState(null);
   const [editingIdx, setEditingIdx] = useState(null);
   const [addingTask, setAddingTask] = useState(false);
@@ -104,15 +102,16 @@ export default function DayView({
   // Indoor and greenhouse grows pull the day's environment from the controller
   // import (temp/RH/VPD) instead of hand-typed numbers.
   const sensorGrow = environment !== "outdoor";
-  const { day: envDay } = useEnvDay(activeGrowId, selected ? ymd(selected) : null, sensorGrow && tab === "log");
+  const { day: envDay } = useEnvDay(activeGrowId, selected ? ymd(selected) : null, sensorGrow && tab === "journal");
 
+  // The written entry grows with its text, matching the main Journal page.
   useEffect(() => {
-    if (noteEditing) textareaRef.current?.focus();
-  }, [noteEditing]);
-
-  useEffect(() => {
-    if (tab !== "notes") setNoteEditing(false);
-  }, [tab]);
+    if (tab !== "journal") return;
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.max(el.scrollHeight, 96) + "px";
+  }, [note, tab]);
 
   const resolvedCount = Object.keys(taskStates ?? {}).length;
   const totalTasks = detail?.tasks?.length ?? 0;
@@ -250,8 +249,7 @@ export default function DayView({
         <div style={{ display: "flex", borderBottom: "1px solid var(--c-border-soft)" }}>
           {[
             { id: "tasks",   label: "Tasks" },
-            { id: "log",     label: "Log" },
-            { id: "notes",   label: "Notes" },
+            { id: "journal", label: "Journal" },
             { id: "threats", label: `Threats${threats.length > 0 ? ` (${threats.length})` : ""}` },
           ].map(t => (
             <button key={t.id} className="touch-target" onClick={() => setTab(t.id)} style={{
@@ -325,17 +323,65 @@ export default function DayView({
             </>
           )}
 
-          {tab === "log" && (
+          {tab === "journal" && (
             <div>
-              {/* Save status */}
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4, minHeight: 16 }}>
+              {/* ── The written entry: same book-style in-place editor as the
+                     main Journal page (it IS the same entry). ── */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                <span style={{
+                  fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 2,
+                  color: "var(--c-text-muted)", textTransform: "uppercase", whiteSpace: "nowrap",
+                }}>
+                  Entry
+                </span>
+                <div style={{ flex: 1, height: 1, background: "var(--c-border)" }} />
+                <span style={{ fontFamily: "var(--font-ui)", fontSize: 10.5, color: statusColor }}>
+                  {statusLabel}
+                </span>
+                {onOpenJournal && (
+                  <button
+                    type="button"
+                    onClick={onOpenJournal}
+                    title="Open this day in the Journal"
+                    style={{
+                      display: "flex", alignItems: "center", gap: 5,
+                      background: "none", border: "1px solid var(--c-border-strong)",
+                      borderRadius: 12, padding: "5px 10px", cursor: "pointer",
+                      color: "var(--c-text-dim)", fontFamily: "var(--font-ui)", fontSize: 10.5,
+                    }}>
+                    <BookOpen size={11} strokeWidth={2} />
+                    Journal
+                  </button>
+                )}
+              </div>
+              <textarea
+                ref={textareaRef}
+                id="day-note"
+                value={note}
+                onChange={(e) => onChangeNote(e.target.value)}
+                onBlur={onFlushNote}
+                placeholder="Write about this day: what you saw, what you did, anything you are worried about…"
+                maxLength={20000}
+                rows={3}
+                style={{
+                  width: "100%", boxSizing: "border-box", display: "block",
+                  background: "rgba(0,0,0,0.2)", color: "var(--c-text)",
+                  border: "1px solid var(--c-border-strong)", borderRadius: 10,
+                  padding: "12px 14px", overflow: "hidden", resize: "none", outline: "none",
+                  fontFamily: "var(--font-journal)", fontSize: 15.5, lineHeight: 1.8,
+                  caretColor: "var(--c-accent)",
+                }}
+              />
+
+              {/* Save status for the structured log below */}
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10, marginBottom: -12, minHeight: 16 }}>
                 <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: logStatus === "error" ? "#f87171" : logStatus === "saved" ? "var(--c-accent)" : "#5a7a5a" }}>
                   {logStatus === "saving" ? "Saving…" : logStatus === "saved" ? "Saved" : logStatus === "error" ? "Save failed" : ""}
                 </span>
               </div>
 
               {/* ── Environment ── */}
-              <LogSection label="Environment" first>
+              <LogSection label="Environment">
                 {sensorGrow && envDay ? (
                   <EnvSensorCard day={envDay} logEntry={logEntry} onFill={setLogFields} />
                 ) : (
@@ -454,77 +500,6 @@ export default function DayView({
                   ))}
                 <AddEntryButton onClick={addHealth} label={scoped ? `ADD HEALTH FOR ${(selPlant?.name || "PLANT").toUpperCase()}` : "ADD HEALTH OBSERVATION"} />
               </LogSection>
-            </div>
-          )}
-
-          {tab === "notes" && (
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <label htmlFor="day-note" style={{ fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase" }}>
-                  Your notes & concerns
-                </label>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {note?.trim() && (
-                    <button
-                      type="button"
-                      className="touch-target"
-                      onClick={() => setNoteEditing(e => !e)}
-                      aria-label={noteEditing ? "Done editing" : "Edit note"}
-                      style={{
-                        background: "none", border: "1px solid var(--c-border-strong)",
-                        borderRadius: 6, padding: "5px 8px",
-                        color: "var(--c-text-muted)", cursor: "pointer",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        minHeight: 32,
-                      }}>
-                      <Pencil size={13} strokeWidth={1.8} />
-                    </button>
-                  )}
-                  <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: statusColor, minHeight: 12 }}>
-                    {statusLabel}
-                  </span>
-                </div>
-              </div>
-
-              {noteEditing || !note?.trim() ? (
-                <>
-                  <textarea
-                    ref={textareaRef}
-                    id="day-note"
-                    value={note}
-                    onChange={(e) => onChangeNote(e.target.value)}
-                    onBlur={() => { onFlushNote(); if (note?.trim()) setNoteEditing(false); }}
-                    onClick={() => setNoteEditing(true)}
-                    placeholder="Write anything you observed or are worried about on this day: watering, leaf color, pests, weather, questions to look up later."
-                    rows={12}
-                    style={{
-                      width: "100%", resize: "vertical",
-                      background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
-                      border: "1px solid var(--c-border-strong)", borderRadius: 10,
-                      padding: "12px 14px", fontSize: 16, lineHeight: 1.7,
-                      fontFamily: "var(--font-ui)", outline: "none",
-                      boxSizing: "border-box",
-                    }}
-                  />
-                  <div style={{ marginTop: 6, fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--c-text-ghost)", lineHeight: 1.8 }}>
-                    **bold** · *italic* · - bullet list
-                  </div>
-                </>
-              ) : (
-                <div
-                  onClick={() => setNoteEditing(true)}
-                  title="Tap to edit"
-                  style={{
-                    minHeight: 120, cursor: "text",
-                    background: "rgba(0,0,0,0.2)",
-                    border: "1px solid var(--c-surface-2)", borderRadius: 10,
-                    padding: "12px 14px", fontSize: 14, lineHeight: 1.8,
-                    fontFamily: "var(--font-ui)",
-                    color: "var(--c-text-dim)",
-                  }}
-                  dangerouslySetInnerHTML={{ __html: renderNote(note) }}
-                />
-              )}
             </div>
           )}
 

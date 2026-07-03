@@ -611,6 +611,7 @@ export default function App() {
               noteStatus={noteStatus}
               onBack={goBack}
               onJumpToday={sameDay(selected, today) ? null : jumpToday}
+              onOpenJournal={() => { const d = selected; goBack(); openJournalAt(d); }}
               dayEditedTasks={dayEditedTasks}
               onEditTaskForDay={handleEditTaskForDay}
               onEditTaskForPhase={handleEditTaskForPhase}
