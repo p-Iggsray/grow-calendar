@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, Pencil, BookOpen } from "lucide-react";
 import { fmtL, getToday, daysBetween } from "../../lib/dates.js";
 import { useGrowLog } from "../../lib/useGrowLog.js";
@@ -15,6 +15,7 @@ import {
 } from "./logEntries.jsx";
 import { WeatherCard } from "./WeatherCard.jsx";
 import EnvSensorCard from "./EnvSensorCard.jsx";
+import RichEntryEditor from "../Journal/RichEntryEditor.jsx";
 
 // ── Shared input styles ────────────────────────────────────────────────────
 
@@ -63,7 +64,6 @@ export default function DayView({
   // New per-plant rows carry the plant's id (when scoped) so they link to the
   // plant's history; name is kept for display + back-compat.
   const newRow = (extra) => ({ plant: selPlant?.name ?? "", ...(scoped ? { plantId: logPlant } : {}), ...extra });
-  const textareaRef = useRef(null);
 
   useEffect(() => {
     onTaskEditActiveChange?.(editingIdx !== null || addingTask);
@@ -103,15 +103,6 @@ export default function DayView({
   // import (temp/RH/VPD) instead of hand-typed numbers.
   const sensorGrow = environment !== "outdoor";
   const { day: envDay } = useEnvDay(activeGrowId, selected ? ymd(selected) : null, sensorGrow && tab === "journal");
-
-  // The written entry grows with its text, matching the main Journal page.
-  useEffect(() => {
-    if (tab !== "journal") return;
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = Math.max(el.scrollHeight, 96) + "px";
-  }, [note, tab]);
 
   const resolvedCount = Object.keys(taskStates ?? {}).length;
   const totalTasks = detail?.tasks?.length ?? 0;
@@ -354,24 +345,19 @@ export default function DayView({
                   </button>
                 )}
               </div>
-              <textarea
-                ref={textareaRef}
-                id="day-note"
-                value={note}
-                onChange={(e) => onChangeNote(e.target.value)}
-                onBlur={onFlushNote}
-                placeholder="Write about this day: what you saw, what you did, anything you are worried about…"
-                maxLength={20000}
-                rows={3}
-                style={{
-                  width: "100%", boxSizing: "border-box", display: "block",
-                  background: "rgba(0,0,0,0.2)", color: "var(--c-text)",
-                  border: "1px solid var(--c-border-strong)", borderRadius: 10,
-                  padding: "12px 14px", overflow: "hidden", resize: "none", outline: "none",
-                  fontFamily: "var(--font-journal)", fontSize: 15.5, lineHeight: 1.8,
-                  caretColor: "var(--c-accent)",
-                }}
-              />
+              <div style={{
+                background: "rgba(0,0,0,0.2)",
+                border: "1px solid var(--c-border-strong)", borderRadius: 10,
+                padding: "10px 14px 12px",
+              }}>
+                <RichEntryEditor
+                  value={note}
+                  onChange={onChangeNote}
+                  onBlur={onFlushNote}
+                  placeholder="Write about this day: what you saw, what you did, anything you are worried about…"
+                  minHeight={84}
+                />
+              </div>
 
               {/* Save status for the structured log below */}
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10, marginBottom: -12, minHeight: 16 }}>

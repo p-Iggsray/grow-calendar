@@ -3,6 +3,7 @@ import { json, error } from "./util.js";
 import { ensureGrowLogSchema, isLogFilled, rowToEntry } from "./growLog.js";
 import { readNote } from "./notes.js";
 import { ownedGrowRow, parseSurvey, ensurePlantLogSchema } from "./plants.js";
+import { htmlToPlainText } from "../src/lib/richText.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -79,8 +80,9 @@ export async function getJournalDay(env, user, growId, date) {
 }
 
 // Pure: a short single-line excerpt for timeline cards and search results.
+// Rich entries are flattened to their words first.
 export function makeExcerpt(body, max = 240) {
-  const text = String(body ?? "").replace(/\s+/g, " ").trim();
+  const text = htmlToPlainText(String(body ?? "")).replace(/\s+/g, " ").trim();
   if (text.length <= max) return text;
   return text.slice(0, max).replace(/\s+\S*$/, "") + "…";
 }

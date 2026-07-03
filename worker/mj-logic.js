@@ -1,5 +1,7 @@
 // Pure helpers and constants for MJ's tools. No env, no I/O - unit tested.
 
+import { appendToNote, htmlToPlainText } from "../src/lib/richText.js";
+
 export function mergeChecked(current, indices, done) {
   const set = new Set(current);
   for (const i of indices) {
@@ -9,11 +11,10 @@ export function mergeChecked(current, indices, done) {
   return [...set].sort((a, b) => a - b);
 }
 
+// Format-aware: appending to a rich (HTML) journal entry adds a paragraph,
+// appending to a plain-text one adds a newline. See src/lib/richText.js.
 export function appendNoteText(existing, addition) {
-  const base = (existing || "").trimEnd();
-  const add = (addition || "").trim();
-  if (!add) return base;
-  return base ? `${base}\n${add}` : add;
+  return appendToNote(existing, addition);
 }
 
 export function buildDayView(date, phase, detail, checkedIndices, userNote) {
@@ -24,8 +25,9 @@ export function buildDayView(date, phase, detail, checkedIndices, userNote) {
     title: detail.title,
     summary: detail.summary,
     tasks: detail.tasks.map((text, index) => ({ index, text, done: checked.has(index) })),
+    // MJ reads the entry as plain words, not markup.
+    userNote: htmlToPlainText(userNote || ""),
     guidance: detail.notes ?? "",
-    userNote: userNote || "",
   };
 }
 

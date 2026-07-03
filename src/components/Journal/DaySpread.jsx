@@ -10,6 +10,7 @@ import { dayOfGrow } from "../../lib/journalStats.js";
 import { kindLabel, summarizeEntry, HEALTH_MAP } from "../PlantsTab/constants.js";
 import { Skeleton } from "../Skeleton.jsx";
 import { tapHaptic } from "../../lib/haptics.js";
+import RichEntryEditor from "./RichEntryEditor.jsx";
 
 const UI = "var(--font-ui)";
 const NUM = "var(--font-num)";
@@ -98,26 +99,12 @@ export default function DaySpread({
   const monthDays = useJournalMonth(monthKey, active, growId);
   const { note, setNote, status: noteStatus } = useDayNote(date, active, growId);
   const dateInputRef = useRef(null);
-  const editorRef = useRef(null);
   const [dir, setDir] = useState(0); // -1 back, 1 forward: drives the page-turn slide
 
   const phase = config ? getPhase(date, config) : null;
   const famColor = phase ? phaseFamily(phase)?.color : null;
   const isToday = sameDay(date, today);
   const growDay = dayOfGrow(date, config);
-
-  // Grow the editor with its text so the page reads as one written sheet.
-  useEffect(() => {
-    const el = editorRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = Math.max(el.scrollHeight, 88) + "px";
-  }, [note, dateKey]);
-
-  // Focus the editor when the user asked to write (timeline prompt).
-  useEffect(() => {
-    if (focusSignal > 0) editorRef.current?.focus();
-  }, [focusSignal]);
 
   // Let the timeline (and this page's own summaries) refresh after a save.
   useEffect(() => {
@@ -282,21 +269,12 @@ export default function DaySpread({
               {noteStatus === "saving" ? "Saving…" : noteStatus === "saved" ? "Saved" : noteStatus === "error" ? "Save failed" : ""}
             </span>
           }>
-          <textarea
-            ref={editorRef}
+          <RichEntryEditor
             value={note}
-            onChange={(e) => setNote(e.target.value)}
+            onChange={setNote}
             placeholder={isToday ? "Write about today in the garden…" : "Write about this day…"}
-            maxLength={20000}
-            rows={3}
-            onPointerDownCapture={(e) => e.stopPropagation()}
-            style={{
-              width: "100%", boxSizing: "border-box", display: "block",
-              background: "none", border: "none", outline: "none", resize: "none",
-              padding: 0, overflow: "hidden",
-              fontFamily: BOOK, fontSize: 15.5, lineHeight: 1.8,
-              color: "var(--c-text)", caretColor: "var(--c-accent)",
-            }}
+            focusSignal={focusSignal}
+            minHeight={88}
           />
         </Card>
 
