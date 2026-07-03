@@ -1,8 +1,10 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { MONTH_NAMES, DOW_SHORT, sameDay } from "../lib/dates.js";
 import { PHASES, getPhase, phaseFamily } from "../lib/growData.js";
 import { GROW_MIN_MONTH, GROW_MAX_MONTH } from "../lib/appConfig.js";
+import { tapHaptic } from "../lib/haptics.js";
 
 const YEAR = 2026;
 const MIN_MONTH = GROW_MIN_MONTH;
@@ -20,11 +22,36 @@ function ymdKey(date) {
   return `${y}-${m}-${d}`;
 }
 
+// Dedicated month-nav button: a real tappable circle, clearly disabled at the
+// edges of the season instead of a bare ghost chevron.
+function MonthArrow({ onClick, disabled, label, children }) {
+  return (
+    <button
+      type="button"
+      className="touch-target"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      style={{
+        width: 40, height: 40, borderRadius: 20, flexShrink: 0,
+        background: disabled ? "transparent" : "var(--c-surface-2)",
+        border: `1px solid ${disabled ? "var(--c-border-faint)" : "var(--c-border-strong)"}`,
+        color: disabled ? "var(--c-text-ghost)" : "var(--c-accent)",
+        cursor: disabled ? "default" : "pointer",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        transition: "background 0.15s, color 0.15s",
+      }}>
+      {children}
+    </button>
+  );
+}
+
 export default function Calendar({
   today, month, setMonth, selected, config,
   loggedDays, onPickDay, onClearSelection,
 }) {
   const touchStart = useRef(null);
+  const [dir, setDir] = useState(0); // -1 prev, 1 next: drives the grid slide
   const firstDow = new Date(YEAR, month, 1).getDay();
   const daysInMonth = new Date(YEAR, month + 1, 0).getDate();
   const cells = [];
@@ -33,9 +60,24 @@ export default function Calendar({
 
   const canPrev = month > MIN_MONTH;
   const canNext = month < MAX_MONTH;
+  const todayMonth = today.getFullYear() === YEAR ? today.getMonth() : null;
+  const offMonth = todayMonth !== null && month !== todayMonth;
 
-  function goPrev() { if (canPrev) { setMonth(m => m - 1); onClearSelection(); } }
-  function goNext() { if (canNext) { setMonth(m => m + 1); onClearSelection(); } }
+  const seasonMonths = [];
+  for (let m = MIN_MONTH; m <= MAX_MONTH; m++) seasonMonths.push(m);
+
+  const loggedThisMonth = Object.keys(loggedDays ?? {})
+    .filter(k => k.startsWith(`${YEAR}-${String(month + 1).padStart(2, "0")}-`)).length;
+
+  function jumpTo(m) {
+    if (m === month || m < MIN_MONTH || m > MAX_MONTH) return;
+    tapHaptic();
+    setDir(m > month ? 1 : -1);
+    setMonth(m);
+    onClearSelection();
+  }
+  function goPrev() { if (canPrev) jumpTo(month - 1); }
+  function goNext() { if (canNext) jumpTo(month + 1); }
 
   function onTouchStart(e) {
     const t = e.changedTouches?.[0];
@@ -65,41 +107,77 @@ export default function Calendar({
         onTouchEnd={onTouchEnd}
         className="card"
         style={{ overflow: "hidden" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 10px" }}>
-          <button
-            type="button"
-            onClick={goPrev}
-            disabled={!canPrev}
-            aria-label="Previous month"
-            style={{
-              background: "none", border: "none",
-              color: canPrev ? "var(--c-accent)" : "var(--c-text-ghost)",
-              cursor: canPrev ? "pointer" : "default",
-              minWidth: 44, minHeight: 44, padding: "8px 12px",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-            <ChevronLeft size={22} strokeWidth={canPrev ? 2 : 1.5} />
-          </button>
-          <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.5, color: "var(--c-text)" }}>
-            {MONTH_NAMES[month]} {YEAR}
+
+        {/* Header: dedicated arrow buttons flanking the month title */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "12px 12px 8px" }}>
+          <MonthArrow onClick={goPrev} disabled={!canPrev} label="Previous month">
+            <ChevronLeft size={20} strokeWidth={2.2} />
+          </MonthArrow>
+          <div style={{ textAlign: "center", minWidth: 0 }}>
+            <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.5, color: "var(--c-text)", lineHeight: 1.2 }}>
+              {MONTH_NAMES[month]}
+              <span style={{ fontWeight: 500, color: "var(--c-text-muted)", marginLeft: 6, fontFamily: "var(--font-num)", fontSize: 14 }}>
+                {YEAR}
+              </span>
+            </div>
+            {offMonth ? (
+              <button
+                type="button"
+                onClick={() => jumpTo(todayMonth)}
+                style={{
+                  marginTop: 3, padding: "3px 11px", borderRadius: 11,
+                  background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.35)",
+                  color: "var(--c-accent)", fontFamily: "var(--font-ui)", fontSize: 10.5,
+                  fontWeight: 700, letterSpacing: 0.6, cursor: "pointer",
+                }}>
+                Back to today
+              </button>
+            ) : (
+              <div style={{ marginTop: 3, fontFamily: "var(--font-ui)", fontSize: 10.5, color: "var(--c-text-ghost)", letterSpacing: 0.4 }}>
+                {loggedThisMonth > 0
+                  ? `${loggedThisMonth} ${loggedThisMonth === 1 ? "day" : "days"} logged this month`
+                  : "Tap a day to open it"}
+              </div>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={goNext}
-            disabled={!canNext}
-            aria-label="Next month"
-            style={{
-              background: "none", border: "none",
-              color: canNext ? "var(--c-accent)" : "var(--c-text-ghost)",
-              cursor: canNext ? "pointer" : "default",
-              minWidth: 44, minHeight: 44, padding: "8px 12px",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-            <ChevronRight size={22} strokeWidth={canNext ? 2 : 1.5} />
-          </button>
+          <MonthArrow onClick={goNext} disabled={!canNext} label="Next month">
+            <ChevronRight size={20} strokeWidth={2.2} />
+          </MonthArrow>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", padding: "0 10px" }}>
+        {/* Season month jumper: one dedicated button per month of the grow */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 5, padding: "0 12px 10px" }}>
+          {seasonMonths.map((m) => {
+            const active = m === month;
+            const isNow = m === todayMonth;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => jumpTo(m)}
+                aria-label={`${MONTH_NAMES[m]}${isNow ? " (current month)" : ""}`}
+                aria-pressed={active}
+                style={{
+                  minWidth: 34, padding: "4px 0 3px", borderRadius: 9,
+                  background: active ? "rgba(34,197,94,0.14)" : "transparent",
+                  border: `1px solid ${active ? "rgba(34,197,94,0.45)" : "var(--c-border-faint)"}`,
+                  color: active ? "var(--c-accent)" : "var(--c-text-muted)",
+                  fontFamily: "var(--font-ui)", fontSize: 10.5, fontWeight: active ? 800 : 500,
+                  letterSpacing: 0.8, cursor: "pointer", textTransform: "uppercase",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                  transition: "background 0.15s, color 0.15s",
+                }}>
+                {MONTH_NAMES[m].slice(0, 3)}
+                <span style={{
+                  width: 4, height: 4, borderRadius: 2,
+                  background: isNow ? "var(--c-accent)" : "transparent",
+                }} />
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", padding: "0 10px", borderTop: "1px solid var(--c-border-faint)", paddingTop: 8 }}>
           {DOW_SHORT.map((l, i) => (
             <div key={i} style={{ textAlign: "center", fontSize: 11, color: "var(--c-text-ghost)", fontFamily: "var(--font-ui)", fontWeight: 700, padding: "2px 0" }}>
               {l}
@@ -107,9 +185,15 @@ export default function Calendar({
           ))}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 3, padding: "6px 10px 12px" }}>
+        {/* Day grid slides in from the direction of travel on month change */}
+        <motion.div
+          key={month}
+          initial={dir === 0 ? false : { x: dir > 0 ? 40 : -40, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.16, ease: "easeOut" }}
+          style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 3, padding: "6px 10px 12px" }}>
           {cells.map((date, i) => {
-            if (!date) return <div key={`e${i}`} style={{ minHeight: 40 }} />;
+            if (!date) return <div key={`e${i}`} style={{ minHeight: 42 }} />;
             const phase = getPhase(date, config);
             const pStyle = phase ? PHASES[phase] : null;
             // One consolidated color per phase family keeps the calendar from
@@ -137,7 +221,7 @@ export default function Calendar({
               <button
                 type="button"
                 key={date.getDate()}
-                onClick={() => { if (pStyle) onPickDay(date); }}
+                onClick={() => { if (pStyle) { tapHaptic(); onPickDay(date); } }}
                 disabled={!pStyle}
                 aria-label={ariaParts.join(", ")}
                 aria-pressed={isSel ? true : undefined}
@@ -145,7 +229,7 @@ export default function Calendar({
                 className={isToday && !isSel ? "cell-today day-cell touch-target" : "day-cell touch-target"}
                 style={{
                   font: "inherit",
-                  borderRadius: 8, minHeight: 40,
+                  borderRadius: 9, minHeight: 42,
                   padding: 0,
                   display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 2,
@@ -182,11 +266,29 @@ export default function Calendar({
               </button>
             );
           })}
-        </div>
+        </motion.div>
       </div>
 
-      <div style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--c-text-ghost)", textAlign: "center", marginTop: 8, lineHeight: 1.8 }}>
-        Solid border = today · Dashed = key date · Green ring = day logged
+      {/* Legend with real swatches instead of a prose sentence */}
+      <div
+        aria-hidden="true"
+        style={{
+          display: "flex", justifyContent: "center", alignItems: "center",
+          gap: 14, flexWrap: "wrap", marginTop: 8,
+          fontFamily: "var(--font-ui)", fontSize: 10.5, color: "var(--c-text-ghost)",
+        }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <span style={{ width: 11, height: 11, borderRadius: 4, border: "2px solid var(--c-accent)", flexShrink: 0 }} />
+          Today
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <span style={{ width: 11, height: 11, borderRadius: 4, border: "2px dashed var(--c-text-muted)", flexShrink: 0 }} />
+          Key date
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <span style={{ width: 11, height: 11, borderRadius: 6, border: "2px solid #22c55e", flexShrink: 0 }} />
+          Logged
+        </span>
       </div>
     </div>
   );
@@ -196,7 +298,7 @@ export default function Calendar({
 // becomes a closed green ring; partial ratios are amber arcs so partially-done
 // days don't read as "done."
 function CompletionRing({ ratio, complete }) {
-  const size = 30;        // outer box; cell minHeight is 40, this fits inside
+  const size = 30;        // outer box; cell minHeight is 42, this fits inside
   const stroke = 2;
   const r = (size - stroke) / 2;
   const cx = size / 2;
