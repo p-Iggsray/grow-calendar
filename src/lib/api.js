@@ -59,6 +59,9 @@ export const api = {
   getMonthGrowLog: (month, growId) => request(withGrow(`/api/grow-log/month?month=${month}`, growId)),
   getJournalDay: (date, growId) => request(withGrow(`/api/journal/${date}`, growId)),
   getJournalMonth: (month, growId) => request(withGrow(`/api/journal/month?month=${month}`, growId)),
+  getJournalTimeline: (before, limit, growId) =>
+    request(withGrow(`/api/journal/timeline?before=${before || ""}&limit=${limit || 30}`, growId)),
+  searchJournal: (q, growId) => request(withGrow(`/api/journal/search?q=${encodeURIComponent(q)}`, growId)),
 
   getNote: (date, growId) => request(withGrow(`/api/notes/${date}`, growId)),
   putNote: (date, body, growId) =>

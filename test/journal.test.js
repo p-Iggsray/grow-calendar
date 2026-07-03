@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildMonthIndex, journalPlantEntry } from "../worker/journal.js";
+import { buildMonthIndex, journalPlantEntry, buildTimelineDays, makeExcerpt, escapeLike } from "../worker/journal.js";
+import { journalStreak, dayOfGrow } from "../src/lib/journalStats.js";
 
 // ── Month index ──────────────────────────────────────────────────────────────
 test("buildMonthIndex: only FILLED grow-log days count as logged", () => {
@@ -50,4 +51,59 @@ test("journalPlantEntry: bad detail JSON and unknown plants degrade gracefully",
   assert.equal(e.detail, null);
   assert.equal(e.kind, "note");       // legacy rows without a kind read as notes
   assert.equal(e.body, "hello");
+});
+
+// ── Timeline feed ────────────────────────────────────────────────────────────
+test("buildTimelineDays: merges all three sources per day, newest first", () => {
+  const days = buildTimelineDays(
+    [
+      { date: "2026-06-10", water_gal: 1.5, temp_high: 82, water_plants: '[{"plant":"A"},{"plant":"B"}]' },
+      { date: "2026-06-08", water_gal: null }, // unfilled: dropped
+    ],
+    [{ date: "2026-06-12", body: "Topped the Blue Dream today." }, { date: "2026-06-10", body: "  " }],
+    [{ date: "2026-06-10", n: 2, kinds: "watering,training" }],
+  );
+  assert.deepEqual(days.map(d => d.date), ["2026-06-12", "2026-06-10"]);
+  assert.equal(days[0].noteExcerpt, "Topped the Blue Dream today.");
+  assert.equal(days[0].log, null);
+  assert.equal(days[1].log.water_gal, 1.5);
+  assert.equal(days[1].log.waterings, 2);
+  assert.equal(days[1].noteExcerpt, ""); // whitespace-only note ignored
+  assert.deepEqual(days[1].plantKinds, ["watering", "training"]);
+});
+
+test("makeExcerpt: collapses whitespace and cuts on a word boundary", () => {
+  assert.equal(makeExcerpt("  line one\n\nline two  "), "line one line two");
+  const long = "word ".repeat(100);
+  const out = makeExcerpt(long, 50);
+  assert.ok(out.length <= 51); // 50 chars + ellipsis
+  assert.ok(out.endsWith("…"));
+  assert.ok(!out.includes("  "));
+});
+
+test("escapeLike: neutralizes LIKE wildcards in search text", () => {
+  assert.equal(escapeLike("50%_a\\b"), "50\\%\\_a\\\\b");
+});
+
+// ── Journal stats ────────────────────────────────────────────────────────────
+const D = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+
+test("journalStreak: counts consecutive days back from today", () => {
+  const today = D("2026-07-03");
+  assert.equal(journalStreak(["2026-07-03", "2026-07-02", "2026-07-01", "2026-06-28"], today), 3);
+});
+
+test("journalStreak: today not yet journaled keeps yesterday's streak alive", () => {
+  const today = D("2026-07-03");
+  assert.equal(journalStreak(["2026-07-02", "2026-07-01"], today), 2);
+  assert.equal(journalStreak(["2026-06-30"], today), 0); // gap of a day breaks it
+  assert.equal(journalStreak([], today), 0);
+});
+
+test("dayOfGrow: day 1 is the grow's first day; before the grow returns null", () => {
+  const config = { germinate: D("2026-06-01") };
+  assert.equal(dayOfGrow(D("2026-06-01"), config), 1);
+  assert.equal(dayOfGrow(D("2026-07-03"), config), 33);
+  assert.equal(dayOfGrow(D("2026-05-20"), config), null);
+  assert.equal(dayOfGrow(D("2026-07-03"), {}), null);
 });

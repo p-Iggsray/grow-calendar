@@ -78,6 +78,142 @@ export async function getJournalDay(env, user, growId, date) {
   });
 }
 
+// Pure: a short single-line excerpt for timeline cards and search results.
+export function makeExcerpt(body, max = 240) {
+  const text = String(body ?? "").replace(/\s+/g, " ").trim();
+  if (text.length <= max) return text;
+  return text.slice(0, max).replace(/\s+\S*$/, "") + "…";
+}
+
+// Pure: merge per-table query results into day summaries, newest first.
+// logRows are raw grow_log rows; noteRows carry {date, body}; plantRows carry
+// {date, n, kinds} (kinds = comma-joined distinct entry kinds for the day).
+export function buildTimelineDays(logRows, noteRows, plantRows) {
+  const byDate = new Map();
+  const at = (d) => {
+    if (!byDate.has(d)) byDate.set(d, { date: d, log: null, noteExcerpt: "", plants: 0, plantKinds: [] });
+    return byDate.get(d);
+  };
+  for (const r of logRows ?? []) {
+    if (!isLogFilled(r)) continue;
+    const e = rowToEntry(r);
+    at(r.date).log = {
+      water_gal: e.water_gal, feed: e.feed,
+      temp_high: e.temp_high, temp_low: e.temp_low, humidity: e.humidity,
+      waterings: e.water_plants.length, trainings: e.training.length, healthChecks: e.plant_health.length,
+    };
+  }
+  for (const r of noteRows ?? []) {
+    if ((r.body ?? "").trim()) at(r.date).noteExcerpt = makeExcerpt(r.body);
+  }
+  for (const r of plantRows ?? []) {
+    const d = at(r.date);
+    d.plants = r.n;
+    d.plantKinds = String(r.kinds ?? "").split(",").filter(Boolean);
+  }
+  return [...byDate.values()].sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+// Escape LIKE wildcards in user-supplied search text.
+export function escapeLike(q) {
+  return String(q ?? "").replace(/[\\%_]/g, (c) => "\\" + c);
+}
+
+// GET /api/journal/timeline?before=YYYY-MM-DD&limit=N -> the journal's home
+// feed: every day that holds content, newest first, paged by date cursor.
+// Also returns totalDays (distinct journaled days) for the stats row.
+export async function getJournalTimeline(env, user, growId, before, limitRaw) {
+  const row = await ownedGrowRow(env, user.id, growId);
+  if (!row) return error(404, "grow not found");
+  const cursor = DATE_RE.test(before || "") ? before : "9999-12-31";
+  const limit = Math.min(Math.max(Number(limitRaw) || 30, 1), 90);
+  // Over-fetch per table: a day may appear in one table only, so each table
+  // needs enough rows on its own to fill a page of merged days.
+  const fetchN = limit + 30;
+
+  await ensureGrowLogSchema(env);
+  await ensurePlantLogSchema(env);
+
+  const [logs, notes, plants, total] = await Promise.all([
+    env.DB.prepare(
+      "SELECT * FROM grow_log WHERE user_id = ? AND grow_id = ? AND date < ? ORDER BY date DESC LIMIT ?"
+    ).bind(user.id, growId, cursor, fetchN).all(),
+    env.DB.prepare(
+      "SELECT date, body FROM day_notes WHERE user_id = ? AND grow_id = ? AND date < ? ORDER BY date DESC LIMIT ?"
+    ).bind(user.id, growId, cursor, fetchN).all().catch(() => ({ results: [] })),
+    env.DB.prepare(
+      `SELECT date, COUNT(*) AS n, GROUP_CONCAT(DISTINCT kind) AS kinds
+       FROM plant_log WHERE user_id = ? AND grow_id = ? AND date < ?
+       GROUP BY date ORDER BY date DESC LIMIT ?`
+    ).bind(user.id, growId, cursor, fetchN).all(),
+    env.DB.prepare(
+      `SELECT COUNT(DISTINCT date) AS n FROM (
+         SELECT date FROM grow_log WHERE user_id = ? AND grow_id = ?
+         UNION SELECT date FROM day_notes WHERE user_id = ? AND grow_id = ?
+         UNION SELECT date FROM plant_log WHERE user_id = ? AND grow_id = ?
+       )`
+    ).bind(user.id, growId, user.id, growId, user.id, growId).first().catch(() => ({ n: 0 })),
+  ]);
+
+  const merged = buildTimelineDays(logs.results, notes.results, plants.results);
+  const days = merged.slice(0, limit);
+  const hasMore = merged.length > limit
+    // Any source table hitting its fetch cap may hide older days.
+    || (logs.results ?? []).length >= fetchN
+    || (notes.results ?? []).length >= fetchN
+    || (plants.results ?? []).length >= fetchN;
+
+  return json({
+    days,
+    totalDays: total?.n ?? 0,
+    nextBefore: days.length ? days[days.length - 1].date : null,
+    hasMore: hasMore && days.length > 0,
+  });
+}
+
+// GET /api/journal/search?q= -> days whose note or plant entries mention the
+// text, newest first, with a match excerpt for each.
+export async function searchJournal(env, user, growId, qRaw) {
+  const q = String(qRaw ?? "").trim().slice(0, 80);
+  if (q.length < 2) return error(400, "type at least 2 characters to search");
+  const row = await ownedGrowRow(env, user.id, growId);
+  if (!row) return error(404, "grow not found");
+  const names = plantNameMap(parseSurvey(row.survey));
+  const like = `%${escapeLike(q)}%`;
+
+  await ensurePlantLogSchema(env);
+  const [notes, entries, feeds] = await Promise.all([
+    env.DB.prepare(
+      `SELECT date, body FROM day_notes WHERE user_id = ? AND grow_id = ? AND body LIKE ? ESCAPE '\\'
+       ORDER BY date DESC LIMIT 40`
+    ).bind(user.id, growId, like).all().catch(() => ({ results: [] })),
+    env.DB.prepare(
+      `SELECT date, plant_id, kind, body FROM plant_log
+       WHERE user_id = ? AND grow_id = ? AND body LIKE ? ESCAPE '\\'
+       ORDER BY date DESC LIMIT 40`
+    ).bind(user.id, growId, like).all(),
+    env.DB.prepare(
+      `SELECT date, feed FROM grow_log WHERE user_id = ? AND grow_id = ? AND feed LIKE ? ESCAPE '\\'
+       ORDER BY date DESC LIMIT 40`
+    ).bind(user.id, growId, like).all(),
+  ]);
+
+  const byDate = new Map();
+  const add = (date, snippet) => {
+    if (!byDate.has(date)) byDate.set(date, { date, snippets: [] });
+    const s = byDate.get(date).snippets;
+    if (s.length < 3) s.push(snippet);
+  };
+  for (const r of notes.results ?? []) add(r.date, { source: "note", text: makeExcerpt(r.body, 140) });
+  for (const r of entries.results ?? []) {
+    add(r.date, { source: "plant", plant: names[r.plant_id] ?? "Plant", kind: r.kind || "note", text: makeExcerpt(r.body, 140) });
+  }
+  for (const r of feeds.results ?? []) add(r.date, { source: "feed", text: makeExcerpt(r.feed, 140) });
+
+  const results = [...byDate.values()].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 40);
+  return json({ q, results });
+}
+
 // GET /api/journal/month?month=YYYY-MM -> { month, days: { date: {log, note, plants} } }
 // Powers the journal's jump-to-day strip: which days actually hold content.
 export async function getJournalMonth(env, user, growId, month) {
