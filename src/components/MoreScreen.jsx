@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Users, FileText, Bell, BellOff, BarChart2, Sun, Moon, Monitor, Map, Share2, SlidersHorizontal, Gauge, ChevronRight } from "lucide-react";
+import { Users, FileText, Bell, BellOff, BarChart2, Sun, Moon, Monitor, Map, Share2, SlidersHorizontal, Gauge, ChevronRight, Wind } from "lucide-react";
 import ShareSheet from "./ShareSheet.jsx";
 import PhaseLegend from "./PhaseLegend.jsx";
 import ThreatsReference from "./ThreatsReference.jsx";
 import AuthFooter from "./AuthFooter.jsx";
+import ConfirmModal from "./ConfirmModal.jsx";
 import { usePlan } from "../lib/usePlan.jsx";
+import { useToday } from "../lib/dates.js";
+import { getLifecyclePhase } from "../lib/lifecycle.js";
+import { ymd as lifecycleYmd, useLifecycleSave } from "./Lifecycle/shared.jsx";
 import { growLocation, strainSummary } from "../lib/growProfile.js";
 import { useNotifications } from "../lib/useNotifications.js";
 import { useToast } from "../lib/useToast.jsx";
@@ -67,11 +71,17 @@ function Group({ title, children }) {
 }
 
 export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMap, onOpenEnv, onOpenSettings, onBeforeSignOut, theme, setTheme }) {
-  const { survey, activeGrowId } = usePlan();
+  const { survey, activeGrowId, lifecycle } = usePlan();
+  const today = useToday();
   const location = growLocation(survey);
   const strains = strainSummary(survey);
   const [showShare, setShowShare] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
+  // Early drying entry: the main page only surfaces Start Drying once harvest
+  // is due, so starting ahead of schedule lives here.
+  const growing = getLifecyclePhase(lifecycle) === "growing";
+  const { save: saveLifecycle, busy: dryingBusy } = useLifecycleSave();
+  const [confirmDrying, setConfirmDrying] = useState(false);
   const { addToast } = useToast();
   const { supported: notifSupported, permission, subscribed, busy: notifBusy, error: notifError, subscribe, unsubscribe } = useNotifications();
 
@@ -122,12 +132,29 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
         <Row icon={Map} tint="#f59e0b" label="Garden map" onClick={onOpenMap} />
         <Row icon={BarChart2} tint="#a855f7" label="Season analytics" onClick={onOpenStats} />
         <Row icon={Share2} tint="#22c55e" label="Share with a buddy" onClick={() => setShowShare(true)} />
+        {growing && (
+          <Row
+            icon={Wind} tint="#f59e0b" label="Start drying early"
+            onClick={() => setConfirmDrying(true)}
+            disabled={!activeGrowId || dryingBusy}
+          />
+        )}
         <Row
           icon={FileText} tint="#94a3b8"
           label={reportBusy ? "Preparing report…" : "Export full report"}
           onClick={openReport} disabled={!activeGrowId || reportBusy} last
         />
       </Group>
+
+      <ConfirmModal
+        open={confirmDrying}
+        title="Start drying?"
+        message="This hides the calendar and opens the drying tracker, starting the dry-day counter today. You can keep logging in Plants and chatting with MJ."
+        confirmLabel="Start drying"
+        cancelLabel="Not yet"
+        onConfirm={() => { setConfirmDrying(false); saveLifecycle({ phase: "drying", dryStartedAt: lifecycleYmd(today) }); }}
+        onCancel={() => setConfirmDrying(false)}
+      />
 
       {(notifSupported || isAdmin) && (
         <Group title="App">

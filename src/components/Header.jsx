@@ -1,11 +1,22 @@
+import { CalendarDays, BookOpen } from "lucide-react";
 import { daysBetween, fmt } from "../lib/dates.js";
 import { phaseFamily } from "../lib/growData.js";
+import { tapHaptic } from "../lib/haptics.js";
 
 // The home hero. Shows the grower's own grow (name, phase, season progress) - // not the app's name - like a real mobile app. The season range is computed
 // from the grow's config, and the current phase drives the accent color.
+// Ends in the Calendar/Journal section tabs so the page reads as one unit.
 const ENV_LABEL = { indoor: "Indoor", outdoor: "Outdoor", greenhouse: "Greenhouse" };
 
-export default function Header({ growName, environment, todayPhase, todayStyle, nextMs, daysToNext, location, strains, config, today }) {
+const VIEWS = [
+  { id: "calendar", label: "Calendar", Icon: CalendarDays },
+  { id: "journal",  label: "Journal",  Icon: BookOpen },
+];
+
+export default function Header({
+  growName, environment, todayPhase, todayStyle, nextMs, daysToNext,
+  location, strains, config, today, view, onChangeView, onPickMilestone,
+}) {
   const envLabel = ENV_LABEL[environment] ?? null;
   const seasonStart = config?.germinate ?? config?.start;
   const seasonEnd = config?.hazeHarvest;
@@ -17,6 +28,7 @@ export default function Header({ growName, environment, todayPhase, todayStyle, 
   const fam = todayPhase ? phaseFamily(todayPhase) : null;
   const accent = fam?.color || "#4ade80";
   const phaseLabel = todayStyle?.label ?? "Off season";
+  const msTappable = Boolean(onPickMilestone && nextMs && !nextMs.done);
 
   return (
     <div style={{
@@ -25,10 +37,10 @@ export default function Header({ growName, environment, todayPhase, todayStyle, 
       background: "var(--c-header-bg)",
       borderRadius: "0 0 var(--radius-xl) var(--radius-xl)",
       boxShadow: "var(--shadow-card)",
-      paddingTop: "calc(18px + env(safe-area-inset-top, 0px))",
-      paddingRight: "calc(16px + env(safe-area-inset-right, 0px))",
-      paddingBottom: 16,
-      paddingLeft: "calc(16px + env(safe-area-inset-left, 0px))",
+      paddingTop: "calc(14px + env(safe-area-inset-top, 0px))",
+      paddingRight: "calc(14px + env(safe-area-inset-right, 0px))",
+      paddingBottom: 12,
+      paddingLeft: "calc(14px + env(safe-area-inset-left, 0px))",
     }}>
       {/* Soft phase-colored glow in the corner gives the hero depth. */}
       <div aria-hidden="true" style={{
@@ -40,13 +52,13 @@ export default function Header({ growName, environment, todayPhase, todayStyle, 
       {/* Identity */}
       <div style={{ position: "relative" }}>
         <div style={{
-          fontSize: 11, fontWeight: 600, letterSpacing: 1.2, textTransform: "uppercase",
-          color: "var(--c-text-faint)", marginBottom: 3,
+          fontSize: 10.5, fontWeight: 600, letterSpacing: 1.2, textTransform: "uppercase",
+          color: "var(--c-text-faint)", marginBottom: 2,
         }}>
           Grow Log{envLabel ? ` · ${envLabel}` : ""}{location ? ` · ${location}` : ""}
         </div>
         <div style={{
-          fontSize: 27, fontWeight: 800, letterSpacing: -0.7, lineHeight: 1.12,
+          fontSize: 23, fontWeight: 800, letterSpacing: -0.6, lineHeight: 1.15,
           color: "var(--c-text)",
           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
         }}>
@@ -54,7 +66,7 @@ export default function Header({ growName, environment, todayPhase, todayStyle, 
         </div>
         {strains && (
           <div style={{
-            fontSize: 13, color: "var(--c-text-muted)", marginTop: 3,
+            fontSize: 12, color: "var(--c-text-muted)", marginTop: 2,
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}>
             {strains}
@@ -62,15 +74,16 @@ export default function Header({ growName, environment, todayPhase, todayStyle, 
         )}
       </div>
 
-      {/* Season progress module */}
+      {/* Season progress module - phase, day count, progress bar, and the next
+          milestone all live in ONE compact card. */}
       <div style={{
-        position: "relative", marginTop: 14,
+        position: "relative", marginTop: 10,
         background: "var(--c-surface-1)",
         border: "1px solid var(--c-border-faint)",
-        borderRadius: 14, padding: "11px 13px 12px",
+        borderRadius: 13, padding: "9px 12px 10px",
         backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 9 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
           <span style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
             <span aria-hidden="true" style={{
               width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
@@ -78,21 +91,21 @@ export default function Header({ growName, environment, todayPhase, todayStyle, 
               boxShadow: todayStyle ? `0 0 6px ${accent}88` : "none",
             }} />
             <span style={{
-              fontSize: 13.5, fontWeight: 650, color: "var(--c-text)",
+              fontSize: 13, fontWeight: 650, color: "var(--c-text)",
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             }}>
               {phaseLabel}
             </span>
           </span>
           {dayNum != null && (
-            <span style={{ fontSize: 12, color: "var(--c-text-dim)", flexShrink: 0 }}>
+            <span style={{ fontSize: 11.5, color: "var(--c-text-dim)", flexShrink: 0 }}>
               Day <span style={{ fontFamily: "var(--font-num)", fontWeight: 700, color: "var(--c-text)" }}>{dayNum}</span>
               <span style={{ color: "var(--c-text-faint)" }}> of {totalDays}</span>
             </span>
           )}
         </div>
 
-        <div style={{ height: 6, borderRadius: 3, background: "var(--c-surface-2)", overflow: "hidden" }}>
+        <div style={{ height: 5, borderRadius: 3, background: "var(--c-surface-2)", overflow: "hidden" }}>
           <div style={{
             width: `${pct}%`, height: "100%", borderRadius: 3,
             background: `linear-gradient(90deg, ${accent}99, ${accent})`,
@@ -100,53 +113,74 @@ export default function Header({ growName, environment, todayPhase, todayStyle, 
           }} />
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 7 }}>
-          <span style={{ fontSize: 10.5, fontFamily: "var(--font-num)", color: "var(--c-text-faint)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6, gap: 8 }}>
+          <span style={{ fontSize: 10, fontFamily: "var(--font-num)", color: "var(--c-text-faint)", flexShrink: 0 }}>
             {seasonStart ? fmt(seasonStart) : ""}
           </span>
-          <span style={{ fontSize: 10.5, fontFamily: "var(--font-num)", fontWeight: 600, color: accent }}>
-            {pct}%
-          </span>
-          <span style={{ fontSize: 10.5, fontFamily: "var(--font-num)", color: "var(--c-text-faint)" }}>
+          {/* Next milestone, tappable to jump to that day on the calendar. */}
+          {nextMs ? (
+            <button
+              type="button"
+              onClick={msTappable ? () => { tapHaptic(); onPickMilestone(); } : undefined}
+              disabled={!msTappable}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 5, minWidth: 0,
+                background: "none", border: "none", padding: "2px 4px",
+                cursor: msTappable ? "pointer" : "default",
+                fontSize: 11.5, fontFamily: "var(--font-ui)",
+              }}>
+              <span aria-hidden="true" style={{ fontSize: 12 }}>{nextMs.icon}</span>
+              <span style={{
+                color: nextMs.done ? "var(--c-accent)" : daysToNext === 0 ? "var(--c-warn)" : "var(--c-text-dim)",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                fontWeight: nextMs.done || daysToNext === 0 ? 650 : 500,
+              }}>
+                {nextMs.done ? nextMs.label
+                  : daysToNext === 0 ? `${nextMs.label} is today`
+                  : <>Next: {nextMs.label} <span style={{ fontFamily: "var(--font-num)", fontWeight: 700, color: "var(--c-text)" }}>{daysToNext}d</span></>}
+              </span>
+            </button>
+          ) : (
+            <span style={{ fontSize: 10, fontFamily: "var(--font-num)", fontWeight: 600, color: accent }}>{pct}%</span>
+          )}
+          <span style={{ fontSize: 10, fontFamily: "var(--font-num)", color: "var(--c-text-faint)", flexShrink: 0 }}>
             {seasonEnd ? fmt(seasonEnd) : ""}
           </span>
         </div>
       </div>
 
-      {/* Next milestone - one clean pill, no wrapping chip soup. */}
-      {nextMs && (
-        <div style={{ position: "relative", marginTop: 10, display: "flex" }}>
-          {nextMs.done ? (
-            <span style={pill("rgba(34,197,94,0.12)", "rgba(34,197,94,0.32)")}>
-              <span aria-hidden="true">{nextMs.icon}</span>
-              <span style={{ color: "var(--c-accent)", fontWeight: 600 }}>{nextMs.label}</span>
-            </span>
-          ) : daysToNext === 0 ? (
-            <span style={pill("rgba(250,204,21,0.12)", "rgba(250,204,21,0.35)")}>
-              <span aria-hidden="true">{nextMs.icon}</span>
-              <span style={{ color: "var(--c-warn)", fontWeight: 600 }}>{nextMs.label} is today</span>
-            </span>
-          ) : (
-            <span style={pill("var(--c-surface-1)", "var(--c-border-faint)")}>
-              <span aria-hidden="true">{nextMs.icon}</span>
-              <span style={{ color: "var(--c-text-dim)" }}>
-                Next: {nextMs.label}
-                <span style={{ color: "var(--c-text-faint)" }}> · </span>
-                <span style={{ fontFamily: "var(--font-num)", fontWeight: 700, color: "var(--c-text)" }}>{daysToNext}d</span>
-              </span>
-            </span>
-          )}
+      {/* Section tabs: Calendar | Journal */}
+      {onChangeView && (
+        <div style={{
+          position: "relative", marginTop: 10,
+          display: "flex", gap: 4, padding: 4, borderRadius: 13,
+          background: "var(--c-surface-1)", border: "1px solid var(--c-border-faint)",
+        }}>
+          {VIEWS.map(({ id, label, Icon }) => {
+            const active = view === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => { if (!active) { tapHaptic(); onChangeView(id); } }}
+                aria-pressed={active}
+                style={{
+                  flex: 1, padding: "8px 10px", borderRadius: 10, cursor: "pointer",
+                  background: active ? "var(--c-surface-2)" : "none",
+                  border: active ? "1px solid var(--c-border)" : "1px solid transparent",
+                  color: active ? "var(--c-text)" : "var(--c-text-muted)",
+                  fontFamily: "var(--font-ui)", fontSize: 12.5, fontWeight: active ? 700 : 500,
+                  letterSpacing: 0.3,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                  transition: "background 0.15s, color 0.15s",
+                }}>
+                <Icon size={14} strokeWidth={2} />
+                {label}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
   );
-}
-
-function pill(bg, border) {
-  return {
-    display: "inline-flex", alignItems: "center", gap: 7,
-    background: bg, border: `1px solid ${border}`,
-    borderRadius: 999, padding: "7px 13px",
-    fontSize: 12.5,
-  };
 }

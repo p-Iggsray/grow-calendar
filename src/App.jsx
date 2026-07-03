@@ -7,7 +7,6 @@ import {
   getDetail,
   getThreatsForPhase,
   getNextMilestone,
-  buildMilestones,
 } from "./lib/growData.js";
 import { useAuth } from "./lib/auth.jsx";
 import { usePlan } from "./lib/usePlan.jsx";
@@ -24,7 +23,6 @@ import { growLocation, strainSummary } from "./lib/growProfile.js";
 import { getLifecyclePhase, phaseMeta } from "./lib/lifecycle.js";
 
 import Header from "./components/Header.jsx";
-import MilestoneStrip from "./components/MilestoneStrip.jsx";
 import Calendar from "./components/Calendar.jsx";
 import DayView from "./components/DayView/DayView.jsx";
 import TabBar from "./components/TabBar.jsx";
@@ -32,7 +30,6 @@ import MoreScreen from "./components/MoreScreen.jsx";
 import GrowsListTab from "./components/GrowsListTab.jsx";
 import PlantsTab from "./components/PlantsTab/PlantsTab.jsx";
 import PhasePrompt from "./components/Lifecycle/PhasePrompt.jsx";
-import ViewSwitch from "./components/Journal/ViewSwitch.jsx";
 import JournalScreen from "./components/Journal/JournalScreen.jsx";
 import { AppShellSkeleton, PanelSkeleton } from "./components/LoadingScreens.jsx";
 
@@ -284,7 +281,6 @@ export default function App() {
   const todayStyle = todayPhase ? PHASES[todayPhase] : null;
   const nextMs     = getNextMilestone(today, config);
   const daysToNext = nextMs ? daysBetween(nextMs.date, today) : 0;
-  const milestones = buildMilestones(config);
 
   const selPhase    = selected ? getPhase(selected, config) : null;
   const selStyle    = selPhase ? PHASES[selPhase] : null;
@@ -520,18 +516,19 @@ export default function App() {
                 strains={strainSummary(survey)}
                 config={config}
                 today={today}
-              />
-              {/* Drying entry point - always available, but only prominent once
-                  final harvest has passed (`due`). */}
-              <PhasePrompt today={today} due={Boolean(config?.hazeHarvest && today >= config.hazeHarvest)} />
-              <ViewSwitch
                 view={mainView}
-                onChange={(v) => {
+                onChangeView={(v) => {
                   // Like a paper journal, toggling into it opens today's page.
                   if (v === "journal") setJournalDate(today);
                   setMainView(v);
                 }}
+                onPickMilestone={nextMs ? () => pickMilestone(nextMs.date) : undefined}
               />
+              {/* Drying entry point - main page shows it only once final
+                  harvest has passed; starting early lives in More. */}
+              {Boolean(config?.hazeHarvest && today >= config.hazeHarvest) && (
+                <PhasePrompt today={today} due />
+              )}
               {mainView === "journal" ? (
                 <JournalScreen
                   today={today}
@@ -561,7 +558,6 @@ export default function App() {
                   </button>
                 </div>
               )}
-              <MilestoneStrip today={today} milestones={milestones} onPick={pickMilestone} />
               <Calendar
                 today={today}
                 month={month}
