@@ -19,6 +19,15 @@ export function addDays(isoDate, n) {
 
 export function fillMissingConfigKeys(config, survey) {
   const base = config.transplant || survey.transplantDate;
+  // Everything below derives from the transplant anchor - fail loudly (the
+  // callers turn this into a friendly 400) rather than emitting NaN dates.
+  if (typeof base !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(base)) {
+    throw new Error("no valid transplant date to anchor the timeline");
+  }
+  // The anchor itself IS a required config key. Setting it here (not in each
+  // caller) means a caller starting from an empty {} can never lose it - the
+  // exact bug that made every new-grow setup fail with "missing: transplant".
+  if (!config.transplant)  config.transplant  = base;
   if (!config.start)       config.start       = addDays(base, -2);
   // Germination + seedling windows live before transplant, but only for grows
   // that actually start from seed/seedling. Clone/veg starts have no such window,

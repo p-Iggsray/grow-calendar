@@ -98,6 +98,36 @@ test("resolving is idempotent: re-resolving a resolved survey changes nothing", 
   assert.equal(second.plantCount, first.plantCount);
 });
 
+// Regression: the setup ENDPOINT starts from an EMPTY config ({}), unlike the
+// older tests here that pre-seeded { transplant }. fillMissingConfigKeys must
+// set the transplant anchor itself or every new-grow setup 400s with
+// "missing: transplant" - which is exactly what happened in production.
+test("endpoint-shaped setup: an empty config gains ALL required keys", () => {
+  const REQUIRED = ["germinate", "seedlingStart", "start", "transplant", "calMag", "feedStart",
+    "fullDose", "flush1", "flush2", "flush3", "backyardMove", "preFlower", "flowerStart",
+    "gdpFlush", "gdpHarvest", "hazeFlush", "hazeHarvest"];
+  for (const environment of ["indoor", "outdoor", "greenhouse"]) {
+    for (const currentStage of ["germination", "seedling", "vegetative", "flowering"]) {
+      const resolved = resolveSurveyForSetup({
+        currentStage, stageStartDate: "2026-07-04", environment, vegWeeks: 4,
+        strains: [{ name: "Blue Dream", type: "hybrid", photo: true, flowerWeeks: 9, count: 1 }],
+      });
+      const config = {}; // exactly what worker/grows.js setupGrow does
+      fillMissingConfigKeys(config, resolved);
+      assert.deepEqual(
+        REQUIRED.filter(k => !config[k]), [],
+        `missing keys for ${environment}/${currentStage}`
+      );
+      assert.equal(config.transplant, resolved.transplantDate);
+    }
+  }
+});
+
+test("fillMissingConfigKeys throws cleanly when there is no transplant anchor", () => {
+  assert.throws(() => fillMissingConfigKeys({}, { strains: [] }), /transplant/);
+  assert.throws(() => fillMissingConfigKeys({}, { transplantDate: "garbage" }), /transplant/);
+});
+
 test("stage-only survey (no transplantDate) resolves to a full valid timeline", () => {
   const resolved = resolveSurveyForSetup({
     currentStage: "vegetative", stageStartDate: "2026-06-15",
