@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, PenLine, Droplets, Sprout, CalendarDays, LayoutGrid } from "lucide-react";
+import { ChevronLeft, ChevronRight, PenLine, Droplets, Sprout, CalendarDays, LayoutGrid, CloudSun } from "lucide-react";
 import { ymd } from "../../lib/api.js";
 import { sameDay, MONTH_NAMES } from "../../lib/dates.js";
 import { getPhase, PHASES, phaseFamily } from "../../lib/growData.js";
@@ -285,6 +285,24 @@ export default function DaySpread({
           </div>
         ) : (
           <>
+            {/* The day's weather, documented automatically from the grow's
+                location - no hand-logging needed. */}
+            {day.weather && (day.weather.high != null || day.weather.low != null || day.weather.humidity != null) && (
+              <Card title="Weather" icon={<CloudSun size={13} strokeWidth={2} style={{ color: "var(--c-warn)" }} />}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                  {day.weather.high != null && <Stat label="High" value={day.weather.high} unit="F" />}
+                  {day.weather.low != null && <Stat label="Low" value={day.weather.low} unit="F" />}
+                  {day.weather.humidity != null && <Stat label="Humidity" value={day.weather.humidity} unit="%" />}
+                  {day.weather.precip != null && day.weather.precip > 0 && (
+                    <Stat label="Rain" value={day.weather.precip} unit="in" />
+                  )}
+                </div>
+                <div style={{ fontFamily: UI, fontSize: 10.5, color: "var(--c-text-ghost)", marginTop: 9, lineHeight: 1.5 }}>
+                  Logged automatically for your grow&rsquo;s location{isToday ? " (updates through the day)" : ""}.
+                </div>
+              </Card>
+            )}
+
             {log && (
               <Card title="Daily log" icon={<Droplets size={13} strokeWidth={2} style={{ color: "var(--c-accent)" }} />}>
                 {hasStats && (

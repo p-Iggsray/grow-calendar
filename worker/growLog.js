@@ -73,6 +73,8 @@ export async function ensureGrowLogSchema(env) {
     "ALTER TABLE grow_log ADD COLUMN training TEXT",
     "ALTER TABLE grow_log ADD COLUMN plant_health TEXT",
     "ALTER TABLE grow_log ADD COLUMN water_plants TEXT",
+    // 1 = row created by the weather auto-logger with no grower input yet.
+    "ALTER TABLE grow_log ADD COLUMN auto_weather INTEGER",
   ];
   for (const sql of cols) {
     try { await env.DB.prepare(sql).run(); } catch { /* column exists */ }
@@ -80,11 +82,14 @@ export async function ensureGrowLogSchema(env) {
   _schemaReady = true;
 }
 
-// A day counts as "logged" when any real data was entered: a numeric reading,
-// a feed note, or at least one watering/training/health row. Drives the
-// calendar's completion ring (logged day = full ring).
+// A day counts as "logged" when any real data was entered BY THE GROWER: a
+// numeric reading, a feed note, or at least one watering/training/health row.
+// Drives the calendar's completion ring (logged day = full ring). Rows the
+// weather auto-logger created on its own don't count - the ring and the
+// journal timeline reflect the grower's activity, not the sky's.
 export function isLogFilled(row) {
   if (!row) return false;
+  if (Number(row.auto_weather) === 1) return false;
   if (row.water_gal != null || row.temp_high != null || row.temp_low != null || row.humidity != null) return true;
   if (row.feed) return true;
   for (const k of ["water_plants", "training", "plant_health"]) {
@@ -127,9 +132,11 @@ export async function putGrowLog(request, env, user, growId, date) {
   const trainingJson    = Array.isArray(training)      ? JSON.stringify(training)      : null;
   const plantHealthJson = Array.isArray(plant_health)  ? JSON.stringify(plant_health)  : null;
 
+  // auto_weather resets to 0: the grower touched this row, so it now counts
+  // as a real logged day even if some values started as auto-filled weather.
   await env.DB.prepare(`
-    INSERT INTO grow_log (user_id, grow_id, date, water_gal, feed, temp_high, temp_low, humidity, water_plants, training, plant_health, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    INSERT INTO grow_log (user_id, grow_id, date, water_gal, feed, temp_high, temp_low, humidity, water_plants, training, plant_health, auto_weather, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, datetime('now'))
     ON CONFLICT(user_id, grow_id, date) DO UPDATE SET
       water_gal    = excluded.water_gal,
       feed         = excluded.feed,
@@ -139,6 +146,7 @@ export async function putGrowLog(request, env, user, growId, date) {
       water_plants = excluded.water_plants,
       training     = excluded.training,
       plant_health = excluded.plant_health,
+      auto_weather = 0,
       updated_at   = excluded.updated_at
   `).bind(
     user.id, growId, date,

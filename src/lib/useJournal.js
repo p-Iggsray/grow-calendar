@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "./api.js";
 
-const EMPTY_DAY = { log: null, note: "", plantEntries: [] };
+const EMPTY_DAY = { log: null, note: "", plantEntries: [], weather: null };
 // Anything that changes journal content fires one of these; every journal hook
 // refetches. "journal-mutated" is dispatched by the composer on save.
 const MUTATION_EVENTS = ["growlog-mutated", "journal-mutated"];
@@ -30,7 +30,7 @@ export function useJournalDay(dateKey, enabled, growId) {
     api.getJournalDay(dateKey, growId)
       .then((d) => {
         if (cancelled) return;
-        setDay({ log: d.log ?? null, note: d.note || "", plantEntries: d.plantEntries || [] });
+        setDay({ log: d.log ?? null, note: d.note || "", plantEntries: d.plantEntries || [], weather: d.weather ?? null });
       })
       .catch(() => { if (!cancelled) setDay(EMPTY_DAY); })
       .finally(() => { if (!cancelled) setLoading(false); });

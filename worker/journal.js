@@ -4,6 +4,7 @@ import { ensureGrowLogSchema, isLogFilled, rowToEntry } from "./growLog.js";
 import { readNote } from "./notes.js";
 import { ownedGrowRow, parseSurvey, ensurePlantLogSchema } from "./plants.js";
 import { htmlToPlainText } from "../src/lib/richText.js";
+import { getWeatherForDay, coordsFromSurvey } from "./weatherDays.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -54,10 +55,16 @@ export async function getJournalDay(env, user, growId, date) {
   if (!DATE_RE.test(date)) return error(400, "invalid date format, expected YYYY-MM-DD");
   const row = await ownedGrowRow(env, user.id, growId);
   if (!row) return error(404, "grow not found");
-  const names = plantNameMap(parseSurvey(row.survey));
+  const survey = parseSurvey(row.survey);
+  const names = plantNameMap(survey);
 
   await ensureGrowLogSchema(env);
   await ensurePlantLogSchema(env);
+
+  // Observed weather documents the day automatically for outdoor/greenhouse
+  // grows with a location on file. Best-effort: null just hides the card.
+  const coords = survey?.environment !== "indoor" ? coordsFromSurvey(survey) : null;
+  const weatherPromise = coords ? getWeatherForDay(env, coords.lat, coords.lon, date) : Promise.resolve(null);
 
   const [logRow, note, plantRes] = await Promise.all([
     env.DB.prepare(
@@ -76,6 +83,7 @@ export async function getJournalDay(env, user, growId, date) {
     log: logRow && isLogFilled(logRow) ? rowToEntry(logRow) : null,
     note: note || "",
     plantEntries: (plantRes.results ?? []).map((r) => journalPlantEntry(r, names)),
+    weather: await weatherPromise,
   });
 }
 

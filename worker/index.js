@@ -6,6 +6,7 @@ import { getCheckoffs, putCheckoffs, getMonthCheckoffs } from "./checkoffs.js";
 import { ensurePerDayGrowScope, resolveGrowId } from "./perDayScope.js";
 import { getNote, putNote } from "./notes.js";
 import { getJournalDay, getJournalMonth, getJournalTimeline, searchJournal } from "./journal.js";
+import { autoLogWeather } from "./weatherDays.js";
 import { getGrowLog, putGrowLog, exportGrowLogCsv , getMonthGrowLog } from "./growLog.js";
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
 import { postMjReview } from "./mjReview.js";
@@ -60,6 +61,11 @@ export default {
       } else if (event.cron === "0 12 * * *") {
         await sendDailyReminders(env);
       }
+      // Both runs auto-log the weather: 12:00 UTC (morning ET) finalizes
+      // yesterday and seeds today; 03:00 UTC (late evening ET) captures the
+      // day's final high/low before midnight.
+      const written = await autoLogWeather(env);
+      if (written > 0) logInfo("auto-weather", { written });
     } catch (err) {
       logError("scheduled-uncaught", { cron: event.cron, message: String(err?.message ?? err), stack: err?.stack });
     }
