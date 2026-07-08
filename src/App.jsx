@@ -12,6 +12,7 @@ import { useAuth } from "./lib/auth.jsx";
 import { usePlan } from "./lib/usePlan.jsx";
 import { useCheckoffs } from "./lib/useCheckoffs.js";
 import { useMonthLog } from "./lib/useMonthLog.js";
+import { useJournalMonth } from "./lib/useJournal.js";
 import { autoCompleteTasks } from "./lib/autoCompleteTasks.js";
 import { useDayNote } from "./lib/useDayNote.js";
 import { api, ymd } from "./lib/api.js";
@@ -110,6 +111,13 @@ export default function App() {
 
   const { taskStates, loading: checkoffsLoading, toggle, setTaskState } = useCheckoffs(selected, Boolean(user), activeGrowId);
   const { days: monthLoggedDays } = useMonthLog(today.getFullYear(), month, Boolean(user), activeGrowId);
+  // Which days of the visible month hold journal content (the .note flag
+  // drives the calendar's journaled-day dots).
+  const journalMonthDays = useJournalMonth(
+    `${today.getFullYear()}-${String(month + 1).padStart(2, "0")}`,
+    Boolean(user) && Boolean(activeGrowId),
+    activeGrowId
+  );
   const { note, setNote, status: noteStatus, flush: flushNote } =
     useDayNote(selected, Boolean(user), activeGrowId);
 
@@ -565,6 +573,7 @@ export default function App() {
                 selected={selected}
                 config={config}
                 loggedDays={monthLoggedDays}
+                journalDays={journalMonthDays}
                 onPickDay={pickDay}
                 onClearSelection={() => setSelected(null)}
               />

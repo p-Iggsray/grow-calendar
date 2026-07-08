@@ -29,6 +29,8 @@ export function useDayNote(date, enabled, growId) {
     try {
       await api.putNote(dateKey, text, growId);
       setStatus(latest.current === text ? "saved" : "saving");
+      // Journal surfaces (timeline, calendar's journaled-day dots) refresh.
+      window.dispatchEvent(new CustomEvent("journal-mutated"));
     } catch {
       dirty.current = true;
       setStatus("error");

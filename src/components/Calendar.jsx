@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { MONTH_NAMES, DOW_SHORT, sameDay } from "../lib/dates.js";
+import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { MONTH_NAMES, DOW_SHORT, sameDay, daysBetween } from "../lib/dates.js";
 import { PHASES, getPhase, phaseFamily } from "../lib/growData.js";
 import { GROW_MIN_MONTH, GROW_MAX_MONTH } from "../lib/appConfig.js";
 import { tapHaptic } from "../lib/haptics.js";
@@ -48,7 +48,7 @@ function MonthArrow({ onClick, disabled, label, children }) {
 
 export default function Calendar({
   today, month, setMonth, selected, config,
-  loggedDays, onPickDay, onClearSelection,
+  loggedDays, journalDays, onPickDay, onClearSelection,
 }) {
   const touchStart = useRef(null);
   const [dir, setDir] = useState(0); // -1 prev, 1 next: drives the grid slide
@@ -203,17 +203,20 @@ export default function Calendar({
             const isToday = sameDay(date, today);
             const isKey = sameDay(date, config.transplant) || sameDay(date, config.backyardMove) || sameDay(date, config.gdpHarvest) || sameDay(date, config.hazeHarvest);
 
-            // Completion ring tracks the daily LOG, not tasks: a filled-out log
-            // gets a full green ring, an unlogged day gets none. Tasks are
-            // guidance and never gate the ring.
-            const isLogged = Boolean(pStyle && loggedDays?.[ymdKey(date)]);
+            // A day that has ended is "done": its fill mutes and a tiny check
+            // closes it out - automatic, nothing to tap. Distinct from
+            // off-season days, which are faded and disabled entirely.
+            const isPast = Boolean(pStyle) && !isToday && daysBetween(today, date) > 0;
+            // A written journal entry earns its own quiet accent dot.
+            const hasEntry = Boolean(pStyle && journalDays?.[ymdKey(date)]?.note);
 
             const ariaParts = [
               `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`,
               pStyle ? `${pStyle.label} phase` : "outside grow season",
               isToday ? "today" : null,
+              isPast ? "day complete" : null,
               isKey ? "key milestone" : null,
-              isLogged ? "day logged" : null,
+              hasEntry ? "journal entry written" : null,
               isSel ? "selected" : null,
             ].filter(Boolean);
 
@@ -238,6 +241,8 @@ export default function Calendar({
                     ? famColor
                     : isToday
                     ? `${famColor || "var(--c-accent)"}22`
+                    : isPast
+                    ? `${famColor}0d`
                     : pStyle
                     ? `${famColor}18`
                     : "transparent",
@@ -255,13 +260,28 @@ export default function Calendar({
                 <span style={{
                   fontSize: 13, fontFamily: "var(--font-num)",
                   fontWeight: (isSel || isToday || isKey) ? 800 : 400,
-                  color: isSel ? "white" : pStyle ? "var(--c-text-dim)" : "var(--c-text-ghost)",
+                  color: isSel ? "white" : isPast ? "var(--c-text-muted)" : pStyle ? "var(--c-text-dim)" : "var(--c-text-ghost)",
                   lineHeight: 1,
                 }} aria-hidden="true">
                   {date.getDate()}
                 </span>
-                {isLogged && !isSel && (
-                  <CompletionRing ratio={1} complete />
+                {isPast && !isSel && (
+                  <Check
+                    aria-hidden="true"
+                    size={9}
+                    strokeWidth={3}
+                    style={{ position: "absolute", bottom: 2, right: 3, color: famColor, opacity: 0.85 }}
+                  />
+                )}
+                {hasEntry && !isSel && (
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      position: "absolute", top: 3, right: 3,
+                      width: 5, height: 5, borderRadius: 3,
+                      background: "var(--c-accent)",
+                    }}
+                  />
                 )}
               </button>
             );
@@ -286,46 +306,21 @@ export default function Calendar({
           Key date
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <span style={{ width: 11, height: 11, borderRadius: 6, border: "2px solid #22c55e", flexShrink: 0 }} />
-          Logged
+          <span style={{
+            width: 11, height: 11, borderRadius: 4, flexShrink: 0,
+            background: "var(--c-surface-2)",
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Check size={8} strokeWidth={3.5} style={{ color: "var(--c-text-muted)" }} />
+          </span>
+          Day done
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <span style={{ width: 6, height: 6, borderRadius: 3, background: "var(--c-accent)", flexShrink: 0 }} />
+          Journaled
         </span>
       </div>
     </div>
   );
 }
 
-// SVG arc traces the completion ratio around a day cell. A full ratio (>=1)
-// becomes a closed green ring; partial ratios are amber arcs so partially-done
-// days don't read as "done."
-function CompletionRing({ ratio, complete }) {
-  const size = 30;        // outer box; cell minHeight is 42, this fits inside
-  const stroke = 2;
-  const r = (size - stroke) / 2;
-  const cx = size / 2;
-  const cy = size / 2;
-  const circumference = 2 * Math.PI * r;
-  const dash = ratio * circumference;
-  const color = complete ? "#22c55e" : "#f59e0b";
-  return (
-    <svg
-      aria-hidden="true"
-      width={size}
-      height={size}
-      viewBox={`0 0 ${size} ${size}`}
-      style={{
-        position: "absolute", inset: 0, margin: "auto",
-        pointerEvents: "none",
-      }}>
-      <circle
-        cx={cx} cy={cy} r={r}
-        fill="none"
-        stroke={color}
-        strokeWidth={stroke}
-        strokeLinecap="round"
-        strokeDasharray={`${dash} ${circumference - dash}`}
-        transform={`rotate(-90 ${cx} ${cy})`}
-        opacity={complete ? 0.85 : 0.7}
-      />
-    </svg>
-  );
-}

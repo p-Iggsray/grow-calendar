@@ -61,9 +61,11 @@ export async function getJournalDay(env, user, growId, date) {
   await ensureGrowLogSchema(env);
   await ensurePlantLogSchema(env);
 
-  // Observed weather documents the day automatically for outdoor/greenhouse
-  // grows with a location on file. Best-effort: null just hides the card.
-  const coords = survey?.environment !== "indoor" ? coordsFromSurvey(survey) : null;
+  // Observed weather documents the day automatically for EVERY grow with a
+  // location on file (indoor growers still care what's happening outside).
+  // Best-effort: null hides the card; hasWeatherLocation tells the client
+  // whether to hint that a location is missing.
+  const coords = coordsFromSurvey(survey);
   const weatherPromise = coords ? getWeatherForDay(env, coords.lat, coords.lon, date) : Promise.resolve(null);
 
   const [logRow, note, plantRes] = await Promise.all([
@@ -84,6 +86,7 @@ export async function getJournalDay(env, user, growId, date) {
     note: note || "",
     plantEntries: (plantRes.results ?? []).map((r) => journalPlantEntry(r, names)),
     weather: await weatherPromise,
+    hasWeatherLocation: Boolean(coords),
   });
 }
 

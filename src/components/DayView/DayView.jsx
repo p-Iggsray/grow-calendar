@@ -96,8 +96,8 @@ export default function DayView({
   // (daysBetween normalizes to local Y/M/D) - comparing a Date against a string
   // here always coerced to NaN, which silently disabled the weather/frost panel.
   const isCurrentOrFuture = selected ? daysBetween(selected, getToday()) >= 0 : false;
-  const wantsWeather = environment !== "indoor";
-  const { data: weather, loading: weatherLoading } = useWeather(wantsWeather && isCurrentOrFuture && tab === "threats", activeGrowId);
+  // Outside weather matters to every grow, indoor included.
+  const { data: weather, loading: weatherLoading } = useWeather(isCurrentOrFuture && tab === "threats", activeGrowId);
 
   // Indoor and greenhouse grows pull the day's environment from the controller
   // import (temp/RH/VPD) instead of hand-typed numbers.
@@ -491,7 +491,7 @@ export default function DayView({
 
           {tab === "threats" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {wantsWeather && isCurrentOrFuture && <WeatherCard weather={weather} loading={weatherLoading} />}
+              {isCurrentOrFuture && <WeatherCard weather={weather} loading={weatherLoading} />}
 
               {threats.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "24px 0", color: "var(--c-text-ghost)", fontFamily: "var(--font-ui)", fontSize: 13, lineHeight: 1.8 }}>

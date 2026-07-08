@@ -302,6 +302,15 @@ export default function DaySpread({
                 </div>
               </Card>
             )}
+            {/* Never fail silently: say WHY there is no weather card. */}
+            {!day.hasWeatherLocation && (
+              <div style={{
+                fontFamily: UI, fontSize: 11, color: "var(--c-text-ghost)",
+                textAlign: "center", lineHeight: 1.6, padding: "2px 10px",
+              }}>
+                Add a location in Grow settings (More tab) and each day will log its weather here automatically.
+              </div>
+            )}
 
             {log && (
               <Card title="Daily log" icon={<Droplets size={13} strokeWidth={2} style={{ color: "var(--c-accent)" }} />}>
