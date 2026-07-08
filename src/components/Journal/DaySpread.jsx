@@ -308,7 +308,7 @@ export default function DaySpread({
                 fontFamily: UI, fontSize: 11, color: "var(--c-text-ghost)",
                 textAlign: "center", lineHeight: 1.6, padding: "2px 10px",
               }}>
-                Add a location in Grow settings (More tab) and each day will log its weather here automatically.
+                Add your grow&rsquo;s location (banner on the Calendar page) and each day will log its weather here automatically.
               </div>
             )}
 

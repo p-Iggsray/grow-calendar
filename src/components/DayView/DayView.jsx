@@ -350,7 +350,7 @@ export default function DayView({
               )}
               {dayWeather && dayWeather.hasWeatherLocation === false && (
                 <div style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--c-text-ghost)", textAlign: "center", marginBottom: 12, lineHeight: 1.6 }}>
-                  Add a location in Grow settings to auto-log this day&rsquo;s weather.
+                  Add your grow&rsquo;s location (banner on the Calendar page) to auto-log this day&rsquo;s weather.
                 </div>
               )}
 

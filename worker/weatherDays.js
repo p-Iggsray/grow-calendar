@@ -9,6 +9,7 @@
 // costs at most one upstream call.
 import { logError } from "./log.js";
 import { ensureGrowLogSchema } from "./growLog.js";
+import { geocode } from "./geocode.js";
 
 const PAST_DAYS = 7; // each fetch backfills up to a week of gaps
 
@@ -35,11 +36,12 @@ export function locKey(lat, lon) {
   return `${Number(lat).toFixed(2)},${Number(lon).toFixed(2)}`;
 }
 
-// Pure: coordinates from a grow survey, or null when none usable.
+// Pure: coordinates from a grow survey, or null when none usable. Guards
+// against null/"" coercing to 0 (which would silently mean the Gulf of Guinea).
 export function coordsFromSurvey(survey) {
-  const lat = Number(survey?.lat);
-  const lon = Number(survey?.lon);
-  return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null;
+  const ok = (v) => (typeof v === "number" || (typeof v === "string" && v.trim() !== "")) && Number.isFinite(Number(v));
+  if (!ok(survey?.lat) || !ok(survey?.lon)) return null;
+  return { lat: Number(survey.lat), lon: Number(survey.lon) };
 }
 
 // Pure: flatten Open-Meteo's parallel daily arrays into per-day records.
@@ -165,7 +167,21 @@ export async function autoLogWeather(env) {
     let survey;
     try { survey = g.survey ? JSON.parse(g.survey) : null; } catch { survey = null; }
     if (!survey || survey.environment === "indoor") continue;
-    const coords = coordsFromSurvey(survey);
+    let coords = coordsFromSurvey(survey);
+    // A typed place name without coordinates geocodes once, then persists.
+    if (!coords && (survey.location ?? "").trim()) {
+      const geo = await geocode(survey.location).catch(() => null);
+      if (geo) {
+        coords = geo;
+        survey.lat = geo.lat;
+        survey.lon = geo.lon;
+        try {
+          await env.DB.prepare(
+            "UPDATE grows SET survey = ? WHERE id = ? AND user_id = ?"
+          ).bind(JSON.stringify(survey), g.id, g.user_id).run();
+        } catch { /* next run retries */ }
+      }
+    }
     if (!coords) continue;
 
     for (const date of dates) {

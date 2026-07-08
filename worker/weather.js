@@ -83,7 +83,7 @@ function shapeHighLow(data) {
 // result so it's only looked up a single time. Returns null when no usable
 // location is on file. Note: forecasts come from the US National Weather
 // Service, so coordinates outside the US simply yield no data (handled below).
-async function resolveGrowCoords(env, user, growId) {
+export async function resolveGrowCoords(env, user, growId) {
   let row;
   if (growId) {
     row = await env.DB.prepare(

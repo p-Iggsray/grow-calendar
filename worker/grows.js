@@ -279,6 +279,27 @@ export async function patchGrow(request, env, user, growId) {
     binds.push(JSON.stringify(body.config));
   }
 
+  // Location merges into the survey JSON - auto weather and frost data need
+  // it. Accepts a place label and/or coordinates (validated to real ranges).
+  const lat = Number(body.lat);
+  const lon = Number(body.lon);
+  const hasCoords = Number.isFinite(lat) && Math.abs(lat) <= 90 && Number.isFinite(lon) && Math.abs(lon) <= 180;
+  if (typeof body.location === "string" || hasCoords) {
+    const srow = await env.DB.prepare(
+      "SELECT survey FROM grows WHERE id = ? AND user_id = ?"
+    ).bind(growId, user.id).first();
+    let survey = {};
+    try { survey = srow?.survey ? JSON.parse(srow.survey) : {}; } catch { survey = {}; }
+    if (typeof body.location === "string") {
+      survey.location = body.location.trim().slice(0, 120);
+      // A new typed place invalidates old coordinates unless fresh ones came along.
+      if (!hasCoords) { delete survey.lat; delete survey.lon; }
+    }
+    if (hasCoords) { survey.lat = lat; survey.lon = lon; }
+    fields.push("survey = ?");
+    binds.push(JSON.stringify(survey));
+  }
+
   if (fields.length === 0) return json({ ok: true });
 
   fields.push("updated_at = ?");

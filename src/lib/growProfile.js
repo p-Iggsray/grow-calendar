@@ -7,6 +7,17 @@ export function growLocation(survey) {
   return (survey?.location || "").trim();
 }
 
+// Does this grow have a usable location for auto weather: coordinates, or a
+// place name the server can geocode? (Guards against null/"" coercing to 0.)
+function isCoord(v) {
+  return (typeof v === "number" || (typeof v === "string" && v.trim() !== "")) && Number.isFinite(Number(v));
+}
+export function hasGrowLocation(survey) {
+  if (!survey) return false;
+  if (isCoord(survey.lat) && isCoord(survey.lon)) return true;
+  return growLocation(survey).length > 0;
+}
+
 // Per-plant strain names in entry order. The survey's strain roster is the
 // single source of truth: the backend seeds it from the AI plan on load (see
 // backfillStrainsFromPlan), so there is never a plant on the calendar that is

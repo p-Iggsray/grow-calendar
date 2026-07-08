@@ -20,7 +20,7 @@ import { buildSuggestions } from "./lib/mjSuggestions.js";
 import { useOnlineStatus } from "./lib/useOnlineStatus.js";
 import { flushCheckoffQueue } from "./lib/offlineQueue.js";
 import { useTheme } from "./lib/useTheme.js";
-import { growLocation, strainSummary } from "./lib/growProfile.js";
+import { growLocation, strainSummary, hasGrowLocation } from "./lib/growProfile.js";
 import { getLifecyclePhase, phaseMeta } from "./lib/lifecycle.js";
 
 import Header from "./components/Header.jsx";
@@ -31,6 +31,7 @@ import MoreScreen from "./components/MoreScreen.jsx";
 import GrowsListTab from "./components/GrowsListTab.jsx";
 import PlantsTab from "./components/PlantsTab/PlantsTab.jsx";
 import PhasePrompt from "./components/Lifecycle/PhasePrompt.jsx";
+import LocationBanner from "./components/LocationBanner.jsx";
 import JournalScreen from "./components/Journal/JournalScreen.jsx";
 import { AppShellSkeleton, PanelSkeleton } from "./components/LoadingScreens.jsx";
 
@@ -536,6 +537,10 @@ export default function App() {
                   harvest has passed; starting early lives in More. */}
               {Boolean(config?.hazeHarvest && today >= config.hazeHarvest) && (
                 <PhasePrompt today={today} due />
+              )}
+              {/* No location = no auto weather. Nudge once, fix in one tap. */}
+              {survey && !hasGrowLocation(survey) && (
+                <LocationBanner key={activeGrowId} growId={activeGrowId} onSaved={reloadPlan} />
               )}
               {mainView === "journal" ? (
                 <JournalScreen

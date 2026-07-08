@@ -16,6 +16,19 @@ test("coordsFromSurvey: numbers pass, junk and missing return null", () => {
   assert.equal(coordsFromSurvey({ lat: "x", lon: -74 }), null);
   assert.equal(coordsFromSurvey({}), null);
   assert.equal(coordsFromSurvey(null), null);
+  // null/"" coerce to 0 via Number() - must NOT become 0,0 coordinates.
+  assert.equal(coordsFromSurvey({ lat: null, lon: null }), null);
+  assert.equal(coordsFromSurvey({ lat: "", lon: "" }), null);
+});
+
+test("hasGrowLocation: coords or a place name count; null/'' coords do not", async () => {
+  const { hasGrowLocation } = await import("../src/lib/growProfile.js");
+  assert.equal(hasGrowLocation({ lat: 40.7, lon: -74 }), true);
+  assert.equal(hasGrowLocation({ location: "Portland, OR" }), true);
+  assert.equal(hasGrowLocation({ lat: null, lon: null, location: "  " }), false);
+  assert.equal(hasGrowLocation({ lat: "", lon: "" }), false);
+  assert.equal(hasGrowLocation({}), false);
+  assert.equal(hasGrowLocation(null), false);
 });
 
 test("shapeOpenMeteoDaily: parallel arrays become per-day records", () => {
