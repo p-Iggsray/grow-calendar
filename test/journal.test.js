@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildMonthIndex, journalPlantEntry, buildTimelineDays, makeExcerpt, escapeLike } from "../worker/journal.js";
+import { buildMonthIndex, journalPlantEntry, buildTimelineDays, makeExcerpt, escapeLike, attachWeather } from "../worker/journal.js";
 import { journalStreak, dayOfGrow } from "../src/lib/journalStats.js";
 
 // ── Month index ──────────────────────────────────────────────────────────────
@@ -83,6 +83,18 @@ test("makeExcerpt: collapses whitespace and cuts on a word boundary", () => {
 
 test("escapeLike: neutralizes LIKE wildcards in search text", () => {
   assert.equal(escapeLike("50%_a\\b"), "50\\%\\_a\\\\b");
+});
+
+test("attachWeather: folds cached weather onto matching timeline days only", () => {
+  const days = [{ date: "2026-07-04" }, { date: "2026-07-03" }, { date: "2026-07-01" }];
+  attachWeather(days, {
+    "2026-07-04": { high: 91.1, low: 66.9, humidity: 62 },
+    "2026-07-03": { high: null, low: null, humidity: null }, // nothing usable
+  });
+  assert.deepEqual(days[0].weather, { high: 91.1, low: 66.9, humidity: 62 });
+  assert.equal(days[1].weather, undefined);
+  assert.equal(days[2].weather, undefined);
+  assert.doesNotThrow(() => attachWeather(null, null));
 });
 
 // ── Journal stats ────────────────────────────────────────────────────────────

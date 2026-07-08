@@ -5,7 +5,7 @@ import { postResetPassword, postAdminResetLink } from "./authReset.js";
 import { getCheckoffs, putCheckoffs, getMonthCheckoffs } from "./checkoffs.js";
 import { ensurePerDayGrowScope, resolveGrowId } from "./perDayScope.js";
 import { getNote, putNote } from "./notes.js";
-import { getJournalDay, getJournalMonth, getJournalTimeline, searchJournal } from "./journal.js";
+import { getJournalDay, getJournalMonth, getJournalTimeline, searchJournal, getJournalWeather } from "./journal.js";
 import { autoLogWeather } from "./weatherDays.js";
 import { getGrowLog, putGrowLog, exportGrowLogCsv , getMonthGrowLog } from "./growLog.js";
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
@@ -291,6 +291,12 @@ async function authenticatedRoute(request, env, path, method, user) {
     const url = new URL(request.url);
     const growId = await resolveGrowId(env, user, url);
     return searchJournal(env, user, growId, url.searchParams.get("q"));
+  }
+
+  const journalWeatherMatch = path.match(/^\/api\/journal\/weather\/(\d{4}-\d{2}-\d{2})$/);
+  if (journalWeatherMatch && method === "GET") {
+    const growId = await resolveGrowId(env, user, new URL(request.url));
+    return getJournalWeather(env, user, growId, journalWeatherMatch[1]);
   }
 
   const journalMatch = path.match(/^\/api\/journal\/(\d{4}-\d{2}-\d{2})$/);

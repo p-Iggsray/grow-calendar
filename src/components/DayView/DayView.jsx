@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Pencil, BookOpen } from "lucide-react";
+import { ChevronLeft, Pencil, BookOpen, CloudSun } from "lucide-react";
 import { fmtL, getToday, daysBetween } from "../../lib/dates.js";
 import { useGrowLog } from "../../lib/useGrowLog.js";
 import { useWeather } from "../../lib/useWeather.js";
 import { useEnvDay } from "../../lib/useEnvDay.js";
-import { ymd } from "../../lib/api.js";
+import { api, ymd } from "../../lib/api.js";
 import { StatePicker } from "./StatePicker.jsx";
 import { TaskRow } from "./TaskRow.jsx";
 import { TaskEditSheet } from "./TaskEditSheet.jsx";
@@ -103,6 +103,19 @@ export default function DayView({
   // import (temp/RH/VPD) instead of hand-typed numbers.
   const sensorGrow = environment !== "outdoor";
   const { day: envDay } = useEnvDay(activeGrowId, selected ? ymd(selected) : null, sensorGrow && tab === "journal");
+
+  // The day's observed weather, same auto-pulled data the Journal shows.
+  const [dayWeather, setDayWeather] = useState(null);
+  useEffect(() => {
+    if (tab !== "journal" || !selected) return;
+    let cancelled = false;
+    api.getJournalWeather(ymd(selected), activeGrowId)
+      .then((d) => { if (!cancelled) setDayWeather(d); })
+      .catch(() => { if (!cancelled) setDayWeather(null); });
+    return () => { cancelled = true; };
+  }, [tab, selected, activeGrowId]);
+  const wx = dayWeather?.weather;
+  const hasWx = Boolean(wx && (wx.high != null || wx.low != null || wx.humidity != null));
 
   const resolvedCount = Object.keys(taskStates ?? {}).length;
   const totalTasks = detail?.tasks?.length ?? 0;
@@ -316,6 +329,31 @@ export default function DayView({
 
           {tab === "journal" && (
             <div>
+              {/* ── Auto-pulled weather for this day, same data as the Journal ── */}
+              {hasWx && (
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 9,
+                  padding: "9px 12px", borderRadius: 10, marginBottom: 14,
+                  background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.18)",
+                }}>
+                  <CloudSun size={15} strokeWidth={2} style={{ color: "var(--c-warn)", flexShrink: 0 }} />
+                  <span style={{ fontFamily: "var(--font-ui)", fontSize: 12.5, color: "var(--c-text-dim)", lineHeight: 1.5 }}>
+                    {wx.high != null && <>High <b style={{ fontFamily: "var(--font-num)", color: "var(--c-text)" }}>{wx.high}F</b></>}
+                    {wx.low != null && <> · Low <b style={{ fontFamily: "var(--font-num)", color: "var(--c-text)" }}>{wx.low}F</b></>}
+                    {wx.humidity != null && <> · <b style={{ fontFamily: "var(--font-num)", color: "var(--c-text)" }}>{wx.humidity}%</b> RH</>}
+                    {wx.precip != null && wx.precip > 0 && <> · <b style={{ fontFamily: "var(--font-num)", color: "var(--c-text)" }}>{wx.precip}in</b> rain</>}
+                  </span>
+                  <span style={{ marginLeft: "auto", fontFamily: "var(--font-ui)", fontSize: 9.5, letterSpacing: 1, textTransform: "uppercase", color: "var(--c-text-ghost)", flexShrink: 0 }}>
+                    Auto
+                  </span>
+                </div>
+              )}
+              {dayWeather && dayWeather.hasWeatherLocation === false && (
+                <div style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--c-text-ghost)", textAlign: "center", marginBottom: 12, lineHeight: 1.6 }}>
+                  Add a location in Grow settings to auto-log this day&rsquo;s weather.
+                </div>
+              )}
+
               {/* ── The written entry: same book-style in-place editor as the
                      main Journal page (it IS the same entry). ── */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>

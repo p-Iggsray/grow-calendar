@@ -117,7 +117,10 @@ export async function getWeatherForDay(env, lat, lon, date) {
     oldest.setUTCDate(oldest.getUTCDate() - PAST_DAYS);
     if (date < oldest.toISOString().slice(0, 10)) return row ? shapeRow(row) : null;
 
-    const fetched = await fetchWindow(env, lat, lon);
+    // Upstream failure must not lose a stale-but-real cached reading.
+    let fetched = {};
+    try { fetched = await fetchWindow(env, lat, lon); }
+    catch (err) { logError("weather-fetch-failed", { message: String(err?.message) }); }
     return fetched[date] ?? (row ? shapeRow(row) : null);
   } catch (err) {
     logError("weather-day-failed", { message: String(err?.message) });

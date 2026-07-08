@@ -4,7 +4,7 @@ import { ensureGrowLogSchema, isLogFilled, rowToEntry } from "./growLog.js";
 import { readNote } from "./notes.js";
 import { ownedGrowRow, parseSurvey, ensurePlantLogSchema } from "./plants.js";
 import { htmlToPlainText } from "../src/lib/richText.js";
-import { getWeatherForDay, coordsFromSurvey } from "./weatherDays.js";
+import { getWeatherForDay, coordsFromSurvey, locKey } from "./weatherDays.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -132,6 +132,28 @@ export function escapeLike(q) {
   return String(q ?? "").replace(/[\\%_]/g, (c) => "\\" + c);
 }
 
+// GET /api/journal/weather/:date -> just the day's weather (used by the day
+// view's Journal tab, which loads its other data through separate hooks).
+export async function getJournalWeather(env, user, growId, date) {
+  if (!DATE_RE.test(date)) return error(400, "invalid date format, expected YYYY-MM-DD");
+  const row = await ownedGrowRow(env, user.id, growId);
+  if (!row) return error(404, "grow not found");
+  const coords = coordsFromSurvey(parseSurvey(row.survey));
+  const weather = coords ? await getWeatherForDay(env, coords.lat, coords.lon, date) : null;
+  return json({ date, weather, hasWeatherLocation: Boolean(coords) });
+}
+
+// Pure: fold cached weather rows onto timeline day summaries.
+export function attachWeather(days, wxByDate) {
+  for (const d of days ?? []) {
+    const w = wxByDate?.[d.date];
+    if (w && (w.high != null || w.low != null || w.humidity != null)) {
+      d.weather = { high: w.high ?? null, low: w.low ?? null, humidity: w.humidity ?? null };
+    }
+  }
+  return days;
+}
+
 // GET /api/journal/timeline?before=YYYY-MM-DD&limit=N -> the journal's home
 // feed: every day that holds content, newest first, paged by date cursor.
 // Also returns totalDays (distinct journaled days) for the stats row.
@@ -170,6 +192,21 @@ export async function getJournalTimeline(env, user, growId, before, limitRaw) {
 
   const merged = buildTimelineDays(logs.results, notes.results, plants.results);
   const days = merged.slice(0, limit);
+
+  // Fold each day's weather onto its card. Reads the shared cache; touching
+  // today first keeps the recent window fresh (and backfills the last week).
+  const coords = coordsFromSurvey(parseSurvey(row.survey));
+  if (coords && days.length > 0) {
+    try {
+      await getWeatherForDay(env, coords.lat, coords.lon, new Date().toISOString().slice(0, 10));
+      const placeholders = days.map(() => "?").join(",");
+      const wres = await env.DB.prepare(
+        `SELECT date, high, low, humidity FROM weather_days WHERE loc = ? AND date IN (${placeholders})`
+      ).bind(locKey(coords.lat, coords.lon), ...days.map(d => d.date)).all();
+      attachWeather(days, Object.fromEntries((wres.results ?? []).map(r => [r.date, r])));
+    } catch { /* the timeline works fine without weather */ }
+  }
+
   const hasMore = merged.length > limit
     // Any source table hitting its fetch cap may hide older days.
     || (logs.results ?? []).length >= fetchN

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { PenLine, Search, X, BookOpen, Droplets, Thermometer, Sprout, Flame, FlaskConical } from "lucide-react";
+import { PenLine, Search, X, BookOpen, Droplets, Thermometer, Sprout, Flame, FlaskConical, CloudSun } from "lucide-react";
 import { api, ymd } from "../../lib/api.js";
 import { MONTH_NAMES } from "../../lib/dates.js";
 import { getPhase, PHASES, phaseFamily } from "../../lib/growData.js";
@@ -74,6 +74,12 @@ function DayCard({ dayInfo, config, onOpen }) {
           </div>
         )}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+          {dayInfo.weather && (dayInfo.weather.high != null || dayInfo.weather.low != null) && (
+            <StatChip icon={<CloudSun size={10.5} strokeWidth={2} style={{ color: "var(--c-warn)" }} />}>
+              {dayInfo.weather.high ?? "?"}/{dayInfo.weather.low ?? "?"}F
+              {dayInfo.weather.humidity != null ? ` · ${dayInfo.weather.humidity}%` : ""}
+            </StatChip>
+          )}
           {log?.water_gal != null && (
             <StatChip icon={<Droplets size={10.5} strokeWidth={2} style={{ color: "#60a5fa" }} />}>{log.water_gal} gal</StatChip>
           )}
