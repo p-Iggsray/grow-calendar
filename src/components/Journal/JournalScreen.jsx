@@ -8,7 +8,7 @@ import DaySpread from "./DaySpread.jsx";
 // every journaled day (with stats and search), and tapping any day dives back
 // into its page.
 export default function JournalScreen({
-  today, date, onChangeDate, config, growId, onOpenPlant,
+  today, date, onChangeDate, config, growId, onOpenPlant, onConfigChanged,
   plants = [], environment = "outdoor", active = true,
 }) {
   const [mode, setMode] = useState("day");
@@ -31,6 +31,7 @@ export default function JournalScreen({
       config={config}
       growId={growId}
       onOpenPlant={onOpenPlant}
+      onConfigChanged={onConfigChanged}
       plants={plants}
       environment={environment}
       onZoomOut={() => setMode("timeline")}

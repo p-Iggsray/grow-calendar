@@ -7,6 +7,7 @@ import { htmlToPlainText } from "../src/lib/richText.js";
 import { getWeatherForDay, coordsFromSurvey, locKey } from "./weatherDays.js";
 import { resolveGrowCoords } from "./weather.js";
 import { eventsForDay, eventCountsForMonth } from "./events.js";
+import { photosForDay, photoCountsForMonth, photoCountsForDates } from "./photos.js";
 
 // A grow "has a location" when it carries coordinates OR a geocodable place
 // name; resolveGrowCoords turns either into usable coordinates (persisting
@@ -93,6 +94,7 @@ export async function getJournalDay(env, user, growId, date) {
     ).bind(user.id, growId, date).all(),
     eventsForDay(env, user.id, growId, date).catch(() => []),
   ]);
+  const photos = await photosForDay(env, user.id, growId, date).catch(() => []);
 
   return json({
     date,
@@ -100,6 +102,7 @@ export async function getJournalDay(env, user, growId, date) {
     note: note || "",
     plantEntries: (plantRes.results ?? []).map((r) => journalPlantEntry(r, names)),
     events,
+    photos,
     weather: await weatherPromise,
     hasWeatherLocation: hasLocation,
   });
@@ -209,6 +212,12 @@ export async function getJournalTimeline(env, user, growId, before, limitRaw) {
   const merged = buildTimelineDays(logs.results, notes.results, plants.results);
   const days = merged.slice(0, limit);
 
+  // Photo counts ride along so timeline cards can show a camera chip.
+  const photoCounts = await photoCountsForDates(env, user.id, growId, days.map(d => d.date)).catch(() => ({}));
+  for (const d of days) {
+    if (photoCounts[d.date]) d.photos = photoCounts[d.date];
+  }
+
   // Fold each day's weather onto its card. Reads the shared cache; touching
   // today first keeps the recent window fresh (and backfills the last week).
   const coords = surveyHasLocation(parseSurvey(row.survey))
@@ -304,12 +313,19 @@ export async function getJournalMonth(env, user, growId, month) {
       "SELECT date, COUNT(*) AS n FROM plant_log WHERE user_id = ? AND grow_id = ? AND date LIKE ? GROUP BY date"
     ).bind(user.id, growId, like).all(),
   ]);
-  const eventCounts = await eventCountsForMonth(env, user.id, growId, month).catch(() => ({}));
+  const [eventCounts, photoCounts] = await Promise.all([
+    eventCountsForMonth(env, user.id, growId, month).catch(() => ({})),
+    photoCountsForMonth(env, user.id, growId, month).catch(() => ({})),
+  ]);
 
   const days = buildMonthIndex(logs.results, notes.results, plants.results);
-  // Events mark the calendar too: a day with only events still gets an entry.
+  // Events and photos mark the journal too: a day holding only those still
+  // gets an entry.
   for (const [date, n] of Object.entries(eventCounts)) {
     (days[date] ??= { log: false, note: false, plants: 0 }).events = n;
+  }
+  for (const [date, n] of Object.entries(photoCounts)) {
+    (days[date] ??= { log: false, note: false, plants: 0 }).photos = n;
   }
 
   return json({ month, days });

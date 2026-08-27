@@ -61,8 +61,13 @@ export function useGrowLog(date, enabled, growId) {
     setStatus(null);
     api.getGrowLog(dateKey, growId)
       // Ignore out-of-order responses: a slow request for a previous day must
-      // not overwrite the day the user is now looking at.
-      .then(data => { if (myId === requestId.current) setEntry(data.entry ? entryFromApi(data.entry) : EMPTY); })
+      // not overwrite the day the user is now looking at. A dirty local edit
+      // (pending debounced save) also wins over the fetch - the server copy is
+      // older than what is on screen.
+      .then(data => {
+        if (myId !== requestId.current || pendingEntry.current) return;
+        setEntry(data.entry ? entryFromApi(data.entry) : EMPTY);
+      })
       .catch(() => {});
     return () => { flush(); };
   }, [dateKey, enabled, growId, flush]);

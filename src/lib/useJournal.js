@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api.js";
 
-const EMPTY_DAY = { log: null, note: "", plantEntries: [], events: [], weather: null, hasWeatherLocation: true };
+const EMPTY_DAY = { log: null, note: "", plantEntries: [], events: [], photos: [], weather: null, hasWeatherLocation: true };
 // Anything that changes journal content fires one of these; every journal hook
 // refetches. "journal-mutated" is dispatched by the composer on save.
 const MUTATION_EVENTS = ["growlog-mutated", "journal-mutated"];
@@ -22,17 +22,26 @@ export function useJournalDay(dateKey, enabled, growId) {
   const [day, setDay] = useState(EMPTY_DAY);
   const [loading, setLoading] = useState(true);
   const tick = useMutationTick();
+  const lastKey = useRef(null);
 
   useEffect(() => {
     if (!dateKey || !enabled) return;
     let cancelled = false;
-    setLoading(true);
+    // Only a real page change blanks to the skeleton. Background refetches
+    // (a mutation tick while the page is open) swap data in place - flipping
+    // loading here would unmount the in-place log editor mid-keystroke.
+    const key = `${growId}|${dateKey}`;
+    if (lastKey.current !== key) {
+      lastKey.current = key;
+      setDay(EMPTY_DAY);
+      setLoading(true);
+    }
     api.getJournalDay(dateKey, growId)
       .then((d) => {
         if (cancelled) return;
         setDay({
           log: d.log ?? null, note: d.note || "", plantEntries: d.plantEntries || [],
-          events: d.events || [],
+          events: d.events || [], photos: d.photos || [],
           weather: d.weather ?? null, hasWeatherLocation: d.hasWeatherLocation !== false,
         });
       })
@@ -48,10 +57,15 @@ export function useJournalDay(dateKey, enabled, growId) {
 export function useJournalMonth(monthKey, enabled, growId) {
   const [days, setDays] = useState({});
   const tick = useMutationTick();
+  const lastKey = useRef(null);
 
   useEffect(() => {
     if (!monthKey || !enabled) return;
     let cancelled = false;
+    // A month/grow switch clears immediately so the old grow's marks never
+    // flash on the new grow's calendar; ticks refresh in place.
+    const key = `${growId}|${monthKey}`;
+    if (lastKey.current !== key) { lastKey.current = key; setDays({}); }
     api.getJournalMonth(monthKey, growId)
       .then((d) => { if (!cancelled) setDays(d.days || {}); })
       .catch(() => { if (!cancelled) setDays({}); });
@@ -59,30 +73,6 @@ export function useJournalMonth(monthKey, enabled, growId) {
   }, [monthKey, enabled, growId, tick]);
 
   return days;
-}
-
-// The month's custom events grouped by day: { "YYYY-MM-DD": [event, ...] }.
-// Drives the calendar grid's event chips; refetches on journal-mutated like
-// every journal hook (event CRUD dispatches it).
-export function useMonthEvents(monthKey, enabled, growId) {
-  const [byDay, setByDay] = useState({});
-  const tick = useMutationTick();
-
-  useEffect(() => {
-    if (!monthKey || !enabled || !growId) return;
-    let cancelled = false;
-    api.listGrowEvents(growId, monthKey)
-      .then((d) => {
-        if (cancelled) return;
-        const map = {};
-        for (const ev of d.events ?? []) (map[ev.date] ??= []).push(ev);
-        setByDay(map);
-      })
-      .catch(() => { if (!cancelled) setByDay({}); });
-    return () => { cancelled = true; };
-  }, [monthKey, enabled, growId, tick]);
-
-  return byDay;
 }
 
 // The journal's home feed: pages of day summaries, newest first. loadMore()

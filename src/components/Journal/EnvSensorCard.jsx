@@ -14,10 +14,14 @@ export default function EnvSensorCard({ day, logEntry, onFill }) {
     temp_low: t.min != null ? Math.round(t.min) : null,
     humidity: h.avg != null ? Math.round(h.avg) : null,
   };
+  // The log stores field values as strings; compare numerically or a filled
+  // log still shows "Save to log".
+  const same = (logVal, fillVal) =>
+    (logVal === "" || logVal == null ? null : Number(logVal)) === fillVal;
   const inSync =
-    (logEntry?.temp_high ?? null) === fill.temp_high &&
-    (logEntry?.temp_low ?? null) === fill.temp_low &&
-    (logEntry?.humidity ?? null) === fill.humidity;
+    same(logEntry?.temp_high, fill.temp_high) &&
+    same(logEntry?.temp_low, fill.temp_low) &&
+    same(logEntry?.humidity, fill.humidity);
 
   return (
     <div style={{

@@ -40,6 +40,13 @@ function newEventId() {
   return "ev" + crypto.randomUUID().replaceAll("-", "").slice(0, 14);
 }
 
+// Rejects rolled-over impossibles like 2026-02-31 that DATE_RE alone accepts.
+function isRealDate(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+}
+
 // Pure: validate + normalize a create/patch payload. `partial` allows missing
 // fields (PATCH). Returns { ok:true, fields } or { ok:false, message }.
 export function validateEventInput(body, { partial = false } = {}) {
@@ -47,8 +54,8 @@ export function validateEventInput(body, { partial = false } = {}) {
   const fields = {};
 
   if (body.date !== undefined || !partial) {
-    if (typeof body.date !== "string" || !DATE_RE.test(body.date)) {
-      return { ok: false, message: "date must be YYYY-MM-DD" };
+    if (typeof body.date !== "string" || !DATE_RE.test(body.date) || !isRealDate(body.date)) {
+      return { ok: false, message: "date must be a real YYYY-MM-DD date" };
     }
     fields.date = body.date;
   }

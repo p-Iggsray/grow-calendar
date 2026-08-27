@@ -4,7 +4,7 @@ import { useToday } from "./lib/dates.js";
 import { PHASES, getPhase } from "./lib/growData.js";
 import { useAuth } from "./lib/auth.jsx";
 import { usePlan } from "./lib/usePlan.jsx";
-import { useJournalMonth, useMonthEvents } from "./lib/useJournal.js";
+import { useJournalMonth } from "./lib/useJournal.js";
 import { api, ymd } from "./lib/api.js";
 import { buildSuggestions } from "./lib/mjSuggestions.js";
 import { useOnlineStatus } from "./lib/useOnlineStatus.js";
@@ -96,9 +96,8 @@ export default function App() {
 
   const monthKey = `${viewYM.y}-${String(viewYM.m + 1).padStart(2, "0")}`;
   // Which days of the visible month hold journal content (the .note flag
-  // drives the calendar's journaled-day dots) - and the month's events.
+  // drives the calendar's journaled-day dots).
   const journalMonthDays = useJournalMonth(monthKey, Boolean(user) && Boolean(activeGrowId), activeGrowId);
-  const monthEvents = useMonthEvents(monthKey, Boolean(user), activeGrowId);
 
   // From anywhere in the app (a calendar day, plant history, MJ, a shared
   // link) straight to a day's journal page. push=false for browser-driven
@@ -138,7 +137,8 @@ export default function App() {
     if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
     const [y, m, day] = d.split("-").map(Number);
     const date = new Date(y, m - 1, day);
-    if (Number.isNaN(date.getTime())) return;
+    // Round-trip check rejects rolled-over impossibles like 2026-02-31.
+    if (Number.isNaN(date.getTime()) || ymd(date) !== d) return;
     deepLinkApplied.current = true;
     openJournalAt(date, { push: false });
   }, [config, openJournalAt]);
@@ -253,7 +253,10 @@ export default function App() {
   }
 
   function openChat() {
-    setChatContext(mainView === "journal" && journalDate ? ymd(journalDate) : null);
+    // Attach the viewed journal day only when the user is actually LOOKING at
+    // it - mainView stays "journal" while other tabs are open.
+    const onJournal = activeTab === "calendar" && mainView === "journal" && journalDate;
+    setChatContext(onJournal ? ymd(journalDate) : null);
     setChatOpen(true);
   }
   function closeChat() {
@@ -399,6 +402,7 @@ export default function App() {
                   config={config}
                   growId={activeGrowId}
                   onOpenPlant={openPlantFromJournal}
+                  onConfigChanged={reloadPlan}
                   plants={survey?.strains ?? []}
                   environment={survey?.environment ?? "outdoor"}
                 />
@@ -410,7 +414,6 @@ export default function App() {
                   onChangeMonth={(y, m) => setViewYM({ y, m })}
                   config={config}
                   journalDays={journalMonthDays}
-                  eventsByDay={monthEvents}
                   onPickDay={pickDay}
                 />
               )}

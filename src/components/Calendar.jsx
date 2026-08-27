@@ -5,7 +5,6 @@ import { MONTH_NAMES, DOW_SHORT, sameDay, daysBetween } from "../lib/dates.js";
 import { PHASES, getPhase, phaseFamily, buildMilestones } from "../lib/growData.js";
 import { tapHaptic } from "../lib/haptics.js";
 
-const EVENT_COLOR = "#38bdf8";
 // Tuned for one-thumb phone use. Threshold below ~40px catches incidental drag
 // during a tap; horizontal-vs-vertical ratio under ~1.5 catches diagonal
 // scrolls. Bump if false-positives appear during vertical page scroll.
@@ -40,14 +39,15 @@ function MonthArrow({ onClick, label, children }) {
 }
 
 // The app's main feature: a full-screen month, every day tappable straight
-// into its journal page. Phase families tint the grow season, milestones are
-// built-in events, custom events show as chips, and quiet marks track what
-// each day holds (journaled, done). Free navigation across months and years.
+// into its journal page. Phase families tint the grow season, milestones mark
+// their days (tap the day to move them), and quiet marks track what each day
+// holds (journaled, done). Free navigation across months and years.
 export default function Calendar({
   today, year, month, onChangeMonth, config,
-  journalDays, eventsByDay, onPickDay,
+  journalDays, onPickDay,
 }) {
   const touchStart = useRef(null);
+  const suppressTap = useRef(false);
   const [dir, setDir] = useState(0); // -1 prev, 1 next: drives the grid slide
 
   const firstDow = new Date(year, month, 1).getDay();
@@ -60,11 +60,12 @@ export default function Calendar({
 
   const onCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
 
-  // Milestones are the calendar's built-in events.
+  // Milestones are the calendar's built-in events. A day can hold more than
+  // one (Cal-Mag and Feeding often share a date) - keep them all.
   const milestonesByDay = {};
   if (config) {
     for (const m of buildMilestones(config)) {
-      if (m.date) milestonesByDay[ymdKey(m.date)] = m;
+      if (m.date) (milestonesByDay[ymdKey(m.date)] ??= []).push(m);
     }
   }
 
@@ -89,22 +90,30 @@ export default function Calendar({
     const start = touchStart.current;
     touchStart.current = null;
     if (!start) return;
-    // Swipes that originate on a real interactive child (day button, nav
-    // chevron) belong to that control - don't hijack them as month swipes.
-    if (e.target?.closest?.("button")) return;
     const t = e.changedTouches?.[0];
     if (!t) return;
     const dx = t.clientX - start.x;
     const dy = t.clientY - start.y;
     if (Math.abs(dx) < SWIPE_THRESHOLD_PX) return;
     if (Math.abs(dx) < Math.abs(dy) * SWIPE_HORIZONTAL_RATIO) return;
+    // Day buttons tile the whole grid, so month swipes necessarily start on
+    // them. Swallow the click the browser fires after this touch so a swipe
+    // never also opens a day.
+    suppressTap.current = true;
     if (dx < 0) go(1); else go(-1);
+  }
+  function onClickCapture(e) {
+    if (!suppressTap.current) return;
+    suppressTap.current = false;
+    e.preventDefault();
+    e.stopPropagation();
   }
 
   return (
     <div
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
+      onClickCapture={onClickCapture}
       style={{
         flex: 1, minHeight: 0,
         display: "flex", flexDirection: "column",
@@ -174,22 +183,21 @@ export default function Calendar({
           // turning into a 13-color quilt.
           const famColor = phase ? phaseFamily(phase)?.color : null;
           const isToday = sameDay(date, today);
-          const milestone = milestonesByDay[key];
+          const milestones = milestonesByDay[key] ?? [];
+          const milestone = milestones[0] ?? null;
 
           // A grow day that has ended is "done": muted fill, tiny check.
           const isPast = Boolean(pStyle) && !isToday && daysBetween(today, date) > 0;
           // A written journal entry earns its own quiet accent dot.
           const hasEntry = Boolean(journalDays?.[key]?.note);
-          const events = eventsByDay?.[key] ?? [];
 
           const ariaParts = [
             `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`,
             pStyle ? `${pStyle.label} phase` : null,
             isToday ? "today" : null,
             isPast ? "day complete" : null,
-            milestone ? milestone.label : null,
+            ...milestones.map(m => m.label),
             hasEntry ? "journal entry written" : null,
-            events.length > 0 ? `${events.length} ${events.length === 1 ? "event" : "events"}` : null,
             "opens this day's journal",
           ].filter(Boolean);
 
@@ -210,8 +218,10 @@ export default function Calendar({
                 alignItems: "stretch",
                 gap: 2,
                 cursor: "pointer",
+                // famColor + alpha only works on a hex value; an off-season
+                // today needs a real rgba, not "var(--c-accent)22".
                 background: isToday
-                  ? `${famColor || "var(--c-accent)"}22`
+                  ? (famColor ? `${famColor}22` : "rgba(34,197,94,0.13)")
                   : isPast
                   ? `${famColor}0d`
                   : pStyle
@@ -240,34 +250,10 @@ export default function Calendar({
                 {date.getDate()}
               </span>
 
-              {/* Built-in milestone shows its glyph like a tiny event */}
-              {milestone && (
-                <span aria-hidden="true" style={{ fontSize: 9.5, lineHeight: 1.2, textAlign: "center" }}>
-                  {milestone.icon}
-                </span>
-              )}
-
-              {/* Custom events: up to two tiny chips, then +N */}
-              {events.length > 0 && (
-                <span aria-hidden="true" style={{ display: "flex", flexDirection: "column", gap: 1.5, minWidth: 0 }}>
-                  {events.slice(0, 2).map((ev) => (
-                    <span key={ev.id} style={{
-                      display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                      fontFamily: "var(--font-ui)", fontSize: 8.5, fontWeight: 600, lineHeight: 1.5,
-                      color: EVENT_COLOR, background: `${EVENT_COLOR}1f`,
-                      borderRadius: 4, padding: "0px 3px", textAlign: "left",
-                    }}>
-                      {ev.title}
-                    </span>
-                  ))}
-                  {events.length > 2 && (
-                    <span style={{
-                      fontFamily: "var(--font-num)", fontSize: 8.5, color: "var(--c-text-muted)",
-                      lineHeight: 1.4, textAlign: "left", paddingLeft: 3,
-                    }}>
-                      +{events.length - 2}
-                    </span>
-                  )}
+              {/* Built-in milestones show their glyphs (a day can hold two) */}
+              {milestones.length > 0 && (
+                <span aria-hidden="true" style={{ fontSize: 9.5, lineHeight: 1.2, textAlign: "center", letterSpacing: 1 }}>
+                  {milestones.slice(0, 2).map(m => m.icon).join("")}
                 </span>
               )}
 
@@ -309,10 +295,6 @@ export default function Calendar({
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
           <span style={{ width: 10, height: 10, borderRadius: 4, border: "2px dashed var(--c-text-muted)", flexShrink: 0 }} />
           Milestone
-        </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          <span style={{ width: 12, height: 8, borderRadius: 3, background: `${EVENT_COLOR}33`, flexShrink: 0 }} />
-          Event
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
           <span style={{

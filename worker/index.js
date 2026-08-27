@@ -13,6 +13,7 @@ import { getWeather } from "./weather.js";
 import { getPushVapidKey, postPushSubscribe, deletePushSubscribe, getPushToday, sendDailyReminders } from "./push.js";
 import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, patchGrowLifecycle, setupGrow } from "./grows.js";
 import { listGrowEvents, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./events.js";
+import { createJournalPhoto, getJournalPhoto, deleteJournalPhoto } from "./photos.js";
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
 import { getReverseGeocode } from "./geocode.js";
 import { listStrains } from "./strains.js";
@@ -188,6 +189,16 @@ async function authenticatedRoute(request, env, path, method, user) {
     if (method === "POST"   && !eventId) return createGrowEvent(request, env, user, gid);
     if (method === "PATCH"  &&  eventId) return patchGrowEvent(request, env, user, gid, eventId);
     if (method === "DELETE" &&  eventId) return deleteGrowEvent(env, user, gid, eventId);
+  }
+
+  // Journal photos: attached to a day's journal page.
+  const photosMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/photos(?:\/([A-Za-z0-9_]+))?$/);
+  if (photosMatch) {
+    const gid = photosMatch[1];
+    const photoId = photosMatch[2];
+    if (method === "POST"   && !photoId) return createJournalPhoto(request, env, user, gid);
+    if (method === "GET"    &&  photoId) return getJournalPhoto(env, user, gid, photoId);
+    if (method === "DELETE" &&  photoId) return deleteJournalPhoto(env, user, gid, photoId);
   }
 
   const plantsMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/plants$/);

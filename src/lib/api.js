@@ -118,50 +118,6 @@ export const api = {
   clearMjHistory: (growId) =>
     request(`/api/mj/history${growId ? `?growId=${encodeURIComponent(growId)}` : ""}`, { method: "DELETE" }),
 
-  // Streams MJ's plan quality review via SSE. Accepts the full conversation
-  // history on every call (stateless server-side). Same callback contract as mj().
-  mjReview: (messages, { activeGrowId, onChunk, onDone, onError }) => {
-    fetch("/api/mj/review", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        messages,
-        ...(activeGrowId ? { activeGrowId } : {}),
-      }),
-    }).then(async (res) => {
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        let msg;
-        try { msg = JSON.parse(text).error; } catch { msg = `request failed ${res.status}`; }
-        const err = new Error(msg);
-        err.status = res.status;
-        onError(err);
-        return;
-      }
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split("\n");
-        buf = lines.pop() ?? "";
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const raw = line.slice(6).trim();
-          if (!raw) continue;
-          let evt;
-          try { evt = JSON.parse(raw); } catch { continue; }
-          if (evt.delta !== undefined) { onChunk(evt.delta); }
-          else if (evt.done) { onDone(evt); }
-          else if (evt.error) { const e = new Error(evt.error); onError(e); return; }
-        }
-      }
-    }).catch(onError);
-  },
-
   getGrowLog: (date, growId) => request(withGrow(`/api/grow-log/${date}`, growId)),
   putGrowLog: (date, entry, growId) =>
     request(withGrow(`/api/grow-log/${date}`, growId), { method: "PUT", body: JSON.stringify(entry) }),
@@ -205,14 +161,12 @@ export const api = {
     request(`/api/grows/${id}/lifecycle`, { method: "PATCH", body: JSON.stringify({ lifecycle }) }),
   setupGrow: (id, survey) =>
     request(`/api/grows/${id}/setup`, { method: "POST", body: JSON.stringify({ survey }) }),
-  listGrowEvents: (id, month) =>
-    request(`/api/grows/${id}/events?month=${month}`),
-  createGrowEvent: (id, event) =>
-    request(`/api/grows/${id}/events`, { method: "POST", body: JSON.stringify(event) }),
-  patchGrowEvent: (id, eventId, patch) =>
-    request(`/api/grows/${id}/events/${eventId}`, { method: "PATCH", body: JSON.stringify(patch) }),
-  deleteGrowEvent: (id, eventId) =>
-    request(`/api/grows/${id}/events/${eventId}`, { method: "DELETE", body: "{}" }),
+  createJournalPhoto: (id, photo) =>
+    request(`/api/grows/${id}/photos`, { method: "POST", body: JSON.stringify(photo) }),
+  getJournalPhoto: (id, photoId) =>
+    request(`/api/grows/${id}/photos/${photoId}`),
+  deleteJournalPhoto: (id, photoId) =>
+    request(`/api/grows/${id}/photos/${photoId}`, { method: "DELETE", body: "{}" }),
   importEnv: (id, readings) =>
     request(`/api/grows/${id}/env/import`, { method: "POST", body: JSON.stringify({ readings }) }),
   reverseGeocode: (lat, lon) => request(`/api/geocode/reverse?lat=${lat}&lon=${lon}`),

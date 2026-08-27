@@ -18,6 +18,8 @@ test("create: title is trimmed and length-capped", () => {
 
 test("create: bad dates and times are rejected", () => {
   assert.equal(validateEventInput({ date: "07/04/2026", title: "x" }).ok, false);
+  assert.equal(validateEventInput({ date: "2026-02-31", title: "x" }).ok, false);
+  assert.equal(validateEventInput({ date: "2026-13-01", title: "x" }).ok, false);
   assert.equal(validateEventInput({ date: "2026-07-04", title: "x", time: "25:00" }).ok, false);
   assert.equal(validateEventInput({ date: "2026-07-04", title: "x", time: "9:00" }).ok, false);
   assert.equal(validateEventInput({ date: "2026-07-04", title: "x", time: "09:00" }).fields.time, "09:00");

@@ -11,7 +11,8 @@ import { kindLabel, summarizeEntry, HEALTH_MAP } from "../PlantsTab/constants.js
 import { Skeleton } from "../Skeleton.jsx";
 import { tapHaptic } from "../../lib/haptics.js";
 import RichEntryEditor from "./RichEntryEditor.jsx";
-import EventsCard from "./EventsCard.jsx";
+import MilestonesCard from "./MilestonesCard.jsx";
+import PhotosCard from "./PhotosCard.jsx";
 import DayLogEditor from "./DayLogEditor.jsx";
 
 const UI = "var(--font-ui)";
@@ -94,7 +95,7 @@ function PlantRow({ name, children }) {
 // all-days timeline. This IS the day surface - tapping a calendar day lands
 // here.
 export default function DaySpread({
-  today, date, onChangeDate, config, growId, onOpenPlant, onZoomOut,
+  today, date, onChangeDate, config, growId, onOpenPlant, onZoomOut, onConfigChanged,
   plants = [], environment = "outdoor", focusSignal = 0, active = true,
 }) {
   const dateKey = ymd(date);
@@ -112,11 +113,6 @@ export default function DaySpread({
   const famColor = phase ? phaseFamily(phase)?.color : null;
   const isToday = sameDay(date, today);
   const growDay = dayOfGrow(date, config);
-
-  // Let the timeline (and this page's own summaries) refresh after a save.
-  useEffect(() => {
-    if (noteStatus === "saved") window.dispatchEvent(new CustomEvent("journal-mutated"));
-  }, [noteStatus]);
 
   function go(delta) {
     tapHaptic();
@@ -244,7 +240,7 @@ export default function DaySpread({
                   {info.log && <span style={{ width: 4, height: 4, borderRadius: 2, background: "var(--c-accent)" }} />}
                   {info.note && <span style={{ width: 4, height: 4, borderRadius: 2, background: "#60a5fa" }} />}
                   {info.plants > 0 && <span style={{ width: 4, height: 4, borderRadius: 2, background: "#c084fc" }} />}
-                  {info.events > 0 && <span style={{ width: 4, height: 4, borderRadius: 2, background: "#38bdf8" }} />}
+                  {info.photos > 0 && <span style={{ width: 4, height: 4, borderRadius: 2, background: "#fbbf24" }} />}
                 </div>
               </button>
             );
@@ -286,8 +282,11 @@ export default function DaySpread({
           />
         </Card>
 
-        {/* The day's events: milestones built in, your own added in place. */}
-        <EventsCard date={date} growId={growId} events={day.events} config={config} />
+        {/* Season milestones on this day - tappable to move their dates. */}
+        <MilestonesCard date={date} growId={growId} config={config} onConfigChanged={onConfigChanged} />
+
+        {/* The day's photos + the journal's add-a-photo action. */}
+        <PhotosCard date={date} growId={growId} photos={day.photos} />
 
         {loading ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
