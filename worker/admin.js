@@ -63,6 +63,6 @@ export async function deleteUser(env, actingUser, targetId) {
 const USER_OWNED_TABLES = [
   "sessions", "password_reset_tokens", "share_tokens", "push_subscriptions",
   "task_checkoffs", "task_notes", "day_notes", "grow_log", "plant_log",
-  "plan_day_overrides", "plan_config", "grows", "mj_conversations",
-  "mj_usage", "plan_gen_usage", "client_errors",
+  "plan_day_overrides", "plan_config", "grows", "grow_events",
+  "mj_conversations", "mj_usage", "plan_gen_usage", "client_errors",
 ];

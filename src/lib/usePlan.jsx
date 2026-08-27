@@ -20,10 +20,6 @@ export function PlanProvider({ children }) {
   const [activeGrowId, setActiveGrowIdRaw] = useState(getStoredGrowId);
 
   const [config, setConfig] = useState(null);
-  const [overrides, setOverrides] = useState({});
-  const [generatedPlan, setGeneratedPlan] = useState(null);
-  const [phaseOverrides, setPhaseOverrides] = useState({});
-  const [eventRules, setEventRules] = useState([]);
   const [survey, setSurvey] = useState(null);
   const [lifecycle, setLifecycle] = useState(null);
   const [needsSetup, setNeedsSetup] = useState(false);
@@ -86,10 +82,6 @@ export function PlanProvider({ children }) {
           setNeedsSetup(false);
           setConfig(parseConfig(data.config));
         }
-        setOverrides(data.overrides || {});
-        setGeneratedPlan(data.generatedPlan || null);
-        setPhaseOverrides(data.phaseOverrides || {});
-        setEventRules(data.eventRules || []);
         setSurvey(data.survey || null);
         setLifecycle(data.lifecycle || null);
         setLoading(false);
@@ -110,7 +102,7 @@ export function PlanProvider({ children }) {
       grows,
       activeGrowId,
       setActiveGrowId,
-      config, overrides, generatedPlan, phaseOverrides, eventRules, survey, lifecycle,
+      config, survey, lifecycle,
       needsSetup, loading, error, reload,
     }}>
       {children}

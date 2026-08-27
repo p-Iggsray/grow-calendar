@@ -7,17 +7,10 @@ import {
   REQUIRED_CONFIG_KEYS,
 } from "./planSetup.js";
 import { ensurePlantIds, backfillStrainsFromPlan } from "./plantsRoster.js";
-import { validateEventRule, MAX_RULES_PER_GROW } from "./eventRulesValidate.js";
 import { LIFECYCLE_PHASES } from "../src/lib/lifecycle.js";
 import { recordStrains } from "./strains.js";
-import { buildHeuristicPlan } from "../src/lib/heuristicPlan.js";
 import { resolveSurveyForSetup } from "../src/lib/stageAnchor.js";
 
-const VALID_PHASES = new Set([
-  "transplant", "early_veg", "veg_cm", "veg_half", "veg_full",
-  "pre_flower", "flower", "flush", "flush_gdp", "harvest_gdp",
-  "flower_haze", "flush_haze", "harvest_haze",
-]);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function newGrowId() {
@@ -109,20 +102,8 @@ export async function loadRawGrow(env, userId, growId) {
   ).bind(growId, userId).first();
   if (!row) return null;
 
-  const overridesRes = await env.DB.prepare(
-    "SELECT date, payload FROM plan_day_overrides WHERE user_id = ? AND grow_id = ?"
-  ).bind(userId, growId).all();
-  const overrides = {};
-  for (const r of overridesRes.results ?? []) {
-    try { overrides[r.date] = JSON.parse(r.payload); } catch { /* skip */ }
-  }
-
   return {
     config:        parseField(row.config),
-    overrides,
-    generatedPlan: parseField(row.generated_plan),
-    phaseOverrides: parseField(row.phase_overrides) ?? {},
-    eventRules:     parseField(row.event_rules) ?? [],
     survey:        parseField(row.survey),
     lifecycle:     parseField(row.lifecycle),
     needsSetup:    !row.config,
@@ -136,7 +117,7 @@ export async function loadRawGrow(env, userId, growId) {
 export async function loadRawGrows(env, userId) {
   await ensureMigrated(env, userId);
   const res = await env.DB.prepare(
-    `SELECT id, display_name, status, config, survey, generated_plan, lifecycle, created_at
+    `SELECT id, display_name, status, config, survey, lifecycle, created_at
      FROM grows WHERE user_id = ? ORDER BY created_at DESC`
   ).bind(userId).all();
   return (res.results ?? []).map(r => ({
@@ -145,7 +126,6 @@ export async function loadRawGrows(env, userId) {
     status:        r.status,
     config:        parseField(r.config),
     survey:        parseField(r.survey),
-    generatedPlan: parseField(r.generated_plan),
     lifecycle:     parseField(r.lifecycle),
     createdAt:     r.created_at,
   }));
@@ -158,7 +138,7 @@ export async function listGrows(env, user) {
   let res;
   try {
     res = await env.DB.prepare(
-      `SELECT id, display_name, status, config, survey, generated_plan, created_at, updated_at
+      `SELECT id, display_name, status, config, survey, created_at, updated_at
        FROM grows WHERE user_id = ? ORDER BY created_at DESC`
     ).bind(user.id).all();
   } catch (e) {
@@ -174,7 +154,6 @@ export async function listGrows(env, user) {
     status:        r.status,
     config:        parseField(r.config),
     survey:        parseField(r.survey),
-    generatedPlan: parseField(r.generated_plan),
     createdAt:     r.created_at,
     updatedAt:     r.updated_at,
   })));
@@ -204,25 +183,13 @@ export async function getGrow(env, user, growId) {
   ).bind(growId, user.id).first();
   if (!row) return error(404, "grow not found");
 
-  const overridesRes = await env.DB.prepare(
-    "SELECT date, payload FROM plan_day_overrides WHERE user_id = ? AND grow_id = ?"
-  ).bind(user.id, growId).all();
-
-  const overrides = {};
-  for (const r of overridesRes.results ?? []) {
-    try { overrides[r.date] = JSON.parse(r.payload); } catch { /* skip corrupt override */ }
-  }
-
-  const config        = parseField(row.config);
-  const generatedPlan = parseField(row.generated_plan);
-  const phaseOverrides = parseField(row.phase_overrides) ?? {};
-  const eventRules = parseField(row.event_rules) ?? [];
+  const config = parseField(row.config);
   let survey = parseField(row.survey);
   let surveyChanged = false;
 
-  // Seed the per-plant roster from the AI plan's strains if it has none yet, so
-  // the Plants section never lags behind the calendar/garden.
-  const back = backfillStrainsFromPlan(survey, generatedPlan);
+  // Legacy back-compat: old grows stored their strain roster only on the
+  // generated plan - seed the survey from it once so Plants never lags.
+  const back = backfillStrainsFromPlan(survey, parseField(row.generated_plan));
   if (back.changed) { survey = back.survey; surveyChanged = true; }
 
   if (survey) {
@@ -241,10 +208,6 @@ export async function getGrow(env, user, growId) {
     displayName:  row.display_name,
     status:       row.status,
     config,
-    overrides,
-    generatedPlan,
-    phaseOverrides,
-    eventRules,
     survey,
     lifecycle:    parseField(row.lifecycle),
     needsSetup:   !config,
@@ -415,10 +378,17 @@ export async function deleteGrow(env, user, growId) {
   await env.DB.prepare(
     "DELETE FROM grows WHERE id = ? AND user_id = ?"
   ).bind(growId, user.id).run();
+  // Calendar events belong to the grow; clean them up with it.
+  try {
+    await env.DB.prepare(
+      "DELETE FROM grow_events WHERE grow_id = ? AND user_id = ?"
+    ).bind(growId, user.id).run();
+  } catch { /* table may not exist yet */ }
   return json({ ok: true });
 }
 
-// POST /api/grows/:id/setup - AI-generate plan for a specific grow
+// POST /api/grows/:id/setup - build the grow's season (config dates) from the
+// wizard survey. Pure date math, no AI, no task plan.
 export async function setupGrow(request, env, user, growId) {
   const row = await env.DB.prepare(
     "SELECT id FROM grows WHERE id = ? AND user_id = ?"
@@ -444,8 +414,7 @@ export async function setupGrow(request, env, user, growId) {
     return error(400, "Set the date your current stage started (the Where You're At step) and try again.");
 
   // The whole timeline is built from the survey with no AI call (no quota, no
-  // failures). Manual mode stores a sentinel so getDetail renders no auto tasks;
-  // any other mode gets a heuristic, environment-aware task rundown.
+  // failures): phases, milestones, and the season's date anchors.
   const config = {};
   try {
     fillMissingConfigKeys(config, survey);
@@ -466,7 +435,6 @@ export async function setupGrow(request, env, user, growId) {
     if (geo) { survey.lat = geo.lat; survey.lon = geo.lon; }
   }
 
-  const generatedPlan = body.taskMode === "manual" ? { manual: true } : buildHeuristicPlan(survey);
   const displayName = (survey.growName || "").trim()
     || [survey.strains?.[0]?.name, String(new Date().getFullYear())].filter(Boolean).join(" ").trim()
     || "My Grow";
@@ -474,242 +442,17 @@ export async function setupGrow(request, env, user, growId) {
 
   await env.DB.prepare(
     `UPDATE grows
-     SET display_name = ?, config = ?, survey = ?, generated_plan = ?, updated_at = ?
+     SET display_name = ?, config = ?, survey = ?, generated_plan = NULL, updated_at = ?
      WHERE id = ? AND user_id = ?`
   ).bind(
     displayName,
     JSON.stringify(config),
     JSON.stringify(survey),
-    JSON.stringify(generatedPlan),
     now,
     growId,
     user.id,
   ).run();
 
   await recordStrains(env, survey.strains);
-  return json({ ok: true, config, generatedPlan, displayName });
-}
-
-// POST /api/grows/:id/regenerate - rebuild the heuristic task plan from the
-// stored survey (no AI). Leaves config and phase overrides as they are.
-export async function regenerateGrow(request, env, user, growId) {
-  const row = await env.DB.prepare(
-    "SELECT survey FROM grows WHERE id = ? AND user_id = ?"
-  ).bind(growId, user.id).first();
-  if (!row) return error(404, "grow not found");
-  if (!row.survey) return error(400, "no survey on file, complete initial setup first");
-
-  let survey;
-  try { survey = JSON.parse(row.survey); }
-  catch { return error(500, "stored survey is corrupt, re-run full setup"); }
-
-  const generatedPlan = buildHeuristicPlan(survey);
-
-  await env.DB.prepare(
-    "UPDATE grows SET generated_plan = ?, updated_at = ? WHERE id = ? AND user_id = ?"
-  ).bind(JSON.stringify(generatedPlan), new Date().toISOString(), growId, user.id).run();
-
-  return json({ ok: true, generatedPlan });
-}
-
-// PUT /api/grows/:id/phase/:phase
-export async function putGrowPhase(request, env, user, growId, phase) {
-  if (!VALID_PHASES.has(phase)) return error(400, "invalid phase");
-
-  const row = await env.DB.prepare(
-    "SELECT phase_overrides FROM grows WHERE id = ? AND user_id = ?"
-  ).bind(growId, user.id).first();
-  if (!row) return error(404, "grow not found");
-
-  let body;
-  { const p = await safeJsonBounded(request, 65536); if (!p.ok) return error(p.status, p.error); body = p.data; }
-
-  const phaseOverrides = parseField(row.phase_overrides) ?? {};
-  if (body === null) {
-    delete phaseOverrides[phase];
-  } else {
-    phaseOverrides[phase] = body;
-  }
-
-  await env.DB.prepare(
-    "UPDATE grows SET phase_overrides = ?, updated_at = ? WHERE id = ? AND user_id = ?"
-  ).bind(JSON.stringify(phaseOverrides), new Date().toISOString(), growId, user.id).run();
-
-  return json({ ok: true });
-}
-
-// DELETE /api/grows/:id/phase/:phase
-export async function deleteGrowPhase(env, user, growId, phase) {
-  if (!VALID_PHASES.has(phase)) return error(400, "invalid phase");
-
-  const row = await env.DB.prepare(
-    "SELECT phase_overrides FROM grows WHERE id = ? AND user_id = ?"
-  ).bind(growId, user.id).first();
-  if (!row) return error(404, "grow not found");
-
-  const phaseOverrides = parseField(row.phase_overrides) ?? {};
-  delete phaseOverrides[phase];
-
-  await env.DB.prepare(
-    "UPDATE grows SET phase_overrides = ?, updated_at = ? WHERE id = ? AND user_id = ?"
-  ).bind(JSON.stringify(phaseOverrides), new Date().toISOString(), growId, user.id).run();
-
-  return json({ ok: true });
-}
-
-function newRuleId() {
-  return "evt_" + Math.random().toString(36).slice(2, 10);
-}
-
-async function readGrowRules(env, userId, growId) {
-  const row = await env.DB.prepare(
-    "SELECT event_rules FROM grows WHERE id = ? AND user_id = ?"
-  ).bind(growId, userId).first();
-  if (!row) return null;
-  return parseField(row.event_rules) ?? [];
-}
-
-async function writeGrowRules(env, userId, growId, rules) {
-  await env.DB.prepare(
-    "UPDATE grows SET event_rules = ?, updated_at = ? WHERE id = ? AND user_id = ?"
-  ).bind(JSON.stringify(rules), new Date().toISOString(), growId, userId).run();
-}
-
-// POST /api/grows/:id/events
-export async function createGrowEvent(request, env, user, growId) {
-  const rules = await readGrowRules(env, user.id, growId);
-  if (rules === null) return error(404, "grow not found");
-  if (rules.length >= MAX_RULES_PER_GROW) return error(400, `rule limit (${MAX_RULES_PER_GROW}) reached`);
-
-  let body;
-  { const p = await safeJsonBounded(request, 16384); if (!p.ok) return error(p.status, p.error); body = p.data; }
-
-  const rule = {
-    id: newRuleId(),
-    label: typeof body?.label === "string" ? body.label.slice(0, 80) : "",
-    task: typeof body?.task === "string" ? body.task : "",
-    enabled: body?.enabled !== false,
-    window: body?.window ?? null,
-    cadence: body?.cadence ?? null,
-    createdAt: new Date().toISOString(),
-  };
-
-  const invalid = validateEventRule(rule);
-  if (invalid) return error(400, invalid);
-
-  rules.push(rule);
-  await writeGrowRules(env, user.id, growId, rules);
-  return json({ ok: true, rule });
-}
-
-// PATCH /api/grows/:id/events/:ruleId
-export async function patchGrowEvent(request, env, user, growId, ruleId) {
-  const rules = await readGrowRules(env, user.id, growId);
-  if (rules === null) return error(404, "grow not found");
-  const idx = rules.findIndex(r => r.id === ruleId);
-  if (idx < 0) return error(404, "rule not found");
-
-  let body;
-  { const p = await safeJsonBounded(request, 16384); if (!p.ok) return error(p.status, p.error); body = p.data; }
-
-  const next = { ...rules[idx] };
-  if (typeof body?.label === "string") next.label = body.label.slice(0, 80);
-  if (typeof body?.task === "string") next.task = body.task;
-  if (typeof body?.enabled === "boolean") next.enabled = body.enabled;
-  if (body?.window !== undefined) next.window = body.window;
-  if (body?.cadence !== undefined) next.cadence = body.cadence;
-
-  const invalid = validateEventRule(next);
-  if (invalid) return error(400, invalid);
-
-  rules[idx] = next;
-  await writeGrowRules(env, user.id, growId, rules);
-  return json({ ok: true, rule: next });
-}
-
-// DELETE /api/grows/:id/events/:ruleId
-export async function deleteGrowEvent(env, user, growId, ruleId) {
-  const rules = await readGrowRules(env, user.id, growId);
-  if (rules === null) return error(404, "grow not found");
-  await writeGrowRules(env, user.id, growId, rules.filter(r => r.id !== ruleId));
-  return json({ ok: true });
-}
-
-// PATCH /api/grows/:id/day/:date - merge per-day task changes (edit, remove,
-// add, and edits/removals of user-added tasks) into plan_day_overrides
-export async function patchGrowDayOverride(request, env, user, growId, date) {
-  if (!DATE_RE.test(date)) return error(400, "invalid date");
-
-  const growRow = await env.DB.prepare(
-    "SELECT id FROM grows WHERE id = ? AND user_id = ?"
-  ).bind(growId, user.id).first();
-  if (!growRow) return error(404, "grow not found");
-
-  const parsed = await safeJsonBounded(request, 8192);
-  if (!parsed.ok) return error(parsed.status, parsed.error);
-  const { editedTasks, addTask, removeTask, editAddedTask, removeAddedTask } = parsed.data ?? {};
-  const hasEdit = editedTasks && typeof editedTasks === "object" && !Array.isArray(editedTasks);
-  const hasOp = hasEdit || typeof addTask === "string" || Number.isInteger(removeTask)
-    || (editAddedTask && typeof editAddedTask === "object") || Number.isInteger(removeAddedTask);
-  if (!hasOp) return error(400, "no valid task operation in body");
-
-  const existing = await env.DB.prepare(
-    "SELECT payload FROM plan_day_overrides WHERE user_id = ? AND grow_id = ? AND date = ?"
-  ).bind(user.id, growId, date).first();
-
-  let payload = {};
-  if (existing?.payload) {
-    try { payload = JSON.parse(existing.payload); } catch { /* start fresh */ }
-  }
-
-  if (hasEdit) {
-    const merged = { ...(payload.editedTasks ?? {}), ...editedTasks };
-    for (const k of Object.keys(merged)) {
-      if (merged[k] === null || merged[k] === "") delete merged[k];
-    }
-    if (Object.keys(merged).length > 0) payload.editedTasks = merged;
-    else delete payload.editedTasks;
-  }
-
-  // Remove a generated task for this day (index into the generated list).
-  if (Number.isInteger(removeTask) && removeTask >= 0 && removeTask < 200) {
-    const set = new Set(payload.removedTasks ?? []);
-    set.add(removeTask);
-    payload.removedTasks = [...set].sort((a, b) => a - b);
-  }
-
-  // User-added tasks for this day (capped, trimmed).
-  if (typeof addTask === "string") {
-    const text = addTask.trim().slice(0, 300);
-    if (!text) return error(400, "addTask must not be empty");
-    const added = Array.isArray(payload.addedTasks) ? payload.addedTasks : [];
-    if (added.length >= 50) return error(400, "too many added tasks for one day");
-    payload.addedTasks = [...added, text];
-  }
-
-  if (editAddedTask && typeof editAddedTask === "object") {
-    const { index, text } = editAddedTask;
-    const added = Array.isArray(payload.addedTasks) ? payload.addedTasks : [];
-    if (!Number.isInteger(index) || index < 0 || index >= added.length) return error(400, "editAddedTask index out of range");
-    const t = typeof text === "string" ? text.trim().slice(0, 300) : "";
-    if (!t) return error(400, "editAddedTask text must not be empty");
-    added[index] = t;
-    payload.addedTasks = added;
-  }
-
-  if (Number.isInteger(removeAddedTask)) {
-    const added = Array.isArray(payload.addedTasks) ? payload.addedTasks : [];
-    if (removeAddedTask < 0 || removeAddedTask >= added.length) return error(400, "removeAddedTask index out of range");
-    added.splice(removeAddedTask, 1);
-    if (added.length > 0) payload.addedTasks = added;
-    else delete payload.addedTasks;
-  }
-
-  await env.DB.prepare(
-    `INSERT INTO plan_day_overrides (user_id, grow_id, date, payload, updated_at)
-     VALUES (?, ?, ?, ?, datetime('now'))
-     ON CONFLICT(user_id, grow_id, date) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at`
-  ).bind(user.id, growId, date, JSON.stringify(payload)).run();
-
-  return json({ ok: true });
+  return json({ ok: true, config, displayName });
 }

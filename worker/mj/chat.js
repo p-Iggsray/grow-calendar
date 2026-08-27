@@ -101,9 +101,6 @@ export async function postMj(request, env, user) {
   if (raw.needsSetup) return error(400, "Complete your grow setup before using MJ.");
 
   const config = parseConfig(raw.config);
-  const overrides = raw.overrides;
-  const phaseOverrides = raw.phaseOverrides;
-  const eventRules = raw.eventRules ?? [];
 
   // Per-day data is grow-scoped; fall back to the user's first grow when the
   // request didn't carry an explicit active grow.
@@ -125,7 +122,7 @@ export async function postMj(request, env, user) {
   // a tool call. Replaces the old hardcoded location in the persona.
   const profileParts = [
     growLocation(raw.survey) ? `Location: ${growLocation(raw.survey)}` : "",
-    strainSummary(raw.survey, raw.generatedPlan) ? `Plants: ${strainSummary(raw.survey, raw.generatedPlan)}` : "",
+    strainSummary(raw.survey) ? `Plants: ${strainSummary(raw.survey)}` : "",
   ].filter(Boolean);
   const growProfile = profileParts.length ? `Active grow profile - ${profileParts.join(" · ")}.` : "";
 
@@ -144,7 +141,7 @@ export async function postMj(request, env, user) {
   }
 
   // Assemble system prompt segments.
-  const planText  = buildPlanText(config, overrides, raw.generatedPlan, phaseOverrides, eventRules);
+  const planText  = buildPlanText(config);
   const baseBlock = [MJ_PERSONA, "", planText, "", supplyContext].filter(s => s !== "").join("\n");
 
   const rosterContext = buildRosterContext(raw.survey);
@@ -189,7 +186,7 @@ export async function postMj(request, env, user) {
 
       const actions = [];
       const executeToolUse = (name, input) =>
-        executeTool(name, input, env, user.id, config, overrides, raw.generatedPlan, phaseOverrides, actions, activeGrowId, raw, eventRules);
+        executeTool(name, input, env, user.id, config, actions, activeGrowId, raw);
 
       let reply = null;
       let modelUsed = null;

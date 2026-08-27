@@ -26,8 +26,3 @@ test("no em or en dashes anywhere in app source", () => {
   }
   assert.deepEqual(offenders, [], `em/en dashes found in: ${offenders.join(", ")}`);
 });
-
-test("golden plan fixture is dash-free", () => {
-  const golden = readFileSync(new URL("./golden-plan.json", import.meta.url), "utf8");
-  assert.ok(!/[–—]/.test(golden));
-});

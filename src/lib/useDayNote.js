@@ -3,7 +3,7 @@ import { api, ymd } from "./api.js";
 
 const DEBOUNCE_MS = 800;
 
-// Per-day note with debounced autosave. Mirrors useCheckoffs:
+// Per-day note with debounced autosave:
 //   - loads on date/enabled change, guarding stale responses
 //   - keeps live text in state for instant typing
 //   - autosaves DEBOUNCE_MS after the last keystroke; flush() saves immediately

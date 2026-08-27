@@ -52,10 +52,6 @@ export const api = {
     request("/api/auth/reset-password",  { method: "POST", body: JSON.stringify({ token, newPassword }) }),
   logout: () => request("/api/auth/logout", { method: "POST" }),
 
-  getCheckoffs: (date, growId) => request(withGrow(`/api/checkoffs/${date}`, growId)),
-  putCheckoffs: (date, taskStates, growId) =>
-    request(withGrow(`/api/checkoffs/${date}`, growId), { method: "PUT", body: JSON.stringify({ taskStates }) }),
-  getMonthCheckoffs: (month, growId) => request(withGrow(`/api/checkoffs?month=${month}`, growId)),
   getMonthGrowLog: (month, growId) => request(withGrow(`/api/grow-log/month?month=${month}`, growId)),
   getJournalDay: (date, growId) => request(withGrow(`/api/journal/${date}`, growId)),
   getJournalMonth: (month, growId) => request(withGrow(`/api/journal/month?month=${month}`, growId)),
@@ -207,20 +203,16 @@ export const api = {
     request(`/api/grows/${id}`, { method: "DELETE", body: "{}" }),
   updateGrowLifecycle: (id, lifecycle) =>
     request(`/api/grows/${id}/lifecycle`, { method: "PATCH", body: JSON.stringify({ lifecycle }) }),
-  setupGrow: (id, survey, taskMode = "guided") =>
-    request(`/api/grows/${id}/setup`, { method: "POST", body: JSON.stringify({ survey, taskMode }) }),
-  regenerateGrow: (id) =>
-    request(`/api/grows/${id}/regenerate`, { method: "POST", body: "{}" }),
-  saveGrowPhase: (id, phase, data) =>
-    request(`/api/grows/${id}/phase/${phase}`, { method: "PUT", body: JSON.stringify(data) }),
-  clearGrowPhase: (id, phase) =>
-    request(`/api/grows/${id}/phase/${phase}`, { method: "DELETE", body: "{}" }),
-  createGrowEvent: (id, rule) =>
-    request(`/api/grows/${id}/events`, { method: "POST", body: JSON.stringify(rule) }),
-  patchGrowEvent: (id, ruleId, patch) =>
-    request(`/api/grows/${id}/events/${ruleId}`, { method: "PATCH", body: JSON.stringify(patch) }),
-  deleteGrowEvent: (id, ruleId) =>
-    request(`/api/grows/${id}/events/${ruleId}`, { method: "DELETE", body: "{}" }),
+  setupGrow: (id, survey) =>
+    request(`/api/grows/${id}/setup`, { method: "POST", body: JSON.stringify({ survey }) }),
+  listGrowEvents: (id, month) =>
+    request(`/api/grows/${id}/events?month=${month}`),
+  createGrowEvent: (id, event) =>
+    request(`/api/grows/${id}/events`, { method: "POST", body: JSON.stringify(event) }),
+  patchGrowEvent: (id, eventId, patch) =>
+    request(`/api/grows/${id}/events/${eventId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  deleteGrowEvent: (id, eventId) =>
+    request(`/api/grows/${id}/events/${eventId}`, { method: "DELETE", body: "{}" }),
   importEnv: (id, readings) =>
     request(`/api/grows/${id}/env/import`, { method: "POST", body: JSON.stringify({ readings }) }),
   reverseGeocode: (lat, lon) => request(`/api/geocode/reverse?lat=${lat}&lon=${lon}`),
@@ -229,8 +221,6 @@ export const api = {
   getEnvDay: (id, date) => request(`/api/grows/${id}/env/day/${date}`),
   clearEnv: (id) =>
     request(`/api/grows/${id}/env`, { method: "DELETE", body: "{}" }),
-  patchGrowDay: (id, date, patch) =>
-    request(`/api/grows/${id}/day/${date}`, { method: "PATCH", body: JSON.stringify(patch) }),
   addPlant: (growId, fields) =>
     request(`/api/grows/${growId}/plants`, { method: "POST", body: JSON.stringify(fields) }),
   patchPlant: (growId, plantId, patch) =>

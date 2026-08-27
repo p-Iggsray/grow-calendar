@@ -10,7 +10,6 @@ import { StepStrains } from "./StepStrains.jsx";
 import { StepTimeline } from "./StepTimeline.jsx";
 import { StepSetup } from "./StepSetup.jsx";
 import { StepSupplies } from "./StepSupplies.jsx";
-import { StepTasks } from "./StepTasks.jsx";
 import { StepReview } from "./StepReview.jsx";
 import { GeneratingScreen } from "./GeneratingScreen.jsx";
 
@@ -22,8 +21,7 @@ const STEPS = [
   { id: "timeline", title: "Where You're At" },
   { id: "setup",    title: "Your Setup" },
   { id: "supplies", title: "Supplies" },
-  { id: "tasks",    title: "Daily Tasks" },
-  { id: "review",   title: "Review & Generate" },
+  { id: "review",   title: "Review & Create" },
 ];
 
 export default function SetupWizard({ onComplete, onCancel, initialSurvey, growId }) {
@@ -39,17 +37,13 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
   }));
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState("");
-  // Daily Tasks step: build a heuristic plan, or start empty and add your own.
-  const [wantTasks, setWantTasks] = useState(draft ? draft.wantTasks : null);
   const [confirmExit, setConfirmExit] = useState(false);
 
-  // Autosave every answer, the current step, and the task-mode choice.
+  // Autosave every answer and the current step.
   useEffect(() => {
     if (generating) return;
-    saveWizardDraft(growId, { survey, step, wantTasks });
-  }, [growId, survey, step, wantTasks, generating]);
-
-  const taskMode = wantTasks === true ? "heuristic" : wantTasks === false ? "manual" : null;
+    saveWizardDraft(growId, { survey, step });
+  }, [growId, survey, step, generating]);
 
   function update(field, value) {
     setSurvey(s => ({ ...s, [field]: value }));
@@ -64,9 +58,6 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
     if (step === 2 && !(survey.stageStartDate || "").length) {
       return "Pick when your current stage started";
     }
-    if (STEPS[step].id === "tasks" && taskMode === null) {
-      return "Choose how tasks should work";
-    }
     return null;
   }
   function canAdvance() { return advanceHint() === null; }
@@ -78,11 +69,11 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
       // Convert the "current stage + start date" answer into transplantDate,
       // startType, and per-plant stages before sending.
       const resolved = resolveSurveyForSetup(survey);
-      await api.setupGrow(growId, resolved, taskMode || "heuristic");
+      await api.setupGrow(growId, resolved);
       clearWizardDraft(growId);
-      onComplete(taskMode || "heuristic");
+      onComplete();
     } catch (err) {
-      setGenError(err.message || "Generation failed. Please try again.");
+      setGenError(err.message || "Setup failed. Please try again.");
       setGenerating(false);
     }
   }
@@ -147,7 +138,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
       {/* Scrollable content */}
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px" }}>
         {generating ? (
-          <GeneratingScreen manual={taskMode === "manual"} />
+          <GeneratingScreen />
         ) : (
           <>
             {step === 0 && <StepBasics survey={survey} update={update} />}
@@ -155,8 +146,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
             {step === 2 && <StepTimeline survey={survey} update={update} />}
             {step === 3 && <StepSetup survey={survey} update={update} />}
             {step === 4 && <StepSupplies survey={survey} update={update} />}
-            {step === 5 && <StepTasks wantTasks={wantTasks} setWantTasks={setWantTasks} />}
-            {step === 6 && <StepReview survey={survey} taskMode={taskMode} />}
+            {step === 5 && <StepReview survey={survey} />}
 
             {genError && (
               <div style={{
@@ -221,7 +211,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
               cursor: canAdvance() ? "pointer" : "default",
               fontWeight: isLast ? 800 : 400,
             }}>
-            {isLast ? (taskMode === "manual" ? "Create My Calendar" : "Build My Calendar") : "Next"}
+            {isLast ? "Create My Calendar" : "Next"}
           </button>
         </div>
       )}

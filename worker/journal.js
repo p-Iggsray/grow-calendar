@@ -6,6 +6,7 @@ import { ownedGrowRow, parseSurvey, ensurePlantLogSchema } from "./plants.js";
 import { htmlToPlainText } from "../src/lib/richText.js";
 import { getWeatherForDay, coordsFromSurvey, locKey } from "./weatherDays.js";
 import { resolveGrowCoords } from "./weather.js";
+import { eventsForDay, eventCountsForMonth } from "./events.js";
 
 // A grow "has a location" when it carries coordinates OR a geocodable place
 // name; resolveGrowCoords turns either into usable coordinates (persisting
@@ -80,7 +81,7 @@ export async function getJournalDay(env, user, growId, date) {
     return coords ? getWeatherForDay(env, coords.lat, coords.lon, date) : null;
   })();
 
-  const [logRow, note, plantRes] = await Promise.all([
+  const [logRow, note, plantRes, events] = await Promise.all([
     env.DB.prepare(
       "SELECT * FROM grow_log WHERE user_id = ? AND grow_id = ? AND date = ?"
     ).bind(user.id, growId, date).first(),
@@ -90,6 +91,7 @@ export async function getJournalDay(env, user, growId, date) {
        FROM plant_log WHERE user_id = ? AND grow_id = ? AND date = ?
        ORDER BY plant_id, id ASC`
     ).bind(user.id, growId, date).all(),
+    eventsForDay(env, user.id, growId, date).catch(() => []),
   ]);
 
   return json({
@@ -97,6 +99,7 @@ export async function getJournalDay(env, user, growId, date) {
     log: logRow && isLogFilled(logRow) ? rowToEntry(logRow) : null,
     note: note || "",
     plantEntries: (plantRes.results ?? []).map((r) => journalPlantEntry(r, names)),
+    events,
     weather: await weatherPromise,
     hasWeatherLocation: hasLocation,
   });
@@ -301,9 +304,13 @@ export async function getJournalMonth(env, user, growId, month) {
       "SELECT date, COUNT(*) AS n FROM plant_log WHERE user_id = ? AND grow_id = ? AND date LIKE ? GROUP BY date"
     ).bind(user.id, growId, like).all(),
   ]);
+  const eventCounts = await eventCountsForMonth(env, user.id, growId, month).catch(() => ({}));
 
-  return json({
-    month,
-    days: buildMonthIndex(logs.results, notes.results, plants.results),
-  });
+  const days = buildMonthIndex(logs.results, notes.results, plants.results);
+  // Events mark the calendar too: a day with only events still gets an entry.
+  for (const [date, n] of Object.entries(eventCounts)) {
+    (days[date] ??= { log: false, note: false, plants: 0 }).events = n;
+  }
+
+  return json({ month, days });
 }

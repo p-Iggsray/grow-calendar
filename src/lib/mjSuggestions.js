@@ -15,46 +15,33 @@ function fmtShort(yyyymmdd) {
 /**
  * Build three contextual suggestion chips for MJ's empty state.
  *
- * @param {{ detail, checked, threats, contextDate, today }} opts
- *   detail - day detail object (tasks array), or null when on calendar view
- *   checked - array of checked task indices for the viewed day
- *   threats - active threat objects for the viewed phase
- *   contextDate - YYYY-MM-DD of the day open in the app, or null
+ * @param {{ contextDate, today, phaseLabel }} opts
+ *   contextDate - YYYY-MM-DD of the journal day open in the app, or null
  *   today - Date object for today
+ *   phaseLabel - label of today's phase ("Early Veg"), or null off-season
  */
-export function buildSuggestions({ detail, resolvedCount, threats, contextDate, today }) {
+export function buildSuggestions({ contextDate, today, phaseLabel }) {
   const todayYmd = toYmd(today);
   const isToday = !contextDate || contextDate === todayYmd;
   const dayLabel = isToday ? "today" : fmtShort(contextDate);
 
   const suggestions = [];
 
-  // Slot 1 - task-aware
-  if (detail?.tasks?.length > 0) {
-    const remaining = detail.tasks.length - (resolvedCount ?? 0);
-    if (remaining > 0) {
-      suggestions.push(
-        `Walk me through ${dayLabel}'s ${remaining} remaining task${remaining === 1 ? "" : "s"}`,
-      );
-    } else {
-      suggestions.push(`Everything's checked off for ${dayLabel} - what should I watch for?`);
-    }
-  } else {
-    suggestions.push(`What should I be doing ${dayLabel}?`);
-  }
+  // Slot 1 - phase-aware check-in
+  suggestions.push(
+    phaseLabel
+      ? `How should my plants look in ${phaseLabel.toLowerCase()}?`
+      : "How is my grow doing?",
+  );
 
-  // Slot 2 - threat-aware or forward-looking
-  if (threats?.length > 0) {
-    suggestions.push(`Tell me more about the ${threats[0].title} risk right now`);
-  } else {
-    suggestions.push(`What's coming up this week?`);
-  }
+  // Slot 2 - forward-looking
+  suggestions.push("What's coming up this week?");
 
-  // Slot 3 - note or action prompt
+  // Slot 3 - journal-aware
   suggestions.push(
     isToday
-      ? `Add a note to today: lower leaves yellowing`
-      : `Mark ${dayLabel}'s watering as done`,
+      ? "Summarize my journal from the past week"
+      : `What happened around ${dayLabel}?`,
   );
 
   return suggestions;

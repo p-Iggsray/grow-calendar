@@ -1,12 +1,14 @@
 // @ts-check
 // Comprehensive, print-optimised HTML report for a single grow. Pulls the full
-// profile/setup, the phase-by-phase plan, a day-by-day journal of everything
-// recorded, and season stats into one self-contained styled document that the
-// grower can read in a tab and "Save as PDF".
+// profile/setup, the season timeline (phases and milestone dates), a
+// day-by-day journal of everything recorded, and season stats into one
+// self-contained styled document that the grower can read in a tab and
+// "Save as PDF".
 import { error } from "./util.js";
 import { parseConfig, parseDate } from "../src/lib/planConfig.js";
-import { getPhase, getDetail, buildMilestones, getGrowProgress, PHASES, THREATS } from "../src/lib/growData.js";
+import { getPhase, buildMilestones, getGrowProgress, PHASES } from "../src/lib/growData.js";
 import { growLocation, strainSummary } from "../src/lib/growProfile.js";
+import { ensureGrowEventsSchema } from "./events.js";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -107,26 +109,13 @@ export async function getGrowReport(env, user, growId) {
   const rawConfig = parseField(row.config);
   const config = rawConfig ? parseConfig(rawConfig) : null;
   const survey = parseField(row.survey) ?? {};
-  const generatedPlan = parseField(row.generated_plan);
-  const phaseOverrides = parseField(row.phase_overrides) ?? {};
-  const eventRules = parseField(row.event_rules) ?? [];
 
-  const ovRes = await env.DB.prepare(
-    "SELECT date, payload FROM plan_day_overrides WHERE user_id = ? AND grow_id = ? ORDER BY date",
-  ).bind(user.id, growId).all();
-  const overrides = {};
-  for (const r of ovRes.results ?? []) { try { overrides[r.date] = JSON.parse(r.payload); } catch { /* skip */ } }
-
-  const [logRes, noteRes, checkRes, taskNoteRes] = await Promise.all([
+  const [logRes, noteRes] = await Promise.all([
     env.DB.prepare("SELECT * FROM grow_log WHERE user_id = ? AND grow_id = ? ORDER BY date").bind(user.id, growId).all(),
     env.DB.prepare("SELECT date, body FROM day_notes WHERE user_id = ? AND grow_id = ? AND body != '' ORDER BY date").bind(user.id, growId).all(),
-    env.DB.prepare("SELECT date, task_index, state FROM task_checkoffs WHERE user_id = ? AND grow_id = ? ORDER BY date, task_index").bind(user.id, growId).all(),
-    env.DB.prepare("SELECT date, task_index, note FROM task_notes WHERE user_id = ? AND grow_id = ? ORDER BY date, task_index").bind(user.id, growId).all(),
   ]);
   const logRows = logRes.results ?? [];
   const noteRows = noteRes.results ?? [];
-  const checkRows = checkRes.results ?? [];
-  const taskNoteRows = taskNoteRes.results ?? [];
 
   // Per-plant growth/health log (plant roster lives in survey.strains). The
   // table is created lazily, so tolerate it not existing yet.
@@ -138,10 +127,18 @@ export async function getGrowReport(env, user, growId) {
     plantLogRows = r.results ?? [];
   } catch { /* plant_log not created yet */ }
 
-  const html = renderReport({
-    row, config, survey, generatedPlan, phaseOverrides, overrides, eventRules,
-    logRows, noteRows, checkRows, taskNoteRows, plantLogRows,
-  });
+  // Custom calendar events, shown inline on their journal days. Same ordering
+  // as worker/events.js: by date, timed events first, ties by creation.
+  let eventRows = [];
+  try {
+    await ensureGrowEventsSchema(env);
+    const r = await env.DB.prepare(
+      "SELECT date, title, time, notes FROM grow_events WHERE user_id = ? AND grow_id = ? ORDER BY date, time IS NULL, time, created_at",
+    ).bind(user.id, growId).all();
+    eventRows = r.results ?? [];
+  } catch { /* grow_events unavailable */ }
+
+  const html = renderReport({ row, config, survey, logRows, noteRows, plantLogRows, eventRows });
 
   return new Response(html, {
     headers: {
@@ -152,12 +149,12 @@ export async function getGrowReport(env, user, growId) {
 }
 
 function renderReport(ctx) {
-  const { row, config, survey, generatedPlan, phaseOverrides, overrides, eventRules, logRows, noteRows, checkRows, taskNoteRows, plantLogRows } = ctx;
+  const { row, config, survey, logRows, noteRows, plantLogRows, eventRows } = ctx;
 
   const name = row.display_name || "My Grow";
   const status = row.status || "active";
   const location = growLocation(survey);
-  const strains = strainSummary(survey, generatedPlan);
+  const strains = strainSummary(survey);
   const plants = Array.isArray(survey.strains) ? survey.strains : [];
 
   // ── Stats (grow-scoped) ──────────────────────────────────────────────────
@@ -167,10 +164,6 @@ function renderReport(ctx) {
     if (r.feed) feedDays++;
     if (num(r.temp_low) != null) tempMin = tempMin == null ? num(r.temp_low) : Math.min(tempMin, num(r.temp_low));
     if (num(r.temp_high) != null) tempMax = tempMax == null ? num(r.temp_high) : Math.max(tempMax, num(r.temp_high));
-  }
-  let tDone = 0, tSkip = 0, tBlock = 0;
-  for (const c of checkRows) {
-    if (c.state === "done") tDone++; else if (c.state === "skipped") tSkip++; else if (c.state === "blocked") tBlock++;
   }
   const logDays = new Set(logRows.map(r => r.date)).size;
 
@@ -190,8 +183,8 @@ function renderReport(ctx) {
     plants.length ? ["Plants", String(plants.length)] : null,
     ["Days logged", String(logDays)],
     ["Total water", `${Math.round(totalWater * 10) / 10} gal`],
-    ["Tasks done", String(tDone)],
     feedDays ? ["Feed days", String(feedDays)] : null,
+    eventRows.length ? ["Events", String(eventRows.length)] : null,
   ].filter(Boolean);
   const statStrip = `<div class="stripe">${stats.map(([l, v]) =>
     `<div class="stat"><div class="stat-v">${esc(v)}</div><div class="stat-l">${esc(l)}</div></div>`).join("")}</div>`;
@@ -246,7 +239,7 @@ function renderReport(ctx) {
     plantsSection = section(`Plants · ${plants.length}`, cards);
   }
 
-  // ── Plan timeline (milestones) ───────────────────────────────────────────
+  // ── Season timeline: milestone dates ─────────────────────────────────────
   let timelineSection = "";
   if (config) {
     const ms = buildMilestones(config).filter(m => asDate(m.date));
@@ -257,8 +250,8 @@ function renderReport(ctx) {
     }
   }
 
-  // ── Phase-by-phase plan ──────────────────────────────────────────────────
-  let planSection = "";
+  // ── Season timeline: phase ranges ────────────────────────────────────────
+  let phasesSection = "";
   if (config && config.start && config.hazeHarvest) {
     const ranges = [];
     let cur = null;
@@ -270,44 +263,30 @@ function renderReport(ctx) {
       else cur.end = date;
     }
     const phaseCards = ranges.map(r => {
-      const detail = getDetail(r.start, config, overrides, generatedPlan, phaseOverrides, eventRules);
-      if (!detail) return "";
       const range = r.start.getTime() === r.end.getTime() ? fmtNice(r.start) : `${fmtNice(r.start)} - ${fmtNice(r.end)}`;
-      const tasks = (detail.tasks ?? []).map(t => `<li>${esc(t)}</li>`).join("");
+      const days = Math.round((r.end.getTime() - r.start.getTime()) / DAY_MS) + 1;
       return `<div class="phase">
-        <div class="phase-head">${chip(r.phase)}<span class="phase-range">${range}</span></div>
-        ${detail.summary ? `<p class="phase-sum">${esc(detail.summary)}</p>` : ""}
-        ${tasks ? `<ul class="tasks">${tasks}</ul>` : ""}
-        ${detail.notes ? `<p class="note-line"><strong>Note:</strong> ${esc(detail.notes)}</p>` : ""}
+        <div class="phase-head">${chip(r.phase)}<span class="phase-range">${range}</span><span class="phase-days">${days} day${days === 1 ? "" : "s"}</span></div>
       </div>`;
     }).join("");
-    planSection = section("The Plan", phaseCards);
+    if (phaseCards) phasesSection = section("Season Phases", phaseCards);
   }
-
-  // ── Season threats ───────────────────────────────────────────────────────
-  const threatsSection = (THREATS && THREATS.length) ? section("Season Threats to Watch",
-    `<div class="threats">${THREATS.map(t =>
-      `<div class="threat"><div class="threat-t">${esc(t.title)}</div><div class="threat-d">${esc(t.desc)}</div></div>`).join("")}</div>`) : "";
 
   // ── Day-by-day journal ───────────────────────────────────────────────────
   const byDate = new Map();
   const slot = (d) => {
-    if (!byDate.has(d)) byDate.set(d, { date: d, log: null, note: null, checks: [], taskNotes: [] });
+    if (!byDate.has(d)) byDate.set(d, { date: d, log: null, note: null, events: [] });
     return byDate.get(d);
   };
   for (const r of logRows) slot(r.date).log = r;
   for (const r of noteRows) slot(r.date).note = r.body;
-  for (const r of checkRows) slot(r.date).checks.push(r);
-  for (const r of taskNoteRows) slot(r.date).taskNotes.push(r);
-  for (const d of Object.keys(overrides)) slot(d);
+  for (const r of eventRows) slot(r.date).events.push(r);
   const journalDates = [...byDate.keys()].sort();
 
   const journalCards = journalDates.map(d => {
     const e = byDate.get(d);
     const date = asDate(d);
     const phase = config && date ? getPhase(date, config) : null;
-    const detail = config && date ? getDetail(date, config, overrides, generatedPlan, phaseOverrides, eventRules) : null;
-    const tasks = detail?.tasks ?? [];
 
     // Grow-log metrics
     const metrics = [];
@@ -326,40 +305,19 @@ function renderReport(ctx) {
       ? `<div class="metrics">${metrics.map(([l, v]) => `<div class="metric"><span class="m-l">${esc(l)}</span><span class="m-v">${v}</span></div>`).join("")}</div>`
       : "";
 
-    // Completed / resolved tasks
-    const checksHtml = e.checks.length
-      ? `<ul class="checks">${e.checks.map(c => {
-          const label = tasks[c.task_index] != null ? esc(tasks[c.task_index]) : `Task #${c.task_index + 1}`;
-          const mark = c.state === "done" ? "✓" : c.state === "skipped" ? "⤼" : "✕";
-          return `<li class="chk chk-${esc(c.state)}"><span class="mark">${mark}</span> ${label}</li>`;
-        }).join("")}</ul>`
+    // Custom calendar events on this day
+    const eventsHtml = e.events.length
+      ? `<div class="events">${e.events.map(ev =>
+          `<div class="ev"><span class="ev-time">${ev.time ? esc(ev.time) : "all day"}</span><span class="ev-title">${esc(ev.title)}</span>${ev.notes ? `<span class="ev-notes">${esc(ev.notes)}</span>` : ""}</div>`).join("")}</div>`
       : "";
 
-    // Per-task notes
-    const taskNotesHtml = e.taskNotes.length
-      ? e.taskNotes.map(t => {
-          const label = tasks[t.task_index] != null ? esc(tasks[t.task_index]) : `Task #${t.task_index + 1}`;
-          return `<p class="tnote"><strong>${label}:</strong> ${esc(t.note)}</p>`;
-        }).join("")
-      : "";
-
-    // Day note + overrides
+    // Day note
     const noteHtml = e.note ? `<p class="daynote">${esc(e.note)}</p>` : "";
-    const ov = overrides[d];
-    let ovHtml = "";
-    if (ov) {
-      const bits = [];
-      if (ov.editedTasks && Object.keys(ov.editedTasks).length) bits.push(`${Object.keys(ov.editedTasks).length} task(s) edited`);
-      if (Array.isArray(ov.addedTasks) && ov.addedTasks.length) bits.push(`${ov.addedTasks.length} task(s) added`);
-      if (Array.isArray(ov.removedTasks) && ov.removedTasks.length) bits.push(`${ov.removedTasks.length} task(s) removed`);
-      if (ov.note) bits.push("custom day note");
-      if (bits.length) ovHtml = `<p class="ov">Edited this day: ${esc(bits.join(", "))}</p>`;
-    }
 
-    if (!metricsHtml && !checksHtml && !taskNotesHtml && !noteHtml && !ovHtml) return "";
+    if (!metricsHtml && !eventsHtml && !noteHtml) return "";
     return `<div class="jday">
       <div class="jhead"><span class="jdate">${fmtLong(d)}</span>${phase ? chip(phase) : ""}</div>
-      ${metricsHtml}${noteHtml}${checksHtml}${taskNotesHtml}${ovHtml}
+      ${metricsHtml}${eventsHtml}${noteHtml}
     </div>`;
   }).filter(Boolean).join("");
 
@@ -374,10 +332,8 @@ function renderReport(ctx) {
     ["Feed days", String(feedDays)],
     tempMin != null ? ["Lowest temp recorded", `${tempMin}°F`] : null,
     tempMax != null ? ["Highest temp recorded", `${tempMax}°F`] : null,
-    ["Tasks completed", String(tDone)],
-    tSkip ? ["Tasks skipped", String(tSkip)] : null,
-    tBlock ? ["Tasks blocked", String(tBlock)] : null,
     ["Day notes written", String(noteRows.length)],
+    eventRows.length ? ["Calendar events", String(eventRows.length)] : null,
   ].filter(Boolean);
   const statsSection = section("Season Stats",
     `<div class="defs">${summaryRows.map(([l, v]) =>
@@ -409,8 +365,7 @@ function renderReport(ctx) {
   ${profileSection}
   ${plantsSection}
   ${timelineSection}
-  ${planSection}
-  ${threatsSection}
+  ${phasesSection}
   ${journalSection}
   ${statsSection}
   <footer class="foot">
@@ -462,13 +417,10 @@ h1{font-size:34px;line-height:1.1;margin:0 0 10px;color:var(--gd);letter-spacing
 .tl-label{flex:1;font-size:12px;letter-spacing:.5px;}
 .tl-date{font-size:14px;color:var(--gd);font-weight:600;}
 .chip{display:inline-block;font-size:10px;letter-spacing:.5px;padding:2px 9px;border-radius:999px;border:1px solid;font-weight:700;}
-.phase{border-left:3px solid var(--g);padding:4px 0 4px 16px;margin:0 0 18px;}
-.phase-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.phase{border-left:3px solid var(--g);padding:4px 0 4px 16px;margin:0 0 12px;}
+.phase-head{display:flex;align-items:center;gap:10px;}
 .phase-range{font-size:13px;color:var(--mut);font-family:'Courier New',monospace;}
-.phase-sum{margin:4px 0 8px;font-size:15px;}
-.tasks{margin:6px 0;padding-left:20px;}
-.tasks li{margin:4px 0;font-size:14px;}
-.note-line{font-size:13px;color:#3f5a45;background:#eef6f0;border-radius:8px;padding:8px 12px;margin:8px 0 0;}
+.phase-days{margin-left:auto;font-size:12px;color:var(--mut);font-family:'Courier New',monospace;}
 .plant{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 12px;break-inside:avoid;}
 .plant-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:6px;}
 .plant-name{font-size:17px;font-weight:700;color:var(--gd);}
@@ -479,10 +431,6 @@ h1{font-size:34px;line-height:1.1;margin:0 0 10px;color:var(--gd);letter-spacing
 .pmetric{background:#eef6f0;border-radius:6px;padding:2px 8px;font-weight:600;font-size:13px;}
 .pbody{flex:1;color:#3f5a45;}
 .hbadge{font-family:'Courier New',monospace;font-size:10px;letter-spacing:.5px;padding:2px 8px;border-radius:999px;border:1px solid #cbd5cf;background:#f1f5f2;color:#475c4d;}
-.threats{display:grid;gap:10px;}
-.threat{border:1px solid var(--line);border-radius:10px;padding:10px 14px;}
-.threat-t{font-weight:700;color:var(--gd);margin-bottom:2px;}
-.threat-d{font-size:14px;color:#3f5a45;}
 .jday{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 12px;break-inside:avoid;}
 .jhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:6px;}
 .jdate{font-family:'Courier New',monospace;font-size:13px;letter-spacing:.5px;color:var(--gd);font-weight:700;}
@@ -490,15 +438,12 @@ h1{font-size:34px;line-height:1.1;margin:0 0 10px;color:var(--gd);letter-spacing
 .metric{background:#eef6f0;border-radius:8px;padding:5px 10px;font-size:13px;}
 .m-l{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin-right:6px;}
 .m-v{font-weight:600;}
+.events{display:grid;gap:4px;margin:8px 0;}
+.ev{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;font-size:14px;}
+.ev-time{font-family:'Courier New',monospace;font-size:11px;color:var(--gd);font-weight:700;min-width:52px;}
+.ev-title{font-weight:600;}
+.ev-notes{color:#3f5a45;font-size:13px;}
 .daynote{font-size:14px;background:#fffdf3;border:1px solid #f1e9c8;border-radius:8px;padding:8px 12px;margin:8px 0;white-space:pre-wrap;}
-.checks{list-style:none;margin:8px 0;padding:0;}
-.chk{font-size:14px;margin:3px 0;}
-.chk .mark{display:inline-block;width:18px;font-weight:700;}
-.chk-done .mark{color:var(--g);}
-.chk-skipped{color:var(--mut);} .chk-skipped .mark{color:#b45309;}
-.chk-blocked{color:#9b1c1c;} .chk-blocked .mark{color:#9b1c1c;}
-.tnote{font-size:13px;margin:4px 0;color:#3f5a45;}
-.ov{font-size:12px;color:var(--mut);font-style:italic;margin:6px 0 0;}
 .empty{color:var(--mut);font-style:italic;}
 .foot{font-size:11px;color:var(--mut);text-align:center;margin-top:30px;line-height:1.6;font-family:'Courier New',monospace;}
 @media print{

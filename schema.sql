@@ -146,9 +146,8 @@ CREATE TABLE IF NOT EXISTS mj_model_usage (
   PRIMARY KEY (model, date)
 );
 
--- Per-user daily AI plan-generation counts (setup + regenerate). Capped by
--- PLAN_GEN_DAILY_CAP in worker/limits.js to stay within the Gemini free tier.
--- Also lazily created at runtime by ensurePlanUsageSchema() in worker/planSetup.js.
+-- LEGACY: per-user daily AI plan-generation counts from the removed AI-plan
+-- era. Nothing writes it anymore; kept so the admin purge can clean old rows.
 CREATE TABLE IF NOT EXISTS plan_gen_usage (
   user_id INTEGER NOT NULL,
   date    TEXT NOT NULL,
@@ -277,3 +276,17 @@ CREATE TABLE IF NOT EXISTS share_tokens (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 -- Migration: CREATE TABLE IF NOT EXISTS share_tokens (token TEXT PRIMARY KEY, user_id INTEGER NOT NULL UNIQUE, created_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+
+-- Custom calendar events: single-day, user-created entries ("Feed day",
+-- "Flip to 12/12") shown on the month grid and in each day's journal.
+CREATE TABLE IF NOT EXISTS grow_events (
+  id         TEXT PRIMARY KEY,
+  user_id    INTEGER NOT NULL,
+  grow_id    TEXT NOT NULL,
+  date       TEXT NOT NULL,
+  title      TEXT NOT NULL,
+  time       TEXT,
+  notes      TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_grow_events_day ON grow_events (grow_id, date);

@@ -2,18 +2,17 @@
 import { error } from "./util.js";
 import { signup, login, logout, getMe, currentUser, attachSessionCookie } from "./auth.js";
 import { postResetPassword, postAdminResetLink } from "./authReset.js";
-import { getCheckoffs, putCheckoffs, getMonthCheckoffs } from "./checkoffs.js";
 import { ensurePerDayGrowScope, resolveGrowId } from "./perDayScope.js";
 import { getNote, putNote } from "./notes.js";
 import { getJournalDay, getJournalMonth, getJournalTimeline, searchJournal, getJournalWeather } from "./journal.js";
 import { autoLogWeather } from "./weatherDays.js";
 import { getGrowLog, putGrowLog, exportGrowLogCsv , getMonthGrowLog } from "./growLog.js";
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
-import { postMjReview } from "./mjReview.js";
 import { getHealth, postClientError } from "./health.js";
 import { getWeather } from "./weather.js";
 import { getPushVapidKey, postPushSubscribe, deletePushSubscribe, getPushToday, sendDailyReminders } from "./push.js";
-import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, patchGrowLifecycle, setupGrow, regenerateGrow, putGrowPhase, deleteGrowPhase, patchGrowDayOverride, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./grows.js";
+import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, patchGrowLifecycle, setupGrow } from "./grows.js";
+import { listGrowEvents, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./events.js";
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
 import { getReverseGeocode } from "./geocode.js";
 import { listStrains } from "./strains.js";
@@ -148,7 +147,6 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (path === "/api/push/subscribe"   && method === "DELETE") return deletePushSubscribe(request, env, user);
   if (path === "/api/push/today"       && method === "GET")    return getPushToday(env, user);
   if (path === "/api/mj"              && method === "POST")   return postMj(request, env, user);
-  if (path === "/api/mj/review"       && method === "POST")   return postMjReview(request, env, user);
   if (path === "/api/mj/undo"         && method === "POST")   return postMjUndo(request, env, user);
   if (path === "/api/mj/usage"        && method === "GET")    return getMjUsage(env, user);
   if (path === "/api/mj/history"      && method === "GET")    return getMjHistory(request, env, user);
@@ -180,25 +178,16 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (envClearMatch && method === "DELETE") return clearEnv(env, user, envClearMatch[1]);
   const growSetupMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/setup$/);
   if (growSetupMatch && method === "POST") return setupGrow(request, env, user, growSetupMatch[1]);
-  const growRegenMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/regenerate$/);
-  if (growRegenMatch && method === "POST") return regenerateGrow(request, env, user, growRegenMatch[1]);
-  const growPhaseMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/phase\/([a-z_]+)$/);
-  if (growPhaseMatch) {
-    const growId = growPhaseMatch[1];
-    const phase  = growPhaseMatch[2];
-    if (method === "PUT")    return putGrowPhase(request, env, user, growId, phase);
-    if (method === "DELETE") return deleteGrowPhase(env, user, growId, phase);
-  }
-  const growDayMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/day\/(\d{4}-\d{2}-\d{2})$/);
-  if (growDayMatch && method === "PATCH") return patchGrowDayOverride(request, env, user, growDayMatch[1], growDayMatch[2]);
-
+  // Custom calendar events: single-day entries shown on the month grid and in
+  // each day's journal.
   const growEventsMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/events(?:\/([A-Za-z0-9_]+))?$/);
   if (growEventsMatch) {
     const gid = growEventsMatch[1];
-    const ruleId = growEventsMatch[2];
-    if (method === "POST"   && !ruleId) return createGrowEvent(request, env, user, gid);
-    if (method === "PATCH"  &&  ruleId) return patchGrowEvent(request, env, user, gid, ruleId);
-    if (method === "DELETE" &&  ruleId) return deleteGrowEvent(env, user, gid, ruleId);
+    const eventId = growEventsMatch[2];
+    if (method === "GET"    && !eventId) return listGrowEvents(env, user, gid, new URL(request.url));
+    if (method === "POST"   && !eventId) return createGrowEvent(request, env, user, gid);
+    if (method === "PATCH"  &&  eventId) return patchGrowEvent(request, env, user, gid, eventId);
+    if (method === "DELETE" &&  eventId) return deleteGrowEvent(env, user, gid, eventId);
   }
 
   const plantsMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/plants$/);
@@ -241,21 +230,6 @@ async function authenticatedRoute(request, env, path, method, user) {
     const url = new URL(request.url);
     return getMonthGrowLog(env, user, await resolveGrowId(env, user, url), url.searchParams.get("month"));
   }
-  if (path === "/api/checkoffs" && method === "GET") {
-    const url = new URL(request.url);
-    const month = url.searchParams.get("month");
-    if (!month) return error(400, "month query param required, e.g. ?month=2026-08");
-    return getMonthCheckoffs(env, user, await resolveGrowId(env, user, url), month);
-  }
-
-  const checkoffsMatch = path.match(/^\/api\/checkoffs\/(\d{4}-\d{2}-\d{2})$/);
-  if (checkoffsMatch) {
-    const date = checkoffsMatch[1];
-    const growId = await resolveGrowId(env, user, new URL(request.url));
-    if (method === "GET") return getCheckoffs(env, user, growId, date);
-    if (method === "PUT") return putCheckoffs(request, env, user, growId, date);
-  }
-
   const notesMatch = path.match(/^\/api\/notes\/(\d{4}-\d{2}-\d{2})$/);
   if (notesMatch) {
     const date = notesMatch[1];

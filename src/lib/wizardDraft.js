@@ -1,7 +1,7 @@
-// Per-device autosave for the new-grow setup wizard. Every answer, the current
-// step, and the task-mode choice are written to localStorage as the user types,
-// keyed by grow id, so backing out (or the app closing) never loses progress.
-// Resuming that grow's setup restores the draft exactly where it left off.
+// Per-device autosave for the new-grow setup wizard. Every answer and the
+// current step are written to localStorage as the user types, keyed by grow
+// id, so backing out (or the app closing) never loses progress. Resuming that
+// grow's setup restores the draft exactly where it left off.
 
 const keyFor = (growId) => `wizardDraft:${growId || "new"}`;
 
@@ -18,7 +18,6 @@ export function sanitizeWizardDraft(raw, stepCount) {
   return {
     survey,
     step: Number.isInteger(step) ? Math.min(Math.max(step, 0), maxStep) : 0,
-    wantTasks: typeof raw.wantTasks === "boolean" ? raw.wantTasks : null,
   };
 }
 

@@ -3,8 +3,9 @@
 // daily cron sender, and the /api/push/today endpoint consumed by the SW.
 import { json, error, safeJsonBounded } from "./util.js";
 import { loadRawPlan } from "./plan.js";
+import { loadRawGrows } from "./grows.js";
 import { parseConfig, parseDate } from "../src/lib/planConfig.js";
-import { getPhase, getDetail } from "../src/lib/growData.js";
+import { getPhase, PHASES, dpt, buildMilestones } from "../src/lib/growData.js";
 import { logError, logInfo } from "./log.js";
 
 const VAPID_SUBJECT = "mailto:admin@growcalendar.app";
@@ -141,27 +142,42 @@ export async function deletePushSubscribe(request, env, user) {
 
 export async function getPushToday(env, user) {
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const fallback = { title: "The Grow Calendar", body: "Check in on your grow today.", url: "/" };
   try {
-    const raw = await loadRawPlan(env, user.id);
-    if (raw.needsSetup) return json({ title: "The Grow Calendar", body: "Check in on your grow today.", url: "/" });
+    // Prefer the first active grow from the grows table; legacy accounts that
+    // predate multi-grow (or a failed migration) fall back to plan_config.
+    const grows = await loadRawGrows(env, user.id);
+    const grow = grows.find(g => g.status === "active" && g.config) ?? grows.find(g => g.config);
+    let rawConfig = grow?.config;
+    if (!rawConfig) {
+      const legacy = await loadRawPlan(env, user.id);
+      if (legacy.needsSetup) return json(fallback);
+      rawConfig = legacy.config;
+    }
 
-    const config = parseConfig(raw.config);
+    const config = parseConfig(rawConfig);
     const todayDt = parseDate(today);
     const phase = getPhase(todayDt, config);
-    if (!phase) return json({ title: "The Grow Calendar", body: "Check in on your grow today.", url: "/" });
+    if (!phase) return json(fallback);
 
-    const detail = getDetail(todayDt, config, raw.overrides, raw.generatedPlan, raw.phaseOverrides, raw.eventRules ?? []);
-    const n = detail.tasks?.length ?? 0;
+    // Milestone dates and todayDt both come from parseDate (local midnight),
+    // so strict time equality is a valid same-day check here.
+    const milestone = buildMilestones(config).find(m => m.date.getTime() === todayDt.getTime());
+    const day = dpt(todayDt, config);
+    const label = PHASES[phase]?.label ?? "Growing";
+    const body = milestone
+      ? `${milestone.label.replace(/ Starts$/, "")} day! Open your journal to log it.`
+      : day >= 1
+        ? `Day ${day} - ${label}. Open your journal to log today.`
+        : `${label}. Open your journal to log today.`;
     return json({
-      title: detail.title ?? "Grow Calendar",
-      body: n > 0
-        ? `${n} task${n === 1 ? "" : "s"} today - ${(detail.summary ?? "").slice(0, 80)}`
-        : "Check in on your grow today.",
+      title: grow?.displayName || "Grow Calendar",
+      body,
       url: `/?d=${today}`,
     });
   } catch (e) {
     logError("push-today", { message: String(e?.message ?? e) });
-    return json({ title: "The Grow Calendar", body: "Check in on your grow today.", url: "/" });
+    return json(fallback);
   }
 }
 

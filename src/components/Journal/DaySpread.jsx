@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, PenLine, Droplets, Sprout, CalendarDays, LayoutGrid, CloudSun } from "lucide-react";
+import { ChevronLeft, ChevronRight, PenLine, Droplets, Sprout, LayoutGrid, CloudSun, Pencil } from "lucide-react";
 import { ymd } from "../../lib/api.js";
 import { sameDay, MONTH_NAMES } from "../../lib/dates.js";
 import { getPhase, PHASES, phaseFamily } from "../../lib/growData.js";
@@ -11,6 +11,8 @@ import { kindLabel, summarizeEntry, HEALTH_MAP } from "../PlantsTab/constants.js
 import { Skeleton } from "../Skeleton.jsx";
 import { tapHaptic } from "../../lib/haptics.js";
 import RichEntryEditor from "./RichEntryEditor.jsx";
+import EventsCard from "./EventsCard.jsx";
+import DayLogEditor from "./DayLogEditor.jsx";
 
 const UI = "var(--font-ui)";
 const NUM = "var(--font-num)";
@@ -86,12 +88,14 @@ function PlantRow({ name, children }) {
   );
 }
 
-// A single day's page: the written entry edited in place, the daily log, and
-// every plant's entries. Swipe (or use the arrows) to turn the page; the
-// LayoutGrid button zooms out to the all-days timeline. `active` goes false
-// while the DayView overlay covers this; flipping back refetches.
+// A single day's page: the written entry edited in place, the day's events,
+// the daily log (edited right here), and every plant's entries. Swipe (or use
+// the arrows) to turn the page; the LayoutGrid button zooms out to the
+// all-days timeline. This IS the day surface - tapping a calendar day lands
+// here.
 export default function DaySpread({
-  today, date, onChangeDate, config, growId, onOpenDay, onOpenPlant, onZoomOut, focusSignal = 0, active = true,
+  today, date, onChangeDate, config, growId, onOpenPlant, onZoomOut,
+  plants = [], environment = "outdoor", focusSignal = 0, active = true,
 }) {
   const dateKey = ymd(date);
   const monthKey = dateKey.slice(0, 7);
@@ -100,6 +104,9 @@ export default function DaySpread({
   const { note, setNote, status: noteStatus } = useDayNote(date, active, growId);
   const dateInputRef = useRef(null);
   const [dir, setDir] = useState(0); // -1 back, 1 forward: drives the page-turn slide
+  // The structured log opens for editing in place; collapses on page turn.
+  const [editingLog, setEditingLog] = useState(false);
+  useEffect(() => { setEditingLog(false); }, [dateKey, growId]);
 
   const phase = config ? getPhase(date, config) : null;
   const famColor = phase ? phaseFamily(phase)?.color : null;
@@ -237,6 +244,7 @@ export default function DaySpread({
                   {info.log && <span style={{ width: 4, height: 4, borderRadius: 2, background: "var(--c-accent)" }} />}
                   {info.note && <span style={{ width: 4, height: 4, borderRadius: 2, background: "#60a5fa" }} />}
                   {info.plants > 0 && <span style={{ width: 4, height: 4, borderRadius: 2, background: "#c084fc" }} />}
+                  {info.events > 0 && <span style={{ width: 4, height: 4, borderRadius: 2, background: "#38bdf8" }} />}
                 </div>
               </button>
             );
@@ -251,7 +259,7 @@ export default function DaySpread({
         initial={dir === 0 ? false : { x: dir > 0 ? 56 : -56, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.18, ease: "easeOut" }}
-        drag="x"
+        drag={editingLog ? false : "x"}
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.16}
         onDragEnd={(e, info) => {
@@ -277,6 +285,9 @@ export default function DaySpread({
             minHeight={88}
           />
         </Card>
+
+        {/* The day's events: milestones built in, your own added in place. */}
+        <EventsCard date={date} growId={growId} events={day.events} config={config} />
 
         {loading ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -312,8 +323,65 @@ export default function DaySpread({
               </div>
             )}
 
-            {log && (
-              <Card title="Daily log" icon={<Droplets size={13} strokeWidth={2} style={{ color: "var(--c-accent)" }} />}>
+            {/* The structured daily log, edited right here on the page. */}
+            {editingLog ? (
+              <Card
+                title="Daily log"
+                icon={<Droplets size={13} strokeWidth={2} style={{ color: "var(--c-accent)" }} />}
+                action={
+                  <button
+                    type="button"
+                    onClick={() => { tapHaptic(); setEditingLog(false); }}
+                    style={{
+                      background: "none", border: "1px solid var(--c-border-strong)",
+                      borderRadius: 12, padding: "5px 11px", cursor: "pointer",
+                      color: "var(--c-accent)", fontFamily: UI, fontSize: 11, fontWeight: 600,
+                    }}>
+                    Done
+                  </button>
+                }>
+                <DayLogEditor
+                  date={date}
+                  growId={growId}
+                  plants={plants}
+                  environment={environment}
+                  active={active}
+                />
+              </Card>
+            ) : !log ? (
+              <button
+                type="button"
+                className="touch-target"
+                onClick={() => { tapHaptic(); setEditingLog(true); }}
+                style={{
+                  width: "100%", padding: "12px 14px", borderRadius: 12,
+                  background: "var(--c-surface-1)", border: "1px dashed var(--c-border-strong)",
+                  color: "var(--c-text-dim)", fontFamily: UI, fontSize: 12.5, fontWeight: 600,
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                }}>
+                <Droplets size={13} strokeWidth={2} />
+                Log this day: water, feed, training, health
+              </button>
+            ) : null}
+
+            {log && !editingLog && (
+              <Card
+                title="Daily log"
+                icon={<Droplets size={13} strokeWidth={2} style={{ color: "var(--c-accent)" }} />}
+                action={
+                  <button
+                    type="button"
+                    onClick={() => { tapHaptic(); setEditingLog(true); }}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 5,
+                      background: "none", border: "1px solid var(--c-border-strong)",
+                      borderRadius: 12, padding: "5px 11px", cursor: "pointer",
+                      color: "var(--c-text-dim)", fontFamily: UI, fontSize: 11, fontWeight: 600,
+                    }}>
+                    <Pencil size={11} strokeWidth={2} />
+                    Edit
+                  </button>
+                }>
                 {hasStats && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
                     {log.water_gal != null && <Stat label="Water" value={log.water_gal} unit="gal" />}
@@ -404,30 +472,14 @@ export default function DaySpread({
               </Card>
             )}
 
-            {!log && groups.length === 0 && (
+            {!log && !editingLog && groups.length === 0 && (
               <div style={{ fontFamily: UI, fontSize: 11.5, color: "var(--c-text-ghost)", textAlign: "center", padding: "2px 0" }}>
-                No log or plant entries on this day. Swipe to turn the page.
+                Nothing recorded on this day yet. Swipe to turn the page.
               </div>
             )}
           </>
         )}
       </motion.div>
-
-      {/* One tap into the full day view: tasks, weather, and structured logging. */}
-      <button
-        type="button"
-        className="touch-target"
-        onClick={() => { tapHaptic(); onOpenDay(date); }}
-        style={{
-          width: "100%", padding: "13px 14px", borderRadius: 12,
-          background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.35)",
-          color: "var(--c-accent)", fontFamily: UI, fontSize: 12.5, fontWeight: 650,
-          letterSpacing: 0.5, cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-        }}>
-        <CalendarDays size={14} strokeWidth={2} />
-        Open day view: log, tasks, and weather
-      </button>
     </div>
   );
 }

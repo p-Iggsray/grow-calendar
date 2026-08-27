@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { api } from "../lib/api.js";
 import { parseConfig } from "../lib/planConfig.js";
-import { useToday, MONTH_NAMES, DOW_SHORT, sameDay } from "../lib/dates.js";
-import { PHASES, getPhase, getDetail, phaseGlyph } from "../lib/growData.js";
-import PhaseLegend from "./PhaseLegend.jsx";
+import { useToday, MONTH_NAMES, DOW_SHORT, sameDay, daysBetween, fmtL } from "../lib/dates.js";
+import { PHASES, getPhase, phaseGlyph, buildMilestones, getNextMilestone, getGrowProgress } from "../lib/growData.js";
 import { AppShellSkeleton } from "./LoadingScreens.jsx";
 
 const MONO = "var(--font-ui)";
@@ -69,13 +68,16 @@ function ReadCalendar({ today, month, config }) {
   );
 }
 
-// Today's phase summary card
-function TodayCard({ today, config, generatedPlan, phaseOverrides }) {
+// Today's phase + season progress card
+function TodayCard({ today, config }) {
   const phase = getPhase(today, config);
   if (!phase) return null;
   const pStyle = PHASES[phase];
-  const detail = getDetail(today, config, {}, generatedPlan, phaseOverrides);
-  if (!detail) return null;
+  const seasonStart = config.germinate ?? config.start;
+  const dayOfGrow = daysBetween(today, seasonStart) + 1;
+  const progress = getGrowProgress(today, config);
+  const next = getNextMilestone(today, config);
+  const daysToNext = daysBetween(next.date, today);
 
   return (
     <div style={{
@@ -90,23 +92,98 @@ function TodayCard({ today, config, generatedPlan, phaseOverrides }) {
           {pStyle?.label ?? phase} · Today
         </span>
       </div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", marginBottom: 6, letterSpacing: -0.2 }}>
-        {detail.title}
+      <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", marginBottom: 10, letterSpacing: -0.2 }}>
+        Day {dayOfGrow} of the season
       </div>
-      {detail.summary && (
-        <div style={{ fontSize: 12, color: "var(--c-text-faint)", lineHeight: 1.7, marginBottom: 10, fontStyle: "italic" }}>
-          {detail.summary}
-        </div>
-      )}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {(detail.tasks ?? []).slice(0, 6).map((task, i) => (
-          <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-            <span style={{ fontFamily: MONO, fontSize: 11, color: pStyle?.color, paddingTop: 2, minWidth: 16, flexShrink: 0 }}>{i + 1}.</span>
-            <span style={{ fontSize: 12, color: "var(--c-text-dim)", lineHeight: 1.7 }}>{task}</span>
-          </div>
-        ))}
+      <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.08)", overflow: "hidden", marginBottom: 8 }}>
+        <div style={{ width: `${progress}%`, height: "100%", borderRadius: 3, background: pStyle?.color }} />
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-dim)" }}>
+          {progress}% through
+        </span>
+        {!next.done && (
+          <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-dim)" }}>
+            {next.icon} {next.label} in {daysToNext}d
+          </span>
+        )}
       </div>
     </div>
+  );
+}
+
+// Season milestones: upcoming full-strength, past dimmed
+function MilestoneList({ today, config }) {
+  const milestones = buildMilestones(config);
+  return (
+    <div style={{
+      margin: "16px 14px 0",
+      background: "var(--c-surface-1)", borderRadius: 14,
+      border: "1px solid var(--c-border-soft)", padding: "12px 16px 6px",
+    }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-muted)", textTransform: "uppercase", marginBottom: 4 }}>
+        Season milestones
+      </div>
+      {milestones.map((m) => {
+        const delta = daysBetween(m.date, today);
+        const past = delta < 0;
+        return (
+          <div key={m.label} style={{
+            display: "flex", alignItems: "center", gap: 9, padding: "8px 0",
+            borderTop: "1px solid var(--c-border-faint)",
+            opacity: past ? 0.45 : 1,
+          }}>
+            <span aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }}>{m.icon}</span>
+            <span style={{ fontSize: 13, fontWeight: 650, color: "var(--c-text)", flex: 1 }}>
+              {m.label}
+            </span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: past ? "var(--c-text-ghost)" : m.color, flexShrink: 0 }}>
+              {fmtL(m.date)}{delta === 0 ? " · today" : delta > 0 ? ` · in ${delta}d` : ""}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Local copy of PhaseLegend fed by the shared config as a prop: the shared
+// component reads usePlan(), and this public route mounts outside PlanProvider.
+function BuddyPhaseLegend({ config }) {
+  const present = new Set();
+  if (config?.start && config?.hazeHarvest) {
+    for (let t = config.start.getTime(); t <= config.hazeHarvest.getTime(); t += 86400000) {
+      const p = getPhase(new Date(t), config);
+      if (p) present.add(p);
+    }
+  }
+  const entries = Object.entries(PHASES).filter(([k]) => present.size === 0 || present.has(k));
+
+  return (
+    <details style={{
+      background: "rgba(255,255,255,0.03)", borderRadius: 12,
+      border: "1px solid var(--c-border-faint)",
+    }}>
+      <summary className="touch-target" style={{
+        listStyle: "none", padding: "10px 14px",
+        cursor: "pointer",
+        fontSize: 11, letterSpacing: 2, color: "var(--c-text-faint)",
+        textTransform: "uppercase", fontFamily: MONO,
+        display: "flex", alignItems: "center", gap: 6,
+      }}>
+        <span aria-hidden="true">›</span> What do the colors mean?
+      </summary>
+      <div style={{ padding: "4px 14px 12px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 12px" }}>
+          {entries.map(([k, v]) => (
+            <div key={k} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: v.color, flexShrink: 0 }} />
+              <span style={{ fontSize: 11, color: "var(--c-text-muted)", fontFamily: MONO }}>{v.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </details>
   );
 }
 
@@ -123,7 +200,8 @@ export default function BuddyView({ token }) {
 
   const config = data?.config ? parseConfig(data.config) : null;
   const month = today.getMonth();
-  const growName = data?.generatedPlan?.growName ?? "Grow Calendar";
+  const growName = data?.growName || "Grow Calendar";
+  const strainNames = (data?.survey?.strains ?? []).map(s => s.name).filter(Boolean);
 
   if (loadErr) {
     return (
@@ -164,35 +242,27 @@ export default function BuddyView({ token }) {
         <div style={{ fontSize: 22, fontWeight: 900, color: "var(--c-text)", letterSpacing: -0.5, marginBottom: 2 }}>
           🌿 {growName}
         </div>
-        {data.generatedPlan?.strains?.length > 0 && (
+        {strainNames.length > 0 && (
           <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)", letterSpacing: 0.5 }}>
-            {data.generatedPlan.strains.map(s => s.name).filter(Boolean).join(" · ")}
+            {strainNames.join(" · ")}
           </div>
         )}
       </div>
 
       {/* Today */}
-      <TodayCard
-        today={today}
-        config={config}
-        generatedPlan={data.generatedPlan}
-        phaseOverrides={data.phaseOverrides}
-      />
+      <TodayCard today={today} config={config} />
 
       {/* Calendar */}
       <div style={{ marginTop: 16 }}>
-        <ReadCalendar
-          today={today}
-          month={month}
-          config={config}
-          generatedPlan={data.generatedPlan}
-          phaseOverrides={data.phaseOverrides}
-        />
+        <ReadCalendar today={today} month={month} config={config} />
       </div>
+
+      {/* Milestones */}
+      <MilestoneList today={today} config={config} />
 
       {/* Phase legend */}
       <div style={{ margin: "16px 14px 0" }}>
-        <PhaseLegend />
+        <BuddyPhaseLegend config={config} />
       </div>
 
       <div style={{ textAlign: "center", marginTop: 24, fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", letterSpacing: 1 }}>

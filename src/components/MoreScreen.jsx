@@ -3,7 +3,6 @@ import { AnimatePresence } from "framer-motion";
 import { Users, FileText, Bell, BellOff, BarChart2, Sun, Moon, Monitor, Map, Share2, SlidersHorizontal, Gauge, ChevronRight, Wind } from "lucide-react";
 import ShareSheet from "./ShareSheet.jsx";
 import PhaseLegend from "./PhaseLegend.jsx";
-import ThreatsReference from "./ThreatsReference.jsx";
 import AuthFooter from "./AuthFooter.jsx";
 import ConfirmModal from "./ConfirmModal.jsx";
 import { usePlan } from "../lib/usePlan.jsx";
@@ -222,7 +221,6 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
 
       <div style={{ marginTop: 20 }}>
         <PhaseLegend />
-        <ThreatsReference />
       </div>
 
       <AnimatePresence>

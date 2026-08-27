@@ -4,68 +4,34 @@ import { buildSuggestions } from "../src/lib/mjSuggestions.js";
 
 const TODAY = new Date(2026, 5, 3); // June 3 2026
 
-test("with remaining tasks, slot 1 mentions the count and 'today'", () => {
-  const s = buildSuggestions({
-    detail: { tasks: ["a", "b", "c"] }, resolvedCount: 1,
-    threats: [], contextDate: null, today: TODAY,
-  });
-  assert.ok(s[0].includes("2 remaining tasks"), s[0]);
-  assert.ok(s[0].includes("today"), s[0]);
-});
-
-test("with all tasks done, slot 1 shows 'checked off' prompt", () => {
-  const s = buildSuggestions({
-    detail: { tasks: ["a", "b"] }, resolvedCount: 2,
-    threats: [], contextDate: null, today: TODAY,
-  });
-  assert.ok(s[0].includes("checked off"), s[0]);
-});
-
-test("with no detail, slot 1 falls back to generic prompt", () => {
-  const s = buildSuggestions({
-    detail: null, resolvedCount: 0, threats: [], contextDate: null, today: TODAY,
-  });
-  assert.ok(s[0].includes("today"), s[0]);
-});
-
-test("with active threats, slot 2 names the first threat", () => {
-  const s = buildSuggestions({
-    detail: null, resolvedCount: 0,
-    threats: [{ id: "heat", title: "Heat Stress", icon: "🌡", desc: "..." }],
-    contextDate: null, today: TODAY,
-  });
-  assert.ok(s[1].includes("Heat Stress"), s[1]);
-});
-
-test("with no threats, slot 2 is week-ahead prompt", () => {
-  const s = buildSuggestions({
-    detail: null, resolvedCount: 0, threats: [], contextDate: null, today: TODAY,
-  });
-  assert.ok(s[1].includes("this week"), s[1]);
-});
-
-test("for today, slot 3 is a note prompt", () => {
-  const s = buildSuggestions({
-    detail: null, resolvedCount: 0, threats: [], contextDate: null, today: TODAY,
-  });
-  assert.ok(s[2].includes("Add a note"), s[2]);
-});
-
-test("for a non-today contextDate, uses the short date label and watering prompt", () => {
-  const s = buildSuggestions({
-    detail: { tasks: ["a"] }, resolvedCount: 0,
-    threats: [], contextDate: "2026-06-10", today: TODAY,
-  });
-  assert.ok(s[0].includes("Jun 10"), s[0]);
-  assert.ok(s[2].includes("Jun 10"), s[2]);
-  assert.ok(s[2].includes("watering"), s[2]);
-});
-
-test("always returns exactly 3 suggestions", () => {
-  const s = buildSuggestions({
-    detail: { tasks: ["a", "b", "c", "d"] }, resolvedCount: 2,
-    threats: [{ id: "t", title: "Rust Fungus", icon: "🍂", desc: "" }],
-    contextDate: "2026-07-01", today: TODAY,
-  });
+test("always returns exactly three suggestions", () => {
+  const s = buildSuggestions({ contextDate: null, today: TODAY, phaseLabel: "Early Veg" });
   assert.equal(s.length, 3);
+  for (const x of s) assert.equal(typeof x, "string");
+});
+
+test("slot 1 is phase-aware when a phase label exists", () => {
+  const s = buildSuggestions({ contextDate: null, today: TODAY, phaseLabel: "Early Veg" });
+  assert.ok(s[0].includes("early veg"), s[0]);
+});
+
+test("slot 1 falls back to a generic check-in off season", () => {
+  const s = buildSuggestions({ contextDate: null, today: TODAY, phaseLabel: null });
+  assert.ok(s[0].includes("How is my grow"), s[0]);
+});
+
+test("viewing today offers a journal summary; a past day asks about that day", () => {
+  const today = buildSuggestions({ contextDate: "2026-06-03", today: TODAY, phaseLabel: null });
+  assert.ok(today[2].includes("Summarize"), today[2]);
+
+  const past = buildSuggestions({ contextDate: "2026-05-12", today: TODAY, phaseLabel: null });
+  assert.ok(past[2].includes("May 12"), past[2]);
+});
+
+test("no task or threat language appears in any slot", () => {
+  const s = buildSuggestions({ contextDate: "2026-05-12", today: TODAY, phaseLabel: "Flower" });
+  for (const x of s) {
+    assert.ok(!/task/i.test(x), x);
+    assert.ok(!/threat/i.test(x), x);
+  }
 });

@@ -15,10 +15,8 @@ export function phaseGlyph(phase) {
 }
 
 // Phase families group the 13 granular phases into a handful of friendly stages
-// with ONE color each. Used to (a) declutter the calendar (one color per family
-// instead of 13 distinct phase colors) and (b) drive manual task entry, where a
-// task spans a chosen number of consecutive families. Order matters: it's the
-// sequence shown in the manual-task phase picker.
+// with ONE color each, so the calendar reads as a few clear seasons instead of
+// a 13-color quilt.
 export const FAMILIES = {
   setup:   { key: "setup",   label: "Setup",   color: "#5b8dee", phases: ["germination", "seedling", "pre", "transplant"] },
   veg:     { key: "veg",     label: "Veg",     color: "#22c55e", phases: ["early_veg", "veg_cm", "veg_half", "veg_full"] },
@@ -38,18 +36,6 @@ const _PHASE_TO_FAMILY = (() => {
 
 export function phaseFamily(phase) {
   return _PHASE_TO_FAMILY[phase] ?? null;
-}
-
-// Union of granular phase keys for a span of consecutive families, starting at
-// `startKey` and covering `count` families (clamped to the end of the order).
-export function familyPhases(startKey, count = 1) {
-  const start = FAMILY_ORDER.indexOf(startKey);
-  if (start < 0) return [];
-  const out = [];
-  for (let i = start; i < Math.min(start + count, FAMILY_ORDER.length); i++) {
-    out.push(...FAMILIES[FAMILY_ORDER[i]].phases);
-  }
-  return out;
 }
 
 export const PHASES = {

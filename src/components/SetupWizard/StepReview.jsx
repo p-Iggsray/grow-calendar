@@ -3,12 +3,7 @@ import { WIZARD_STAGES } from "./StepTimeline.jsx";
 
 const STAGE_LABEL = Object.fromEntries(WIZARD_STAGES.map(s => [s.value, s.label]));
 
-const TASK_MODE_LABEL = {
-  heuristic: "Full task plan for your setup",
-  manual:    "Manual, you add your own tasks",
-};
-
-export function StepReview({ survey, taskMode }) {
+export function StepReview({ survey }) {
   const have = Object.values(survey.supplies).filter(v => v === "have").length;
   const need = Object.values(survey.supplies).filter(v => v === "need_to_order").length;
   const totalPlants = survey.strains.reduce((n, s) => n + (Number(s.count) || 1), 0);
@@ -35,17 +30,12 @@ export function StepReview({ survey, taskMode }) {
     ["Experience", survey.experienceLevel],
     ["Watering", survey.wateringMethod],
     ["Supplies", `${have} have · ${need} to order`],
-    taskMode ? ["Tasks", TASK_MODE_LABEL[taskMode]] : null,
   ].filter(Boolean);
-
-  const manual = taskMode === "manual";
 
   return (
     <div>
       <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-faint)", marginBottom: 14, lineHeight: 1.8 }}>
-        {manual
-          ? "Review your answers. We will lay out your phase timeline and you add the tasks yourself."
-          : "Review your answers. We will build a full task plan tailored to your setup."}
+        Review your answers. We will lay out your season: phases, milestones, and a calendar built around your grow.
       </div>
       <div style={{
         background: "var(--c-surface-1)", borderRadius: 12,

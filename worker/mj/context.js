@@ -78,32 +78,18 @@ export async function buildWeatherContext(env) {
 
 export async function buildStatsContext(env, userId, growId) {
   try {
-    const [logRow, checkoffRow] = await Promise.all([
-      env.DB.prepare(`
-        SELECT
-          ROUND(COALESCE(SUM(water_gal), 0), 2) AS total_water,
-          COUNT(CASE WHEN feed IS NOT NULL AND feed != '' THEN 1 END) AS feed_days,
-          COUNT(*) AS log_days
-        FROM grow_log WHERE user_id = ? AND grow_id = ?
-      `).bind(userId, growId).first(),
-      env.DB.prepare(`
-        SELECT
-          COUNT(*) AS total,
-          SUM(CASE WHEN state = 'done' THEN 1 ELSE 0 END) AS done
-        FROM task_checkoffs WHERE user_id = ? AND grow_id = ?
-      `).bind(userId, growId).first(),
-    ]);
+    const logRow = await env.DB.prepare(`
+      SELECT
+        ROUND(COALESCE(SUM(water_gal), 0), 2) AS total_water,
+        COUNT(CASE WHEN feed IS NOT NULL AND feed != '' THEN 1 END) AS feed_days,
+        COUNT(*) AS log_days
+      FROM grow_log WHERE user_id = ? AND grow_id = ?
+    `).bind(userId, growId).first();
 
     const lines = ["SEASON STATS:"];
     if (logRow) {
       lines.push(`  Total water logged: ${logRow.total_water ?? 0} gal over ${logRow.log_days ?? 0} days`);
       lines.push(`  Feed days recorded: ${logRow.feed_days ?? 0}`);
-    }
-    if (checkoffRow && Number(checkoffRow.total) > 0) {
-      const total = Number(checkoffRow.total);
-      const done  = Number(checkoffRow.done ?? 0);
-      const pct   = Math.round((done / total) * 100);
-      lines.push(`  Tasks completed: ${done}/${total} (${pct}%)`);
     }
     return lines.join("\n");
   } catch {
@@ -172,9 +158,7 @@ export function buildGrowsContext(grows, activeGrowId) {
   const lines = ["ALL GROWER'S GROWS:"];
   for (const g of grows) {
     const isActive = g.id === activeGrowId;
-    const strains = g.generatedPlan?.strains?.map(s => s.name).filter(Boolean).join(" × ")
-      || g.survey?.strains?.map(s => s.name).filter(Boolean).join(" × ")
-      || "";
+    const strains = g.survey?.strains?.map(s => s.name).filter(Boolean).join(" × ") || "";
     const statusLabel = g.status === "active" ? "active" : g.status;
     lines.push(`  - "${g.displayName}" [${statusLabel}]${strains ? ` - ${strains}` : ""}${isActive ? " ← ACTIVE GROW (calendar context)" : ""}`);
   }

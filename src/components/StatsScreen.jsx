@@ -1,4 +1,4 @@
-import { Droplets, Thermometer, CheckSquare, BookOpen } from "lucide-react";
+import { Droplets, Thermometer, BookOpen } from "lucide-react";
 import ScreenHeader from "./ScreenHeader.jsx";
 import { useStats } from "../lib/useStats.js";
 import { Skeleton } from "./Skeleton.jsx";
@@ -103,10 +103,6 @@ export default function StatsScreen({ config, today, onClose }) {
     ? `${stats.log.tempMax}° / ${stats.log.tempMin}°F`
     : "-";
 
-  const taskTotal = stats?.checkoffs.total ?? 0;
-  const taskDone  = stats?.checkoffs.done  ?? 0;
-  const taskPct   = taskTotal > 0 ? Math.round((taskDone / taskTotal) * 100) : 0;
-
   return (
     <div style={{ minHeight: "100vh", paddingBottom: 48 }}>
       <ScreenHeader eyebrow="Insights" title="Season Analytics" onBack={onClose} />
@@ -170,8 +166,8 @@ export default function StatsScreen({ config, today, onClose }) {
           background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
           borderRadius: 12, padding: "4px 16px",
         }}>
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 0", borderBottom: i < 3 ? "1px solid var(--c-border-faint)" : "none" }}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 0", borderBottom: i < 2 ? "1px solid var(--c-border-faint)" : "none" }}>
               <Skeleton width={14} height={14} radius={4} />
               <Skeleton width="45%" height={11} />
               <div style={{ flex: 1 }} />
@@ -186,7 +182,6 @@ export default function StatsScreen({ config, today, onClose }) {
         }}>
           <StatRow icon={Droplets} label="Total water logged" value={`${stats.log.totalWater} gal`} />
           <StatRow icon={Thermometer} label="Temp range logged" value={tempVal} iconColor="#60a5fa" />
-          <StatRow icon={CheckSquare} label="Tasks completed" value={`${taskDone} / ${taskTotal} (${taskPct}%)`} iconColor="var(--c-accent)" />
           <StatRow icon={BookOpen} label="Journal entries" value={stats.notes.count} iconColor="#f59e0b" />
 
         </div>

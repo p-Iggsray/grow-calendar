@@ -1,16 +1,13 @@
-import { getPhase, getDetail, buildMilestones, THREATS, hasSecondaryStrain } from "./growData.js";
+import { getPhase, buildMilestones, hasSecondaryStrain } from "./growData.js";
 
-// Compact, LIVE season overview for MJ's system prompt. Sampled from the generator
-// at milestone dates so dosing language comes from the generated task text (single
-// source), not hand-authored prose. MJ uses the get_day tool for per-day specifics.
-export function buildPlanText(config, overrides, generatedPlan, phaseOverrides, eventRules = []) {
-  const lines = ["THE GROW PLAN (live schedule):"];
+// Compact, LIVE season overview for MJ's system prompt: every milestone with
+// its date and phase, plus the season's key dates. MJ uses its tools for
+// per-day specifics (journal, log, weather).
+export function buildPlanText(config) {
+  const lines = ["THE SEASON (live schedule):"];
   for (const m of buildMilestones(config)) {
-    const detail = getDetail(m.date, config, overrides, generatedPlan, phaseOverrides, eventRules);
-    if (!detail) continue;
     const phase = getPhase(m.date, config);
-    lines.push(`\n- ${m.label} (${ymd(m.date)}, phase: ${phase}): ${detail.summary}`);
-    for (const t of detail.tasks.slice(0, 4)) lines.push(`    • ${t}`);
+    lines.push(`- ${m.label}: ${ymd(m.date)}${phase ? ` (phase: ${phase})` : ""}`);
   }
 
   const twoStrain = hasSecondaryStrain(config);
@@ -27,9 +24,6 @@ export function buildPlanText(config, overrides, generatedPlan, phaseOverrides, 
   for (const [key, label] of keyDates) {
     lines.push(`- ${label}: ${ymd(config[key])}`);
   }
-
-  lines.push("\nSEASON THREATS:");
-  for (const t of THREATS) lines.push(`- ${t.title}: ${t.desc}`);
 
   return lines.join("\n");
 }

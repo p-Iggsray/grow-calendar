@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "./api.js";
 
-const EMPTY_DAY = { log: null, note: "", plantEntries: [], weather: null, hasWeatherLocation: true };
+const EMPTY_DAY = { log: null, note: "", plantEntries: [], events: [], weather: null, hasWeatherLocation: true };
 // Anything that changes journal content fires one of these; every journal hook
 // refetches. "journal-mutated" is dispatched by the composer on save.
 const MUTATION_EVENTS = ["growlog-mutated", "journal-mutated"];
@@ -32,6 +32,7 @@ export function useJournalDay(dateKey, enabled, growId) {
         if (cancelled) return;
         setDay({
           log: d.log ?? null, note: d.note || "", plantEntries: d.plantEntries || [],
+          events: d.events || [],
           weather: d.weather ?? null, hasWeatherLocation: d.hasWeatherLocation !== false,
         });
       })
@@ -58,6 +59,30 @@ export function useJournalMonth(monthKey, enabled, growId) {
   }, [monthKey, enabled, growId, tick]);
 
   return days;
+}
+
+// The month's custom events grouped by day: { "YYYY-MM-DD": [event, ...] }.
+// Drives the calendar grid's event chips; refetches on journal-mutated like
+// every journal hook (event CRUD dispatches it).
+export function useMonthEvents(monthKey, enabled, growId) {
+  const [byDay, setByDay] = useState({});
+  const tick = useMutationTick();
+
+  useEffect(() => {
+    if (!monthKey || !enabled || !growId) return;
+    let cancelled = false;
+    api.listGrowEvents(growId, monthKey)
+      .then((d) => {
+        if (cancelled) return;
+        const map = {};
+        for (const ev of d.events ?? []) (map[ev.date] ??= []).push(ev);
+        setByDay(map);
+      })
+      .catch(() => { if (!cancelled) setByDay({}); });
+    return () => { cancelled = true; };
+  }, [monthKey, enabled, growId, tick]);
+
+  return byDay;
 }
 
 // The journal's home feed: pages of day summaries, newest first. loadMore()
