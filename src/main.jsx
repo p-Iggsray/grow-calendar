@@ -113,11 +113,49 @@ function Root() {
 // Register service worker for offline caching and push notifications.
 // updateViaCache:"none" tells the browser to always fetch sw.js from the
 // network (not its HTTP cache) so new deploys are detected immediately.
+//
+// Auto-update: the installed (home-screen) app always converges on the latest
+// deploy. A freshly-installed worker is promoted immediately (SKIP_WAITING),
+// and when it takes control the page reloads once - safe because each build's
+// worker pre-caches its own shell during install. Update checks run on every
+// open/resume and hourly, so a phone PWA that never fully closes still picks
+// up each push the next time it is looked at.
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/sw.js", { updateViaCache: "none" })
+      .then((reg) => {
+        const promote = (sw) => sw?.postMessage({ type: "SKIP_WAITING" });
+        // A worker already waiting (deploy happened while the app was closed).
+        promote(reg.waiting);
+        // A worker that finishes installing while the app is open.
+        reg.addEventListener("updatefound", () => {
+          const sw = reg.installing;
+          sw?.addEventListener("statechange", () => {
+            if (sw.state === "installed" && navigator.serviceWorker.controller) promote(sw);
+          });
+        });
+        // Re-check for new deploys whenever the app is opened or resumed from
+        // the home screen, and hourly while it stays open.
+        const check = () => reg.update().catch(() => {});
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") check();
+        });
+        window.addEventListener("focus", check);
+        setInterval(check, 60 * 60 * 1000);
+      })
       .catch(() => {});
+  });
+
+  // When the new worker takes control, load the new build. Guarded so the
+  // very first install (no prior controller) never triggers a reload loop.
+  let hadController = Boolean(navigator.serviceWorker.controller);
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController) { hadController = true; return; }
+    if (reloading) return;
+    reloading = true;
+    window.location.reload();
   });
 }
 

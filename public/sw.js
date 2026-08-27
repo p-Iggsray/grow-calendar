@@ -6,14 +6,13 @@ const CACHE = "grow-calendar-v2";
 const IMMUTABLE_RE = /\.(js|css|woff2?)(\?.*)?$/;
 
 // ── Install: seed the cache with the app shell ──────────────────────────────
-// NOTE: self.skipWaiting() is intentionally absent. Calling it causes the new
-// SW to immediately claim active clients and delete the old cache mid-session.
-// If the page had already loaded HTML referencing old chunk filenames, those
-// chunks are now gone from cache and must be re-fetched from network — which
-// fails on a flaky mobile connection and produces a blank screen. Without
-// skipWaiting the new SW waits until all tabs close, then takes over on the
-// next navigation when its pre-cached assets are ready.
-// The stampSwVersion build plugin injects the actual JS/CSS bundle URLs below.
+// The stampSwVersion build plugin injects the new build's JS/CSS bundle URLs
+// below, so by the time this SW activates its cache already holds the full new
+// shell. Activation is message-driven: the page (main.jsx) tells the installed
+// worker to SKIP_WAITING once it is ready, then reloads itself on
+// controllerchange - the reload fetches the new index.html whose chunks are
+// pre-cached here, which is what makes immediate takeover safe (no
+// blank-screen race on flaky connections).
 self.addEventListener("install", evt => {
   evt.waitUntil(
     caches.open(CACHE).then(c =>
@@ -21,6 +20,12 @@ self.addEventListener("install", evt => {
       c.addAll(["/", "/index.html", "/manifest.webmanifest"]).catch(() => {})
     )
   );
+});
+
+// The page promotes a freshly-installed worker so every deploy goes live on
+// the very next check instead of waiting for all tabs/the PWA to fully close.
+self.addEventListener("message", evt => {
+  if (evt.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 // ── Activate: delete stale caches from previous versions ────────────────────
