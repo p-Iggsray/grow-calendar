@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Trash2, Archive, Pencil, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Archive, Pencil, ArrowRight, BookOpen } from "lucide-react";
 import { usePlantLog } from "../../lib/usePlantLog.js";
 import { api } from "../../lib/api.js";
 import { dayOfGrow } from "../../lib/journalStats.js";
 import {
-  MONO, SERIF, TYPE_LABEL, HEALTH_MAP, STAGE_ORDER, stageLabel, nextStage, prevStage,
+  MONO, SERIF, TYPE_LABEL, HEALTH_MAP, STAGE_ORDER, stageLabel, nextStage,
   LOG_KINDS, kindLabel, summarizeEntry, fmtDateKey, plantHistoryStats,
 } from "./constants.js";
 import LogEntryForm from "./LogEntryForm.jsx";
 import AddPlantSheet from "./AddPlantSheet.jsx";
 import StageTimeline from "./StageTimeline.jsx";
+import PlantPhotos from "./PlantPhotos.jsx";
+import ConfirmModal from "../ConfirmModal.jsx";
 import { Skeleton } from "../Skeleton.jsx";
 
 function Meta({ label, value, accent }) {
@@ -37,6 +39,7 @@ export default function PlantDetail({ growId, plant, harvestLabel, today, config
   const [editing, setEditing] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [stageBusy, setStageBusy] = useState(false);
+  const [confirmStage, setConfirmStage] = useState(false);
   const [histFilter, setHistFilter] = useState("all");
   const [daily, setDaily] = useState([]);
 
@@ -56,10 +59,11 @@ export default function PlantDetail({ growId, plant, harvestLabel, today, config
 
   const stage = plant.stage || "seedling";
   const stageIdx = STAGE_ORDER.indexOf(stage);
+  const upcoming = stageIdx < STAGE_ORDER.length - 1 ? nextStage(stage) : null;
 
   // At-a-glance numbers derived from the history + grow timeline.
   const age = today && config ? dayOfGrow(today, config) : null;
-  const { stageDays, height, heightDelta, lastHealth } = plantHistoryStats(combined, today);
+  const { stageDays, lastHealth } = plantHistoryStats(combined, today);
   const healthInfo = lastHealth ? HEALTH_MAP[lastHealth] : null;
 
   async function handleSave(entry) {
@@ -85,12 +89,14 @@ export default function PlantDetail({ growId, plant, harvestLabel, today, config
     } finally { setSavingEdit(false); }
   }
 
-  async function setStage(next) {
-    if (stageBusy || next === stage) return;
+  // One-way: the only stage change offered is the NEXT one, after confirming.
+  async function advanceStage() {
+    if (stageBusy || !upcoming) return;
+    setConfirmStage(false);
     setStageBusy(true);
     try {
-      await api.patchPlant(growId, plant.id, { stage: next });
-      await addEntry({ kind: "stage", body: `Stage → ${stageLabel(next)}` });
+      await api.patchPlant(growId, plant.id, { stage: upcoming });
+      await addEntry({ kind: "stage", body: `Stage → ${stageLabel(upcoming)}` });
       onLogChange?.();
       onChanged?.();
     } finally { setStageBusy(false); }
@@ -136,27 +142,32 @@ export default function PlantDetail({ growId, plant, harvestLabel, today, config
           </div>
         )}
 
-        {/* Stage control */}
+        {/* Stage: a one-way road. The only offered move is the next stage,
+            and it asks first - there is no going back. */}
         <div style={{ marginTop: 20 }}>
           <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 6 }}>Stage</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button type="button" className="touch-target" aria-label="Previous stage" disabled={stageBusy || stageIdx <= 0} onClick={() => setStage(prevStage(stage))}
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 10, background: "var(--c-surface-1)", border: "1px solid var(--c-border)", color: stageIdx <= 0 ? "var(--c-text-ghost)" : "var(--c-text-dim)", cursor: stageIdx <= 0 ? "default" : "pointer" }}>
-              <ChevronLeft size={18} />
-            </button>
-            <div style={{ flex: 1 }}>
-              <StageTimeline stage={stage} onPick={setStage} height={10} />
-              <div style={{ textAlign: "center", marginTop: 8, fontFamily: MONO, fontSize: 14, letterSpacing: 1, color: "var(--c-accent)" }}>
-                {stageLabel(stage)}
-              </div>
+          <StageTimeline stage={stage} height={10} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 10 }}>
+            <div style={{ fontFamily: MONO, fontSize: 14, letterSpacing: 1, color: "var(--c-accent)" }}>
+              {stageLabel(stage)}
             </div>
-            <button type="button" className="touch-target" aria-label="Next stage" disabled={stageBusy || stageIdx >= STAGE_ORDER.length - 1} onClick={() => setStage(nextStage(stage))}
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 10, background: "var(--c-surface-1)", border: "1px solid var(--c-border)", color: stageIdx >= STAGE_ORDER.length - 1 ? "var(--c-text-ghost)" : "var(--c-text-dim)", cursor: stageIdx >= STAGE_ORDER.length - 1 ? "default" : "pointer" }}>
-              <ChevronRight size={18} />
-            </button>
-          </div>
-          <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginTop: 8, textAlign: "center" }}>
-            Step {stageIdx + 1} of {STAGE_ORDER.length} · tap a segment to jump · changes are logged below
+            {upcoming && plant.status === "growing" && (
+              <button
+                type="button"
+                className="touch-target"
+                disabled={stageBusy}
+                onClick={() => setConfirmStage(true)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "9px 15px", borderRadius: 18,
+                  background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.35)",
+                  color: "var(--c-accent)", fontFamily: MONO, fontSize: 11.5, fontWeight: 700,
+                  cursor: stageBusy ? "default" : "pointer", opacity: stageBusy ? 0.6 : 1,
+                }}>
+                {stageBusy ? "Moving…" : `Move to ${stageLabel(upcoming)}`}
+                <ArrowRight size={13} strokeWidth={2.2} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -164,14 +175,12 @@ export default function PlantDetail({ growId, plant, harvestLabel, today, config
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 18 }}>
           {age && <Meta label="Age" value={`Day ${age}`} />}
           <Meta label="In stage" value={stageDays != null ? `${stageDays}d` : "-"} />
-          <Meta
-            label="Height"
-            value={height ? `${height.height}${height.height_unit || ""}${heightDelta != null && heightDelta !== 0 ? ` (${heightDelta > 0 ? "+" : ""}${heightDelta})` : ""}` : "-"}
-          />
-          <Meta label="Entries" value={combined.length} />
           {healthInfo && <Meta label="Health" value={healthInfo.label} accent={healthInfo.color} />}
           <Meta label="Est. harvest" value={harvestLabel || "-"} />
         </div>
+
+        {/* Photos of this plant */}
+        <PlantPhotos growId={growId} plantId={plant.id} />
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 28, marginBottom: 12 }}>
           <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>History</span>
@@ -279,6 +288,16 @@ export default function PlantDetail({ growId, plant, harvestLabel, today, config
           </button>
         </div>
       </div>
+
+      <ConfirmModal
+        open={confirmStage}
+        title={upcoming ? `Move to ${stageLabel(upcoming)}?` : ""}
+        message={upcoming ? `${plant.name || "This plant"} moves from ${stageLabel(stage)} to ${stageLabel(upcoming)}. Stage changes are one-way - there is no going back.` : ""}
+        confirmLabel={upcoming ? `Move to ${stageLabel(upcoming)}` : "Move"}
+        cancelLabel="Not yet"
+        onConfirm={advanceStage}
+        onCancel={() => setConfirmStage(false)}
+      />
     </motion.div>
   );
 }

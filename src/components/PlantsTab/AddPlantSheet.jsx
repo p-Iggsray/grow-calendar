@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { ymd } from "../../lib/api.js";
 import { Label, Input, RadioGroup, NumStepper, MONO } from "../SetupWizard/styleHelpers.jsx";
+import { STAGE_OPTIONS } from "./constants.js";
 
-const BLANK = { name: "", type: "hybrid", photo: true, flowerWeeks: 9, potSize: 0 };
+const BLANK = { name: "", type: "hybrid", photo: true, flowerWeeks: 9, potSize: 0, stage: "seedling" };
 
 function btn(kind, disabled) {
   const base = { flex: 1, padding: "12px 14px", borderRadius: 10, fontFamily: MONO, fontSize: 12, letterSpacing: 1, cursor: disabled ? "default" : "pointer" };
@@ -12,15 +14,50 @@ function btn(kind, disabled) {
 }
 
 // Shared plant form for both adding and editing. Pass `initial` to prefill
-// (edit mode) and `saveLabel`/`savingLabel` to relabel the primary button.
+// (edit mode - stage is managed by the one-way stage control there, so the
+// stage picker only shows when ADDING) and `saveLabel`/`savingLabel` to
+// relabel the primary button.
 export default function AddPlantSheet({ onSave, onCancel, saving, initial, saveLabel = "Add plant", savingLabel = "Adding…" }) {
+  const isNew = !initial;
   const [f, setF] = useState(() => ({ ...BLANK, ...(initial || {}), potSize: initial?.potSize ?? 0 }));
+  const [stageStartDate, setStageStartDate] = useState(() => ymd(new Date()));
   const up = (k, v) => setF((prev) => ({ ...prev, [k]: v }));
   const disabled = saving || !f.name.trim();
+
+  function submit() {
+    const out = { ...f, potSize: f.potSize || null };
+    if (isNew) out.stageStartDate = stageStartDate;
+    else delete out.stage; // edits never change stage; the stage control does
+    onSave(out);
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div><Label>Strain name</Label><Input value={f.name} onChange={(v) => up("name", v)} placeholder="e.g. Blue Dream" /></div>
+      {isNew && (
+        <>
+          <div>
+            <Label>Current stage</Label>
+            <select
+              value={f.stage}
+              onChange={(e) => up("stage", e.target.value)}
+              aria-label="Current stage"
+              style={{
+                width: "100%", boxSizing: "border-box", padding: "12px 14px",
+                borderRadius: 10, background: "rgba(0,0,0,0.3)", color: "var(--c-text)",
+                border: "1px solid rgba(255,255,255,0.14)", fontFamily: MONO, fontSize: 14, outline: "none",
+              }}>
+              {STAGE_OPTIONS.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label>When did this stage start?</Label>
+            <Input type="date" value={stageStartDate} onChange={setStageStartDate} />
+          </div>
+        </>
+      )}
       <div>
         <Label>Type</Label>
         <RadioGroup value={f.type} onChange={(v) => up("type", v)} options={[
@@ -37,7 +74,7 @@ export default function AddPlantSheet({ onSave, onCancel, saving, initial, saveL
       <div><Label>Pot size</Label><NumStepper value={f.potSize} onChange={(v) => up("potSize", v)} min={0} max={100} label="gal" /></div>
       <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
         <button type="button" onClick={onCancel} style={btn("ghost")}>Cancel</button>
-        <button type="button" disabled={disabled} onClick={() => onSave({ ...f, potSize: f.potSize || null })} style={btn("primary", disabled)}>
+        <button type="button" disabled={disabled} onClick={submit} style={btn("primary", disabled)}>
           {saving ? savingLabel : saveLabel}
         </button>
       </div>

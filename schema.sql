@@ -299,6 +299,7 @@ CREATE TABLE IF NOT EXISTS journal_photos (
   user_id    INTEGER NOT NULL,
   grow_id    TEXT NOT NULL,
   date       TEXT NOT NULL,
+  plant_id   TEXT,             -- set when the photo belongs to one plant
   data       TEXT NOT NULL,
   thumb      TEXT NOT NULL,
   created_at TEXT NOT NULL

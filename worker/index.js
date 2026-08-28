@@ -13,7 +13,7 @@ import { getWeather } from "./weather.js";
 import { getPushVapidKey, postPushSubscribe, deletePushSubscribe, getPushToday, sendDailyReminders } from "./push.js";
 import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, patchGrowLifecycle, setupGrow } from "./grows.js";
 import { listGrowEvents, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./events.js";
-import { createJournalPhoto, getJournalPhoto, deleteJournalPhoto } from "./photos.js";
+import { createJournalPhoto, getJournalPhoto, deleteJournalPhoto, listPlantPhotos } from "./photos.js";
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
 import { getReverseGeocode } from "./geocode.js";
 import { listStrains } from "./strains.js";
@@ -210,6 +210,9 @@ async function authenticatedRoute(request, env, path, method, user) {
     if (method === "PATCH")  return patchPlant(request, env, user, gId, pId);
     if (method === "DELETE") return deletePlant(env, user, gId, pId);
   }
+
+  const plantPhotosMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/plants\/([A-Za-z0-9_]+)\/photos$/);
+  if (plantPhotosMatch && method === "GET") return listPlantPhotos(env, user, plantPhotosMatch[1], plantPhotosMatch[2]);
 
   const plantSummaryMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/plant-log-summary$/);
   if (plantSummaryMatch && method === "GET") return plantLogSummary(env, user, plantSummaryMatch[1]);

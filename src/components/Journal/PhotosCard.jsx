@@ -8,7 +8,8 @@ const UI = "var(--font-ui)";
 // Downscale an image file on-device before upload: a main image capped at
 // 1600px (JPEG) and a small square-ish thumbnail for grids. Keeps every photo
 // well under the server's size cap regardless of what the camera produced.
-async function fileToDataUrls(file) {
+// Shared with the per-plant photo section.
+export async function fileToDataUrls(file) {
   const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" })
     .catch(() => createImageBitmap(file))
     .catch(() => null);
@@ -28,7 +29,7 @@ async function fileToDataUrls(file) {
   return result;
 }
 
-function Viewer({ growId, photo, onClose, onDeleted }) {
+export function Viewer({ growId, photo, onClose, onDeleted }) {
   const [full, setFull] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -110,8 +111,10 @@ function Viewer({ growId, photo, onClose, onDeleted }) {
 
 // The day's photos: a thumbnail grid plus the journal's big add action. Photos
 // upload straight from the camera roll (downscaled on-device) and live on the
-// day's journal page.
-export default function PhotosCard({ date, growId, photos = [] }) {
+// day's journal page. Photos added from a plant's page ride along here too,
+// labeled with the plant's name.
+export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
+  const plantName = (id) => (plants.find((p) => p.id === id)?.name || "").trim();
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -159,7 +162,7 @@ export default function PhotosCard({ date, growId, photos = [] }) {
                 style={{
                   padding: 0, border: "1px solid var(--c-border-faint)", borderRadius: 10,
                   overflow: "hidden", cursor: "pointer", background: "var(--c-surface-2)",
-                  aspectRatio: "1 / 1",
+                  aspectRatio: "1 / 1", position: "relative",
                 }}>
                 <img
                   src={p.thumb}
@@ -167,6 +170,17 @@ export default function PhotosCard({ date, growId, photos = [] }) {
                   loading="lazy"
                   style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                 />
+                {p.plantId && plantName(p.plantId) && (
+                  <span style={{
+                    position: "absolute", left: 0, right: 0, bottom: 0,
+                    padding: "3px 5px", background: "rgba(0,0,0,0.55)",
+                    fontFamily: UI, fontSize: 9, fontWeight: 600, color: "white",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    textAlign: "left",
+                  }}>
+                    {plantName(p.plantId)}
+                  </span>
+                )}
               </button>
             ))}
           </div>

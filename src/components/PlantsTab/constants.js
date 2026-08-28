@@ -38,8 +38,9 @@ export const HEALTH_OPTIONS = [
 ];
 export const HEALTH_MAP = Object.fromEntries(HEALTH_OPTIONS.map((o) => [o.value, o]));
 
-// Per-plant history categories. Order drives the filter row. "stage" is produced
-// by the stage control, not the entry form.
+// Per-plant history categories. Order drives the filter row. "stage" is
+// produced by the stage control, not the entry form; "measurement" is legacy
+// (height tracking was removed) and only renders old entries.
 export const LOG_KINDS = [
   { value: "note",        label: "Note" },
   { value: "measurement", label: "Measurement" },
@@ -51,7 +52,7 @@ export const LOG_KINDS = [
   { value: "health",      label: "Health" },
   { value: "stage",       label: "Stage" },
 ];
-export const FORM_KINDS = LOG_KINDS.filter((k) => k.value !== "stage");
+export const FORM_KINDS = LOG_KINDS.filter((k) => k.value !== "stage" && k.value !== "measurement");
 export const KIND_LABEL = Object.fromEntries(LOG_KINDS.map((k) => [k.value, k.label]));
 export function kindLabel(kind) { return KIND_LABEL[kind] ?? "Note"; }
 
@@ -126,18 +127,13 @@ export function relDayLabel(key, today) {
 }
 
 // Stats derived from a plant's combined history (newest first): how long the
-// plant has been in its current stage, and the latest height with the change
-// since the previous measurement.
+// plant has been in its current stage and its latest health reading.
 export function plantHistoryStats(entries, today) {
   const list = entries ?? [];
   const stageEntry = list.find((e) => (e.kind || "") === "stage");
   const stageDays = stageEntry ? daysAgo(stageEntry.date, today) : null;
-  const withHeight = list.filter((e) => e.height != null);
-  const height = withHeight[0] ?? null;
-  const prev = withHeight[1] ?? null;
-  const heightDelta = height && prev ? Math.round((height.height - prev.height) * 10) / 10 : null;
   const lastHealth = list.find((e) => e.health)?.health ?? null;
-  return { stageDays, height, heightDelta, lastHealth };
+  return { stageDays, lastHealth };
 }
 
 // Most recent height + health from a plant's log entries (already date DESC).

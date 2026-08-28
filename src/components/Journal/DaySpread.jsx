@@ -286,7 +286,7 @@ export default function DaySpread({
         <MilestonesCard date={date} growId={growId} config={config} onConfigChanged={onConfigChanged} />
 
         {/* The day's photos + the journal's add-a-photo action. */}
-        <PhotosCard date={date} growId={growId} photos={day.photos} />
+        <PhotosCard date={date} growId={growId} photos={day.photos} plants={plants} />
 
         {loading ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

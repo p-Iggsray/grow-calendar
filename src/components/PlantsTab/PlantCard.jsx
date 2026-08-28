@@ -7,11 +7,9 @@ export default function PlantCard({ plant, metrics, today, config, onOpen }) {
   const health = metrics?.health ? HEALTH_MAP[metrics.health] : null;
   const age = today && config ? dayOfGrow(today, config) : null;
   const lastLog = metrics?.date ? relDayLabel(metrics.date, today) : null;
-  const entries = metrics?.entries ?? 0;
 
   const activityBits = [
     age ? `Day ${age}` : null,
-    entries > 0 ? `${entries} ${entries === 1 ? "entry" : "entries"}` : "no entries yet",
     lastLog ? `last log ${lastLog}` : null,
   ].filter(Boolean);
 
@@ -44,7 +42,6 @@ export default function PlantCard({ plant, metrics, today, config, onOpen }) {
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>
         <span>Stage: {stageLabel(plant.stage)}</span>
-        {metrics?.height != null && <span>{metrics.height}{metrics.heightUnit || ""}</span>}
       </div>
       <div style={{ marginTop: 8 }}>
         <StageTimeline stage={plant.stage} height={5} />

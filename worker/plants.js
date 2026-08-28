@@ -4,7 +4,15 @@ import { logError } from "./log.js";
 import {
   ensurePlantIds, validatePlantFields, addPlantToSurvey,
   updatePlantInSurvey, removePlantFromSurvey, normalizeLogEntry,
+  PLANT_STAGES, STAGE_SET, DEFAULT_STAGE,
 } from "./plantsRoster.js";
+
+const STAGE_LABELS = {
+  germination: "Germination", seedling: "Seedling", vegetative: "Vegetative",
+  flowering: "Flowering", flushing: "Flushing", harvest: "Harvest",
+  drying: "Drying", curing: "Curing", done: "Done",
+};
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
 import { ensureGrowLogSchema } from "./growLog.js";
 
 function parseSurvey(raw) {
@@ -72,9 +80,31 @@ export async function addPlant(request, env, user, growId) {
   const v = validatePlantFields(body ?? {}, false);
   if (!v.ok) return error(400, v.error);
 
+  // A plant can join at ANY stage. An optional stageStartDate backdates the
+  // stage clock ("in stage Nd") by seeding the stage log entry on that day.
+  const stageStartDate = typeof body?.stageStartDate === "string" && DATE_ONLY_RE.test(body.stageStartDate)
+    ? body.stageStartDate
+    : new Date().toISOString().slice(0, 10);
+
   const survey = parseSurvey(row.survey) ?? {};
   const { survey: nextSurvey, plant } = addPlantToSurvey(survey, v.value);
   await saveSurvey(env, user.id, growId, nextSurvey);
+
+  const stage = plant.stage ?? DEFAULT_STAGE;
+  if (STAGE_SET.has(stage)) {
+    try {
+      await ensurePlantLogSchema(env);
+      const now = new Date().toISOString();
+      await env.DB.prepare(
+        `INSERT INTO plant_log
+           (user_id, grow_id, plant_id, date, kind, detail, body, height, height_unit, health, created_at, updated_at)
+         VALUES (?, ?, ?, ?, 'stage', NULL, ?, NULL, NULL, NULL, ?, ?)`
+      ).bind(user.id, growId, plant.id, stageStartDate, `Stage → ${STAGE_LABELS[stage]}`, now, now).run();
+    } catch (err) {
+      logError("plant-add-stage-seed", { message: String(err?.message) });
+    }
+  }
+
   return json({ ok: true, plant });
 }
 
@@ -91,6 +121,20 @@ export async function patchPlant(request, env, user, growId, plantId) {
   if (Object.keys(v.value).length === 0) return error(400, "no valid fields");
 
   const ensured = ensurePlantIds(parseSurvey(row.survey) ?? {});
+
+  // Stage changes are one-way: a plant only ever moves forward through its
+  // lifecycle. Same stage is a harmless no-op; backward is rejected.
+  if (v.value.stage !== undefined) {
+    const current = (ensured.survey.strains ?? []).find((s) => s.id === plantId);
+    if (current) {
+      const from = PLANT_STAGES.indexOf(current.stage ?? DEFAULT_STAGE);
+      const to = PLANT_STAGES.indexOf(v.value.stage);
+      if (to < from) return error(400, "stage changes are one-way - a plant cannot move back to an earlier stage");
+      if (to === from) delete v.value.stage;
+    }
+    if (Object.keys(v.value).length === 0) return json({ ok: true, plant: (ensured.survey.strains ?? []).find((s) => s.id === plantId) });
+  }
+
   const res = updatePlantInSurvey(ensured.survey, plantId, v.value);
   if (!res) return error(404, "plant not found");
 

@@ -19,8 +19,6 @@ export default function LogEntryForm({ initial, onSave, onCancel, saving }) {
   const [kind, setKind] = useState(initial?.kind ?? "note");
   const [date, setDate] = useState(initial?.date ?? today);
   const [body, setBody] = useState(initial?.body ?? "");
-  const [height, setHeight] = useState(initial?.height != null ? String(initial.height) : "");
-  const [heightUnit, setHeightUnit] = useState(initial?.height_unit ?? "in");
   const [health, setHealth] = useState(initial?.health ?? "");
   const [d, setD] = useState(initial?.detail ?? {});
   const sd = (k, v) => setD((prev) => ({ ...prev, [k]: v }));
@@ -38,11 +36,8 @@ export default function LogEntryForm({ initial, onSave, onCancel, saving }) {
   }
 
   function submit() {
-    const hasHeight = kind === "measurement" && height !== "";
     onSave({
       date, kind, body,
-      height: hasHeight ? Number(height) : null,
-      heightUnit: hasHeight ? heightUnit : null,
       health: kind === "health" ? (health || null) : null,
       detail: buildDetail(),
     });
@@ -72,13 +67,6 @@ export default function LogEntryForm({ initial, onSave, onCancel, saving }) {
       </div>
 
       <div><Label>Date</Label><Input type="date" value={date} onChange={setDate} /></div>
-
-      {kind === "measurement" && (
-        <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
-          <div style={{ flex: 1 }}><Label>Height</Label><Input type="number" value={height} onChange={setHeight} placeholder="0" /></div>
-          <RadioGroup value={heightUnit} onChange={setHeightUnit} options={[{ value: "in", label: "in" }, { value: "cm", label: "cm" }]} />
-        </div>
-      )}
 
       {kind === "watering" && (
         <div style={{ display: "flex", gap: 10 }}>

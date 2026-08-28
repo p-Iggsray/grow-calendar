@@ -27,6 +27,13 @@ test("rejects oversized images and thumbnails", () => {
   assert.equal(validatePhotoInput({ date: "2026-08-27", data: TINY, thumb: bigThumb }).ok, false);
 });
 
+test("plantId is optional but validated when present", () => {
+  assert.equal(validatePhotoInput({ date: "2026-08-27", data: TINY, thumb: TINY, plantId: "p_abc123" }).ok, true);
+  assert.equal(validatePhotoInput({ date: "2026-08-27", data: TINY, thumb: TINY, plantId: null }).ok, true);
+  assert.equal(validatePhotoInput({ date: "2026-08-27", data: TINY, thumb: TINY, plantId: "bad id!" }).ok, false);
+  assert.equal(validatePhotoInput({ date: "2026-08-27", data: TINY, thumb: TINY, plantId: 42 }).ok, false);
+});
+
 test("garbage bodies reject instead of crashing", () => {
   assert.equal(validatePhotoInput(null).ok, false);
   assert.equal(validatePhotoInput("x").ok, false);

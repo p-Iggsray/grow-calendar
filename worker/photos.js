@@ -24,11 +24,14 @@ export async function ensureJournalPhotosSchema(env) {
       user_id    INTEGER NOT NULL,
       grow_id    TEXT NOT NULL,
       date       TEXT NOT NULL,
+      plant_id   TEXT,
       data       TEXT NOT NULL,
       thumb      TEXT NOT NULL,
       created_at TEXT NOT NULL
     )
   `).run();
+  // Tables created before plant photos existed self-heal the column.
+  try { await env.DB.prepare("ALTER TABLE journal_photos ADD COLUMN plant_id TEXT").run(); } catch { /* exists */ }
   await env.DB.prepare(
     "CREATE INDEX IF NOT EXISTS idx_journal_photos_day ON journal_photos (grow_id, date)"
   ).run();
@@ -57,10 +60,15 @@ export function validatePhotoInput(body) {
   if (body.thumb.length > MAX_THUMB_CHARS) {
     return { ok: false, message: "thumbnail is too large" };
   }
+  if (body.plantId !== undefined && body.plantId !== null) {
+    if (typeof body.plantId !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(body.plantId)) {
+      return { ok: false, message: "invalid plantId" };
+    }
+  }
   return { ok: true };
 }
 
-// POST /api/grows/:id/photos  {date, data, thumb}
+// POST /api/grows/:id/photos  {date, data, thumb, plantId?}
 export async function createJournalPhoto(request, env, user, growId) {
   const row = await ownedGrowRow(env, user.id, growId);
   if (!row) return error(404, "grow not found");
@@ -68,6 +76,15 @@ export async function createJournalPhoto(request, env, user, growId) {
   if (!p.ok) return error(p.status, p.error);
   const v = validatePhotoInput(p.data);
   if (!v.ok) return error(400, v.message);
+
+  // A plant photo must point at a real plant of THIS grow.
+  let plantId = p.data.plantId ?? null;
+  if (plantId) {
+    let survey = null;
+    try { survey = row.survey ? JSON.parse(row.survey) : null; } catch { survey = null; }
+    const exists = Array.isArray(survey?.strains) && survey.strains.some((s) => s.id === plantId);
+    if (!exists) return error(404, "plant not found");
+  }
   await ensureJournalPhotosSchema(env);
 
   const [dayRow, growRow] = await Promise.all([
@@ -82,13 +99,13 @@ export async function createJournalPhoto(request, env, user, growId) {
   const id = newPhotoId();
   try {
     await env.DB.prepare(
-      "INSERT INTO journal_photos (id, user_id, grow_id, date, data, thumb, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
-    ).bind(id, user.id, growId, p.data.date, p.data.data, p.data.thumb, nowIso()).run();
+      "INSERT INTO journal_photos (id, user_id, grow_id, date, plant_id, data, thumb, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    ).bind(id, user.id, growId, p.data.date, plantId, p.data.data, p.data.thumb, nowIso()).run();
   } catch (err) {
     logError("photo-create-failed", { message: String(err?.message) });
     return error(500, "could not save the photo");
   }
-  return json({ photo: { id, date: p.data.date, thumb: p.data.thumb } });
+  return json({ photo: { id, date: p.data.date, thumb: p.data.thumb, plantId } });
 }
 
 // GET /api/grows/:id/photos/:photoId - the full-size image, fetched only when
@@ -116,13 +133,26 @@ export async function deleteJournalPhoto(env, user, growId, photoId) {
   return json({ ok: true });
 }
 
-// Thumbnails for one day - folded into the journal day payload.
+// Thumbnails for one day - folded into the journal day payload. Plant photos
+// ride along tagged with their plant.
 export async function photosForDay(env, userId, growId, date) {
   await ensureJournalPhotosSchema(env);
   const res = await env.DB.prepare(
-    "SELECT id, thumb FROM journal_photos WHERE user_id = ? AND grow_id = ? AND date = ? ORDER BY created_at"
+    "SELECT id, thumb, plant_id FROM journal_photos WHERE user_id = ? AND grow_id = ? AND date = ? ORDER BY created_at"
   ).bind(userId, growId, date).all();
-  return (res.results ?? []).map(r => ({ id: r.id, thumb: r.thumb }));
+  return (res.results ?? []).map(r => ({ id: r.id, thumb: r.thumb, plantId: r.plant_id ?? null }));
+}
+
+// GET /api/grows/:id/plants/:plantId/photos - one plant's photo timeline,
+// newest first.
+export async function listPlantPhotos(env, user, growId, plantId) {
+  const row = await ownedGrowRow(env, user.id, growId);
+  if (!row) return error(404, "grow not found");
+  await ensureJournalPhotosSchema(env);
+  const res = await env.DB.prepare(
+    "SELECT id, date, thumb FROM journal_photos WHERE user_id = ? AND grow_id = ? AND plant_id = ? ORDER BY date DESC, created_at DESC"
+  ).bind(user.id, growId, plantId).all();
+  return json({ photos: (res.results ?? []).map(r => ({ id: r.id, date: r.date, thumb: r.thumb })) });
 }
 
 // date -> count map for a month (journal month index + timeline chips).

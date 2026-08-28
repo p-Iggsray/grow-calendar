@@ -22,26 +22,20 @@ test("daysAgo / relDayLabel: relative day math", () => {
   assert.equal(relDayLabel("junk", today), "");
 });
 
-test("plantHistoryStats: stage days, height trend, and latest health", () => {
+test("plantHistoryStats: stage days and latest health", () => {
   const today = D("2026-07-03");
   const entries = [
-    { date: "2026-07-02", kind: "measurement", height: 24, height_unit: "in" },
     { date: "2026-07-01", kind: "health", health: "thriving" },
     { date: "2026-06-28", kind: "stage", body: "Stage" },
-    { date: "2026-06-25", kind: "measurement", height: 21.5, height_unit: "in" },
     { date: "2026-06-20", kind: "health", health: "stressed" },
   ];
   const s = plantHistoryStats(entries, today);
   assert.equal(s.stageDays, 5);            // stage change 5 days ago
-  assert.equal(s.height.height, 24);       // latest measurement
-  assert.equal(s.heightDelta, 2.5);        // growth since the previous one
   assert.equal(s.lastHealth, "thriving");  // newest health wins
 });
 
 test("plantHistoryStats: empty history degrades to nulls", () => {
   const s = plantHistoryStats([], D("2026-07-03"));
   assert.equal(s.stageDays, null);
-  assert.equal(s.height, null);
-  assert.equal(s.heightDelta, null);
   assert.equal(s.lastHealth, null);
 });

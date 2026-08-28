@@ -165,6 +165,8 @@ export const api = {
     request(`/api/grows/${id}/photos`, { method: "POST", body: JSON.stringify(photo) }),
   getJournalPhoto: (id, photoId) =>
     request(`/api/grows/${id}/photos/${photoId}`),
+  listPlantPhotos: (id, plantId) =>
+    request(`/api/grows/${id}/plants/${plantId}/photos`),
   deleteJournalPhoto: (id, photoId) =>
     request(`/api/grows/${id}/photos/${photoId}`, { method: "DELETE", body: "{}" }),
   importEnv: (id, readings) =>
