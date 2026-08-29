@@ -10,7 +10,7 @@ import { clearWizardDraft } from "../lib/wizardDraft.js";
 export default function DeleteGrowConfirm({ growId, growName, onClose, onDeleted }) {
   const [step, setStep] = useState(1); // 1 = first confirm, 2 = final confirm
   const [busy, setBusy] = useState(false);
-  const name = growName?.trim() || "this grow";
+  const name = growName?.trim() || "this environment";
 
   async function doDelete() {
     if (busy) return;

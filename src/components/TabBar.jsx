@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { CalendarDays, Wind, Package, CheckCircle2, Sprout, Sparkles, ClipboardList, MoreHorizontal } from "lucide-react";
+import { CalendarDays, Wind, Package, CheckCircle2, Tent, Sparkles, MoreHorizontal } from "lucide-react";
 import { tapHaptic } from "../lib/haptics.js";
 
 // Native tab bars use short Title Case labels, not tracked-out uppercase.
@@ -21,11 +21,10 @@ const FIRST_TAB_ICON = {
 export default function TabBar({ activeTab, onTab, firstTab }) {
   const FirstIcon = FIRST_TAB_ICON[firstTab?.key] ?? CalendarDays;
   const TABS = [
-    { id: "calendar", Icon: FirstIcon,     label: firstTab?.tabLabel ?? "CALENDAR" },
-    { id: "plants",   Icon: Sprout,         label: "PLANTS"   },
-    { id: "mj",       Icon: Sparkles,       label: "MJ"       },
-    { id: "plan",     Icon: ClipboardList,  label: "PLAN"     },
-    { id: "more",     Icon: MoreHorizontal, label: "MORE"     },
+    { id: "calendar",     Icon: FirstIcon,      label: firstTab?.tabLabel ?? "CALENDAR" },
+    { id: "environments", Icon: Tent,           label: "SPACES" },
+    { id: "mj",           Icon: Sparkles,       label: "MJ"     },
+    { id: "more",         Icon: MoreHorizontal, label: "MORE"   },
   ];
   return (
     <nav

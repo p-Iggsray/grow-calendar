@@ -155,6 +155,10 @@ export const api = {
   getGrow: (id) => request(`/api/grows/${id}`),
   patchGrow: (id, data) =>
     request(`/api/grows/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  // Merge the environment's own setup fields (type, size, lighting, medium,
+  // watering) into its survey.
+  saveEnvironmentSetup: (id, environmentSetup) =>
+    request(`/api/grows/${id}`, { method: "PATCH", body: JSON.stringify({ environmentSetup }) }),
   deleteGrow: (id) =>
     request(`/api/grows/${id}`, { method: "DELETE", body: "{}" }),
   updateGrowLifecycle: (id, lifecycle) =>

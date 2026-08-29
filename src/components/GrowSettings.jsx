@@ -89,7 +89,7 @@ export default function GrowSettings({ growId, onClose, onSaved, onDeleted }) {
       })
       .catch(e => {
         if (cancelled) return;
-        setLoadError(e?.message || "Could not load this grow.");
+        setLoadError(e?.message || "Could not load this environment.");
         setLoading(false);
       });
     return () => { cancelled = true; };
@@ -104,7 +104,7 @@ export default function GrowSettings({ growId, onClose, onSaved, onDeleted }) {
     setSaving(true);
     setError(null);
     try {
-      const payload = { displayName: name.trim() || "Untitled Grow", status };
+      const payload = { displayName: name.trim() || "Untitled Environment", status };
       if (hasConfig) payload.config = { ...dates };
       await api.patchGrow(growId, payload);
       await onSaved?.();
@@ -140,7 +140,7 @@ export default function GrowSettings({ growId, onClose, onSaved, onDeleted }) {
           <X size={18} strokeWidth={1.8} />
         </button>
         <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 3, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>
-          Grow Settings
+          Environment Settings
         </div>
         <button
           type="button"
@@ -292,7 +292,7 @@ export default function GrowSettings({ growId, onClose, onSaved, onDeleted }) {
           }}
         >
           <Trash2 size={14} strokeWidth={1.8} />
-          Delete this grow
+          Delete this environment
         </button>
       </div>
       </>

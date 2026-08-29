@@ -16,7 +16,7 @@ import { GeneratingScreen } from "./GeneratingScreen.jsx";
 // ─── Wizard shell ────────────────────────────────────────────────────────────
 
 const STEPS = [
-  { id: "basics",   title: "Grow Basics" },
+  { id: "basics",   title: "Space Basics" },
   { id: "strains",  title: "Your Strains" },
   { id: "timeline", title: "Where You're At" },
   { id: "setup",    title: "Your Setup" },
@@ -100,7 +100,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "var(--c-text-faint)", marginBottom: 4 }}>
-              NEW GROW, STEP {step + 1} OF {STEPS.length}
+              NEW ENVIRONMENT, STEP {step + 1} OF {STEPS.length}
             </div>
             <div style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>
               {STEPS[step].title}
@@ -219,7 +219,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
       <ConfirmModal
         open={confirmExit}
         title="Save and exit setup?"
-        message="Everything you have entered is saved on this device. This grow will show as In Setup on the Grows tab - tap it anytime to pick up right where you left off."
+        message="Everything you have entered is saved on this device. This environment will show as In Setup on the Spaces tab - tap it anytime to pick up right where you left off."
         confirmLabel="Save & exit"
         cancelLabel="Keep editing"
         onConfirm={() => { setConfirmExit(false); onCancel?.(); }}

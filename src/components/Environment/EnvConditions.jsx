@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Upload, Thermometer, Droplets, Gauge, Trash2, Loader, ChevronRight } from "lucide-react";
+import { Upload, Thermometer, Droplets, Gauge, Trash2, Loader, ChevronRight, ArrowLeft } from "lucide-react";
 import { api } from "../../lib/api.js";
-import { usePlan } from "../../lib/usePlan.jsx";
 import { useToast } from "../../lib/useToast.jsx";
 import { parseEnvCsv } from "../../lib/envCsv.js";
 import { Skeleton } from "../Skeleton.jsx";
-import ScreenHeader from "../ScreenHeader.jsx";
+
+// The measured conditions of ONE environment: controller CSV import, overall
+// averages, and a day-by-day log you can open for a minute-level chart. Lives
+// inside the environment's page (each space keeps its own readings).
 
 const MONO = "var(--font-ui)";
-const SERIF = "var(--font-ui)";
 const NUM = "var(--font-num)"; // numeric readings only
 const TEMP_COLOR = "#f97316";
 const HUM_COLOR = "#38bdf8";
@@ -30,9 +31,7 @@ function fmtTime(ts) {
   return `${h}:${String(mm).padStart(2, "0")}${ampm}`;
 }
 
-export default function EnvironmentScreen({ onClose }) {
-  const { activeGrowId, survey } = usePlan();
-  const indoorish = survey?.environment && survey.environment !== "outdoor";
+export default function EnvConditions({ growId, indoorish }) {
   const { addToast } = useToast();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,20 +42,21 @@ export default function EnvironmentScreen({ onClose }) {
   const fileRef = useRef(null);
 
   const load = useCallback(() => {
-    if (!activeGrowId) { setLoading(false); return; }
+    if (!growId) { setLoading(false); return; }
     setLoading(true);
-    api.getEnvSummary(activeGrowId)
+    api.getEnvSummary(growId)
       .then(setSummary)
       .catch(() => setSummary(null))
       .finally(() => setLoading(false));
-  }, [activeGrowId]);
+  }, [growId]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { setOpenDay(null); }, [growId]);
 
   async function onFile(e) {
     const file = e.target.files?.[0];
     e.target.value = "";
-    if (!file || !activeGrowId) return;
+    if (!file || !growId) return;
     setImporting(true);
     setProgress("Reading file…");
     try {
@@ -69,7 +69,7 @@ export default function EnvironmentScreen({ onClose }) {
       const batches = Math.ceil(readings.length / IMPORT_CHUNK);
       for (let i = 0; i < readings.length; i += IMPORT_CHUNK) {
         setProgress(`Importing… batch ${Math.floor(i / IMPORT_CHUNK) + 1}/${batches}`);
-        await api.importEnv(activeGrowId, readings.slice(i, i + IMPORT_CHUNK));
+        await api.importEnv(growId, readings.slice(i, i + IMPORT_CHUNK));
       }
       addToast(`Imported ${readings.length.toLocaleString()} readings${skipped ? ` (${skipped} skipped)` : ""}.`);
       load();
@@ -84,10 +84,10 @@ export default function EnvironmentScreen({ onClose }) {
   async function clearAll() {
     setConfirmClear(false);
     try {
-      await api.clearEnv(activeGrowId);
+      await api.clearEnv(growId);
       setSummary(null);
       load();
-      addToast("Environment data cleared.");
+      addToast("Conditions data cleared.");
     } catch (err) {
       addToast(`Could not clear: ${err?.message ?? "unknown error"}`);
     }
@@ -97,106 +97,102 @@ export default function EnvironmentScreen({ onClose }) {
   const days = summary?.days ?? [];
   const hasData = overall?.samples > 0;
 
-  return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 45, background: "var(--c-bg)", overflowY: "auto",
-      fontFamily: SERIF, color: "var(--c-text)", paddingBottom: 40,
-    }}>
-      <ScreenHeader
-        eyebrow="Environment"
-        title={openDay ? fmtDate(openDay) : "Grow environment"}
-        onBack={openDay ? () => setOpenDay(null) : onClose}
-      />
-
-      <div style={{ padding: "16px 14px", display: "flex", flexDirection: "column", gap: 14, maxWidth: 560, margin: "0 auto" }}>
-        {openDay ? (
-          <DayDetail growId={activeGrowId} date={openDay} />
-        ) : (
-          <>
-            {/* Import */}
-            <div className="card" style={{ padding: 16 }}>
-              <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} style={{ display: "none" }} />
-              <button type="button" onClick={() => fileRef.current?.click()} disabled={importing} style={{
-                width: "100%", padding: "14px", borderRadius: 12, minHeight: 50,
-                background: "rgba(34,197,94,0.16)", border: "1px solid rgba(34,197,94,0.45)",
-                color: "var(--c-accent)", fontFamily: MONO, fontSize: 13, letterSpacing: 1,
-                cursor: importing ? "default" : "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
-              }}>
-                {importing
-                  ? <><Loader size={15} style={{ animation: "spin 1s linear infinite" }} /> {progress || "Importing…"}</>
-                  : <><Upload size={16} strokeWidth={2} /> Import controller report (.csv)</>}
-              </button>
-              <div style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--c-text-ghost)", marginTop: 10, lineHeight: 1.6 }}>
-                {indoorish
-                  ? "Import the CSV export from your grow controller (VIVOSUN style) and this grow's temp, humidity, and VPD fill in automatically, including each day's log."
-                  : "Outdoor grow: conditions are usually logged by hand on each day, but you can still import a sensor CSV here if you run one outside."}
-                {" "}Re-importing the same period just updates it - minutes are never double-counted.
-              </div>
-            </div>
-
-            {loading && (
-              <div role="status" aria-busy="true" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <Skeleton height={92} radius={14} />
-                <Skeleton height={120} radius={14} />
-              </div>
-            )}
-
-            {!loading && !hasData && (
-              <div style={{ textAlign: "center", padding: "30px 16px", color: "var(--c-text-dim)" }}>
-                <Gauge size={34} strokeWidth={1.4} style={{ color: "var(--c-text-ghost)", marginBottom: 10 }} />
-                <div style={{ fontSize: 14.5, lineHeight: 1.6 }}>No environment data yet.<br />Import a controller report to see averages and a day-by-day log.</div>
-              </div>
-            )}
-
-            {!loading && hasData && (
-              <>
-                {/* Overall stats */}
-                <div style={{ display: "flex", gap: 10 }}>
-                  <StatCard icon={Thermometer} color={TEMP_COLOR} label="Temp °F" stat={overall.temp} />
-                  <StatCard icon={Droplets} color={HUM_COLOR} label="Humidity %" stat={overall.humidity} />
-                  <StatCard icon={Gauge} color={VPD_COLOR} label="VPD kPa" stat={overall.vpd} dp={2} />
-                </div>
-                <div style={{ display: "flex", gap: 10 }}>
-                  <Totals label="Minutes logged" value={overall.samples.toLocaleString()} />
-                  <Totals label="Days" value={days.length} />
-                  <Totals label="Range" value={`${fmtDate(overall.firstTs)} - ${fmtDate(overall.lastTs)}`} small />
-                </div>
-
-                {/* Per-day log */}
-                <div>
-                  <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "var(--c-text-faint)", margin: "8px 2px" }}>
-                    Daily log
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {days.map(d => <DayRow key={d.date} day={d} onOpen={() => setOpenDay(d.date)} />)}
-                  </div>
-                </div>
-
-                <button type="button" onClick={() => setConfirmClear(true)} style={{
-                  marginTop: 6, alignSelf: "center", background: "none", border: "1px solid var(--c-border)",
-                  borderRadius: 10, padding: "9px 14px", color: "var(--c-text-faint)", cursor: "pointer",
-                  fontFamily: MONO, fontSize: 11, letterSpacing: 1, display: "flex", alignItems: "center", gap: 7,
-                }}>
-                  <Trash2 size={13} strokeWidth={1.8} /> Clear all environment data
-                </button>
-                {confirmClear && (
-                  <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                    <button type="button" onClick={clearAll} style={{
-                      background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.4)", borderRadius: 8,
-                      padding: "7px 12px", color: "var(--c-danger-soft)", cursor: "pointer", fontFamily: MONO, fontSize: 11,
-                    }}>Delete everything</button>
-                    <button type="button" onClick={() => setConfirmClear(false)} style={{
-                      background: "none", border: "1px solid var(--c-border)", borderRadius: 8,
-                      padding: "7px 12px", color: "var(--c-text-faint)", cursor: "pointer", fontFamily: MONO, fontSize: 11,
-                    }}>Cancel</button>
-                  </div>
-                )}
-              </>
-            )}
-          </>
-        )}
+  if (openDay) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <button type="button" onClick={() => setOpenDay(null)} style={{
+          alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6,
+          background: "none", border: "none", color: "var(--c-text-muted)",
+          fontFamily: MONO, fontSize: 12, cursor: "pointer", padding: 0,
+        }}>
+          <ArrowLeft size={15} /> {fmtDate(openDay)}
+        </button>
+        <DayDetail growId={growId} date={openDay} />
       </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Import */}
+      <div className="card" style={{ padding: 14 }}>
+        <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} style={{ display: "none" }} />
+        <button type="button" onClick={() => fileRef.current?.click()} disabled={importing} style={{
+          width: "100%", padding: "13px", borderRadius: 12, minHeight: 48,
+          background: "rgba(34,197,94,0.16)", border: "1px solid rgba(34,197,94,0.45)",
+          color: "var(--c-accent)", fontFamily: MONO, fontSize: 12.5, letterSpacing: 0.5,
+          cursor: importing ? "default" : "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
+        }}>
+          {importing
+            ? <><Loader size={15} style={{ animation: "spin 1s linear infinite" }} /> {progress || "Importing…"}</>
+            : <><Upload size={16} strokeWidth={2} /> Import controller report (.csv)</>}
+        </button>
+        <div style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--c-text-ghost)", marginTop: 10, lineHeight: 1.6 }}>
+          {indoorish
+            ? "Import the CSV export from this space's controller (VIVOSUN style) and its temp, humidity, and VPD fill in automatically, including each day's log."
+            : "Outdoor space: conditions are usually logged by hand on each day, but you can still import a sensor CSV here if you run one outside."}
+          {" "}Re-importing the same period just updates it - minutes are never double-counted.
+        </div>
+      </div>
+
+      {loading && (
+        <div role="status" aria-busy="true" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Skeleton height={92} radius={14} />
+          <Skeleton height={120} radius={14} />
+        </div>
+      )}
+
+      {!loading && !hasData && (
+        <div style={{ textAlign: "center", padding: "24px 16px", color: "var(--c-text-dim)" }}>
+          <Gauge size={30} strokeWidth={1.4} style={{ color: "var(--c-text-ghost)", marginBottom: 10 }} />
+          <div style={{ fontSize: 13.5, lineHeight: 1.6 }}>No readings yet for this space.<br />Import a controller report to see averages and a day-by-day log.</div>
+        </div>
+      )}
+
+      {!loading && hasData && (
+        <>
+          <div style={{ display: "flex", gap: 10 }}>
+            <StatCard icon={Thermometer} color={TEMP_COLOR} label="Temp °F" stat={overall.temp} />
+            <StatCard icon={Droplets} color={HUM_COLOR} label="Humidity %" stat={overall.humidity} />
+            <StatCard icon={Gauge} color={VPD_COLOR} label="VPD kPa" stat={overall.vpd} dp={2} />
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <Totals label="Minutes logged" value={overall.samples.toLocaleString()} />
+            <Totals label="Days" value={days.length} />
+            <Totals label="Range" value={`${fmtDate(overall.firstTs)} - ${fmtDate(overall.lastTs)}`} small />
+          </div>
+
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "var(--c-text-faint)", margin: "6px 2px" }}>
+              Daily log
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {days.map(d => <DayRow key={d.date} day={d} onOpen={() => setOpenDay(d.date)} />)}
+            </div>
+          </div>
+
+          <button type="button" onClick={() => setConfirmClear(true)} style={{
+            marginTop: 4, alignSelf: "center", background: "none", border: "1px solid var(--c-border)",
+            borderRadius: 10, padding: "9px 14px", color: "var(--c-text-faint)", cursor: "pointer",
+            fontFamily: MONO, fontSize: 11, letterSpacing: 1, display: "flex", alignItems: "center", gap: 7,
+          }}>
+            <Trash2 size={13} strokeWidth={1.8} /> Clear this space&rsquo;s readings
+          </button>
+          {confirmClear && (
+            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+              <button type="button" onClick={clearAll} style={{
+                background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.4)", borderRadius: 8,
+                padding: "7px 12px", color: "var(--c-danger-soft)", cursor: "pointer", fontFamily: MONO, fontSize: 11,
+              }}>Delete everything</button>
+              <button type="button" onClick={() => setConfirmClear(false)} style={{
+                background: "none", border: "1px solid var(--c-border)", borderRadius: 8,
+                padding: "7px 12px", color: "var(--c-text-faint)", cursor: "pointer", fontFamily: MONO, fontSize: 11,
+              }}>Cancel</button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -270,20 +266,18 @@ function DayDetail({ growId, date }) {
   if (readings.length === 0) return <div style={{ color: "var(--c-text-dim)", padding: 20, textAlign: "center" }}>No readings for this day.</div>;
 
   return (
-    <>
-      <div style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)", borderRadius: 14, padding: 16 }}>
-        <div style={{ display: "flex", gap: 16, marginBottom: 12, fontFamily: MONO, fontSize: 11 }}>
-          <span style={{ color: TEMP_COLOR }}>● Temp °F</span>
-          <span style={{ color: HUM_COLOR }}>● Humidity %</span>
-        </div>
-        <DayChart readings={readings} />
-        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginTop: 6 }}>
-          <span>{fmtTime(readings[0].ts)}</span>
-          <span>{readings.length} minutes</span>
-          <span>{fmtTime(readings[readings.length - 1].ts)}</span>
-        </div>
+    <div style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)", borderRadius: 14, padding: 16 }}>
+      <div style={{ display: "flex", gap: 16, marginBottom: 12, fontFamily: MONO, fontSize: 11 }}>
+        <span style={{ color: TEMP_COLOR }}>● Temp °F</span>
+        <span style={{ color: HUM_COLOR }}>● Humidity %</span>
       </div>
-    </>
+      <DayChart readings={readings} />
+      <div style={{ display: "flex", justifyContent: "space-between", fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginTop: 6 }}>
+        <span>{fmtTime(readings[0].ts)}</span>
+        <span>{readings.length} minutes</span>
+        <span>{fmtTime(readings[readings.length - 1].ts)}</span>
+      </div>
+    </div>
   );
 }
 

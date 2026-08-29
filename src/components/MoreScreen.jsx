@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Users, FileText, Bell, BellOff, BarChart2, Sun, Moon, Monitor, Map, Share2, SlidersHorizontal, Gauge, ChevronRight, Wind } from "lucide-react";
+import { Users, FileText, Bell, BellOff, BarChart2, Sun, Moon, Monitor, Map, Share2, SlidersHorizontal, ChevronRight, Wind } from "lucide-react";
 import ShareSheet from "./ShareSheet.jsx";
 import PhaseLegend from "./PhaseLegend.jsx";
 import AuthFooter from "./AuthFooter.jsx";
@@ -69,7 +69,7 @@ function Group({ title, children }) {
   );
 }
 
-export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMap, onOpenEnv, onOpenSettings, onBeforeSignOut, theme, setTheme }) {
+export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMap, onOpenSettings, onBeforeSignOut, theme, setTheme }) {
   const { survey, activeGrowId, lifecycle } = usePlan();
   const today = useToday();
   const location = growLocation(survey);
@@ -121,13 +121,12 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
       <div style={{ marginBottom: 4 }}>
         <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.7, color: "var(--c-text)" }}>More</div>
         <div style={{ fontSize: 12.5, color: "var(--c-text-faint)", marginTop: 3 }}>
-          {location || "Your grow"}{strains ? ` · ${strains}` : ""}
+          {location || "Your environment"}{strains ? ` · ${strains}` : ""}
         </div>
       </div>
 
-      <Group title="This grow">
-        <Row icon={SlidersHorizontal} tint="#4ade80" label="Grow settings & dates" onClick={onOpenSettings} disabled={!activeGrowId} />
-        <Row icon={Gauge} tint="#38bdf8" label="Environment & sensors" onClick={onOpenEnv} disabled={!activeGrowId} />
+      <Group title="This environment">
+        <Row icon={SlidersHorizontal} tint="#4ade80" label="Name & season dates" onClick={onOpenSettings} disabled={!activeGrowId} />
         <Row icon={Map} tint="#f59e0b" label="Garden map" onClick={onOpenMap} />
         <Row icon={BarChart2} tint="#a855f7" label="Season analytics" onClick={onOpenStats} />
         <Row icon={Share2} tint="#22c55e" label="Share with a buddy" onClick={() => setShowShare(true)} />
@@ -148,7 +147,7 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
       <ConfirmModal
         open={confirmDrying}
         title="Start drying?"
-        message="This hides the calendar and opens the drying tracker, starting the dry-day counter today. You can keep logging in Plants and chatting with MJ."
+        message="This hides the calendar and opens the drying tracker, starting the dry-day counter today. You can keep logging in Spaces and chatting with MJ."
         confirmLabel="Start drying"
         cancelLabel="Not yet"
         onConfirm={() => { setConfirmDrying(false); saveLifecycle({ phase: "drying", dryStartedAt: lifecycleYmd(today) }); }}

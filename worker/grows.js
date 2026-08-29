@@ -13,6 +13,45 @@ import { resolveSurveyForSetup } from "../src/lib/stageAnchor.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+// The editable "what is this space" fields of an environment. Everything here
+// is merged into the survey by PATCH /api/grows/:id; unknown keys are ignored
+// so a stale client can never write junk into the survey.
+const ENV_TEXT_FIELDS = {
+  envSize: 40,          // "4x4 tent", "raised bed"
+  lightSchedule: 20,    // "18/6"
+  lightType: 40,        // "LED quantum board"
+  medium: 40,
+  wateringMethod: 40,
+  containerType: 40,
+};
+const ENV_NUM_FIELDS = {
+  envCapacity: [0, 500],
+  lightWatts: [0, 100000],
+  containerGallons: [0, 1000],
+};
+const ENV_KINDS = new Set(["indoor", "outdoor", "greenhouse"]);
+
+// Pure: pick the valid environment fields out of a patch body. Returns only
+// the keys actually supplied, clamped and trimmed.
+export function sanitizeEnvFields(input) {
+  const out = {};
+  if (!input || typeof input !== "object") return out;
+
+  if (typeof input.environment === "string" && ENV_KINDS.has(input.environment)) {
+    out.environment = input.environment;
+  }
+  for (const [key, max] of Object.entries(ENV_TEXT_FIELDS)) {
+    if (typeof input[key] === "string") out[key] = input[key].trim().slice(0, max);
+  }
+  for (const [key, [lo, hi]] of Object.entries(ENV_NUM_FIELDS)) {
+    if (input[key] === null || input[key] === "") { out[key] = null; continue; }
+    if (input[key] === undefined) continue;
+    const n = Number(input[key]);
+    if (Number.isFinite(n)) out[key] = Math.max(lo, Math.min(hi, n));
+  }
+  return out;
+}
+
 function newGrowId() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
@@ -242,12 +281,15 @@ export async function patchGrow(request, env, user, growId) {
     binds.push(JSON.stringify(body.config));
   }
 
-  // Location merges into the survey JSON - auto weather and frost data need
-  // it. Accepts a place label and/or coordinates (validated to real ranges).
+  // Location and the environment's own setup fields both merge into the survey
+  // JSON. Location feeds auto weather and frost data; the env fields describe
+  // the space itself (type, size, lighting, medium, watering).
   const lat = Number(body.lat);
   const lon = Number(body.lon);
   const hasCoords = Number.isFinite(lat) && Math.abs(lat) <= 90 && Number.isFinite(lon) && Math.abs(lon) <= 180;
-  if (typeof body.location === "string" || hasCoords) {
+  const envFields = sanitizeEnvFields(body.environmentSetup);
+  const hasEnvFields = Object.keys(envFields).length > 0;
+  if (typeof body.location === "string" || hasCoords || hasEnvFields) {
     const srow = await env.DB.prepare(
       "SELECT survey FROM grows WHERE id = ? AND user_id = ?"
     ).bind(growId, user.id).first();
@@ -259,6 +301,7 @@ export async function patchGrow(request, env, user, growId) {
       if (!hasCoords) { delete survey.lat; delete survey.lon; }
     }
     if (hasCoords) { survey.lat = lat; survey.lon = lon; }
+    if (hasEnvFields) Object.assign(survey, envFields);
     fields.push("survey = ?");
     binds.push(JSON.stringify(survey));
   }

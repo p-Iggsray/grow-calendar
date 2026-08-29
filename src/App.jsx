@@ -17,8 +17,7 @@ import TopBar from "./components/TopBar.jsx";
 import Calendar from "./components/Calendar.jsx";
 import TabBar from "./components/TabBar.jsx";
 import MoreScreen from "./components/MoreScreen.jsx";
-import GrowsListTab from "./components/GrowsListTab.jsx";
-import PlantsTab from "./components/PlantsTab/PlantsTab.jsx";
+import EnvironmentsTab from "./components/Environments/EnvironmentsTab.jsx";
 import PhasePrompt from "./components/Lifecycle/PhasePrompt.jsx";
 import LocationBanner from "./components/LocationBanner.jsx";
 import JournalScreen from "./components/Journal/JournalScreen.jsx";
@@ -30,7 +29,6 @@ const SetupWizard   = lazy(() => import("./components/SetupWizard/SetupWizard.js
 const ChatPanel     = lazy(() => import("./components/ChatPanel/ChatPanel.jsx"));
 const AdminPanel    = lazy(() => import("./components/AdminPanel.jsx"));
 const StatsScreen   = lazy(() => import("./components/StatsScreen.jsx"));
-const EnvironmentScreen = lazy(() => import("./components/Environment/EnvironmentScreen.jsx"));
 const GardenMap     = lazy(() => import("./components/GardenMap.jsx"));
 const GrowSettings  = lazy(() => import("./components/GrowSettings.jsx"));
 const DryingTracker = lazy(() => import("./components/Lifecycle/DryingTracker.jsx"));
@@ -44,10 +42,11 @@ const SHELL_STYLE = {
   color: "var(--c-text)",
 };
 
-// Creates a blank grow on first render and calls onReady(id) so the wizard can open.
+// Creates a blank environment on first render and calls onReady(id) so the
+// wizard can open.
 function NewGrowInitializer({ onReady }) {
   useEffect(() => {
-    api.createGrow({ displayName: "My First Grow" })
+    api.createGrow({ displayName: "My First Space" })
       .then(({ id }) => onReady(id))
       .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -82,7 +81,6 @@ export default function App() {
   const [chatContext,   setChatContext]   = useState(null);
   const [showAdmin,     setShowAdmin]     = useState(false);
   const [showStats,     setShowStats]     = useState(false);
-  const [showEnv,       setShowEnv]       = useState(false);
   const [showMap,       setShowMap]       = useState(false);
   const [showSettings,  setShowSettings]  = useState(false);
   const [settingsGrowId, setSettingsGrowId] = useState(null);
@@ -91,7 +89,7 @@ export default function App() {
   // calendar day flips into the journal on that day's page.
   const [mainView,    setMainView]    = useState("calendar");
   const [journalDate, setJournalDate] = useState(null);
-  // Cross-tab handoff: a plant the Plants tab should open on arrival.
+  // Cross-tab handoff: a plant the Spaces tab should open on arrival.
   const [plantsOpenId, setPlantsOpenId] = useState(null);
 
   const monthKey = `${viewYM.y}-${String(viewYM.m + 1).padStart(2, "0")}`;
@@ -116,7 +114,7 @@ export default function App() {
   useEffect(() => {
     function onPop() {
       setMainView("calendar");
-      setActiveTab(prev => prev === "plants" ? "calendar" : prev);
+      setActiveTab(prev => prev === "environments" ? "calendar" : prev);
       const url = new URL(window.location.href);
       if (url.searchParams.has("d")) {
         url.searchParams.delete("d");
@@ -191,7 +189,7 @@ export default function App() {
   if (setupGrowId) {
     // Escapable whenever a configured grow exists to land on - only the literal
     // first-ever grow must be completed. Exiting KEEPS the in-progress grow (it
-    // shows as IN SETUP on the Grows tab) and the wizard's autosaved draft, so
+    // shows as IN SETUP on the Spaces tab) and the wizard's autosaved draft, so
     // backing out never loses progress; usePlan prefers configured grows on
     // reload, so the unfinished one can't re-trap the app.
     const canExit = grows.some(g => g.config);
@@ -245,11 +243,12 @@ export default function App() {
 
   function pickDay(date) { openJournalAt(date); }
 
-  // From a journal page's plant entries straight to that plant's detail.
+  // From a journal page's plant entries straight to that plant's detail,
+  // inside its environment.
   function openPlantFromJournal(plantId) {
     if (!plantId) return;
     setPlantsOpenId(plantId);
-    setActiveTab("plants");
+    setActiveTab("environments");
   }
 
   function openChat() {
@@ -269,14 +268,14 @@ export default function App() {
       openChat();
       return;
     }
-    if (["plants", "calendar", "plan", "more"].includes(tabId)) {
+    if (["environments", "calendar", "more"].includes(tabId)) {
       setActiveTab(tabId);
       if (chatOpen) closeChat();
     }
   }
 
   // Key for the tab content AnimatePresence - drives crossfade between screens.
-  const tabKey = activeTab === "plan" ? "plan" : activeTab === "more" ? "more" : activeTab === "plants" ? "plants" : "calendar";
+  const tabKey = activeTab === "more" ? "more" : activeTab === "environments" ? "environments" : "calendar";
   // The month grid claims the whole viewport; every other screen scrolls.
   const fullScreenCalendar = tabKey === "calendar" && lifecyclePhase === "growing" && mainView === "calendar";
 
@@ -311,41 +310,25 @@ export default function App() {
                 onOpenAdmin={() => setShowAdmin(true)}
                 onOpenStats={() => setShowStats(true)}
                 onOpenMap={() => setShowMap(true)}
-                onOpenEnv={() => setShowEnv(true)}
                 onOpenSettings={() => { setSettingsGrowId(activeGrowId); setShowSettings(true); }}
                 theme={theme}
                 setTheme={setTheme}
               />
             </motion.div>
-          ) : tabKey === "plan" ? (
+          ) : tabKey === "environments" ? (
             <motion.div
-              key="plan"
+              key="environments"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={FADE_DURATION}
             >
-              <GrowsListTab
-                grows={grows}
-                activeGrowId={activeGrowId}
-                setActiveGrowId={setActiveGrowId}
-                onNewGrow={(growId) => setWizardGrowId(growId)}
-                onEditGrow={(growId) => { setSettingsGrowId(growId); setShowSettings(true); }}
-                onGrowDeleted={reloadPlan}
-              />
-            </motion.div>
-          ) : tabKey === "plants" ? (
-            <motion.div
-              key="plants"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={FADE_DURATION}
-            >
-              <PlantsTab
+              <EnvironmentsTab
                 openPlantId={plantsOpenId}
                 onOpenPlantConsumed={() => setPlantsOpenId(null)}
                 onOpenJournalDay={openJournalAt}
+                onNewEnvironment={(growId) => setWizardGrowId(growId)}
+                onOpenSettings={(growId) => { setSettingsGrowId(growId); setShowSettings(true); }}
               />
             </motion.div>
           ) : lifecyclePhase === "drying" ? (
@@ -358,7 +341,7 @@ export default function App() {
             </motion.div>
           ) : lifecyclePhase === "done" ? (
             <motion.div key="done" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FADE_DURATION}>
-              <Suspense fallback={<PanelSkeleton />}><GrowComplete onStartNewGrow={() => setActiveTab("plan")} /></Suspense>
+              <Suspense fallback={<PanelSkeleton />}><GrowComplete onStartNewGrow={() => setActiveTab("environments")} /></Suspense>
             </motion.div>
           ) : (
             <motion.div
@@ -465,20 +448,6 @@ export default function App() {
           >
             <Suspense fallback={null}>
               <StatsScreen config={config} today={today} onClose={() => setShowStats(false)} />
-            </Suspense>
-          </motion.div>
-        )}
-        {showEnv && (
-          <motion.div
-            key="env"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={PUSH_SPRING}
-            style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--c-bg)", overflowY: "auto" }}
-          >
-            <Suspense fallback={null}>
-              <EnvironmentScreen onClose={() => setShowEnv(false)} />
             </Suspense>
           </motion.div>
         )}
