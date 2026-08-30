@@ -34,6 +34,7 @@ export default function ScreenHeader({ eyebrow, title, onBack, backLabel = "Back
           <div style={{
             fontSize: 11, fontWeight: 600, letterSpacing: 1.2, textTransform: "uppercase",
             color: "var(--c-text-muted)", marginBottom: 1,
+            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
           }}>
             {eyebrow}
           </div>

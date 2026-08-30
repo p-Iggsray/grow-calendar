@@ -3,6 +3,7 @@ import { api } from "../../lib/api.js";
 import { resolveSurveyForSetup } from "../../lib/stageAnchor.js";
 import { loadWizardDraft, saveWizardDraft, clearWizardDraft } from "../../lib/wizardDraft.js";
 import ConfirmModal from "../ConfirmModal.jsx";
+import ScreenHeader from "../ScreenHeader.jsx";
 import { defaultSurvey } from "./defaultSurvey.js";
 import { MONO, SERIF } from "./styleHelpers.jsx";
 import { StepBasics } from "./StepBasics.jsx";
@@ -85,49 +86,37 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
       minHeight: "100vh",
       fontFamily: SERIF,
       color: "var(--c-text)",
-      background: "linear-gradient(160deg, #0a1a0d, var(--c-bg))",
+      background: "var(--c-bg)",
       display: "flex",
       flexDirection: "column",
     }}>
-      {/* Header */}
-      <div style={{
-        padding: "16px 16px 14px",
-        paddingTop: "calc(16px + env(safe-area-inset-top, 0px))",
-        borderBottom: "1px solid var(--c-border-soft)",
-        background: "rgba(0,0,0,0.2)",
-        flexShrink: 0,
-      }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "var(--c-text-faint)", marginBottom: 4 }}>
-              NEW ENVIRONMENT, STEP {step + 1} OF {STEPS.length}
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>
-              {STEPS[step].title}
-            </div>
-          </div>
-          {onCancel && !generating && (
+      {/* Same header as every other window: back steps through the wizard,
+          and the right slot keeps the way out. */}
+      <div style={{ flexShrink: 0 }}>
+        <ScreenHeader
+          eyebrow={`Step ${step + 1} of ${STEPS.length}`}
+          title={STEPS[step].title}
+          onBack={!generating && step > 0 ? () => setStep(s => s - 1) : undefined}
+          backLabel="Previous step"
+          right={onCancel && !generating ? (
             <button
               type="button"
               className="touch-target"
               onClick={() => setConfirmExit(true)}
               style={{
-                flexShrink: 0, padding: "8px 13px", borderRadius: 18,
-                background: "var(--c-border-faint)",
-                border: "1px solid var(--c-border-strong)",
-                color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 11,
-                letterSpacing: 0.5, cursor: "pointer",
+                flexShrink: 0, padding: "9px 13px", borderRadius: 18,
+                background: "var(--c-surface-2)", border: "none",
+                color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 11.5,
+                letterSpacing: 0.3, cursor: "pointer",
               }}>
               Save &amp; exit
             </button>
-          )}
-        </div>
-        {/* Progress bar */}
-        <div style={{
-          height: 3, background: "var(--c-surface-2)", borderRadius: 2, marginTop: 12,
-        }}>
+          ) : null}
+        />
+        {/* Progress through the steps */}
+        <div style={{ height: 3, background: "var(--c-surface-2)" }}>
           <div style={{
-            height: "100%", borderRadius: 2,
+            height: "100%",
             background: "linear-gradient(90deg, #22c55e, var(--c-accent))",
             width: `${((step + 1) / STEPS.length) * 100}%`,
             transition: "width 0.3s ease",
@@ -180,26 +169,12 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
           background: "rgba(0,0,0,0.3)",
           flexShrink: 0,
         }}>
-          {step > 0 && (
-            <button
-              type="button"
-              onClick={() => setStep(s => s - 1)}
-              style={{
-                flex: 1, padding: "14px", borderRadius: 12,
-                background: "var(--c-border-faint)",
-                border: "1px solid var(--c-border-strong)",
-                color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 12,
-                letterSpacing: 1, cursor: "pointer",
-              }}>
-              Back
-            </button>
-          )}
           <button
             type="button"
             disabled={!canAdvance()}
             onClick={() => isLast ? generate() : setStep(s => s + 1)}
             style={{
-              flex: 2, padding: "14px", borderRadius: 12,
+              flex: 1, padding: "14px", borderRadius: 12,
               background: canAdvance()
                 ? (isLast ? "rgba(34,197,94,0.25)" : "rgba(34,197,94,0.18)")
                 : "rgba(255,255,255,0.05)",

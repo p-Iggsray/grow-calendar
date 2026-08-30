@@ -1,11 +1,21 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, X, Trash2, Download, Images } from "lucide-react";
+import { Camera, Trash2, Download, Images } from "lucide-react";
 import { api, ymd } from "../../lib/api.js";
 import { tapHaptic } from "../../lib/haptics.js";
 import { savePhotoToDevice } from "../../lib/savePhoto.js";
 import Portal from "../Portal.jsx";
+import ScreenHeader from "../ScreenHeader.jsx";
+import HeaderMenu from "../HeaderMenu.jsx";
 
 const UI = "var(--font-ui)";
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// "Aug 28, 2026" from a YYYY-MM-DD key, for the viewer's title.
+function fmtPhotoDate(key) {
+  const [y, m, d] = (key || "").split("-").map(Number);
+  if (!y || !m || !d) return "Photo";
+  return `${MONTHS[m - 1]} ${d}, ${y}`;
+}
 
 // Downscale an image file on-device before upload. The server caps an upload
 // at 980k characters of base64; a FIXED size and quality cannot promise that,
@@ -97,6 +107,11 @@ export function Viewer({ growId, photo, onClose, onDeleted }) {
     }
   }
 
+  const status =
+    saveState === "saving" ? "Opening your phone's save sheet…" :
+    saveState === "saved"  ? "Sent to your photos." :
+    saveState === "error"  ? "Could not save that photo. Try again." : "";
+
   return (
     <Portal>
     <div
@@ -104,68 +119,52 @@ export function Viewer({ growId, photo, onClose, onDeleted }) {
       aria-label="Photo"
       style={{
         position: "fixed", inset: 0, zIndex: 70,
-        background: "rgba(0,0,0,0.92)",
+        background: "var(--c-bg)",
         display: "flex", flexDirection: "column",
       }}>
-      <div style={{
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-        padding: "calc(10px + env(safe-area-inset-top, 0px)) 14px 8px",
-      }}>
-        <button
-          type="button"
-          onClick={remove}
-          disabled={busy}
-          aria-label="Delete photo"
-          style={{
-            display: "flex", alignItems: "center", gap: 6, padding: "9px 14px",
-            borderRadius: 10, background: "rgba(248,113,113,0.12)",
-            border: "1px solid rgba(248,113,113,0.4)", color: "#f87171",
-            fontFamily: UI, fontSize: 12, cursor: "pointer", opacity: busy ? 0.5 : 1,
-          }}>
-          <Trash2 size={13} strokeWidth={2} />
-          {busy ? "Deleting…" : "Delete"}
-        </button>
-        {photo.fromCamera && (
-          <button
-            type="button"
-            onClick={saveToRoll}
-            disabled={!full || saveState === "saving"}
-            style={{
-              display: "flex", alignItems: "center", gap: 6, padding: "9px 14px",
-              borderRadius: 10, background: "rgba(255,255,255,0.12)",
-              border: "1px solid rgba(255,255,255,0.25)", color: "white",
-              fontFamily: UI, fontSize: 12, cursor: full ? "pointer" : "default",
-              opacity: full ? 1 : 0.5,
-            }}>
-            <Download size={13} strokeWidth={2} />
-            {saveState === "saving" ? "Saving…"
-              : saveState === "saved" ? "Saved"
-              : saveState === "error" ? "Try again"
-              : "Save to Photos"}
-          </button>
+      {/* The same header as every other window. */}
+      <ScreenHeader
+        eyebrow="Photo"
+        title={fmtPhotoDate(photo.date)}
+        onBack={onClose}
+        backLabel="Back to the photos"
+        right={(
+          <HeaderMenu
+            title="Photo"
+            items={[
+              photo.fromCamera && {
+                icon: Download,
+                label: "Save to Photos",
+                detail: "Adds this shot to your camera roll",
+                onClick: saveToRoll,
+                disabled: !full || saveState === "saving",
+              },
+              { icon: Trash2, label: busy ? "Deleting…" : "Delete photo", tone: "destructive", onClick: remove, disabled: busy },
+            ]}
+          />
         )}
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          style={{
-            padding: 10, borderRadius: 10, background: "rgba(255,255,255,0.1)",
-            border: "none", color: "white", cursor: "pointer", display: "flex",
-          }}>
-          <X size={18} strokeWidth={2} />
-        </button>
-      </div>
+      />
+
+      {status && (
+        <div style={{
+          fontFamily: UI, fontSize: 11.5, textAlign: "center", padding: "8px 14px 0",
+          color: saveState === "error" ? "var(--c-danger-soft)" : "var(--c-text-muted)",
+        }}>
+          {status}
+        </div>
+      )}
+
       <div
         onClick={onClose}
         style={{
           flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center",
-          padding: "0 8px calc(16px + env(safe-area-inset-bottom, 0px))",
+          padding: "12px 10px calc(16px + env(safe-area-inset-bottom, 0px))",
         }}>
         {/* Thumbnail shows instantly; the full image swaps in when loaded. */}
         <img
           src={full ?? photo.thumb}
           alt="Journal photo"
-          style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 8 }}
+          style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 10 }}
         />
       </div>
     </div>
