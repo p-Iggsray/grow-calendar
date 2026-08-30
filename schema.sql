@@ -300,6 +300,7 @@ CREATE TABLE IF NOT EXISTS journal_photos (
   grow_id    TEXT NOT NULL,
   date       TEXT NOT NULL,
   plant_id   TEXT,             -- set when the photo belongs to one plant
+  from_camera INTEGER NOT NULL DEFAULT 0,  -- shot in-app, so not in the camera roll yet
   data       TEXT NOT NULL,
   thumb      TEXT NOT NULL,
   created_at TEXT NOT NULL

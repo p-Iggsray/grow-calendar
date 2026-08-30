@@ -1,20 +1,31 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, X, Trash2 } from "lucide-react";
+import { Camera, X, Trash2, Download, Images } from "lucide-react";
 import { api, ymd } from "../../lib/api.js";
 import { tapHaptic } from "../../lib/haptics.js";
+import { savePhotoToDevice } from "../../lib/savePhoto.js";
 
 const UI = "var(--font-ui)";
 
-// Downscale an image file on-device before upload: a main image capped at
-// 1600px (JPEG) and a small square-ish thumbnail for grids. Keeps every photo
-// well under the server's size cap regardless of what the camera produced.
-// Shared with the per-plant photo section.
+// Downscale an image file on-device before upload. The server caps an upload
+// at 980k characters of base64; a FIXED size and quality cannot promise that,
+// because how well a photo compresses depends on the picture. Dense foliage -
+// exactly what this app photographs - is the worst case for JPEG and used to
+// sail past the cap, which the grower saw as "too large" on every try.
+//
+// So: render, measure, and step down until it genuinely fits.
+const MAX_UPLOAD_CHARS = 700_000;  // server allows 980k - leave real headroom
+const MAX_THUMB_CHARS = 70_000;    // server allows 80k
+// Progressively smaller/softer renders. The first that fits wins.
+const STEPS = [[1600, 0.82], [1400, 0.75], [1200, 0.7], [1000, 0.62], [800, 0.55], [640, 0.5]];
+const THUMB_STEPS = [[320, 0.7], [240, 0.6], [180, 0.5]];
+
 export async function fileToDataUrls(file) {
   const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" })
     .catch(() => createImageBitmap(file))
     .catch(() => null);
-  if (!bitmap) throw new Error("Could not read that image.");
-  const scale = (maxEdge, quality) => {
+  if (!bitmap) throw new Error("Could not read that image. Try a different photo.");
+
+  const render = (maxEdge, quality) => {
     const ratio = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
     const w = Math.max(1, Math.round(bitmap.width * ratio));
     const h = Math.max(1, Math.round(bitmap.height * ratio));
@@ -24,14 +35,31 @@ export async function fileToDataUrls(file) {
     canvas.getContext("2d").drawImage(bitmap, 0, 0, w, h);
     return canvas.toDataURL("image/jpeg", quality);
   };
-  const result = { data: scale(1600, 0.82), thumb: scale(320, 0.7) };
-  bitmap.close?.();
-  return result;
+  const fit = (steps, limit) => {
+    let out = "";
+    for (const [edge, q] of steps) {
+      out = render(edge, q);
+      if (out.length <= limit) return out;
+    }
+    return out; // smallest attempt, even if still over
+  };
+
+  try {
+    const data = fit(STEPS, MAX_UPLOAD_CHARS);
+    if (data.length > MAX_UPLOAD_CHARS) {
+      throw new Error("That photo could not be compressed enough to upload. Try a cropped version.");
+    }
+    const thumb = fit(THUMB_STEPS, MAX_THUMB_CHARS);
+    return { data, thumb };
+  } finally {
+    bitmap.close?.();
+  }
 }
 
 export function Viewer({ growId, photo, onClose, onDeleted }) {
   const [full, setFull] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [saveState, setSaveState] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +68,20 @@ export function Viewer({ growId, photo, onClose, onDeleted }) {
       .catch(() => { if (!cancelled) setFull(null); });
     return () => { cancelled = true; };
   }, [growId, photo.id]);
+
+  // Shots taken inside the app never touched the camera roll, so they get a
+  // one-tap way in. Must run straight off the tap: the OS only opens its save
+  // sheet during a user gesture.
+  async function saveToRoll() {
+    if (!full || saveState === "saving") return;
+    setSaveState("saving");
+    try {
+      const result = await savePhotoToDevice(full, `grow-${photo.date || "photo"}.jpg`);
+      setSaveState(result === "cancelled" ? "" : "saved");
+    } catch {
+      setSaveState("error");
+    }
+  }
 
   async function remove() {
     if (busy) return;
@@ -81,6 +123,25 @@ export function Viewer({ growId, photo, onClose, onDeleted }) {
           <Trash2 size={13} strokeWidth={2} />
           {busy ? "Deleting…" : "Delete"}
         </button>
+        {photo.fromCamera && (
+          <button
+            type="button"
+            onClick={saveToRoll}
+            disabled={!full || saveState === "saving"}
+            style={{
+              display: "flex", alignItems: "center", gap: 6, padding: "9px 14px",
+              borderRadius: 10, background: "rgba(255,255,255,0.12)",
+              border: "1px solid rgba(255,255,255,0.25)", color: "white",
+              fontFamily: UI, fontSize: 12, cursor: full ? "pointer" : "default",
+              opacity: full ? 1 : 0.5,
+            }}>
+            <Download size={13} strokeWidth={2} />
+            {saveState === "saving" ? "Saving…"
+              : saveState === "saved" ? "Saved"
+              : saveState === "error" ? "Try again"
+              : "Save to Photos"}
+          </button>
+        )}
         <button
           type="button"
           onClick={onClose}
@@ -115,21 +176,21 @@ export function Viewer({ growId, photo, onClose, onDeleted }) {
 // labeled with the plant's name.
 export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
   const plantName = (id) => (plants.find((p) => p.id === id)?.name || "").trim();
-  const inputRef = useRef(null);
+  const cameraRef = useRef(null);
+  const libraryRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [viewing, setViewing] = useState(null);
   useEffect(() => { setViewing(null); setError(""); }, [date, growId]);
 
-  async function onPick(e) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+  // fromCamera is recorded with the photo: a shot taken here is not in the
+  // camera roll yet, so its viewer offers a one-tap Save to Photos.
+  async function upload(file, fromCamera) {
     setBusy(true);
     setError("");
     try {
       const { data, thumb } = await fileToDataUrls(file);
-      await api.createJournalPhoto(growId, { date: ymd(date), data, thumb });
+      await api.createJournalPhoto(growId, { date: ymd(date), data, thumb, fromCamera });
       tapHaptic();
       window.dispatchEvent(new CustomEvent("journal-mutated"));
     } catch (err) {
@@ -137,6 +198,14 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
     } finally {
       setBusy(false);
     }
+  }
+
+  function onPick(fromCamera) {
+    return (e) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (file) upload(file, fromCamera);
+    };
   }
 
   return (
@@ -187,32 +256,61 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
         </div>
       )}
 
-      {/* The journal's add action: put a photo on this day's page. */}
-      <button
-        type="button"
-        className="touch-target"
-        onClick={() => { if (!busy) { tapHaptic(); inputRef.current?.click(); } }}
-        disabled={busy}
-        style={{
-          width: "100%", padding: "13px 14px", borderRadius: 12,
-          background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.35)",
-          color: "#fbbf24", fontFamily: UI, fontSize: 12.5, fontWeight: 700,
-          letterSpacing: 0.4, cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1,
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-        }}>
-        <Camera size={15} strokeWidth={2} />
-        {busy ? "Adding photo…" : "Add a photo to this day"}
-      </button>
+      {/* The journal's add actions: shoot one now, or pick one you already
+          have. Separate buttons so the app knows which shots are not yet in
+          the camera roll. */}
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="button"
+          className="touch-target"
+          onClick={() => { if (!busy) { tapHaptic(); cameraRef.current?.click(); } }}
+          disabled={busy}
+          style={{
+            flex: 1, padding: "13px 12px", borderRadius: 12,
+            background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.4)",
+            color: "#fbbf24", fontFamily: UI, fontSize: 12.5, fontWeight: 700,
+            letterSpacing: 0.3, cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+          }}>
+          <Camera size={15} strokeWidth={2} />
+          {busy ? "Adding…" : "Take photo"}
+        </button>
+        <button
+          type="button"
+          className="touch-target"
+          onClick={() => { if (!busy) { tapHaptic(); libraryRef.current?.click(); } }}
+          disabled={busy}
+          style={{
+            flex: 1, padding: "13px 12px", borderRadius: 12,
+            background: "var(--c-surface-1)", border: "1px solid var(--c-border-strong)",
+            color: "var(--c-text-dim)", fontFamily: UI, fontSize: 12.5, fontWeight: 650,
+            letterSpacing: 0.3, cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+          }}>
+          <Images size={15} strokeWidth={2} />
+          Choose photo
+        </button>
+      </div>
       {error && (
         <div style={{ fontFamily: UI, fontSize: 11.5, color: "var(--c-danger-soft)", textAlign: "center", marginTop: 7, lineHeight: 1.5 }}>
           {error}
         </div>
       )}
       <input
-        ref={inputRef}
+        ref={cameraRef}
         type="file"
         accept="image/*"
-        onChange={onPick}
+        capture="environment"
+        onChange={onPick(true)}
+        style={{ display: "none" }}
+        aria-hidden="true"
+        tabIndex={-1}
+      />
+      <input
+        ref={libraryRef}
+        type="file"
+        accept="image/*"
+        onChange={onPick(false)}
         style={{ display: "none" }}
         aria-hidden="true"
         tabIndex={-1}

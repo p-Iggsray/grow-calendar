@@ -25,13 +25,15 @@ export async function ensureJournalPhotosSchema(env) {
       grow_id    TEXT NOT NULL,
       date       TEXT NOT NULL,
       plant_id   TEXT,
+      from_camera INTEGER NOT NULL DEFAULT 0,
       data       TEXT NOT NULL,
       thumb      TEXT NOT NULL,
       created_at TEXT NOT NULL
     )
   `).run();
-  // Tables created before plant photos existed self-heal the column.
+  // Tables created before these columns existed self-heal them.
   try { await env.DB.prepare("ALTER TABLE journal_photos ADD COLUMN plant_id TEXT").run(); } catch { /* exists */ }
+  try { await env.DB.prepare("ALTER TABLE journal_photos ADD COLUMN from_camera INTEGER NOT NULL DEFAULT 0").run(); } catch { /* exists */ }
   await env.DB.prepare(
     "CREATE INDEX IF NOT EXISTS idx_journal_photos_day ON journal_photos (grow_id, date)"
   ).run();
@@ -52,7 +54,7 @@ export function validatePhotoInput(body) {
     return { ok: false, message: "data must be a base64 image data URL (jpeg, png, or webp)" };
   }
   if (body.data.length > MAX_DATA_CHARS) {
-    return { ok: false, message: "photo is too large - try again (it should compress automatically)" };
+    return { ok: false, message: "that photo is too large even after compressing - try a cropped version" };
   }
   if (typeof body.thumb !== "string" || !DATA_URL_RE.test(body.thumb)) {
     return { ok: false, message: "thumb must be a base64 image data URL" };
@@ -64,6 +66,9 @@ export function validatePhotoInput(body) {
     if (typeof body.plantId !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(body.plantId)) {
       return { ok: false, message: "invalid plantId" };
     }
+  }
+  if (body.fromCamera !== undefined && typeof body.fromCamera !== "boolean") {
+    return { ok: false, message: "fromCamera must be true or false" };
   }
   return { ok: true };
 }
@@ -97,15 +102,18 @@ export async function createJournalPhoto(request, env, user, growId) {
   if ((growRow?.n ?? 0) >= MAX_PER_GROW) return error(400, "photo limit reached for this grow");
 
   const id = newPhotoId();
+  // A shot taken in the app is not in the phone's camera roll yet; the viewer
+  // uses this to offer a one-tap save.
+  const fromCamera = p.data.fromCamera === true ? 1 : 0;
   try {
     await env.DB.prepare(
-      "INSERT INTO journal_photos (id, user_id, grow_id, date, plant_id, data, thumb, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-    ).bind(id, user.id, growId, p.data.date, plantId, p.data.data, p.data.thumb, nowIso()).run();
+      "INSERT INTO journal_photos (id, user_id, grow_id, date, plant_id, from_camera, data, thumb, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    ).bind(id, user.id, growId, p.data.date, plantId, fromCamera, p.data.data, p.data.thumb, nowIso()).run();
   } catch (err) {
     logError("photo-create-failed", { message: String(err?.message) });
     return error(500, "could not save the photo");
   }
-  return json({ photo: { id, date: p.data.date, thumb: p.data.thumb, plantId } });
+  return json({ photo: { id, date: p.data.date, thumb: p.data.thumb, plantId, fromCamera: fromCamera === 1 } });
 }
 
 // GET /api/grows/:id/photos/:photoId - the full-size image, fetched only when
@@ -138,9 +146,12 @@ export async function deleteJournalPhoto(env, user, growId, photoId) {
 export async function photosForDay(env, userId, growId, date) {
   await ensureJournalPhotosSchema(env);
   const res = await env.DB.prepare(
-    "SELECT id, thumb, plant_id FROM journal_photos WHERE user_id = ? AND grow_id = ? AND date = ? ORDER BY created_at"
+    "SELECT id, date, thumb, plant_id, from_camera FROM journal_photos WHERE user_id = ? AND grow_id = ? AND date = ? ORDER BY created_at"
   ).bind(userId, growId, date).all();
-  return (res.results ?? []).map(r => ({ id: r.id, thumb: r.thumb, plantId: r.plant_id ?? null }));
+  return (res.results ?? []).map(r => ({
+    id: r.id, date: r.date, thumb: r.thumb,
+    plantId: r.plant_id ?? null, fromCamera: r.from_camera === 1,
+  }));
 }
 
 // GET /api/grows/:id/plants/:plantId/photos - one plant's photo timeline,
@@ -150,9 +161,11 @@ export async function listPlantPhotos(env, user, growId, plantId) {
   if (!row) return error(404, "grow not found");
   await ensureJournalPhotosSchema(env);
   const res = await env.DB.prepare(
-    "SELECT id, date, thumb FROM journal_photos WHERE user_id = ? AND grow_id = ? AND plant_id = ? ORDER BY date DESC, created_at DESC"
+    "SELECT id, date, thumb, from_camera FROM journal_photos WHERE user_id = ? AND grow_id = ? AND plant_id = ? ORDER BY date DESC, created_at DESC"
   ).bind(user.id, growId, plantId).all();
-  return json({ photos: (res.results ?? []).map(r => ({ id: r.id, date: r.date, thumb: r.thumb })) });
+  return json({ photos: (res.results ?? []).map(r => ({
+    id: r.id, date: r.date, thumb: r.thumb, fromCamera: r.from_camera === 1,
+  })) });
 }
 
 // date -> count map for a month (journal month index + timeline chips).
