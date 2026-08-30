@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { ymd } from "../../lib/api.js";
+import { useEffect, useState } from "react";
+import { api, ymd } from "../../lib/api.js";
 import { Label, Input, RadioGroup, NumStepper, MONO } from "../SetupWizard/styleHelpers.jsx";
 import { STAGE_OPTIONS } from "./constants.js";
+import ChoiceField from "../ChoiceField.jsx";
 
 const BLANK = { name: "", type: "hybrid", photo: true, flowerWeeks: 9, potSize: 0, stage: "seedling" };
 
@@ -21,6 +22,15 @@ export default function AddPlantSheet({ onSave, onCancel, saving, initial, saveL
   const isNew = !initial;
   const [f, setF] = useState(() => ({ ...BLANK, ...(initial || {}), potSize: initial?.potSize ?? 0 }));
   const [stageStartDate, setStageStartDate] = useState(() => ymd(new Date()));
+  // Strains other growers have logged, so a name is usually one tap.
+  const [catalog, setCatalog] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    api.getStrains()
+      .then((list) => { if (alive) setCatalog(Array.isArray(list) ? list : []); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
   const up = (k, v) => setF((prev) => ({ ...prev, [k]: v }));
   const disabled = saving || !f.name.trim();
 
@@ -33,7 +43,19 @@ export default function AddPlantSheet({ onSave, onCancel, saving, initial, saveL
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div><Label>Strain name</Label><Input value={f.name} onChange={(v) => up("name", v)} placeholder="e.g. Blue Dream" /></div>
+      <div>
+        <Label>Strain name</Label>
+        <ChoiceField
+          value={f.name}
+          onChange={(v) => up("name", v)}
+          presets={catalog.map((c) => c?.name).filter(Boolean)}
+          fieldKey="strain-name"
+          placeholder="Choose or add a strain"
+          searchLabel="Search strains"
+          customLabel="Add a new strain…"
+          mode="sheet"
+        />
+      </div>
       {isNew && (
         <>
           <div>

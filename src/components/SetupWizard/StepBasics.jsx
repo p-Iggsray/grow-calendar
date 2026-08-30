@@ -1,11 +1,21 @@
-import { Label, Input, RadioGroup, NumStepper } from "./styleHelpers.jsx";
+import { Label, RadioGroup, NumStepper } from "./styleHelpers.jsx";
+import ChoiceField from "../ChoiceField.jsx";
+import { SPACE_NAMES } from "../../lib/choices.js";
 
 export function StepBasics({ survey, update }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
         <Label>Environment name (optional)</Label>
-        <Input value={survey.growName} onChange={v => update("growName", v)} placeholder="e.g. Summer 2026 Outdoor" />
+        <ChoiceField
+          value={survey.growName}
+          onChange={v => update("growName", v)}
+          presets={SPACE_NAMES}
+          fieldKey="space-name"
+          placeholder="Choose or type a name"
+          customLabel="Type a name…"
+          clearable={false}
+        />
         <div style={{ fontSize: 11, color: "var(--c-text-ghost)", marginTop: 5, lineHeight: 1.6 }}>
           Leave it blank and we name it after your first strain.
         </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api } from "../../lib/api.js";
-import { MONO, SERIF, Label, Input, RadioGroup } from "./styleHelpers.jsx";
+import { MONO, SERIF, Label, RadioGroup } from "./styleHelpers.jsx";
+import PlacePicker from "../PlacePicker.jsx";
 
 export function StepSetup({ survey, update }) {
   const [geoStatus, setGeoStatus] = useState(""); // "" | "locating" | "done" | "nolabel" | "error"
@@ -31,10 +32,16 @@ export function StepSetup({ survey, update }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
         <Label>Location / region</Label>
-        <Input
+        {/* Pick a real place: its coordinates come with it, so weather and
+            frost dates work without a second lookup. */}
+        <PlacePicker
           value={survey.location}
-          onChange={v => { update("location", v); update("lat", null); update("lon", null); }}
-          placeholder="e.g. City, State or Country"
+          onPick={({ label, lat, lon }) => {
+            update("location", label);
+            update("lat", lat);
+            update("lon", lon);
+            setGeoStatus("done");
+          }}
         />
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
           <button

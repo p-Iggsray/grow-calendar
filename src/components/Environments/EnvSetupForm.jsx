@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Label, Input, RadioGroup, NumStepper, MONO } from "../SetupWizard/styleHelpers.jsx";
+import { Label, RadioGroup, NumStepper, MONO } from "../SetupWizard/styleHelpers.jsx";
+import ChoiceField from "../ChoiceField.jsx";
+import { SPACE_SIZES, LIGHT_SCHEDULES, LIGHT_TYPES, LIGHT_WATTS } from "../../lib/choices.js";
 
 // What a grow environment IS: the kind of space, its size and capacity, the
 // lighting over it, and what the plants sit in. Saved into the environment's
@@ -64,7 +66,14 @@ export default function EnvSetupForm({ survey, onSave, onCancel, saving }) {
 
       <div>
         <Label>Size</Label>
-        <Input value={f.envSize} onChange={(v) => up("envSize", v)} placeholder={indoorish ? "e.g. 4x4 tent" : "e.g. 20ft raised bed"} />
+        <ChoiceField
+          value={f.envSize}
+          onChange={(v) => up("envSize", v)}
+          presets={SPACE_SIZES}
+          fieldKey="env-size"
+          placeholder={indoorish ? "Choose a tent size" : "Choose a plot size"}
+          searchLabel="Search sizes"
+        />
       </div>
 
       <div>
@@ -75,15 +84,35 @@ export default function EnvSetupForm({ survey, onSave, onCancel, saving }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div>
           <Label>Light schedule</Label>
-          <Input value={f.lightSchedule} onChange={(v) => up("lightSchedule", v)} placeholder={indoorish ? "e.g. 18/6" : "Sunlight"} />
+          <ChoiceField
+            value={f.lightSchedule}
+            onChange={(v) => up("lightSchedule", v)}
+            presets={LIGHT_SCHEDULES}
+            fieldKey="light-schedule"
+            placeholder="Choose a schedule"
+          />
         </div>
         <div>
           <Label>Light type</Label>
-          <Input value={f.lightType} onChange={(v) => up("lightType", v)} placeholder="e.g. LED quantum board" />
+          <ChoiceField
+            value={f.lightType}
+            onChange={(v) => up("lightType", v)}
+            presets={LIGHT_TYPES}
+            fieldKey="light-type"
+            placeholder="Choose a light"
+            searchLabel="Search lights"
+          />
         </div>
         <div>
           <Label>Wattage</Label>
-          <Input type="number" value={String(f.lightWatts ?? "")} onChange={(v) => up("lightWatts", v)} placeholder="e.g. 240" />
+          <ChoiceField
+            value={String(f.lightWatts ?? "")}
+            onChange={(v) => up("lightWatts", v)}
+            presets={LIGHT_WATTS}
+            fieldKey="light-watts"
+            placeholder="Choose the wattage"
+            customLabel="Another wattage…"
+          />
         </div>
       </div>
 

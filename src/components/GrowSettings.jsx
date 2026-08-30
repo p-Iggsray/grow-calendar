@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { Check, Trash2 } from "lucide-react";
 import { api } from "../lib/api.js";
-import { Label, Input, RadioGroup, MONO, SERIF } from "./SetupWizard/styleHelpers.jsx";
+import { Label, RadioGroup, MONO, SERIF } from "./SetupWizard/styleHelpers.jsx";
 import DeleteGrowConfirm from "./DeleteGrowConfirm.jsx";
 import ScreenHeader from "./ScreenHeader.jsx";
+import ChoiceField from "./ChoiceField.jsx";
+import { SPACE_NAMES } from "../lib/choices.js";
 import { Skeleton } from "./Skeleton.jsx";
 
 // Full timeline, grouped for scanning. Each row edits one config date key
@@ -186,7 +188,15 @@ export default function GrowSettings({ growId, onClose, onSaved, onDeleted }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 24 }}>
         <div>
           <Label>Environment name</Label>
-          <Input value={name} onChange={setName} placeholder="e.g. Summer 2026 Outdoor" />
+          <ChoiceField
+            value={name}
+            onChange={setName}
+            presets={SPACE_NAMES}
+            fieldKey="space-name"
+            placeholder="Choose or type a name"
+            customLabel="Type a name…"
+            clearable={false}
+          />
         </div>
         <div>
           <Label>Status</Label>

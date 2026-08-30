@@ -2,6 +2,8 @@ import { useState } from "react";
 import { ymd } from "../../lib/api.js";
 import { Label, Input, RadioGroup, MONO, SERIF } from "../SetupWizard/styleHelpers.jsx";
 import { HEALTH_OPTIONS, FORM_KINDS } from "./constants.js";
+import ChoiceField from "../ChoiceField.jsx";
+import { NUTRIENT_PRODUCTS, NUTRIENT_DOSES, TRAINING_ACTIONS } from "../../lib/choices.js";
 
 function btn(kind, disabled) {
   const base = { flex: 1, padding: "12px 14px", borderRadius: 10, fontFamily: MONO, fontSize: 12, letterSpacing: 1, cursor: disabled ? "default" : "pointer" };
@@ -78,13 +80,42 @@ export default function LogEntryForm({ initial, onSave, onCancel, saving }) {
 
       {kind === "nutrients" && (
         <>
-          <div><Label>Product / mix</Label><Input value={d.mix ?? ""} onChange={(v) => sd("mix", v)} placeholder="e.g. Fox Farm Trio" /></div>
-          <div><Label>Dose</Label><Input value={d.dose ?? ""} onChange={(v) => sd("dose", v)} placeholder="e.g. half strength, 5ml/gal" /></div>
+          <div>
+            <Label>Product / mix</Label>
+            <ChoiceField
+              value={d.mix ?? ""}
+              onChange={(v) => sd("mix", v)}
+              presets={NUTRIENT_PRODUCTS}
+              fieldKey="nutrient-mix"
+              placeholder="Choose a nutrient line"
+              searchLabel="Search nutrients"
+            />
+          </div>
+          <div>
+            <Label>Dose</Label>
+            <ChoiceField
+              value={d.dose ?? ""}
+              onChange={(v) => sd("dose", v)}
+              presets={NUTRIENT_DOSES}
+              fieldKey="nutrient-dose"
+              placeholder="Choose a strength"
+            />
+          </div>
         </>
       )}
 
       {kind === "training" && (
-        <div><Label>Action</Label><Input value={d.action ?? ""} onChange={(v) => sd("action", v)} placeholder="LST, topped, defoliated…" /></div>
+        <div>
+          <Label>Action</Label>
+          <ChoiceField
+            value={d.action ?? ""}
+            onChange={(v) => sd("action", v)}
+            presets={TRAINING_ACTIONS}
+            fieldKey="training-action"
+            placeholder="Choose what you did"
+            searchLabel="Search training"
+          />
+        </div>
       )}
 
       {kind === "environment" && (

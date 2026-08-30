@@ -15,7 +15,7 @@ import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, patchGrowLifecyc
 import { listGrowEvents, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./events.js";
 import { createJournalPhoto, getJournalPhoto, deleteJournalPhoto, listPlantPhotos } from "./photos.js";
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
-import { getReverseGeocode } from "./geocode.js";
+import { getReverseGeocode, getGeocodeSearch } from "./geocode.js";
 import { listStrains } from "./strains.js";
 import { addPlant, patchPlant, deletePlant, listPlantLog, addPlantLogEntry, patchPlantLogEntry, deletePlantLogEntry, plantLogSummary, dailyLogForPlant } from "./plants.js";
 import { getGrowReport } from "./report.js";
@@ -156,6 +156,7 @@ async function authenticatedRoute(request, env, path, method, user) {
 
   if (path === "/api/stats"         && method === "GET")  return getStats(env, user, await resolveGrowId(env, user, new URL(request.url)));
   if (path === "/api/geocode/reverse" && method === "GET") return getReverseGeocode(request, env, user);
+  if (path === "/api/geocode/search"  && method === "GET") return getGeocodeSearch(request, env, user);
   if (path === "/api/strains"         && method === "GET") return listStrains(env, user);
 
   if (path === "/api/grows" && method === "GET")  return listGrows(env, user);

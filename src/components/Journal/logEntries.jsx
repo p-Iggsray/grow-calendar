@@ -1,4 +1,6 @@
 import { X, Plus } from "lucide-react";
+import ChoiceField from "../ChoiceField.jsx";
+import { TRAINING_ACTIONS } from "../../lib/choices.js";
 
 // ── Log tab helpers ────────────────────────────────────────────────────────
 
@@ -102,19 +104,43 @@ export function sumWater(arr) {
   return total > 0 ? String(Math.round(total * 100) / 100) : "";
 }
 
-export function WaterEntry({ entry, onChangeField, onRemove, hidePlant }) {
+const _selectInput = {
+  ..._entryInput,
+  cursor: "pointer",
+  WebkitAppearance: "auto",
+  MozAppearance: "auto",
+  appearance: "auto",
+};
+
+
+// The plants of this environment as a dropdown. A row saved before the plant
+// existed (or typed by hand long ago) keeps its value as an extra option, so
+// switching to a picker never silently erases what was recorded.
+export function PlantSelect({ value, onChange, plants = [] }) {
+  const names = plants.map((p) => (p?.name || "").trim()).filter(Boolean);
+  const current = String(value ?? "").trim();
+  const options = current && !names.some((n) => n.toLowerCase() === current.toLowerCase())
+    ? [...names, current]
+    : names;
+  return (
+    <select
+      value={current}
+      onChange={(e) => onChange(e.target.value)}
+      style={_selectInput}
+      aria-label="Plant">
+      <option value="">All plants</option>
+      {options.map((n) => <option key={n} value={n}>{n}</option>)}
+    </select>
+  );
+}
+
+export function WaterEntry({ entry, onChangeField, onRemove, hidePlant, plants = [] }) {
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "flex-end", marginBottom: 8 }}>
       {!hidePlant && (
       <label style={{ flex: 2, display: "flex", flexDirection: "column" }}>
         <span style={_entryLabel}>Plant</span>
-        <input
-          type="text"
-          value={entry.plant ?? ""}
-          onChange={e => onChangeField("plant", e.target.value)}
-          placeholder="Plant 1"
-          style={_entryInput}
-        />
+        <PlantSelect value={entry.plant} onChange={(v) => onChangeField("plant", v)} plants={plants} />
       </label>
       )}
       <label style={{ flex: 1, display: "flex", flexDirection: "column" }}>
@@ -143,7 +169,7 @@ export function WaterEntry({ entry, onChangeField, onRemove, hidePlant }) {
   );
 }
 
-export function TrainingEntry({ entry, onChangeField, onRemove, hidePlant }) {
+export function TrainingEntry({ entry, onChangeField, onRemove, hidePlant, plants = [] }) {
   return (
     <div style={_entryCard}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -156,12 +182,19 @@ export function TrainingEntry({ entry, onChangeField, onRemove, hidePlant }) {
         {!hidePlant && (
         <div>
           <span style={_entryLabel}>Plant</span>
-          <input type="text" value={entry.plant} onChange={e => onChangeField("plant", e.target.value)} placeholder="Plant 1" style={_entryInput} />
+          <PlantSelect value={entry.plant} onChange={(v) => onChangeField("plant", v)} plants={plants} />
         </div>
         )}
         <div>
           <span style={_entryLabel}>Action</span>
-          <input type="text" value={entry.action} onChange={e => onChangeField("action", e.target.value)} placeholder="LST, topped, defoliated…" style={_entryInput} />
+          <ChoiceField
+            value={entry.action ?? ""}
+            onChange={(v) => onChangeField("action", v)}
+            presets={TRAINING_ACTIONS}
+            fieldKey="training-action"
+            placeholder="Choose what you did"
+            searchLabel="Search training"
+          />
         </div>
       </div>
     </div>
@@ -176,15 +209,7 @@ const TRICHOME_STAGES = [
   { value: "mixed",  label: "Mixed Cloudy + Amber" },
   { value: "amber",  label: "Mostly Amber (max CBN)" },
 ];
-const _selectInput = {
-  ..._entryInput,
-  cursor: "pointer",
-  WebkitAppearance: "auto",
-  MozAppearance: "auto",
-  appearance: "auto",
-};
-
-export function PlantHealthEntry({ entry, onChangeField, onRemove, hidePlant }) {
+export function PlantHealthEntry({ entry, onChangeField, onRemove, hidePlant, plants = [] }) {
   return (
     <div style={_entryCard}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -197,7 +222,7 @@ export function PlantHealthEntry({ entry, onChangeField, onRemove, hidePlant }) 
         {!hidePlant && (
         <div>
           <span style={_entryLabel}>Plant</span>
-          <input type="text" value={entry.plant} onChange={e => onChangeField("plant", e.target.value)} placeholder="Plant 1" style={_entryInput} />
+          <PlantSelect value={entry.plant} onChange={(v) => onChangeField("plant", v)} plants={plants} />
         </div>
         )}
         <div>

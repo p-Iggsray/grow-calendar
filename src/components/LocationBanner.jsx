@@ -2,6 +2,7 @@ import { useState } from "react";
 import { MapPin, LocateFixed, X } from "lucide-react";
 import { api } from "../lib/api.js";
 import { tapHaptic } from "../lib/haptics.js";
+import PlacePicker from "./PlacePicker.jsx";
 
 const UI = "var(--font-ui)";
 
@@ -9,14 +10,13 @@ const dismissKey = (growId) => `locBannerDismissed:${growId}`;
 
 // Front-page nudge shown when the active grow has no location: one tap grants
 // location services and saves the coordinates (plus a friendly place label),
-// or the grower can type a city instead. Dismissible per grow.
+// or the grower searches for their city and picks it. Dismissible per grow.
 export default function LocationBanner({ growId, onSaved }) {
   const [dismissed, setDismissed] = useState(() => {
     try { return localStorage.getItem(dismissKey(growId)) === "1"; } catch { return false; }
   });
   const [busy, setBusy] = useState(false);
   const [manual, setManual] = useState(false);
-  const [place, setPlace] = useState("");
   const [error, setError] = useState("");
 
   if (dismissed) return null;
@@ -67,13 +67,11 @@ export default function LocationBanner({ growId, onSaved }) {
     );
   }
 
-  async function saveTyped() {
-    const text = place.trim();
-    if (text.length < 2) { setError("Type a city or town name."); return; }
+  async function savePlace({ label, lat, lon }) {
     setBusy(true);
     setError("");
     try {
-      await saveLocation({ location: text });
+      await saveLocation({ location: label, lat, lon });
     } catch (err) {
       setError(err?.message || "Could not save the location. Try again.");
       setBusy(false);
@@ -106,33 +104,10 @@ export default function LocationBanner({ growId, onSaved }) {
           )}
 
           {manual ? (
-            <div style={{ display: "flex", gap: 7, marginTop: 9 }}>
-              <input
-                type="text"
-                value={place}
-                onChange={(e) => setPlace(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") saveTyped(); }}
-                placeholder="City or town"
-                maxLength={120}
-                autoFocus
-                style={{
-                  flex: 1, minWidth: 0, padding: "9px 12px", borderRadius: 10,
-                  background: "rgba(0,0,0,0.2)", border: "1px solid var(--c-border-strong)",
-                  color: "var(--c-text)", fontFamily: UI, fontSize: 14, outline: "none",
-                }}
-              />
-              <button
-                type="button"
-                onClick={saveTyped}
-                disabled={busy}
-                style={{
-                  flexShrink: 0, padding: "9px 14px", borderRadius: 10,
-                  background: "rgba(34,197,94,0.16)", border: "1px solid rgba(34,197,94,0.45)",
-                  color: "var(--c-accent)", fontFamily: UI, fontSize: 12.5, fontWeight: 700,
-                  cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1,
-                }}>
-                {busy ? "Saving…" : "Save"}
-              </button>
+            <div style={{ marginTop: 9 }}>
+              {/* Search real places and pick one: its coordinates come back
+                  with it, so weather works straight away. */}
+              <PlacePicker autoFocus onPick={savePlace} />
             </div>
           ) : (
             <div style={{ display: "flex", gap: 7, marginTop: 9, flexWrap: "wrap" }}>
@@ -160,7 +135,7 @@ export default function LocationBanner({ growId, onSaved }) {
                   color: "var(--c-text-dim)", fontFamily: UI, fontSize: 12.5,
                   cursor: "pointer",
                 }}>
-                Type a city
+                Search for my city
               </button>
             </div>
           )}

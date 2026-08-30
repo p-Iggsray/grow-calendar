@@ -7,26 +7,17 @@ import {
   WaterEntry, TrainingEntry, PlantHealthEntry,
 } from "./logEntries.jsx";
 import EnvSensorCard from "./EnvSensorCard.jsx";
+import ChoiceField from "../ChoiceField.jsx";
+import { NUTRIENT_PRODUCTS } from "../../lib/choices.js";
 
 // The structured daily log, edited in place on the journal page: environment
 // numbers (or the controller-import rollup), per-plant watering & nutrients,
 // training, and health checks. Ported from the removed day-tasks overlay -
 // this is now the ONLY writing surface for the daily log.
 
-const fieldLabelStyle = {
-  display: "flex", flexDirection: "column", gap: 5,
-};
 const fieldNameStyle = {
   fontFamily: "var(--font-ui)", fontSize: 11,
   letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase",
-};
-const numInputStyle = {
-  background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
-  border: "1px solid var(--c-border-strong)", borderRadius: 8,
-  padding: "10px 12px", fontSize: 16, outline: "none",
-  fontFamily: "var(--font-ui)",
-  WebkitAppearance: "none", MozAppearance: "textfield",
-  width: "100%", boxSizing: "border-box",
 };
 
 export default function DayLogEditor({ date, growId, plants = [], environment = "outdoor", active = true }) {
@@ -130,6 +121,7 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
               key={i}
               entry={w}
               hidePlant={scoped}
+              plants={logPlants}
               onChangeField={(k, v) => updateWater(i, k, v)}
               onRemove={() => removeWater(i)}
             />
@@ -145,17 +137,15 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
           </div>
         )}
         <div style={{ marginTop: 14 }}>
-          <label style={fieldLabelStyle}>
-            <span style={fieldNameStyle}>Feed / Nutrients</span>
-            <input
-              type="text"
-              value={logEntry.feed ?? ""}
-              onChange={e => setLogField("feed", e.target.value)}
-              placeholder="Nutrient mix, dose, supplements…"
-              maxLength={500}
-              style={numInputStyle}
-            />
-          </label>
+          <span style={{ ...fieldNameStyle, display: "block", marginBottom: 5 }}>Feed / Nutrients</span>
+          <ChoiceField
+            value={logEntry.feed ?? ""}
+            onChange={(v) => setLogField("feed", v)}
+            presets={NUTRIENT_PRODUCTS}
+            fieldKey="nutrient-mix"
+            placeholder="Choose what you fed"
+            searchLabel="Search nutrients"
+          />
         </div>
       </LogSection>
 
@@ -168,6 +158,7 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
               key={i}
               entry={t}
               hidePlant={scoped}
+              plants={logPlants}
               onChangeField={(k, v) => updateTraining(i, k, v)}
               onRemove={() => removeTraining(i)}
             />
@@ -184,6 +175,7 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
               key={i}
               entry={h}
               hidePlant={scoped}
+              plants={logPlants}
               onChangeField={(k, v) => updateHealth(i, k, v)}
               onRemove={() => removeHealth(i)}
             />

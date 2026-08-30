@@ -176,6 +176,7 @@ export const api = {
   importEnv: (id, readings) =>
     request(`/api/grows/${id}/env/import`, { method: "POST", body: JSON.stringify({ readings }) }),
   reverseGeocode: (lat, lon) => request(`/api/geocode/reverse?lat=${lat}&lon=${lon}`),
+  searchPlaces: (q) => request(`/api/geocode/search?q=${encodeURIComponent(q)}`),
   getStrains: () => request("/api/strains"),
   getEnvSummary: (id) => request(`/api/grows/${id}/env/summary`),
   getEnvDay: (id, date) => request(`/api/grows/${id}/env/day/${date}`),
