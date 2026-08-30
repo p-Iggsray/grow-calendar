@@ -42,7 +42,7 @@ export default function CuringTracker({ today }) {
   }
 
   return (
-    <PhaseScreen>
+    <PhaseScreen eyebrow="Harvest" title="Curing">
       <Card style={{ borderColor: "rgba(168,85,247,0.3)" }}>
         <Eyebrow color={CURE_ACCENT}>Curing · {CURE_MIN}d min · {CURE_GOOD}d great</Eyebrow>
         <DayHero

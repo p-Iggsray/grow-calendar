@@ -110,6 +110,17 @@ export default function App() {
     if (push) window.history.pushState({ growDay: ymd(date) }, "", `?d=${ymd(date)}`);
   }, []);
 
+  // Leaving the journal for the month grid, from the journal's own back
+  // button. Clears any ?d= deep link so the URL matches what is on screen.
+  const exitJournal = useCallback(() => {
+    setMainView("calendar");
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("d")) {
+      url.searchParams.delete("d");
+      window.history.replaceState(window.history.state, "", url.pathname + url.search);
+    }
+  }, []);
+
   // Back button: leave the journal page for the month grid.
   useEffect(() => {
     function onPop() {
@@ -310,7 +321,6 @@ export default function App() {
                 onOpenAdmin={() => setShowAdmin(true)}
                 onOpenStats={() => setShowStats(true)}
                 onOpenMap={() => setShowMap(true)}
-                onOpenSettings={() => { setSettingsGrowId(activeGrowId); setShowSettings(true); }}
                 theme={theme}
                 setTheme={setTheme}
               />
@@ -358,7 +368,6 @@ export default function App() {
             >
               <TopBar
                 growName={grows.find(g => g.id === activeGrowId)?.displayName}
-                todayPhase={todayPhase}
                 todayStyle={todayStyle}
                 dayNum={todayDayNum}
                 view={mainView}
@@ -386,6 +395,7 @@ export default function App() {
                   growId={activeGrowId}
                   onOpenPlant={openPlantFromJournal}
                   onConfigChanged={reloadPlan}
+                  onExit={exitJournal}
                   plants={survey?.strains ?? []}
                   environment={survey?.environment ?? "outdoor"}
                 />

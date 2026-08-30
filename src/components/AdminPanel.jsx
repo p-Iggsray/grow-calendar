@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { X } from "lucide-react";
 import { api } from "../lib/api.js";
+import ScreenHeader from "./ScreenHeader.jsx";
 import { useAuth } from "../lib/auth.jsx";
 
 export default function AdminPanel({ onClose }) {
@@ -55,37 +56,7 @@ export default function AdminPanel({ onClose }) {
 
   return (
     <div style={{ minHeight: "100vh", fontFamily: "var(--font-ui)", color: "var(--c-text)" }}>
-      {/* Header - safe-area-aware so the X button clears the notch */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 12,
-        padding: "14px 16px",
-        paddingTop: "calc(14px + env(safe-area-inset-top, 0px))",
-        borderBottom: "1px solid var(--c-surface-2)",
-        background: "var(--c-header-bg)",
-      }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 3 }}>
-            Admin
-          </div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>
-            Manage Members
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          className="touch-target"
-          style={{
-            background: "var(--c-border-soft)",
-            border: "1px solid rgba(255,255,255,0.14)",
-            borderRadius: 10, width: 40, height: 40,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", color: "var(--c-text-dim)", flexShrink: 0,
-          }}
-        >
-          <X size={18} strokeWidth={2} />
-        </button>
-      </div>
+      <ScreenHeader eyebrow="Admin" title="Manage Members" onBack={onClose} />
 
       {/* Content */}
       <div style={{ padding: "16px", maxWidth: 560, margin: "0 auto" }}>

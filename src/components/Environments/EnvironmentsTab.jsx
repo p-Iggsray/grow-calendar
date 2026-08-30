@@ -12,6 +12,7 @@ import { MONO, partitionPlants } from "../PlantsTab/constants.js";
 import EnvironmentDetail, { ENV_KIND_LABEL } from "./EnvironmentDetail.jsx";
 import DeleteGrowConfirm from "../DeleteGrowConfirm.jsx";
 import ConfirmModal from "../ConfirmModal.jsx";
+import ScreenHeader from "../ScreenHeader.jsx";
 
 const KIND_ICON = { indoor: Home, outdoor: Trees, greenhouse: Warehouse };
 
@@ -159,30 +160,28 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
 
   return (
     <div>
-      <div style={{
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-        padding: "18px 16px 14px", paddingTop: "calc(18px + env(safe-area-inset-top, 0px))",
-      }}>
-        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>
-          Environments
-        </div>
-        <button
-          type="button"
-          className="touch-target"
-          onClick={handleNew}
-          disabled={creating}
-          style={{
-            display: "flex", alignItems: "center", gap: 5, padding: "9px 16px", borderRadius: 20,
-            background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)",
-            color: creating ? "var(--c-text-ghost)" : "var(--c-accent)",
-            fontFamily: MONO, fontSize: 11, letterSpacing: 0.5,
-            cursor: creating ? "default" : "pointer", opacity: creating ? 0.6 : 1,
-          }}>
-          <Plus size={14} /> {creating ? "…" : "New space"}
-        </button>
-      </div>
+      <ScreenHeader
+        title="Environments"
+        right={(
+          <button
+            type="button"
+            className="touch-target"
+            onClick={handleNew}
+            disabled={creating}
+            style={{
+              display: "flex", alignItems: "center", gap: 5, flexShrink: 0,
+              padding: "9px 15px", borderRadius: 20,
+              background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)",
+              color: creating ? "var(--c-text-ghost)" : "var(--c-accent)",
+              fontFamily: MONO, fontSize: 11.5, letterSpacing: 0.3, fontWeight: 600,
+              cursor: creating ? "default" : "pointer", opacity: creating ? 0.6 : 1,
+            }}>
+            <Plus size={14} /> {creating ? "…" : "New space"}
+          </button>
+        )}
+      />
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "0 16px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "14px 16px 0" }}>
         {grows.length === 0 && (
           <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-ghost)", padding: "40px 16px", textAlign: "center" }}>
             No environments yet. Create your first grow space.

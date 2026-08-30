@@ -1,7 +1,9 @@
 import { useRef, useState } from "react";
-import { ChevronLeft, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { getPhase, PHASES } from "../lib/growData.js";
 import { usePlan } from "../lib/usePlan.jsx";
+import ScreenHeader from "./ScreenHeader.jsx";
+import HeaderMenu from "./HeaderMenu.jsx";
 import { growStrains, distinctStrains, strainShortLabel } from "../lib/growProfile.js";
 
 // SVG coordinate space
@@ -163,38 +165,18 @@ export default function GardenMap({ today, config, onClose }) {
       position: "fixed", inset: 0, zIndex: 50,
       background: "var(--c-bg)",
       display: "flex", flexDirection: "column",
-      paddingTop: "env(safe-area-inset-top, 0px)",
     }}>
-      {/* Header */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 12,
-        padding: "12px 14px",
-        borderBottom: "1px solid var(--c-surface-2)",
-        background: "var(--c-header-bg)",
-        flexShrink: 0,
-      }}>
-        <button type="button" onClick={onClose} style={{
-          background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.12)",
-          borderRadius: 10, padding: "10px 14px", color: "var(--c-text-dim)",
-          cursor: "pointer", minHeight: 44,
-          display: "flex", alignItems: "center", gap: 4,
-        }}>
-          <ChevronLeft size={16} strokeWidth={2} />
-          <span style={{ fontFamily: "var(--font-ui)", fontSize: 13, letterSpacing: 1 }}>Back</span>
-        </button>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 2, color: "var(--c-text-muted)", textTransform: "uppercase" }}>Garden</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "var(--c-text)", letterSpacing: -0.3 }}>Yard Map</div>
-        </div>
-        <button type="button" className="touch-target" onClick={resetPositions} style={{
-          background: "none", border: "none", color: "var(--c-text-muted)",
-          cursor: "pointer", padding: 8, display: "flex", alignItems: "center", gap: 5,
-          fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1,
-        }}>
-          <RotateCcw size={13} strokeWidth={2} />
-          Reset
-        </button>
-      </div>
+      <ScreenHeader
+        eyebrow="Garden"
+        title="Yard Map"
+        onBack={onClose}
+        right={(
+          <HeaderMenu
+            title="Map settings"
+            items={[{ icon: RotateCcw, label: "Reset plant positions", onClick: resetPositions }]}
+          />
+        )}
+      />
 
       {/* SVG map */}
       <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", padding: "16px 14px 8px" }}>

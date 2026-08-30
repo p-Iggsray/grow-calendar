@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Trash2, Archive, Pencil, ArrowRight, BookOpen } from "lucide-react";
+import { Plus, Trash2, Archive, Pencil, ArrowRight, BookOpen } from "lucide-react";
 import { usePlantLog } from "../../lib/usePlantLog.js";
 import { api } from "../../lib/api.js";
 import { dayOfGrow } from "../../lib/journalStats.js";
@@ -13,6 +13,8 @@ import AddPlantSheet from "./AddPlantSheet.jsx";
 import StageTimeline from "./StageTimeline.jsx";
 import PlantPhotos from "./PlantPhotos.jsx";
 import ConfirmModal from "../ConfirmModal.jsx";
+import ScreenHeader from "../ScreenHeader.jsx";
+import HeaderMenu from "../HeaderMenu.jsx";
 import { Skeleton } from "../Skeleton.jsx";
 
 function Meta({ label, value, accent }) {
@@ -110,23 +112,33 @@ export default function PlantDetail({ growId, plant, harvestLabel, today, config
       transition={{ type: "spring", damping: 26, stiffness: 280, restDelta: 0.5 }}
       style={{ position: "fixed", inset: 0, zIndex: 40, background: "var(--c-bg)", overflowY: "auto", paddingBottom: 40 }}
     >
-      <div style={{ padding: 16, paddingTop: "calc(16px + env(safe-area-inset-top, 0px))" }}>
-        <button type="button" className="touch-target" onClick={onClose} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "var(--c-text-muted)", fontFamily: MONO, fontSize: 12, letterSpacing: 1, cursor: "pointer", padding: 0 }}>
-          <ArrowLeft size={16} /> PLANTS
-        </button>
+      <ScreenHeader
+        eyebrow={TYPE_LABEL[plant.type] ?? plant.type}
+        title={plant.name || "Unnamed plant"}
+        onBack={onClose}
+        backLabel="Back to the environment"
+        right={(
+          <HeaderMenu
+            title="Plant settings"
+            items={[
+              { icon: Pencil, label: "Edit plant", detail: "Name, type, flower time, pot size", onClick: () => setEditing(true) },
+              {
+                icon: Archive,
+                label: plant.status === "growing" ? "Archive plant" : "Unarchive plant",
+                detail: plant.status === "growing" ? "Keeps its log, hides it from the list" : null,
+                onClick: () => onArchive(plant),
+              },
+              { icon: Trash2, label: "Delete plant", tone: "destructive", onClick: () => onDelete(plant) },
+            ]}
+          />
+        )}
+      />
 
-        <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-          <div>
-            <div style={{ fontSize: 24, fontWeight: 700, fontFamily: SERIF, color: "var(--c-text)" }}>{plant.name || "Unnamed plant"}</div>
-            <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-muted)", marginTop: 4 }}>
-              {TYPE_LABEL[plant.type] ?? plant.type}{plant.photo === false ? " · Auto" : " · Photo"}{plant.flowerWeeks ? ` · ${plant.flowerWeeks}wk flower` : ""}{plant.potSize ? ` · ${plant.potSize} gal` : ""}
-            </div>
-          </div>
-          {!editing && (
-            <button type="button" className="touch-target" onClick={() => setEditing(true)} aria-label="Edit plant" style={{ display: "flex", alignItems: "center", gap: 5, background: "var(--c-surface-1)", border: "1px solid var(--c-border)", borderRadius: 18, padding: "7px 12px", color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 11, cursor: "pointer", flexShrink: 0 }}>
-              <Pencil size={13} /> Edit
-            </button>
-          )}
+      <div style={{ padding: 16 }}>
+        <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-muted)" }}>
+          {plant.photo === false ? "Auto" : "Photo"}
+          {plant.flowerWeeks ? ` · ${plant.flowerWeeks}wk flower` : ""}
+          {plant.potSize ? ` · ${plant.potSize} gal` : ""}
         </div>
 
         {editing && (
@@ -279,14 +291,6 @@ export default function PlantDetail({ growId, plant, harvestLabel, today, config
           })}
         </div>
 
-        <div style={{ display: "flex", gap: 10, marginTop: 28 }}>
-          <button type="button" onClick={() => onArchive(plant)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 11, borderRadius: 10, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-muted)", fontFamily: MONO, fontSize: 11, letterSpacing: 1, cursor: "pointer" }}>
-            <Archive size={14} /> {plant.status === "growing" ? "Archive" : "Unarchive"}
-          </button>
-          <button type="button" onClick={() => onDelete(plant)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 11, borderRadius: 10, background: "transparent", border: "1px solid rgba(248,113,113,0.3)", color: "var(--c-danger-soft)", fontFamily: MONO, fontSize: 11, letterSpacing: 1, cursor: "pointer" }}>
-            <Trash2 size={14} /> Delete
-          </button>
-        </div>
       </div>
 
       <ConfirmModal

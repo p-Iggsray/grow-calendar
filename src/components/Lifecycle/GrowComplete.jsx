@@ -61,7 +61,7 @@ export default function GrowComplete({ onStartNewGrow }) {
   }
 
   return (
-    <PhaseScreen>
+    <PhaseScreen eyebrow="Harvest" title="Complete">
       <Card style={{ borderColor: "rgba(34,197,94,0.3)", textAlign: "center" }}>
         <div style={{ fontSize: 40, marginBottom: 6 }}>🌿🏆</div>
         <Eyebrow color={DONE_ACCENT}>Grow complete</Eyebrow>

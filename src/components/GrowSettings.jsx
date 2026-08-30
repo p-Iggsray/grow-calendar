@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { X, Check, Trash2 } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 import { api } from "../lib/api.js";
 import { Label, Input, RadioGroup, MONO, SERIF } from "./SetupWizard/styleHelpers.jsx";
 import DeleteGrowConfirm from "./DeleteGrowConfirm.jsx";
+import ScreenHeader from "./ScreenHeader.jsx";
 import { Skeleton } from "./Skeleton.jsx";
 
 // Full timeline, grouped for scanning. Each row edits one config date key
@@ -116,53 +117,42 @@ export default function GrowSettings({ growId, onClose, onSaved, onDeleted }) {
   }
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      paddingTop: "calc(14px + env(safe-area-inset-top, 0px))",
-      paddingLeft: "calc(16px + env(safe-area-inset-left, 0px))",
-      paddingRight: "calc(16px + env(safe-area-inset-right, 0px))",
-      paddingBottom: "calc(40px + env(safe-area-inset-bottom, 0px))",
-    }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
-        <button
-          type="button"
-          className="touch-target"
-          onClick={onClose}
-          aria-label="Close"
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "center",
-            width: 40, height: 40, borderRadius: 10,
-            background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
-            color: "var(--c-text-dim)", cursor: "pointer",
-          }}
-        >
-          <X size={18} strokeWidth={1.8} />
-        </button>
-        <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 3, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>
-          Environment Settings
-        </div>
-        <button
-          type="button"
-          className="touch-target"
-          onClick={handleSave}
-          disabled={saving || loading || Boolean(loadError)}
-          style={{
-            display: "flex", alignItems: "center", gap: 5,
-            padding: "9px 16px", borderRadius: 20,
-            background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.4)",
-            color: (saving || loading) ? "var(--c-text-ghost)" : "var(--c-accent)",
-            fontFamily: MONO, fontSize: 12, letterSpacing: 0.5,
-            cursor: (saving || loading) ? "default" : "pointer", opacity: (saving || loading) ? 0.6 : 1,
-          }}
-        >
-          <Check size={14} strokeWidth={2} />
-          {saving ? "Saving…" : "Save"}
-        </button>
-      </div>
+    <div style={{ minHeight: "100vh" }}>
+      <ScreenHeader
+        eyebrow="Environment"
+        title="Settings"
+        onBack={onClose}
+        backLabel="Back"
+        right={(
+          <button
+            type="button"
+            className="touch-target"
+            onClick={handleSave}
+            disabled={saving || loading || Boolean(loadError)}
+            style={{
+              display: "flex", alignItems: "center", gap: 5, flexShrink: 0,
+              padding: "9px 16px", borderRadius: 20,
+              background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.4)",
+              color: (saving || loading) ? "var(--c-text-ghost)" : "var(--c-accent)",
+              fontFamily: MONO, fontSize: 12, letterSpacing: 0.5,
+              cursor: (saving || loading) ? "default" : "pointer", opacity: (saving || loading) ? 0.6 : 1,
+            }}
+          >
+            <Check size={14} strokeWidth={2} />
+            {saving ? "Saving…" : "Save"}
+          </button>
+        )}
+      />
+
+      <div style={{
+        paddingTop: 16,
+        paddingLeft: "calc(16px + env(safe-area-inset-left, 0px))",
+        paddingRight: "calc(16px + env(safe-area-inset-right, 0px))",
+        paddingBottom: "calc(40px + env(safe-area-inset-bottom, 0px))",
+      }}>
 
       {loading && (
-        <div role="status" aria-busy="true" aria-label="Loading grow settings" style={{ display: "flex", flexDirection: "column", gap: 20, padding: "8px 0" }}>
+        <div role="status" aria-busy="true" aria-label="Loading environment settings" style={{ display: "flex", flexDirection: "column", gap: 20, padding: "8px 0" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <Skeleton width={90} height={11} />
             <Skeleton width="100%" height={44} radius={10} />
@@ -195,7 +185,7 @@ export default function GrowSettings({ growId, onClose, onSaved, onDeleted }) {
       {/* Name + status */}
       <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 24 }}>
         <div>
-          <Label>Grow name</Label>
+          <Label>Environment name</Label>
           <Input value={name} onChange={setName} placeholder="e.g. Summer 2026 Outdoor" />
         </div>
         <div>
@@ -297,6 +287,8 @@ export default function GrowSettings({ growId, onClose, onSaved, onDeleted }) {
       </div>
       </>
       )}
+
+      </div>
 
       {showDelete && (
         <DeleteGrowConfirm

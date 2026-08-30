@@ -3,6 +3,7 @@ import { Camera, X, Trash2, Download, Images } from "lucide-react";
 import { api, ymd } from "../../lib/api.js";
 import { tapHaptic } from "../../lib/haptics.js";
 import { savePhotoToDevice } from "../../lib/savePhoto.js";
+import Portal from "../Portal.jsx";
 
 const UI = "var(--font-ui)";
 
@@ -97,6 +98,7 @@ export function Viewer({ growId, photo, onClose, onDeleted }) {
   }
 
   return (
+    <Portal>
     <div
       role="dialog"
       aria-label="Photo"
@@ -167,6 +169,7 @@ export function Viewer({ growId, photo, onClose, onDeleted }) {
         />
       </div>
     </div>
+    </Portal>
   );
 }
 

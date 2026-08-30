@@ -2,6 +2,7 @@
 // done). Mobile-first: single column, big touch targets, safe-area padding.
 import { useCallback, useState } from "react";
 import { api } from "../../lib/api.js";
+import ScreenHeader from "../ScreenHeader.jsx";
 import { usePlan } from "../../lib/usePlan.jsx";
 import { useToast } from "../../lib/useToast.jsx";
 import { normalizeLifecycle } from "../../lib/lifecycle.js";
@@ -46,17 +47,21 @@ export function useLifecycleSave() {
   return { save, busy };
 }
 
-export function PhaseScreen({ children }) {
+// The drying / curing / complete screens are root tabs (they take over the
+// calendar slot), so they wear the shared header with no back button.
+export function PhaseScreen({ title, eyebrow, right, children }) {
   return (
-    <div style={{
-      paddingTop: "calc(18px + env(safe-area-inset-top, 0px))",
-      paddingLeft: "calc(14px + env(safe-area-inset-left, 0px))",
-      paddingRight: "calc(14px + env(safe-area-inset-right, 0px))",
-      paddingBottom: 24,
-      display: "flex", flexDirection: "column", gap: 14,
-      fontFamily: SERIF, color: "var(--c-text)",
-    }}>
-      {children}
+    <div style={{ fontFamily: SERIF, color: "var(--c-text)" }}>
+      {title && <ScreenHeader eyebrow={eyebrow} title={title} right={right} />}
+      <div style={{
+        paddingTop: 14,
+        paddingLeft: "calc(14px + env(safe-area-inset-left, 0px))",
+        paddingRight: "calc(14px + env(safe-area-inset-right, 0px))",
+        paddingBottom: 24,
+        display: "flex", flexDirection: "column", gap: 14,
+      }}>
+        {children}
+      </div>
     </div>
   );
 }

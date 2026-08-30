@@ -52,7 +52,7 @@ export default function DryingTracker({ today }) {
   }
 
   return (
-    <PhaseScreen>
+    <PhaseScreen eyebrow="Harvest" title="Drying">
       <Card style={{ borderColor: "rgba(245,158,11,0.3)" }}>
         <Eyebrow color={DRY_ACCENT}>Drying · {DRY_MIN}-{DRY_MAX} day window</Eyebrow>
         <DayHero

@@ -7,6 +7,7 @@ import { useJournalTimeline } from "../../lib/useJournal.js";
 import { journalStreak, dayOfGrow } from "../../lib/journalStats.js";
 import { Skeleton } from "../Skeleton.jsx";
 import { tapHaptic } from "../../lib/haptics.js";
+import ScreenHeader from "../ScreenHeader.jsx";
 
 const UI = "var(--font-ui)";
 const NUM = "var(--font-num)";
@@ -119,7 +120,7 @@ function DayCard({ dayInfo, config, onOpen }) {
 
 // The journal's home: masthead with stats, a write-today prompt, search, and
 // the month-grouped feed of every journaled day.
-export default function Timeline({ today, config, growId, active, onOpenDate, onWrite }) {
+export default function Timeline({ today, config, growId, active, onOpenDate, onWrite, onBack }) {
   const { days, totalDays, hasMore, loading, loadingMore, loadMore } = useJournalTimeline(active, growId);
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -164,26 +165,29 @@ export default function Timeline({ today, config, growId, active, onOpenDate, on
   }
 
   return (
-    <div style={{ padding: "6px 14px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
-      {/* Masthead */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontFamily: UI, fontSize: 11, letterSpacing: 3, textTransform: "uppercase", color: "var(--c-text-muted)" }}>
-          Grow Journal
-        </div>
-        <button
-          type="button"
-          className="touch-target"
-          aria-label={searchOpen ? "Close search" : "Search the journal"}
-          onClick={() => { tapHaptic(); setSearchOpen(o => !o); }}
-          style={{
-            width: 36, height: 36, borderRadius: 18, cursor: "pointer",
-            background: searchOpen ? "var(--c-surface-2)" : "var(--c-surface-1)",
-            border: "1px solid var(--c-border-faint)", color: "var(--c-text-dim)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-          {searchOpen ? <X size={15} strokeWidth={2} /> : <Search size={15} strokeWidth={2} />}
-        </button>
-      </div>
+    <>
+      <ScreenHeader
+        eyebrow="Journal"
+        title="All days"
+        onBack={onBack}
+        backLabel="Back to the day page"
+        right={(
+          <button
+            type="button"
+            className="touch-target"
+            aria-label={searchOpen ? "Close search" : "Search the journal"}
+            onClick={() => { tapHaptic(); setSearchOpen(o => !o); }}
+            style={{
+              width: 38, height: 38, borderRadius: 19, cursor: "pointer", flexShrink: 0,
+              background: searchOpen ? "var(--c-accent)" : "var(--c-surface-2)",
+              border: "none", color: searchOpen ? "#04140a" : "var(--c-text)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+            {searchOpen ? <X size={17} strokeWidth={2.2} /> : <Search size={17} strokeWidth={2.2} />}
+          </button>
+        )}
+      />
+    <div style={{ padding: "10px 14px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
 
       {/* Search */}
       {searchOpen && (
@@ -342,5 +346,6 @@ export default function Timeline({ today, config, growId, active, onOpenDate, on
         </>
       )}
     </div>
+    </>
   );
 }

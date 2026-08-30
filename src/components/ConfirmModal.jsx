@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import Portal from "./Portal.jsx";
 import { AnimatePresence, motion } from "framer-motion";
 
 // Accessible confirm dialog. Focus traps between cancel and confirm buttons,
@@ -56,6 +57,7 @@ export default function ConfirmModal({
   return (
     <AnimatePresence>
       {open && (
+        <Portal>
         <motion.div
           key="confirm-backdrop"
           initial={{ opacity: 0 }}
@@ -127,6 +129,7 @@ export default function ConfirmModal({
             </div>
           </motion.div>
         </motion.div>
+        </Portal>
       )}
     </AnimatePresence>
   );

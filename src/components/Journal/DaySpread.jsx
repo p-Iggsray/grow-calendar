@@ -11,6 +11,7 @@ import { kindLabel, summarizeEntry, HEALTH_MAP } from "../PlantsTab/constants.js
 import { Skeleton } from "../Skeleton.jsx";
 import { tapHaptic } from "../../lib/haptics.js";
 import RichEntryEditor from "./RichEntryEditor.jsx";
+import ScreenHeader from "../ScreenHeader.jsx";
 import MilestonesCard from "./MilestonesCard.jsx";
 import PhotosCard from "./PhotosCard.jsx";
 import DayLogEditor from "./DayLogEditor.jsx";
@@ -95,7 +96,7 @@ function PlantRow({ name, children }) {
 // all-days timeline. This IS the day surface - tapping a calendar day lands
 // here.
 export default function DaySpread({
-  today, date, onChangeDate, config, growId, onOpenPlant, onZoomOut, onConfigChanged,
+  today, date, onChangeDate, config, growId, onOpenPlant, onZoomOut, onConfigChanged, onExit,
   plants = [], environment = "outdoor", focusSignal = 0, active = true,
 }) {
   const dateKey = ymd(date);
@@ -151,27 +152,29 @@ export default function DaySpread({
   }
 
   return (
-    <div style={{ padding: "4px 14px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
-      {/* Masthead: journal label + zoom out to all days */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontFamily: UI, fontSize: 11, letterSpacing: 3, textTransform: "uppercase", color: "var(--c-text-muted)" }}>
-          Grow Journal
-        </div>
-        <button
-          type="button"
-          className="touch-target"
-          onClick={() => { tapHaptic(); onZoomOut(); }}
-          style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "8px 13px", borderRadius: 18, cursor: "pointer",
-            background: "var(--c-surface-1)", border: "1px solid var(--c-border-faint)",
-            color: "var(--c-text-dim)", fontFamily: UI, fontSize: 11.5, fontWeight: 600,
-          }}>
-          <LayoutGrid size={13} strokeWidth={2} />
-          All days
-        </button>
-      </div>
+    <>
+      <ScreenHeader
+        title="Journal"
+        onBack={onExit}
+        backLabel="Back to the calendar"
+        right={(
+          <button
+            type="button"
+            className="touch-target"
+            onClick={() => { tapHaptic(); onZoomOut(); }}
+            style={{
+              display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
+              padding: "9px 13px", borderRadius: 19, cursor: "pointer",
+              background: "var(--c-surface-2)", border: "none",
+              color: "var(--c-text)", fontFamily: UI, fontSize: 12, fontWeight: 600,
+            }}>
+            <LayoutGrid size={14} strokeWidth={2} />
+            All days
+          </button>
+        )}
+      />
 
+    <div style={{ padding: "10px 14px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
       {/* Date pager */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <NavButton label="Previous day" onClick={() => go(-1)}>
@@ -480,5 +483,6 @@ export default function DaySpread({
         )}
       </motion.div>
     </div>
+    </>
   );
 }

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Pencil, SlidersHorizontal, CalendarCheck, Trash2, Sun, Ruler, Droplets, Sprout } from "lucide-react";
+import { Plus, Pencil, SlidersHorizontal, CalendarCheck, Trash2, Sun, Ruler, Droplets, Sprout, Wind } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { parseConfig } from "../../lib/planConfig.js";
 import { tapHaptic } from "../../lib/haptics.js";
+import { getLifecyclePhase } from "../../lib/lifecycle.js";
 import { MONO, partitionPlants } from "../PlantsTab/constants.js";
 import PlantCard from "../PlantsTab/PlantCard.jsx";
 import PlantDetail from "../PlantsTab/PlantDetail.jsx";
@@ -11,6 +12,10 @@ import AddPlantSheet from "../PlantsTab/AddPlantSheet.jsx";
 import EnvConditions from "../Environment/EnvConditions.jsx";
 import EnvSetupForm from "./EnvSetupForm.jsx";
 import ConfirmModal from "../ConfirmModal.jsx";
+import ScreenHeader from "../ScreenHeader.jsx";
+import Portal from "../Portal.jsx";
+import HeaderMenu from "../HeaderMenu.jsx";
+import { ymd as lifecycleYmd, useLifecycleSave } from "../Lifecycle/shared.jsx";
 
 const FULL_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 function fmtHarvest(d) {
@@ -47,7 +52,7 @@ export function envSetupChips(survey) {
 
 function SectionTitle({ children, action }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, marginTop: 26 }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, marginTop: 24 }}>
       <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>
         {children}
       </span>
@@ -81,7 +86,12 @@ export default function EnvironmentDetail({
   const [selectedId, setSelectedId] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
   const [confirmDeletePlant, setConfirmDeletePlant] = useState(null);
+  const [confirmDrying, setConfirmDrying] = useState(false);
   const [summary, setSummary] = useState({});
+  // Drying can only be started on the environment the calendar is following,
+  // which is the one the lifecycle hook writes to.
+  const { save: saveLifecycle, busy: dryingBusy } = useLifecycleSave();
+  const growing = getLifecyclePhase(grow.lifecycle) === "growing";
 
   const loadSummary = useCallback(() => {
     if (!growId) { setSummary({}); return; }
@@ -130,22 +140,36 @@ export default function EnvironmentDetail({
       transition={{ type: "spring", damping: 30, stiffness: 260, restDelta: 0.5 }}
       style={{ position: "fixed", inset: 0, zIndex: 38, background: "var(--c-bg)", overflowY: "auto", paddingBottom: 90 }}
     >
-      <div style={{ padding: 16, paddingTop: "calc(16px + env(safe-area-inset-top, 0px))", maxWidth: 620, margin: "0 auto" }}>
-        <button type="button" className="touch-target" onClick={onClose} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "var(--c-text-muted)", fontFamily: MONO, fontSize: 12, letterSpacing: 1, cursor: "pointer", padding: 0 }}>
-          <ArrowLeft size={16} /> ENVIRONMENTS
-        </button>
+      {/* Every screen wears the same top strip: back on the left, this
+          screen's own settings behind the gear on the right. */}
+      <ScreenHeader
+        eyebrow={kindLabel}
+        title={grow.displayName || "Unnamed environment"}
+        onBack={onClose}
+        backLabel="Back to environments"
+        right={(
+          <HeaderMenu
+            title="Environment settings"
+            items={[
+              { icon: Pencil, label: "Edit the space", detail: "Size, lighting, medium, watering", onClick: () => setEditingSetup(true) },
+              { icon: SlidersHorizontal, label: "Name & season dates", onClick: () => onOpenSettings(growId) },
+              isActive && growing && {
+                icon: Wind, label: "Start drying early",
+                detail: "Ends the calendar and opens the dry tracker",
+                onClick: () => setConfirmDrying(true), disabled: dryingBusy,
+              },
+              { icon: Trash2, label: "Delete environment", tone: "destructive", onClick: () => onDelete(grow) },
+            ]}
+          />
+        )}
+      />
 
-        {/* Identity */}
-        <div style={{ marginTop: 16 }}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--c-text)", letterSpacing: -0.4, lineHeight: 1.2 }}>
-            {grow.displayName || "Unnamed environment"}
+      <div style={{ padding: 16, maxWidth: 620, margin: "0 auto" }}>
+        {(survey?.location || harvestLabel) && (
+          <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-muted)" }}>
+            {[survey?.location, harvestLabel ? `harvest ${harvestLabel}` : null].filter(Boolean).join(" · ")}
           </div>
-          <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-muted)", marginTop: 5 }}>
-            {kindLabel}
-            {survey?.location ? ` · ${survey.location}` : ""}
-            {harvestLabel ? ` · harvest ${harvestLabel}` : ""}
-          </div>
-        </div>
+        )}
 
         {/* Calendar activation */}
         {isActive ? (
@@ -173,15 +197,8 @@ export default function EnvironmentDetail({
           </div>
         )}
 
-        {/* The space itself */}
-        <SectionTitle
-          action={!editingSetup && (
-            <button type="button" onClick={() => setEditingSetup(true)} style={pillBtn()}>
-              <Pencil size={12} /> Edit
-            </button>
-          )}>
-          The space
-        </SectionTitle>
+        {/* The space itself - editing lives behind the header gear. */}
+        <SectionTitle>The space</SectionTitle>
 
         {editingSetup ? (
           <div className="card" style={{ padding: 14 }}>
@@ -198,7 +215,7 @@ export default function EnvironmentDetail({
           </div>
         ) : (
           <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-ghost)" }}>
-            Nothing recorded about this space yet. Tap Edit to describe it.
+            Nothing recorded about this space yet. Use the gear above to describe it.
           </div>
         )}
 
@@ -242,20 +259,12 @@ export default function EnvironmentDetail({
         <SectionTitle>Conditions</SectionTitle>
         <EnvConditions growId={growId} indoorish={survey?.environment !== "outdoor"} />
 
-        {/* Settings + danger */}
-        <div style={{ display: "flex", gap: 10, marginTop: 28 }}>
-          <button type="button" onClick={() => onOpenSettings(growId)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 11, borderRadius: 10, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-muted)", fontFamily: MONO, fontSize: 11, letterSpacing: 1, cursor: "pointer" }}>
-            <SlidersHorizontal size={14} /> Name &amp; season dates
-          </button>
-          <button type="button" onClick={() => onDelete(grow)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 11, borderRadius: 10, background: "transparent", border: "1px solid rgba(248,113,113,0.3)", color: "var(--c-danger-soft)", fontFamily: MONO, fontSize: 11, letterSpacing: 1, cursor: "pointer" }}>
-            <Trash2 size={14} /> Delete
-          </button>
-        </div>
       </div>
 
       {/* Add-plant sheet */}
       <AnimatePresence>
         {adding && (
+          <Portal>
           <div style={{ position: "fixed", inset: 0, zIndex: 45, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end" }} onClick={() => !savingPlant && setAdding(false)}>
             <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", background: "var(--c-panel-bg)", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: "calc(20px + env(safe-area-inset-bottom, 0px))", maxHeight: "88vh", overflowY: "auto" }}>
               <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 16 }}>
@@ -264,6 +273,7 @@ export default function EnvironmentDetail({
               <AddPlantSheet onSave={handleAddPlant} onCancel={() => setAdding(false)} saving={savingPlant} />
             </div>
           </div>
+          </Portal>
         )}
       </AnimatePresence>
 
@@ -286,6 +296,16 @@ export default function EnvironmentDetail({
           />
         )}
       </AnimatePresence>
+
+      <ConfirmModal
+        open={confirmDrying}
+        title="Start drying?"
+        message="This hides the calendar and opens the drying tracker, starting the dry-day counter today. You can keep logging in Spaces and chatting with MJ."
+        confirmLabel="Start drying"
+        cancelLabel="Not yet"
+        onConfirm={() => { setConfirmDrying(false); saveLifecycle({ phase: "drying", dryStartedAt: lifecycleYmd(today) }); }}
+        onCancel={() => setConfirmDrying(false)}
+      />
 
       <ConfirmModal
         open={!!confirmDeletePlant}
