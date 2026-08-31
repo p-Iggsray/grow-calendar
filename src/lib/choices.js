@@ -4,6 +4,9 @@
 // ("LST", "lst", "low stress training" are three values to a computer). These
 // lists turn most inputs into taps. Anything genuinely unusual can still be
 // typed, and what you type is remembered and offered next time.
+//
+// NAMES are deliberately absent here: what a grower calls their environment or
+// their plant is their own words, so those fields stay plain text boxes.
 
 export const NUTRIENT_PRODUCTS = [
   "Plain water",
@@ -94,17 +97,6 @@ export const SPACE_SIZES = [
   "Greenhouse",
   "Raised bed",
   "Open ground",
-];
-
-export const SPACE_NAMES = [
-  "Flower Tent",
-  "Veg Tent",
-  "Main Tent",
-  "4x4 Tent",
-  "Backyard",
-  "Greenhouse",
-  "Basement",
-  "Closet",
 ];
 
 // ── Remembering what the grower typed ────────────────────────────────────────

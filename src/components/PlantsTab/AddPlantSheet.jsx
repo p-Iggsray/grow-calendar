@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api, ymd } from "../../lib/api.js";
 import { Label, Input, RadioGroup, NumStepper, MONO } from "../SetupWizard/styleHelpers.jsx";
 import { STAGE_OPTIONS } from "./constants.js";
-import ChoiceField from "../ChoiceField.jsx";
+import AutocompleteInput from "../AutocompleteInput.jsx";
 
 const BLANK = { name: "", type: "hybrid", photo: true, flowerWeeks: 9, potSize: 0, stage: "seedling" };
 
@@ -22,7 +22,7 @@ export default function AddPlantSheet({ onSave, onCancel, saving, initial, saveL
   const isNew = !initial;
   const [f, setF] = useState(() => ({ ...BLANK, ...(initial || {}), potSize: initial?.potSize ?? 0 }));
   const [stageStartDate, setStageStartDate] = useState(() => ymd(new Date()));
-  // Strains other growers have logged, so a name is usually one tap.
+  // Strains other growers have logged, offered as you type.
   const [catalog, setCatalog] = useState([]);
   useEffect(() => {
     let alive = true;
@@ -44,16 +44,24 @@ export default function AddPlantSheet({ onSave, onCancel, saving, initial, saveL
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
+        {/* A plant's name is typed, like every other name in the app. The
+            shared catalogue only suggests as you go, and picking a suggestion
+            fills in what other growers recorded about that strain. */}
         <Label>Strain name</Label>
-        <ChoiceField
+        <AutocompleteInput
           value={f.name}
           onChange={(v) => up("name", v)}
-          presets={catalog.map((c) => c?.name).filter(Boolean)}
-          fieldKey="strain-name"
-          placeholder="Choose or add a strain"
-          searchLabel="Search strains"
-          customLabel="Add a new strain…"
-          mode="sheet"
+          suggestions={catalog}
+          getLabel={(c) => c?.name ?? ""}
+          getDetail={(c) => [c?.type, c?.flowerWeeks ? `${c.flowerWeeks}wk` : null].filter(Boolean).join(" · ")}
+          onPick={(c) => setF((prev) => ({
+            ...prev,
+            name: c.name,
+            type: c.type ?? prev.type,
+            photo: typeof c.photo === "boolean" ? c.photo : prev.photo,
+            flowerWeeks: c.flowerWeeks ?? prev.flowerWeeks,
+          }))}
+          placeholder="e.g. Blue Dream"
         />
       </div>
       {isNew && (
