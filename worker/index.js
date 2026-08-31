@@ -17,6 +17,7 @@ import { createJournalPhoto, getJournalPhoto, deleteJournalPhoto, listPlantPhoto
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
 import { getReverseGeocode, getGeocodeSearch } from "./geocode.js";
 import { listStrains } from "./strains.js";
+import { getStageTimeline } from "./stages.js";
 import { addPlant, patchPlant, deletePlant, listPlantLog, addPlantLogEntry, patchPlantLogEntry, deletePlantLogEntry, plantLogSummary, dailyLogForPlant } from "./plants.js";
 import { getGrowReport } from "./report.js";
 import { listUsers, approveUser, deleteUser } from "./admin.js";
@@ -211,6 +212,9 @@ async function authenticatedRoute(request, env, path, method, user) {
     if (method === "PATCH")  return patchPlant(request, env, user, gId, pId);
     if (method === "DELETE") return deletePlant(env, user, gId, pId);
   }
+
+  const stagesMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/stages$/);
+  if (stagesMatch && method === "GET") return getStageTimeline(env, user, stagesMatch[1]);
 
   const plantPhotosMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/plants\/([A-Za-z0-9_]+)\/photos$/);
   if (plantPhotosMatch && method === "GET") return listPlantPhotos(env, user, plantPhotosMatch[1], plantPhotosMatch[2]);

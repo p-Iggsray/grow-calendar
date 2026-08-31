@@ -1,11 +1,11 @@
 // @ts-check
 // Tool-call executor for MJ's Gemini tool-calling loop, plus its small helpers.
-import { parseDate } from "../../src/lib/planConfig.js";
+import { parseDate } from "../../src/lib/dates-core.js";
 import { htmlToPlainText } from "../../src/lib/richText.js";
 import { ensureGrowLogSchema } from "../growLog.js";
 import { firstGrowId } from "../perDayScope.js";
 import { readNote, writeNote, MAX_NOTE_LEN } from "../notes.js";
-import { appendNoteText, buildDayInfo, VALID_CONFIG_DATE_KEYS } from "../mj-logic.js";
+import { appendNoteText, buildDayInfo } from "../mj-logic.js";
 import { eventsForDay, ensureGrowEventsSchema } from "../events.js";
 import {
   ensurePlantIds, validatePlantFields, addPlantToSurvey,
@@ -73,7 +73,7 @@ function shapeLogRow(r) {
   };
 }
 
-export async function executeTool(name, input, env, userId, config, actions, growId, rawGrow) {
+export async function executeTool(name, input, env, userId, timeline, actions, growId, rawGrow) {
   // Per-day reads/writes are grow-scoped; fall back to the user's first grow
   // when no active grow was supplied. (Grow-editing tools below keep using the
   // raw `growId` so their "no active grow" guards still apply.)
@@ -101,11 +101,11 @@ export async function executeTool(name, input, env, userId, config, actions, gro
           location:             survey?.location ?? null,
           experienceLevel:      survey?.experienceLevel ?? null,
           wateringMethod:       survey?.wateringMethod ?? null,
-          vegWeeks:             survey?.vegWeeks ?? null,
-          plantsAlreadyOutside: survey?.plantsAlreadyOutside ?? null,
           notes:                survey?.extraNotes ?? null,
         },
-        configDates: rawGrow.config ?? {},
+        // The recorded history, not a plan: every stage switch and its date.
+        stageHistory: timeline?.events ?? [],
+        growStartDate: timeline?.firstDate ?? null,
         growId,
       };
     }
@@ -135,29 +135,6 @@ export async function executeTool(name, input, env, userId, config, actions, gro
       return { ok: true };
     }
 
-    if (name === "update_grow_dates") {
-      if (!growId || !rawGrow?.config) return { error: "No active grow or config found." };
-      const patches = input?.patches;
-      if (!patches || typeof patches !== "object" || Array.isArray(patches)) {
-        return { error: "patches must be an object mapping config key → YYYY-MM-DD date string." };
-      }
-      const updated = {};
-      for (const [key, val] of Object.entries(patches)) {
-        if (!VALID_CONFIG_DATE_KEYS.has(key)) return { error: `Unknown config key: "${key}"` };
-        if (typeof val !== "string" || !DATE_RE.test(val)) return { error: `${key}: value must be YYYY-MM-DD` };
-        updated[key] = val;
-      }
-      const newConfig = { ...rawGrow.config, ...updated };
-      await env.DB.prepare(
-        "UPDATE grows SET config = ?, updated_at = ? WHERE id = ? AND user_id = ?"
-      ).bind(JSON.stringify(newConfig), new Date().toISOString(), growId, userId).run();
-      const changeList = Object.entries(updated)
-        .map(([k, v]) => `${k}: ${rawGrow.config[k] ?? "none"} → ${v}`)
-        .join(", ");
-      actions.push({ type: "update_grow_dates", summary: `Updated: ${changeList}`, undoPayload: null });
-      return { ok: true, updated };
-    }
-
     if (name === "get_day") {
       const date = input?.date;
       if (typeof date !== "string" || !DATE_RE.test(date)) return { error: "date must be YYYY-MM-DD" };
@@ -171,7 +148,7 @@ export async function executeTool(name, input, env, userId, config, actions, gro
         ).bind(userId, dayGrowId, date).first(),
       ]);
       return {
-        ...buildDayInfo(date, config),
+        ...buildDayInfo(date, timeline),
         events: events.map(e => ({ id: e.id, title: e.title, time: e.time, notes: e.notes })),
         journal: htmlToPlainText(userNote || ""),
         log: logRow ? shapeLogRow(logRow) : null,
@@ -215,7 +192,7 @@ export async function executeTool(name, input, env, userId, config, actions, gro
         const dt = new Date(startDt);
         dt.setDate(startDt.getDate() + i);
         const date = dateToYmd(dt);
-        const day = buildDayInfo(date, config);
+        const day = buildDayInfo(date, timeline);
         const evs = eventsByDate.get(date);
         if (evs?.length) day.events = evs;
         const note = notesByDate.get(date);
@@ -417,16 +394,6 @@ export async function executeTool(name, input, env, userId, config, actions, gro
         if (!Number.isFinite(g) || g < 1 || g > 400) return { error: "container_gallons out of range (1-400)" };
         patch.containerGallons = Math.round(g);
         changes.push(`container size → ${Math.round(g)} gal`);
-      }
-      if (input.veg_weeks !== undefined) {
-        const w = Number(input.veg_weeks);
-        if (!Number.isFinite(w) || w < 1 || w > 52) return { error: "veg_weeks out of range (1-52)" };
-        patch.vegWeeks = Math.round(w);
-        changes.push(`veg weeks → ${Math.round(w)}`);
-      }
-      if (input.plants_already_outside !== undefined) {
-        patch.plantsAlreadyOutside = Boolean(input.plants_already_outside);
-        changes.push(`plants already outside → ${patch.plantsAlreadyOutside}`);
       }
       if (input.notes !== undefined) {
         patch.extraNotes = String(input.notes).slice(0, 2000);

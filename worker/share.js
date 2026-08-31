@@ -1,7 +1,7 @@
 // @ts-check
 import { json, error, nowIso, bytesToBase64Url } from "./util.js";
-import { loadRawPlan } from "./plan.js";
 import { loadRawGrows } from "./grows.js";
+import { loadStageTimeline } from "./stages.js";
 
 function genToken() {
   const bytes = new Uint8Array(24); // 24 bytes → 32-char base64url
@@ -48,9 +48,8 @@ function surveyBasics(survey) {
 }
 
 // GET /api/share/:token - public endpoint, no auth required.
-// Returns a task-free read-only snapshot: grow name, season config dates,
-// survey basics, and lifecycle. No personal info (email, role, logs, media)
-// and no legacy plan blobs (generated_plan/phase_overrides/event_rules).
+// Returns a read-only snapshot: grow name, the recorded stage timeline, survey
+// basics, and lifecycle. No personal info (email, role, logs, media).
 export async function getSharedView(env, token) {
   if (!token || token.length > 60) return error(400, "invalid token");
 
@@ -65,39 +64,31 @@ export async function getSharedView(env, token) {
   let grow = null;
   try {
     const grows = await loadRawGrows(env, row.user_id);
-    grow = grows.find(g => g.status === "active" && g.config)
-        ?? grows.find(g => g.config)
+    grow = grows.find(g => g.status === "active" && g.survey)
+        ?? grows.find(g => g.survey)
         ?? null;
-  } catch { /* grows table unavailable; fall through to the legacy read */ }
+  } catch { /* grows table unavailable */ }
 
-  if (grow) {
-    // Lifecycle carries the grower's private notes (finalNotes, dry/cure log
-    // notes) - a buddy link gets only the phase and its dates.
-    const lc = grow.lifecycle;
-    return json({
-      growName: grow.displayName || "Grow Calendar",
-      status: grow.status,
-      config: grow.config,
-      survey: surveyBasics(grow.survey),
-      lifecycle: lc ? {
-        phase: lc.phase ?? null,
-        dryStartedAt: lc.dryStartedAt ?? null,
-        cureStartedAt: lc.cureStartedAt ?? null,
-        finishedAt: lc.finishedAt ?? null,
-      } : null,
-    });
-  }
+  if (!grow) return error(404, "grow not set up yet");
 
-  // Legacy plan_config fallback: config (plus survey basics) only, never the
-  // generated plan or overrides.
-  const plan = await loadRawPlan(env, row.user_id);
-  if (!plan || plan.needsSetup) return error(404, "grow not set up yet");
+  // The shared calendar is the recorded stage history, the same source the
+  // grower's own calendar reads.
+  const { events, firstDate } = await loadStageTimeline(env, row.user_id, grow.id);
 
+  // Lifecycle carries the grower's private notes (finalNotes, dry/cure log
+  // notes) - a buddy link gets only the phase and its dates.
+  const lc = grow.lifecycle;
   return json({
-    growName: "Grow Calendar",
-    status: "active",
-    config: plan.config,
-    survey: surveyBasics(plan.survey),
-    lifecycle: null,
+    growName: grow.displayName || "Grow Calendar",
+    status: grow.status,
+    stageEvents: events,
+    firstDate,
+    survey: surveyBasics(grow.survey),
+    lifecycle: lc ? {
+      phase: lc.phase ?? null,
+      dryStartedAt: lc.dryStartedAt ?? null,
+      cureStartedAt: lc.cureStartedAt ?? null,
+      finishedAt: lc.finishedAt ?? null,
+    } : null,
   });
 }

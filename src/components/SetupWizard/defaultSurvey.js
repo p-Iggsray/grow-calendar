@@ -20,12 +20,8 @@ export function defaultSurvey() {
     strains: [
       { name: "", type: "hybrid", photo: true, flowerWeeks: 9, count: 1 },
     ],
-    startType: "seed",
     currentStage: "germination",
     stageStartDate: todayIso(),
-    transplantDate: "",
-    plantsAlreadyOutside: false,
-    vegWeeks: 4,
     location: "",
     experienceLevel: "beginner",
     wateringMethod: "hand",

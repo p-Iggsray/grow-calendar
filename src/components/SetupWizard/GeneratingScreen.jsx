@@ -9,10 +9,10 @@ export function GeneratingScreen() {
       <div style={{ fontSize: 48 }}>🌱</div>
       <div>
         <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 800, color: "var(--c-accent)", letterSpacing: 2, marginBottom: 8 }}>
-          BUILDING YOUR CALENDAR
+          STARTING YOUR CALENDAR
         </div>
         <div style={{ fontFamily: SERIF, fontSize: 14, color: "var(--c-text-muted)", lineHeight: 1.8, maxWidth: 280 }}>
-          Laying out your phases, milestones, and season. Just a moment.
+          Setting up your space and your plants. Just a moment.
         </div>
       </div>
       <Spinner />

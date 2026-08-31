@@ -105,8 +105,8 @@ export function StepSetup({ survey, update }) {
           rows={5}
           style={{
             width: "100%", boxSizing: "border-box", resize: "vertical",
-            background: "rgba(0,0,0,0.3)", color: "var(--c-text)",
-            border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10,
+            background: "var(--c-surface-1)", color: "var(--c-text)",
+            border: "1px solid var(--c-border-strong)", borderRadius: 10,
             padding: "12px 14px", fontSize: 16, fontFamily: SERIF,
             outline: "none", lineHeight: 1.7,
           }}

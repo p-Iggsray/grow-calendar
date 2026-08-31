@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildMonthIndex, journalPlantEntry, buildTimelineDays, makeExcerpt, escapeLike, attachWeather } from "../worker/journal.js";
-import { journalStreak, dayOfGrow } from "../src/lib/journalStats.js";
+import { journalStreak } from "../src/lib/journalStats.js";
 
 // ── Month index ──────────────────────────────────────────────────────────────
 test("buildMonthIndex: only FILLED grow-log days count as logged", () => {
@@ -112,10 +112,3 @@ test("journalStreak: today not yet journaled keeps yesterday's streak alive", ()
   assert.equal(journalStreak([], today), 0);
 });
 
-test("dayOfGrow: day 1 is the grow's first day; before the grow returns null", () => {
-  const config = { germinate: D("2026-06-01") };
-  assert.equal(dayOfGrow(D("2026-06-01"), config), 1);
-  assert.equal(dayOfGrow(D("2026-07-03"), config), 33);
-  assert.equal(dayOfGrow(D("2026-05-20"), config), null);
-  assert.equal(dayOfGrow(D("2026-07-03"), {}), null);
-});

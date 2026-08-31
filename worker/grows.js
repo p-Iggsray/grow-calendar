@@ -2,13 +2,10 @@
 import { json, error, safeJsonBounded } from "./util.js";
 import { logError } from "./log.js";
 import { geocode } from "./geocode.js";
-import {
-  fillMissingConfigKeys,
-  REQUIRED_CONFIG_KEYS,
-} from "./planSetup.js";
 import { ensurePlantIds, backfillStrainsFromPlan } from "./plantsRoster.js";
 import { LIFECYCLE_PHASES } from "../src/lib/lifecycle.js";
 import { recordStrains } from "./strains.js";
+import { seedStageEntries } from "./plants.js";
 import { resolveSurveyForSetup } from "../src/lib/stageAnchor.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -56,7 +53,10 @@ function newGrowId() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
 
-// Auto-migrate plan_config → grows table if user has no grows yet.
+// Auto-migrate the legacy single-grow plan_config row into the grows table if
+// the user has no grows yet. Only the survey carries over: the old config was a
+// table of predicted dates, and the calendar is built from recorded stage
+// switches now.
 async function ensureMigrated(env, userId) {
   // Try to create the grows table via prepare().run() - more reliable than exec() for DDL.
   // Both calls are wrapped individually; CREATE INDEX may legitimately fail if it already exists.
@@ -102,7 +102,7 @@ async function ensureMigrated(env, userId) {
   const planRow = await env.DB.prepare(
     "SELECT * FROM plan_config WHERE user_id = ?"
   ).bind(userId).first();
-  if (!planRow?.config) return;
+  if (!planRow?.survey) return;
 
   let displayName = "2026 Season";
   if (planRow.generated_plan) {
@@ -116,14 +116,11 @@ async function ensureMigrated(env, userId) {
   const now = new Date().toISOString();
   await env.DB.prepare(`
     INSERT OR IGNORE INTO grows
-      (id, user_id, display_name, status, config, survey, generated_plan, phase_overrides, created_at, updated_at)
-    VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?, ?)
+      (id, user_id, display_name, status, survey, created_at, updated_at)
+    VALUES (?, ?, ?, 'active', ?, ?, ?)
   `).bind(
     id, userId, displayName,
-    planRow.config,
-    planRow.survey   ?? null,
-    planRow.generated_plan  ?? null,
-    planRow.phase_overrides ?? null,
+    planRow.survey,
     planRow.updated_at || now,
     now,
   ).run();
@@ -142,10 +139,9 @@ export async function loadRawGrow(env, userId, growId) {
   if (!row) return null;
 
   return {
-    config:        parseField(row.config),
     survey:        parseField(row.survey),
     lifecycle:     parseField(row.lifecycle),
-    needsSetup:    !row.config,
+    needsSetup:    !row.survey,
     displayName:   row.display_name,
     status:        row.status,
     id:            row.id,
@@ -156,14 +152,13 @@ export async function loadRawGrow(env, userId, growId) {
 export async function loadRawGrows(env, userId) {
   await ensureMigrated(env, userId);
   const res = await env.DB.prepare(
-    `SELECT id, display_name, status, config, survey, lifecycle, created_at
+    `SELECT id, display_name, status, survey, lifecycle, created_at
      FROM grows WHERE user_id = ? ORDER BY created_at DESC`
   ).bind(userId).all();
   return (res.results ?? []).map(r => ({
     id:            r.id,
     displayName:   r.display_name,
     status:        r.status,
-    config:        parseField(r.config),
     survey:        parseField(r.survey),
     lifecycle:     parseField(r.lifecycle),
     createdAt:     r.created_at,
@@ -177,7 +172,7 @@ export async function listGrows(env, user) {
   let res;
   try {
     res = await env.DB.prepare(
-      `SELECT id, display_name, status, config, survey, created_at, updated_at
+      `SELECT id, display_name, status, survey, created_at, updated_at
        FROM grows WHERE user_id = ? ORDER BY created_at DESC`
     ).bind(user.id).all();
   } catch (e) {
@@ -191,7 +186,6 @@ export async function listGrows(env, user) {
     id:            r.id,
     displayName:   r.display_name,
     status:        r.status,
-    config:        parseField(r.config),
     survey:        parseField(r.survey),
     createdAt:     r.created_at,
     updatedAt:     r.updated_at,
@@ -222,7 +216,6 @@ export async function getGrow(env, user, growId) {
   ).bind(growId, user.id).first();
   if (!row) return error(404, "grow not found");
 
-  const config = parseField(row.config);
   let survey = parseField(row.survey);
   let surveyChanged = false;
 
@@ -246,10 +239,9 @@ export async function getGrow(env, user, growId) {
     id:           row.id,
     displayName:  row.display_name,
     status:       row.status,
-    config,
     survey,
     lifecycle:    parseField(row.lifecycle),
-    needsSetup:   !config,
+    needsSetup:   !survey,
     createdAt:    row.created_at,
     updatedAt:    row.updated_at,
   });
@@ -275,10 +267,6 @@ export async function patchGrow(request, env, user, growId) {
   if (["active", "harvested", "abandoned"].includes(body.status)) {
     fields.push("status = ?");
     binds.push(body.status);
-  }
-  if (body.config && typeof body.config === "object") {
-    fields.push("config = ?");
-    binds.push(JSON.stringify(body.config));
   }
 
   // Location and the environment's own setup fields both merge into the survey
@@ -430,8 +418,9 @@ export async function deleteGrow(env, user, growId) {
   return json({ ok: true });
 }
 
-// POST /api/grows/:id/setup - build the grow's season (config dates) from the
-// wizard survey. Pure date math, no AI, no task plan.
+// POST /api/grows/:id/setup - finish setting up an environment from the wizard
+// survey. There are no dates to compute: the calendar is written later, as the
+// grower moves plants from one stage to the next.
 export async function setupGrow(request, env, user, growId) {
   const row = await env.DB.prepare(
     "SELECT id FROM grows WHERE id = ? AND user_id = ?"
@@ -444,32 +433,14 @@ export async function setupGrow(request, env, user, growId) {
   let survey = body?.survey;
   if (!survey || typeof survey !== "object") return error(400, "survey required");
 
-  // Derive the timeline anchor SERVER-SIDE. The wizard answers "which stage are
-  // you in and when did it start"; deriving transplantDate here (instead of
-  // trusting the client to have done it) means any client version - including a
-  // stale cached PWA bundle - produces a valid timeline.
-  if (survey.currentStage || survey.stageStartDate || !survey.transplantDate) {
-    survey = resolveSurveyForSetup(survey);
-  }
+  // Expand the strain list into one roster entry per plant and tag each with
+  // the stage the grower says they are in. Done SERVER-SIDE so any client
+  // version - including a stale cached PWA bundle - produces a valid roster.
+  survey = ensurePlantIds(resolveSurveyForSetup(survey)).survey;
   if (!Array.isArray(survey.strains) || survey.strains.length === 0)
     return error(400, "Add at least one strain before finishing setup.");
-  if (typeof survey.transplantDate !== "string" || !DATE_RE.test(survey.transplantDate))
+  if (typeof survey.stageStartDate !== "string" || !DATE_RE.test(survey.stageStartDate))
     return error(400, "Set the date your current stage started (the Where You're At step) and try again.");
-
-  // The whole timeline is built from the survey with no AI call (no quota, no
-  // failures): phases, milestones, and the season's date anchors.
-  const config = {};
-  try {
-    fillMissingConfigKeys(config, survey);
-  } catch (e) {
-    logError("grows-setup-fill-failed", { message: String(e?.message), transplantDate: survey.transplantDate });
-    return error(400, "That stage start date does not look right. Double-check it and try again.");
-  }
-  const missing = REQUIRED_CONFIG_KEYS.filter(k => !config[k]);
-  if (missing.length > 0) {
-    logError("grows-setup-missing-keys", { missing, transplantDate: survey.transplantDate });
-    return error(400, "Could not build the calendar timeline from your answers. Re-check the Where You're At step and try again.");
-  }
 
   // Resolve coordinates for weather/frost if the GPS button didn't already
   // provide them. Best-effort; a failure just means no weather until it's set.
@@ -485,17 +456,21 @@ export async function setupGrow(request, env, user, growId) {
 
   await env.DB.prepare(
     `UPDATE grows
-     SET display_name = ?, config = ?, survey = ?, generated_plan = NULL, updated_at = ?
+     SET display_name = ?, survey = ?, generated_plan = NULL, updated_at = ?
      WHERE id = ? AND user_id = ?`
   ).bind(
     displayName,
-    JSON.stringify(config),
     JSON.stringify(survey),
     now,
     growId,
     user.id,
   ).run();
 
+  // Day 1 of this space is the day the grower says their current stage began.
+  // Seeding one stage entry per plant is what makes the calendar light up
+  // immediately instead of staying blank until the next stage change.
+  await seedStageEntries(env, user.id, growId, survey);
+
   await recordStrains(env, survey.strains);
-  return json({ ok: true, config, displayName });
+  return json({ ok: true, displayName });
 }

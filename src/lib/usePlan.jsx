@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { api } from "./api.js";
-import { parseConfig } from "./planConfig.js";
 
 const PlanContext = createContext(null);
 
@@ -19,7 +18,6 @@ export function PlanProvider({ children }) {
   const [grows, setGrows] = useState([]);
   const [activeGrowId, setActiveGrowIdRaw] = useState(getStoredGrowId);
 
-  const [config, setConfig] = useState(null);
   const [survey, setSurvey] = useState(null);
   const [lifecycle, setLifecycle] = useState(null);
   const [needsSetup, setNeedsSetup] = useState(false);
@@ -45,24 +43,24 @@ export function PlanProvider({ children }) {
 
         if (growsList.length === 0) {
           setNeedsSetup(true);
-          setConfig(null);
           setLoading(false);
           return;
         }
 
-        // Resolve which grow to show. PREFER a grow that's actually been set up
-        // (has config) so a half-finished/abandoned grow - which has no config - // can never route the app into an inescapable setup wizard on load or
-        // after a reset. Only fall into first-time setup when NO grow is
-        // configured yet, and then resume an existing unconfigured grow rather
-        // than leaving the choice ambiguous.
+        // Resolve which grow to show. PREFER a space that actually finished
+        // setup (it has a survey) so a half-finished or abandoned one can never
+        // route the app into an inescapable setup wizard on load or after a
+        // reset. Only fall into first-time setup when NO space is set up yet,
+        // and then resume the existing unfinished one rather than leaving the
+        // choice ambiguous.
         const stored = getStoredGrowId();
-        const configured = growsList.filter(g => g.config);
+        const ready = growsList.filter(g => g.survey);
 
         let targetId;
-        if (configured.length > 0) {
-          const pick = configured.find(g => g.id === stored)
-            || configured.find(g => g.status === "active")
-            || configured[0];
+        if (ready.length > 0) {
+          const pick = ready.find(g => g.id === stored)
+            || ready.find(g => g.status === "active")
+            || ready[0];
           targetId = pick.id;
         } else {
           const pick = growsList.find(g => g.id === stored) || growsList[0];
@@ -75,13 +73,7 @@ export function PlanProvider({ children }) {
         const data = await api.getGrow(targetId);
         if (cancelled) return;
 
-        if (data.needsSetup) {
-          setNeedsSetup(true);
-          setConfig(null);
-        } else {
-          setNeedsSetup(false);
-          setConfig(parseConfig(data.config));
-        }
+        setNeedsSetup(Boolean(data.needsSetup));
         setSurvey(data.survey || null);
         setLifecycle(data.lifecycle || null);
         setLoading(false);
@@ -102,7 +94,7 @@ export function PlanProvider({ children }) {
       grows,
       activeGrowId,
       setActiveGrowId,
-      config, survey, lifecycle,
+      survey, lifecycle,
       needsSetup, loading, error, reload,
     }}>
       {children}

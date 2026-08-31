@@ -1,9 +1,9 @@
-import { MONO, SERIF, Label, RadioGroup, NumStepper } from "./styleHelpers.jsx";
+import { MONO, SERIF, Label } from "./styleHelpers.jsx";
 
-// "Where are you now" survey. Instead of asking for a raw transplant date, the
-// grower picks the stage their plants are currently in and when it started; the
-// wizard back-computes the whole calendar from that (see SetupWizard.generate)
-// so the app opens on the right day.
+// "Where are you now" survey. The grower picks the stage their plants are
+// currently in and the day it started; that single answer becomes day 1 of the
+// space and the first entry on its calendar. Nothing after it is predicted -
+// the rest of the calendar is written as the grow actually happens.
 export const WIZARD_STAGES = [
   { value: "germination", label: "Germination", icon: "🌰", blurb: "Cracking seeds, taproot showing" },
   { value: "seedling",    label: "Seedling",    icon: "🌱", blurb: "First leaves, gentle light" },
@@ -29,7 +29,7 @@ export function StepTimeline({ survey, update }) {
       <div>
         <Label>Where are your plants right now?</Label>
         <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginBottom: 12, lineHeight: 1.6 }}>
-          Pick the current stage and we will start your calendar right here.
+          Pick the current stage and your calendar starts right here.
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           {WIZARD_STAGES.map(s => {
@@ -62,10 +62,10 @@ export function StepTimeline({ survey, update }) {
             value={survey.stageStartDate}
             onChange={e => update("stageStartDate", e.target.value)}
             style={{
-              flex: 1, background: "rgba(0,0,0,0.3)", color: "var(--c-text)",
-              border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10,
+              flex: 1, background: "var(--c-surface-1)", color: "var(--c-text)",
+              border: "1px solid var(--c-border-strong)", borderRadius: 10,
               padding: "12px 14px", fontSize: 16, fontFamily: SERIF,
-              outline: "none", boxSizing: "border-box", colorScheme: "dark",
+              outline: "none", boxSizing: "border-box",
             }}
           />
           <button
@@ -80,41 +80,11 @@ export function StepTimeline({ survey, update }) {
           </button>
         </div>
         <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 6, lineHeight: 1.7 }}>
-          {stage === "germination" || stage === "seedling"
-            ? "The day you started this stage. Even a rough guess is fine."
-            : "Roughly when this stage began. Everything before and after is filled in for you."}
+          This becomes day 1 of your calendar. Even a rough guess is fine - you
+          can log the next stage change whenever it happens.
         </div>
       </div>
 
-      {survey.environment === "outdoor" && (
-        <div>
-          <Label>Plant placement</Label>
-          <RadioGroup
-            value={survey.plantsAlreadyOutside ? "outside" : "moving"}
-            onChange={v => update("plantsAlreadyOutside", v === "outside")}
-            options={[
-              { value: "outside", label: "Already in final outdoor spot" },
-              { value: "moving",  label: "Will move outside later" },
-            ]}
-          />
-          <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 6, lineHeight: 1.7 }}>
-            Already-placed plants skip the move-outside milestone.
-          </div>
-        </div>
-      )}
-
-      <div>
-        <Label>Planned veg duration</Label>
-        <NumStepper
-          value={survey.vegWeeks}
-          onChange={v => update("vegWeeks", v)}
-          min={4} max={20}
-          label="weeks"
-        />
-        <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 6, lineHeight: 1.7 }}>
-          How long you plan to veg before flipping to flower (outdoor photoperiod is set by the season).
-        </div>
-      </div>
     </div>
   );
 }

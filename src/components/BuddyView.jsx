@@ -1,26 +1,36 @@
 import { useState, useEffect } from "react";
 import { api } from "../lib/api.js";
-import { parseConfig } from "../lib/planConfig.js";
-import { useToday, MONTH_NAMES, DOW_SHORT, sameDay, daysBetween, fmtL } from "../lib/dates.js";
-import { PHASES, getPhase, phaseGlyph, buildMilestones, getNextMilestone, getGrowProgress } from "../lib/growData.js";
+import { useToday, MONTH_NAMES, DOW_SHORT, sameDay, fmtL } from "../lib/dates.js";
+import { ymd } from "../lib/api.js";
+import { STAGE_ORDER, dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../lib/stageTimeline.js";
 import { AppShellSkeleton } from "./LoadingScreens.jsx";
 
 const MONO = "var(--font-ui)";
 const SERIF = "var(--font-ui)";
-const YEAR = 2026;
+
+// Single-character glyph per stage so the shared calendar is readable without
+// colour (WCAG 1.4.1).
+const STAGE_GLYPH = {
+  germination: "G", seedling: "S", vegetative: "V", flowering: "F",
+  flushing: "~", harvest: "H", drying: "D", curing: "C", done: "•",
+};
+
+function keyOf(year, month, day) {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
 
 // Tiny read-only calendar (no click handlers, no selection)
-function ReadCalendar({ today, month, config }) {
-  const firstDow = new Date(YEAR, month, 1).getDay();
-  const daysInMonth = new Date(YEAR, month + 1, 0).getDate();
+function ReadCalendar({ today, year, month, stageEvents, firstDate }) {
+  const firstDow = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
   const cells = [];
   for (let i = 0; i < firstDow; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(YEAR, month, d));
+  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
 
   return (
     <div style={{ background: "var(--c-surface-1)", borderRadius: 14, border: "1px solid var(--c-border-soft)", overflow: "hidden", margin: "0 14px" }}>
       <div style={{ textAlign: "center", padding: "14px 16px 8px", fontSize: 17, fontWeight: 800, letterSpacing: -0.5, color: "var(--c-text)" }}>
-        {MONTH_NAMES[month]} {YEAR}
+        {MONTH_NAMES[month]} {year}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", padding: "0 10px" }}>
         {DOW_SHORT.map((l, i) => (
@@ -32,10 +42,11 @@ function ReadCalendar({ today, month, config }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 3, padding: "6px 10px 12px" }}>
         {cells.map((date, i) => {
           if (!date) return <div key={`e${i}`} style={{ minHeight: 38 }} />;
-          const phase = getPhase(date, config);
-          const pStyle = phase ? PHASES[phase] : null;
+          const key = keyOf(year, month, date.getDate());
+          const stage = firstDate && key >= firstDate ? stageOnDate(stageEvents, key) : null;
+          const color = stage ? stageGroup(stage)?.color : null;
           const isToday = sameDay(date, today);
-          const glyph = pStyle ? phaseGlyph(phase) : "";
+          const glyph = stage ? (STAGE_GLYPH[stage] ?? "") : "";
           return (
             <div
               key={date.getDate()}
@@ -44,19 +55,19 @@ function ReadCalendar({ today, month, config }) {
                 display: "flex", flexDirection: "column",
                 alignItems: "center", justifyContent: "center", gap: 2,
                 background: isToday
-                  ? `${pStyle?.color || "var(--c-accent)"}22`
-                  : pStyle ? `${pStyle.color}18` : "transparent",
+                  ? `${color || "var(--c-accent)"}22`
+                  : color ? `${color}18` : "transparent",
                 border: isToday
-                  ? `2px solid ${pStyle?.color || "var(--c-accent)"}`
+                  ? `2px solid ${color || "var(--c-accent)"}`
                   : "2px solid transparent",
-                opacity: pStyle ? 1 : 0.2,
+                opacity: color ? 1 : 0.2,
               }}
             >
               <span style={{ fontSize: 12, fontFamily: MONO, color: "var(--c-text-dim)", lineHeight: 1 }}>
                 {date.getDate()}
               </span>
               {glyph && (
-                <span style={{ fontSize: 11, fontFamily: MONO, fontWeight: 700, color: pStyle?.color, lineHeight: 1 }}>
+                <span style={{ fontSize: 11, fontFamily: MONO, fontWeight: 700, color, lineHeight: 1 }}>
                   {glyph}
                 </span>
               )}
@@ -68,53 +79,40 @@ function ReadCalendar({ today, month, config }) {
   );
 }
 
-// Today's phase + season progress card
-function TodayCard({ today, config }) {
-  const phase = getPhase(today, config);
-  if (!phase) return null;
-  const pStyle = PHASES[phase];
-  const seasonStart = config.germinate ?? config.start;
-  const dayOfGrow = daysBetween(today, seasonStart) + 1;
-  const progress = getGrowProgress(today, config);
-  const next = getNextMilestone(today, config);
-  const daysToNext = daysBetween(next.date, today);
+// Where the grow is today, and how long it has been going.
+function TodayCard({ today, stageEvents, firstDate }) {
+  const todayKey = ymd(today);
+  const stage = stageOnDate(stageEvents, todayKey);
+  if (!stage) return null;
+  const color = stageGroup(stage)?.color;
+  const growDay = dayOfGrow(firstDate, todayKey);
 
   return (
     <div style={{
       margin: "14px 14px 0",
-      background: `${pStyle?.color}12`,
-      border: `1px solid ${pStyle?.color}44`,
+      background: `${color}12`,
+      border: `1px solid ${color}44`,
       borderRadius: 12, padding: "14px 16px",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <div style={{ width: 8, height: 8, borderRadius: "50%", background: pStyle?.color, flexShrink: 0 }} />
-        <span style={{ fontFamily: MONO, fontSize: 11, color: pStyle?.color, letterSpacing: 1, textTransform: "uppercase" }}>
-          {pStyle?.label ?? phase} · Today
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
+        <span style={{ fontFamily: MONO, fontSize: 11, color, letterSpacing: 1, textTransform: "uppercase" }}>
+          {stageLabel(stage)} · Today
         </span>
       </div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", marginBottom: 10, letterSpacing: -0.2 }}>
-        Day {dayOfGrow} of the season
-      </div>
-      <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.08)", overflow: "hidden", marginBottom: 8 }}>
-        <div style={{ width: `${progress}%`, height: "100%", borderRadius: 3, background: pStyle?.color }} />
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-dim)" }}>
-          {progress}% through
-        </span>
-        {!next.done && (
-          <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-dim)" }}>
-            {next.icon} {next.label} in {daysToNext}d
-          </span>
-        )}
-      </div>
+      {growDay && (
+        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", letterSpacing: -0.2 }}>
+          Day {growDay} of the grow
+        </div>
+      )}
     </div>
   );
 }
 
-// Season milestones: upcoming full-strength, past dimmed
-function MilestoneList({ today, config }) {
-  const milestones = buildMilestones(config);
+// Every stage this grow has actually moved through, newest last.
+function StageHistory({ today, stageEvents, firstDate }) {
+  if (!stageEvents.length) return null;
+  const todayKey = ymd(today);
   return (
     <div style={{
       margin: "16px 14px 0",
@@ -122,23 +120,24 @@ function MilestoneList({ today, config }) {
       border: "1px solid var(--c-border-soft)", padding: "12px 16px 6px",
     }}>
       <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-muted)", textTransform: "uppercase", marginBottom: 4 }}>
-        Season milestones
+        Stage history
       </div>
-      {milestones.map((m) => {
-        const delta = daysBetween(m.date, today);
-        const past = delta < 0;
+      {stageEvents.map((e) => {
+        const [y, m, d] = e.date.split("-").map(Number);
+        const color = stageGroup(e.stage)?.color;
+        const day = dayOfGrow(firstDate, e.date);
         return (
-          <div key={m.label} style={{
+          <div key={e.date + e.stage} style={{
             display: "flex", alignItems: "center", gap: 9, padding: "8px 0",
             borderTop: "1px solid var(--c-border-faint)",
-            opacity: past ? 0.45 : 1,
           }}>
-            <span aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }}>{m.icon}</span>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
             <span style={{ fontSize: 13, fontWeight: 650, color: "var(--c-text)", flex: 1 }}>
-              {m.label}
+              {stageLabel(e.stage)}
             </span>
-            <span style={{ fontFamily: MONO, fontSize: 11, color: past ? "var(--c-text-ghost)" : m.color, flexShrink: 0 }}>
-              {fmtL(m.date)}{delta === 0 ? " · today" : delta > 0 ? ` · in ${delta}d` : ""}
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)", flexShrink: 0 }}>
+              {fmtL(new Date(y, m - 1, d))}
+              {e.date === todayKey ? " · today" : day ? ` · day ${day}` : ""}
             </span>
           </div>
         );
@@ -147,18 +146,22 @@ function MilestoneList({ today, config }) {
   );
 }
 
-// Local copy of PhaseLegend fed by the shared config as a prop: the shared
-// component reads usePlan(), and this public route mounts outside PlanProvider.
-function BuddyPhaseLegend({ config }) {
-  const present = new Set();
-  if (config?.start && config?.hazeHarvest) {
-    for (let t = config.start.getTime(); t <= config.hazeHarvest.getTime(); t += 86400000) {
-      const p = getPhase(new Date(t), config);
-      if (p) present.add(p);
-    }
+// Local copy of PhaseLegend: the shared component is fine to duplicate here
+// because this public route mounts outside PlanProvider.
+const SWATCHES = (() => {
+  const seen = new Set();
+  const out = [];
+  for (const stage of STAGE_ORDER) {
+    const group = stageGroup(stage);
+    if (!group || seen.has(group.key)) continue;
+    seen.add(group.key);
+    const members = STAGE_ORDER.filter((s) => stageGroup(s)?.key === group.key);
+    out.push({ key: group.key, color: group.color, label: members.map(stageLabel).join(" · ") });
   }
-  const entries = Object.entries(PHASES).filter(([k]) => present.size === 0 || present.has(k));
+  return out;
+})();
 
+function BuddyPhaseLegend() {
   return (
     <details style={{
       background: "rgba(255,255,255,0.03)", borderRadius: 12,
@@ -175,8 +178,8 @@ function BuddyPhaseLegend({ config }) {
       </summary>
       <div style={{ padding: "4px 14px 12px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 12px" }}>
-          {entries.map(([k, v]) => (
-            <div key={k} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          {SWATCHES.map((v) => (
+            <div key={v.key} style={{ display: "flex", alignItems: "center", gap: 7 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: v.color, flexShrink: 0 }} />
               <span style={{ fontSize: 11, color: "var(--c-text-muted)", fontFamily: MONO }}>{v.label}</span>
             </div>
@@ -198,8 +201,8 @@ export default function BuddyView({ token }) {
       .catch(e => setLoadErr(e.message || "This share link is invalid or has been revoked."));
   }, [token]);
 
-  const config = data?.config ? parseConfig(data.config) : null;
-  const month = today.getMonth();
+  const stageEvents = data?.stageEvents ?? [];
+  const firstDate = data?.firstDate ?? null;
   const growName = data?.growName || "Grow Calendar";
   const strainNames = (data?.survey?.strains ?? []).map(s => s.name).filter(Boolean);
 
@@ -221,7 +224,7 @@ export default function BuddyView({ token }) {
     );
   }
 
-  if (!data || !config) {
+  if (!data) {
     return (
       <div style={{ minHeight: "100vh", background: "var(--c-bg)" }}>
         <AppShellSkeleton />
@@ -250,20 +253,33 @@ export default function BuddyView({ token }) {
       </div>
 
       {/* Today */}
-      <TodayCard today={today} config={config} />
+      <TodayCard today={today} stageEvents={stageEvents} firstDate={firstDate} />
 
       {/* Calendar */}
       <div style={{ marginTop: 16 }}>
-        <ReadCalendar today={today} month={month} config={config} />
+        <ReadCalendar
+          today={today}
+          year={today.getFullYear()}
+          month={today.getMonth()}
+          stageEvents={stageEvents}
+          firstDate={firstDate}
+        />
       </div>
 
-      {/* Milestones */}
-      <MilestoneList today={today} config={config} />
+      {/* What has actually happened */}
+      <StageHistory today={today} stageEvents={stageEvents} firstDate={firstDate} />
 
-      {/* Phase legend */}
+      {/* Stage legend */}
       <div style={{ margin: "16px 14px 0" }}>
-        <BuddyPhaseLegend config={config} />
+        <BuddyPhaseLegend />
       </div>
+
+      {stageEvents.length === 0 && (
+        <div style={{ textAlign: "center", marginTop: 20, padding: "0 24px", fontFamily: MONO, fontSize: 12, color: "var(--c-text-muted)", lineHeight: 1.7 }}>
+          Nothing recorded yet. This calendar fills in as the grower moves plants
+          through their stages.
+        </div>
+      )}
 
       <div style={{ textAlign: "center", marginTop: 24, fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", letterSpacing: 1 }}>
         Read-only buddy view · no account required

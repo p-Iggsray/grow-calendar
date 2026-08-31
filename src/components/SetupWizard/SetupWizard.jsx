@@ -67,8 +67,8 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
     setGenerating(true);
     setGenError("");
     try {
-      // Convert the "current stage + start date" answer into transplantDate,
-      // startType, and per-plant stages before sending.
+      // Expand the strain list into one roster entry per plant, each tagged
+      // with the stage the grower says they are in, before sending.
       const resolved = resolveSurveyForSetup(survey);
       await api.setupGrow(growId, resolved);
       clearWizardDraft(growId);
@@ -166,7 +166,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
           paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
           borderTop: "1px solid var(--c-border-soft)",
           display: "flex", gap: 12,
-          background: "rgba(0,0,0,0.3)",
+          background: "var(--c-surface-1)",
           flexShrink: 0,
         }}>
           <button

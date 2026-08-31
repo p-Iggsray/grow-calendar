@@ -154,7 +154,7 @@ export function mergeAutoWeather(row, wx) {
 export async function autoLogWeather(env) {
   await ensureGrowLogSchema(env);
   const { results } = await env.DB.prepare(
-    "SELECT id, user_id, survey FROM grows WHERE status = 'active' AND config IS NOT NULL LIMIT 200"
+    "SELECT id, user_id, survey FROM grows WHERE status = 'active' AND survey IS NOT NULL LIMIT 200"
   ).all();
 
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });

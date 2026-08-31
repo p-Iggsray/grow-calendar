@@ -14,9 +14,11 @@ export default function ConfirmModal({
   tone = "default", // "default" | "destructive"
   onConfirm,
   onCancel,
+  children,          // optional extra controls (e.g. a date field) above the buttons
 }) {
   const cancelRef = useRef(null);
   const confirmRef = useRef(null);
+  const dialogRef = useRef(null);
   const returnFocusRef = useRef(null);
 
   useEffect(() => {
@@ -34,7 +36,11 @@ export default function ConfirmModal({
     function onKey(e) {
       if (e.key === "Escape") { e.preventDefault(); onCancel?.(); return; }
       if (e.key !== "Tab") return;
-      const focusables = [cancelRef.current, confirmRef.current].filter(Boolean);
+      // Trap over everything focusable in the dialog, not just the two
+      // buttons, so an extra field passed as `children` stays reachable.
+      const focusables = Array.from(
+        dialogRef.current?.querySelectorAll("button, input, select, textarea, [href], [tabindex]:not([tabindex=\"-1\"])") ?? [],
+      ).filter((el) => !el.disabled);
       if (focusables.length < 2) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
@@ -76,6 +82,7 @@ export default function ConfirmModal({
             aria-modal="true"
             aria-labelledby={titleId}
             aria-describedby={message ? messageId : undefined}
+            ref={dialogRef}
             onClick={e => e.stopPropagation()}
             initial={{ scale: 0.94, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -99,6 +106,7 @@ export default function ConfirmModal({
                 {message}
               </div>
             )}
+            {children && <div style={{ marginBottom: 18 }}>{children}</div>}
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
               <button
                 ref={cancelRef}

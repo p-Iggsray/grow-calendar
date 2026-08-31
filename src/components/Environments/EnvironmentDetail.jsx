@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Pencil, SlidersHorizontal, CalendarCheck, Trash2, Sun, Ruler, Droplets, Sprout, Wind } from "lucide-react";
 import { api } from "../../lib/api.js";
-import { parseConfig } from "../../lib/planConfig.js";
+import { useStageTimeline } from "../../lib/useJournal.js";
 import { tapHaptic } from "../../lib/haptics.js";
 import { getLifecyclePhase } from "../../lib/lifecycle.js";
 import { MONO, partitionPlants } from "../PlantsTab/constants.js";
@@ -16,12 +16,6 @@ import ScreenHeader from "../ScreenHeader.jsx";
 import Portal from "../Portal.jsx";
 import HeaderMenu from "../HeaderMenu.jsx";
 import { ymd as lifecycleYmd, useLifecycleSave } from "../Lifecycle/shared.jsx";
-
-const FULL_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-function fmtHarvest(d) {
-  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return null;
-  return `${FULL_MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
-}
 
 export const ENV_KIND_LABEL = { indoor: "Indoor", outdoor: "Outdoor", greenhouse: "Greenhouse" };
 const MEDIUM_LABEL = { soil: "Soil", coco: "Coco", hydro: "Hydro", other: "Other medium" };
@@ -77,7 +71,9 @@ export default function EnvironmentDetail({
 }) {
   const growId = grow.id;
   const survey = grow.survey ?? null;
-  const config = grow.config ? parseConfig(grow.config) : null;
+  // Day counts come from the first thing ever recorded in this space, not from
+  // any predicted season.
+  const { firstDate } = useStageTimeline(growId, true);
 
   const [editingSetup, setEditingSetup] = useState(false);
   const [savingSetup, setSavingSetup] = useState(false);
@@ -104,7 +100,6 @@ export default function EnvironmentDetail({
   const { active, archived } = partitionPlants(survey);
   const chips = envSetupChips(survey);
   const kindLabel = ENV_KIND_LABEL[survey?.environment] ?? "Space";
-  const harvestLabel = fmtHarvest(config?.hazeHarvest) || fmtHarvest(config?.gdpHarvest) || null;
   const selectedPlant = [...active, ...archived].find((p) => p.id === selectedId) || null;
 
   async function handleSaveSetup(fields) {
@@ -152,7 +147,7 @@ export default function EnvironmentDetail({
             title="Environment settings"
             items={[
               { icon: Pencil, label: "Edit the space", detail: "Size, lighting, medium, watering", onClick: () => setEditingSetup(true) },
-              { icon: SlidersHorizontal, label: "Name & season dates", onClick: () => onOpenSettings(growId) },
+              { icon: SlidersHorizontal, label: "Rename environment", onClick: () => onOpenSettings(growId) },
               isActive && growing && {
                 icon: Wind, label: "Start drying early",
                 detail: "Ends the calendar and opens the dry tracker",
@@ -165,9 +160,9 @@ export default function EnvironmentDetail({
       />
 
       <div style={{ padding: 16, maxWidth: 620, margin: "0 auto" }}>
-        {(survey?.location || harvestLabel) && (
+        {survey?.location && (
           <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-muted)" }}>
-            {[survey?.location, harvestLabel ? `harvest ${harvestLabel}` : null].filter(Boolean).join(" · ")}
+            {survey.location}
           </div>
         )}
 
@@ -182,7 +177,7 @@ export default function EnvironmentDetail({
             <CalendarCheck size={13} strokeWidth={2} />
             Showing on the calendar
           </div>
-        ) : grow.config ? (
+        ) : survey ? (
           <button
             type="button"
             className="touch-target"
@@ -236,7 +231,7 @@ export default function EnvironmentDetail({
             </div>
           )}
           {active.map((p) => (
-            <PlantCard key={p.id} plant={p} metrics={summary[p.id]} today={today} config={config} onOpen={() => setSelectedId(p.id)} />
+            <PlantCard key={p.id} plant={p} metrics={summary[p.id]} today={today} firstDate={firstDate} onOpen={() => setSelectedId(p.id)} />
           ))}
 
           {archived.length > 0 && (
@@ -247,7 +242,7 @@ export default function EnvironmentDetail({
               {showArchived && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8, opacity: 0.7 }}>
                   {archived.map((p) => (
-                    <PlantCard key={p.id} plant={p} metrics={summary[p.id]} today={today} config={config} onOpen={() => setSelectedId(p.id)} />
+                    <PlantCard key={p.id} plant={p} metrics={summary[p.id]} today={today} firstDate={firstDate} onOpen={() => setSelectedId(p.id)} />
                   ))}
                 </div>
               )}
@@ -284,9 +279,8 @@ export default function EnvironmentDetail({
             key={selectedPlant.id}
             growId={growId}
             plant={selectedPlant}
-            harvestLabel={selectedPlant.status === "growing" ? harvestLabel : null}
             today={today}
-            config={config}
+            firstDate={firstDate}
             onOpenJournalDay={onOpenJournalDay}
             onClose={() => setSelectedId(null)}
             onArchive={handleArchivePlant}

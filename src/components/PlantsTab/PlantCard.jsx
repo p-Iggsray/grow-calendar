@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import { MONO, SERIF, TYPE_LABEL, HEALTH_MAP, stageLabel, relDayLabel } from "./constants.js";
-import { dayOfGrow } from "../../lib/journalStats.js";
+import { dayOfGrow } from "../../lib/stageTimeline.js";
+import { ymd } from "../../lib/api.js";
 import StageTimeline from "./StageTimeline.jsx";
 
-export default function PlantCard({ plant, metrics, today, config, onOpen }) {
+export default function PlantCard({ plant, metrics, today, firstDate, onOpen }) {
   const health = metrics?.health ? HEALTH_MAP[metrics.health] : null;
-  const age = today && config ? dayOfGrow(today, config) : null;
+  const age = today ? dayOfGrow(firstDate, ymd(today)) : null;
   const lastLog = metrics?.date ? relDayLabel(metrics.date, today) : null;
 
   const activityBits = [

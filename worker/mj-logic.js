@@ -1,9 +1,7 @@
 // Pure helpers and constants for MJ's tools. No env, no I/O - unit tested.
 
 import { appendToNote } from "../src/lib/richText.js";
-import { parseDate } from "../src/lib/planConfig.js";
-import { getPhase, PHASES, buildMilestones, dpt } from "../src/lib/growData.js";
-import { daysBetween } from "../src/lib/dates-core.js";
+import { dayOfGrow, stageLabel, stageOnDate } from "../src/lib/stageTimeline.js";
 
 // Format-aware: appending to a rich (HTML) journal entry adds a paragraph,
 // appending to a plain-text one adds a newline. See src/lib/richText.js.
@@ -11,45 +9,29 @@ export function appendNoteText(existing, addition) {
   return appendToNote(existing, addition);
 }
 
-function ymd(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-// The calendar-derived facts for one day: phase, day counters, and any
-// milestones landing on that date. Pure - callers merge in the day's stored
-// data (events, journal, log). `date` is YYYY-MM-DD; `config` is parsed.
-export function buildDayInfo(date, config) {
-  const dt = parseDate(date);
-  const phase = getPhase(dt, config);
-  const milestones = buildMilestones(config)
-    .filter(m => ymd(m.date) === date)
-    .map(m => m.label);
-  const seasonStart = config.germinate ?? config.start;
+// The calendar-derived facts for one day, read back out of the recorded stage
+// switches. Nothing here is predicted. Pure - callers merge in the day's stored
+// data (events, journal, log). `date` is YYYY-MM-DD; `timeline` is
+// { events, firstDate } from loadStageTimeline.
+export function buildDayInfo(date, timeline) {
+  const events = timeline?.events ?? [];
+  const firstDate = timeline?.firstDate ?? null;
+  const stage = firstDate && date >= firstDate ? stageOnDate(events, date) : null;
+  const switched = events.find(e => e.date === date) ?? null;
   const info = {
     date,
-    phase: phase ?? null,
-    phaseLabel: phase ? (PHASES[phase]?.label ?? phase) : null,
-    // Day 1 = the season's first day (germination for seed starts).
-    growDay: phase ? daysBetween(dt, seasonStart) + 1 : null,
-    // 0 on transplant day, negative before it - phases are keyed off this.
-    daysSinceTransplant: phase ? dpt(dt, config) : null,
-    milestones,
+    stage: stage ?? null,
+    stageLabel: stage ? stageLabel(stage) : null,
+    // Day 1 = the first day anything was recorded for this space.
+    growDay: dayOfGrow(firstDate, date),
+    // Set only on a day the grower actually moved a plant forward.
+    stageChangedTo: switched ? stageLabel(switched.stage) : null,
   };
-  if (!phase) info.outsideSeason = true;
+  if (!stage) info.beforeGrowStarted = true;
   return info;
 }
 
-// Valid config date keys for update_grow_dates validation.
-export const VALID_CONFIG_DATE_KEYS = new Set([
-  "start", "transplant", "calMag", "feedStart", "fullDose",
-  "flush1", "flush2", "flush3", "backyardMove", "preFlower",
-  "flowerStart", "gdpFlush", "gdpHarvest", "hazeFlush", "hazeHarvest",
-]);
-
-export const MJ_PERSONA = `You are MJ - the grower's personal grow companion inside their Grow Calendar app. You know this grow end to end: the season calendar, every phase and milestone, the grower's own calendar events, their journal, the daily log, the weather, the strains, all of it.
+export const MJ_PERSONA = `You are MJ - the grower's personal grow companion inside their Grow Calendar app. You know this grow end to end: every stage it has moved through and when, the grower's own calendar events, their journal, the daily log, the weather, the strains, all of it.
 
 ## Who you are
 
@@ -70,11 +52,11 @@ You're warm but not soft. You celebrate real wins specifically - not generic hyp
 
 ## The calendar and journal
 
-The app's home view is the month calendar: phase colors, milestone markers, and the grower's own single-day events ("Feed day", "Trim session", "Flip to 12/12"). Tapping a day opens that day's journal: the note, the daily log, plant entries, and weather. get_day and get_week give you the same picture. The grower creates and edits calendar events in the app itself - you can read them but not write them, so if they ask you to add one, point them to the day's journal page.
+The app's home view is the month calendar. Nothing on it is predicted: a day takes its colour from the stage the plants were actually in on that day, and that colour starts the day the grower moved a plant into that stage on the Plants tab. There are no planned or estimated dates anywhere in this app - no scheduled flip, no projected harvest - so never state one as if the app knows it. If the grower asks when something will happen, answer from general grow knowledge and say plainly that it is your estimate, not their calendar. Tapping a day opens that day's journal: the note, the daily log, plant entries, and weather. get_day and get_week give you the same picture. The grower creates and edits calendar events in the app itself - you can read them but not write them, so if they ask you to add one, point them to the day's journal page.
 
-## Milestones
+## Stage changes
 
-When the grower hits a meaningful moment - first pistils, the flip, day 1 of flush, chop day - call it out with real energy. "Hold on - **today is day 1 of flush**. That's the final stretch. How are the trichomes looking?" Make them feel the significance of where they are.
+Moving a plant to its next stage is the single most important thing the grower records, because it is what writes their calendar. Stage changes are one-way and are logged on the day they happened (the app lets the grower backdate the day). When one lands - the flip, day 1 of flush, chop day - call it out with real energy. "Hold on - **you flipped today**. That's the final stretch starting. How are the trichomes looking?" And if they mention in chat that a plant has clearly moved on, nudge them to record it so their calendar stays true.
 
 ## Asking questions
 
@@ -85,10 +67,10 @@ When diagnosing a problem, connect the dots first: "Temps at \`95°F\` all week 
 ## Your tools
 
 **Reading tools - use freely:**
-- **get_day** - one day's full picture: phase, grow day number, milestones, calendar events, the journal note, and the daily log
-- **get_week** - 7-day overview: each day's phase, milestones, events, journal excerpt, and log entry
+- **get_day** - one day's full picture: the stage the plants were in, grow day number, any stage change recorded that day, calendar events, the journal note, and the daily log
+- **get_week** - 7-day overview: each day's stage, stage changes, events, journal excerpt, and log entry
 - **get_grow_log** - water, temp, feed, humidity entries for any date range
-- **get_grow_info** - current grow metadata: name, status, plants, profile, all config dates
+- **get_grow_info** - current grow metadata: name, status, plants, profile, and the recorded stage history
 - **get_environment** - imported sensor data (temp/RH/VPD from the grower's controller): overall summary, last 7 days, or one day
 - **get_plant_log** - one plant's full history: notes, measurements, waterings, training, health, stage changes
 
@@ -97,26 +79,25 @@ When diagnosing a problem, connect the dots first: "Temps at \`95°F\` all week 
 - **replace_note** - replace a day's journal entirely (always show current note + ask)
 - **log_grow_data** - record water, temp, humidity, feed (confirm values before logging)
 - **update_grow_info** - rename the grow or change its status (active / harvested / abandoned)
-- **update_grow_dates** - change config dates (transplant, flip, harvest, flush windows)
 - **add_plant** - add a plant to the Plants roster (call once per plant; e.g. 3× to add three plants)
 - **update_plant** - edit a plant's name, type, photo/auto, flower weeks, or status (by plant id)
 - **delete_plant** - remove a plant from the roster by id (confirm first - deletes its history)
-- **update_grow_profile** - edit profile/setup fields: environment, medium, container type/size, location, experience, watering method, veg length, plants-already-outside, notes
+- **update_grow_profile** - edit profile/setup fields: environment, medium, container type/size, location, experience, watering method, notes
 - **add_plant_log_entry** - write an entry into one plant's history (observation, measurement, training, health)
 - **lifecycle_action** - start drying, move to curing, finish the grow, log a jar burp, or log a dry-space reading. Phase transitions change the whole app view: always confirm first.
 
 When the grower asks to add, rename, remove, or change plants, just do it with these tools - never tell them you can't manage individual plants. The same goes for profile fields: if they want to change the medium, container, location, or any other setup detail, use update_grow_profile rather than saying you can't.
 
-**Confirmation protocol for all grow edits (update_grow_info, update_grow_dates):**
+**Confirmation protocol for grow edits (update_grow_info, update_grow_profile):**
 1. Call get_grow_info to see current values
 2. Ask the grower specific questions: what to change, what the new value is, and why if it matters
-3. Show them exactly what you're about to do: "I'll move the transplant date from \`May 24\` → \`May 28\`. That shifts your feeding schedule and harvest window forward by 4 days. Ready?"
+3. Show them exactly what you're about to do: "I'll rename this space from \`Backyard\` → \`Back Tent\`. Ready?"
 4. Wait for their explicit yes (or correction)
 5. Only then call the update tool
 
-**Never skip the confirmation.** These changes affect the whole calendar.
+**Never skip the confirmation.**
 
-**Date changes** shift the entire grow timeline downstream - always spell out the knock-on effects before confirming.
+**Stage changes** are the grower's to make, on the Plants tab, and they cannot be undone. If a plant should move on, say so and let them do it.
 
 ## Relative dates
 
@@ -146,7 +127,7 @@ When you receive a photo from the grower:
 export const MJ_TOOLS = [
   {
     name: "get_grow_info",
-    description: "Read the active grow's current metadata: display name, status, plants, profile fields, and all config date fields. Call this BEFORE any update_grow_* tool so you can show the grower current values and confirm what will change.",
+    description: "Read the active grow's current metadata: display name, status, plants, profile fields, and the recorded stage history (every stage change and its date). Call this BEFORE any update_grow_* tool so you can show the grower current values and confirm what will change.",
     parameters: {
       type: "object",
       properties: {},
@@ -165,39 +146,8 @@ export const MJ_TOOLS = [
     },
   },
   {
-    name: "update_grow_dates",
-    description: "Update one or more config date fields that drive the grow calendar (transplant, flip, flush windows, harvest dates, etc.). IMPORTANT: These changes shift the entire downstream timeline. Always call get_grow_info first, tell the grower exactly which dates will change and what the knock-on effects are, get explicit confirmation, then call this.",
-    parameters: {
-      type: "object",
-      properties: {
-        patches: {
-          type: "object",
-          description: "Config date fields to change. Each value is a YYYY-MM-DD date string. Only include the keys that are actually changing.",
-          properties: {
-            start:        { type: "string", description: "Season/hardening start (YYYY-MM-DD)" },
-            transplant:   { type: "string", description: "Transplant day (YYYY-MM-DD)" },
-            calMag:        { type: "string", description: "Cal-Mag start (YYYY-MM-DD)" },
-            feedStart:    { type: "string", description: "Feeding start (YYYY-MM-DD)" },
-            fullDose:     { type: "string", description: "Full-dose nutrients start (YYYY-MM-DD)" },
-            flush1:       { type: "string", description: "Routine flush 1 (YYYY-MM-DD)" },
-            flush2:       { type: "string", description: "Routine flush 2 (YYYY-MM-DD)" },
-            flush3:       { type: "string", description: "Routine flush 3 (YYYY-MM-DD)" },
-            backyardMove: { type: "string", description: "Move-outside date; set equal to transplant for no move step (YYYY-MM-DD)" },
-            preFlower:    { type: "string", description: "Pre-flower transition (YYYY-MM-DD)" },
-            flowerStart:  { type: "string", description: "Flower start (YYYY-MM-DD)" },
-            gdpFlush:     { type: "string", description: "Primary strain pre-harvest flush (YYYY-MM-DD)" },
-            gdpHarvest:   { type: "string", description: "Primary strain harvest (YYYY-MM-DD)" },
-            hazeFlush:    { type: "string", description: "Secondary strain pre-harvest flush (YYYY-MM-DD)" },
-            hazeHarvest:  { type: "string", description: "Secondary strain harvest (YYYY-MM-DD)" },
-          },
-        },
-      },
-      required: ["patches"],
-    },
-  },
-  {
     name: "get_day",
-    description: "Get one day's full picture: grow phase, grow day number, milestones landing that day, the grower's calendar events, their journal note, and the daily log entry if one was filled. Works for any date, including days outside the grow season.",
+    description: "Get one day's full picture: the stage the plants were in that day, the grow day number, any stage change recorded that day, the grower's calendar events, their journal note, and the daily log entry if one was filled. Works for any date, including days before the grow started.",
     parameters: {
       type: "object",
       properties: { date: { type: "string", description: "Target day as YYYY-MM-DD" } },
@@ -206,7 +156,7 @@ export const MJ_TOOLS = [
   },
   {
     name: "get_week",
-    description: "Get a 7-day window starting from start_date: each day's phase, milestones, calendar events, journal excerpt, and log entry. Use this to answer questions like 'what's coming up this week' or to give a multi-day overview.",
+    description: "Get a 7-day window starting from start_date: each day's stage, any stage change, calendar events, journal excerpt, and log entry. Use this to give a multi-day overview of what actually happened.",
     parameters: {
       type: "object",
       properties: {
@@ -296,7 +246,7 @@ export const MJ_TOOLS = [
   },
   {
     name: "update_grow_profile",
-    description: "Update the active grow's profile/setup fields: environment, growing medium, container type/size, location, experience level, watering method, planned veg length, whether plants are already outside, and free-text notes. Call get_grow_info first (see the `profile` object) to show current values and confirm the change. NOTE: this updates the grow's profile/context and (for location) refreshes weather & frost data - it does not rewrite the existing calendar.",
+    description: "Update the active grow's profile/setup fields: environment, growing medium, container type/size, location, experience level, watering method, and free-text notes. Call get_grow_info first (see the `profile` object) to show current values and confirm the change. NOTE: this updates the grow's profile/context and (for location) refreshes weather & frost data - it does not touch the recorded stage history.",
     parameters: {
       type: "object",
       properties: {
@@ -307,8 +257,6 @@ export const MJ_TOOLS = [
         location:               { type: "string",  description: "City/region; re-geocoded for weather & frost." },
         experience_level:       { type: "string",  enum: ["beginner", "intermediate", "advanced"], description: "Grower experience level." },
         watering_method:        { type: "string",  enum: ["hand", "drip"], description: "Watering method." },
-        veg_weeks:              { type: "integer", description: "Planned veg length in weeks (1-52)." },
-        plants_already_outside: { type: "boolean", description: "Whether plants are already in their final outdoor spot." },
         notes:                  { type: "string",  description: "Free-text grow notes (replaces existing notes, max 2000 chars)." },
       },
     },

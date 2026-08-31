@@ -2,10 +2,10 @@
 // The main POST /mj chat handler: request validation, quota enforcement,
 // context assembly, and the SSE stream around the Gemini tool-calling loop.
 import { error, safeJsonBounded } from "../util.js";
-import { loadRawPlan } from "../plan.js";
 import { loadRawGrow, loadRawGrows } from "../grows.js";
-import { parseConfig, parseDate } from "../../src/lib/planConfig.js";
-import { buildPlanText } from "../../src/lib/planText.js";
+import { loadStageTimeline } from "../stages.js";
+import { parseDate } from "../../src/lib/dates-core.js";
+import { buildTimelineText } from "../../src/lib/timelineText.js";
 import { getLifecyclePhase, dryProgress, cureProgress } from "../../src/lib/lifecycle.js";
 import { growLocation, strainSummary } from "../../src/lib/growProfile.js";
 import { firstGrowId } from "../perDayScope.js";
@@ -90,21 +90,17 @@ export async function postMj(request, env, user) {
   }
   const messages = [...contextMessages, currentMsg];
 
-  // Load the active grow - prefer the grows table, fall back to plan_config.
-  let raw;
-  if (activeGrowId) {
-    raw = await loadRawGrow(env, user.id, activeGrowId);
-  }
-  if (!raw) {
-    raw = await loadRawPlan(env, user.id);
-  }
-  if (raw.needsSetup) return error(400, "Complete your grow setup before using MJ.");
-
-  const config = parseConfig(raw.config);
+  // Load the active grow.
+  const raw = activeGrowId ? await loadRawGrow(env, user.id, activeGrowId) : null;
+  if (!raw || raw.needsSetup) return error(400, "Complete your grow setup before using MJ.");
 
   // Per-day data is grow-scoped; fall back to the user's first grow when the
   // request didn't carry an explicit active grow.
   const dayGrowId = activeGrowId ?? await firstGrowId(env, user.id);
+
+  // The grow's real history: the source every stage label and day number in
+  // MJ's context is read from.
+  const timeline = await loadStageTimeline(env, user.id, dayGrowId);
 
   // Load all rich context in parallel.
   const [grows, growLogContext, weatherContext, statsContext, envContext] = await Promise.all([
@@ -141,8 +137,8 @@ export async function postMj(request, env, user) {
   }
 
   // Assemble system prompt segments.
-  const planText  = buildPlanText(config);
-  const baseBlock = [MJ_PERSONA, "", planText, "", supplyContext].filter(s => s !== "").join("\n");
+  const timelineText = buildTimelineText(timeline.events, timeline.firstDate, today);
+  const baseBlock = [MJ_PERSONA, "", timelineText, "", supplyContext].filter(s => s !== "").join("\n");
 
   const rosterContext = buildRosterContext(raw.survey);
 
@@ -186,7 +182,7 @@ export async function postMj(request, env, user) {
 
       const actions = [];
       const executeToolUse = (name, input) =>
-        executeTool(name, input, env, user.id, config, actions, activeGrowId, raw);
+        executeTool(name, input, env, user.id, timeline, actions, activeGrowId, raw);
 
       let reply = null;
       let modelUsed = null;

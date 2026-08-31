@@ -1,12 +1,13 @@
 // @ts-check
 // Comprehensive, print-optimised HTML report for a single grow. Pulls the full
-// profile/setup, the season timeline (phases and milestone dates), a
-// day-by-day journal of everything recorded, and season stats into one
-// self-contained styled document that the grower can read in a tab and
-// "Save as PDF".
+// profile/setup, the recorded stage timeline, a day-by-day journal of
+// everything logged, and season stats into one self-contained styled document
+// that the grower can read in a tab and "Save as PDF". Nothing in it is
+// predicted: every date shown is a date the grower recorded.
 import { error } from "./util.js";
-import { parseConfig, parseDate } from "../src/lib/planConfig.js";
-import { getPhase, buildMilestones, getGrowProgress, PHASES } from "../src/lib/growData.js";
+import { parseDate } from "../src/lib/dates-core.js";
+import { loadStageTimeline } from "./stages.js";
+import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../src/lib/stageTimeline.js";
 import { growLocation, strainSummary } from "../src/lib/growProfile.js";
 import { ensureGrowEventsSchema } from "./events.js";
 
@@ -22,6 +23,11 @@ function esc(s) {
 function parseField(raw) {
   if (!raw) return null;
   try { return JSON.parse(raw); } catch { return null; }
+}
+function ymdOf(d) {
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
 }
 function asDate(d) {
   if (d instanceof Date) return Number.isNaN(d.getTime()) ? null : d;
@@ -52,10 +58,11 @@ function tryArr(s) {
 }
 function num(v) { return v == null || v === "" ? null : (Number.isFinite(+v) ? +v : null); }
 
-function chip(phase) {
-  const p = PHASES[phase];
-  if (!p) return "";
-  return `<span class="chip" style="background:${p.light};color:${p.dark};border-color:${p.color}">${esc(p.label)}</span>`;
+function chip(stage) {
+  const label = stageLabel(stage);
+  const group = stageGroup(stage);
+  if (!label || !group) return "";
+  return `<span class="chip" style="background:${group.color}1f;color:${group.color};border-color:${group.color}">${esc(label)}</span>`;
 }
 
 const HEALTH = {
@@ -106,9 +113,10 @@ export async function getGrowReport(env, user, growId) {
   ).bind(growId, user.id).first();
   if (!row) return error(404, "grow not found");
 
-  const rawConfig = parseField(row.config);
-  const config = rawConfig ? parseConfig(rawConfig) : null;
   const survey = parseField(row.survey) ?? {};
+  // The grow's recorded history: what every stage label and day number below
+  // is read from.
+  const { events: stageEvents, firstDate } = await loadStageTimeline(env, user.id, growId);
 
   const [logRes, noteRes] = await Promise.all([
     env.DB.prepare("SELECT * FROM grow_log WHERE user_id = ? AND grow_id = ? ORDER BY date").bind(user.id, growId).all(),
@@ -138,7 +146,7 @@ export async function getGrowReport(env, user, growId) {
     eventRows = r.results ?? [];
   } catch { /* grow_events unavailable */ }
 
-  const html = renderReport({ row, config, survey, logRows, noteRows, plantLogRows, eventRows });
+  const html = renderReport({ row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows, eventRows });
 
   return new Response(html, {
     headers: {
@@ -149,7 +157,7 @@ export async function getGrowReport(env, user, growId) {
 }
 
 function renderReport(ctx) {
-  const { row, config, survey, logRows, noteRows, plantLogRows, eventRows } = ctx;
+  const { row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows, eventRows } = ctx;
 
   const name = row.display_name || "My Grow";
   const status = row.status || "active";
@@ -167,19 +175,17 @@ function renderReport(ctx) {
   }
   const logDays = new Set(logRows.map(r => r.date)).size;
 
-  // Floor to midnight: getPhase compares against midnight phase dates, so a
-  // timestamped "now" made the current-phase stat vanish on the final harvest day.
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const currentPhase = config ? getPhase(today, config) : null;
-  const progress = config && config.start && config.hazeHarvest ? getGrowProgress(today, config) : null;
+  const todayKey = ymdOf(today);
+  const currentStage = stageOnDate(stageEvents, todayKey);
+  const growDay = dayOfGrow(firstDate, todayKey);
 
   // ── Headline stat strip ──────────────────────────────────────────────────
   const stats = [
-    config?.start ? ["Season start", fmtNice(config.start)] : null,
-    config?.hazeHarvest ? ["Final harvest", fmtNice(config.hazeHarvest)] : null,
-    progress != null ? ["Progress", `${progress}%`] : null,
-    currentPhase ? ["Current phase", PHASES[currentPhase]?.label ?? currentPhase] : null,
+    firstDate ? ["Grow started", fmtNice(asDate(firstDate))] : null,
+    growDay ? ["Day", String(growDay)] : null,
+    currentStage ? ["Current stage", stageLabel(currentStage)] : null,
     plants.length ? ["Plants", String(plants.length)] : null,
     ["Days logged", String(logDays)],
     ["Total water", `${Math.round(totalWater * 10) / 10} gal`],
@@ -239,37 +245,32 @@ function renderReport(ctx) {
     plantsSection = section(`Plants · ${plants.length}`, cards);
   }
 
-  // ── Season timeline: milestone dates ─────────────────────────────────────
+  // ── The recorded stage timeline ──────────────────────────────────────────
   let timelineSection = "";
-  if (config) {
-    const ms = buildMilestones(config).filter(m => asDate(m.date));
-    if (ms.length) {
-      timelineSection = section("Key Dates",
-        `<div class="timeline">${ms.map(m =>
-          `<div class="tl"><span class="tl-icon">${esc(m.icon || "•")}</span><span class="tl-label">${esc(m.label)}</span><span class="tl-date">${fmtNice(m.date)}</span></div>`).join("")}</div>`);
-    }
+  if (stageEvents.length) {
+    timelineSection = section("Stage Changes",
+      `<div class="timeline">${stageEvents.map(e => {
+        const day = dayOfGrow(firstDate, e.date);
+        return `<div class="tl"><span class="tl-icon">•</span><span class="tl-label">Moved to ${esc(stageLabel(e.stage))}</span><span class="tl-date">${fmtNice(asDate(e.date))}${day ? ` · day ${day}` : ""}</span></div>`;
+      }).join("")}</div>`);
   }
 
-  // ── Season timeline: phase ranges ────────────────────────────────────────
+  // ── How long the grow spent in each stage ────────────────────────────────
   let phasesSection = "";
-  if (config && config.start && config.hazeHarvest) {
-    const ranges = [];
-    let cur = null;
-    for (let t = config.start.getTime(); t <= config.hazeHarvest.getTime(); t += DAY_MS) {
-      const date = new Date(t);
-      const phase = getPhase(date, config);
-      if (!phase) continue;
-      if (!cur || cur.phase !== phase) { cur = { phase, start: date, end: date }; ranges.push(cur); }
-      else cur.end = date;
-    }
-    const phaseCards = ranges.map(r => {
-      const range = r.start.getTime() === r.end.getTime() ? fmtNice(r.start) : `${fmtNice(r.start)} - ${fmtNice(r.end)}`;
-      const days = Math.round((r.end.getTime() - r.start.getTime()) / DAY_MS) + 1;
+  if (stageEvents.length) {
+    const phaseCards = stageEvents.map((e, i) => {
+      const start = asDate(e.date);
+      // The stage ran until the next switch, or until today if it is current.
+      const endKey = i + 1 < stageEvents.length ? stageEvents[i + 1].date : todayKey;
+      const end = asDate(endKey);
+      if (!start || !end || end < start) return "";
+      const range = start.getTime() === end.getTime() ? fmtNice(start) : `${fmtNice(start)} - ${fmtNice(end)}`;
+      const days = Math.round((end.getTime() - start.getTime()) / DAY_MS) + 1;
       return `<div class="phase">
-        <div class="phase-head">${chip(r.phase)}<span class="phase-range">${range}</span><span class="phase-days">${days} day${days === 1 ? "" : "s"}</span></div>
+        <div class="phase-head">${chip(e.stage)}<span class="phase-range">${range}</span><span class="phase-days">${days} day${days === 1 ? "" : "s"}</span></div>
       </div>`;
     }).join("");
-    if (phaseCards) phasesSection = section("Season Phases", phaseCards);
+    if (phaseCards) phasesSection = section("Time In Each Stage", phaseCards);
   }
 
   // ── Day-by-day journal ───────────────────────────────────────────────────
@@ -285,8 +286,7 @@ function renderReport(ctx) {
 
   const journalCards = journalDates.map(d => {
     const e = byDate.get(d);
-    const date = asDate(d);
-    const phase = config && date ? getPhase(date, config) : null;
+    const stage = firstDate && d >= firstDate ? stageOnDate(stageEvents, d) : null;
 
     // Grow-log metrics
     const metrics = [];
@@ -316,7 +316,7 @@ function renderReport(ctx) {
 
     if (!metricsHtml && !eventsHtml && !noteHtml) return "";
     return `<div class="jday">
-      <div class="jhead"><span class="jdate">${fmtLong(d)}</span>${phase ? chip(phase) : ""}</div>
+      <div class="jhead"><span class="jdate">${fmtLong(d)}</span>${stage ? chip(stage) : ""}</div>
       ${metricsHtml}${eventsHtml}${noteHtml}
     </div>`;
   }).filter(Boolean).join("");

@@ -14,13 +14,3 @@ export function journalStreak(dateKeys, today) {
   }
   return streak;
 }
-
-// Day number of the grow for a given date (day 1 = the grow's first day).
-export function dayOfGrow(date, config) {
-  const start = config?.germinate ?? config?.start ?? config?.transplant;
-  if (!start) return null;
-  const a = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const b = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-  const n = Math.round((a - b) / 86400000) + 1;
-  return n >= 1 ? n : null;
-}

@@ -1,48 +1,13 @@
-// Turns the wizard's "current stage + when it started" answer into the fields
-// the setup engine needs: a transplant date (the anchor everything else derives
-// from), a startType, and the per-plant stage. Pure + unit-tested.
+// Turns the wizard's "which stage are you in, and when did it start" answer
+// into the roster the app stores. There are no derived dates here any more:
+// the only date in play is the one the grower gave, and it becomes day 1 of the
+// space when the stage entries are seeded. Pure + unit-tested.
 
-// Days from the START of a stage to transplant day. Mirrors the offsets in
-// worker/planSetup.js fillMissingConfigKeys (seedlingStart = transplant-14,
-// germinate = transplant-19; flowerStart = transplant+83, etc.). Positive means
-// transplant is in the future relative to the stage start.
-export const STAGE_TO_TRANSPLANT_OFFSET = {
-  germination: 19,
-  seedling: 14,
-  vegetative: 0,
-  flowering: -83,
-  flushing: -114,
-  harvest: -121,
-};
-
-export function stageToStartType(stage) {
-  return stage === "germination" || stage === "seedling" ? "seed" : "veg";
-}
-
-function addDaysIso(iso, n) {
-  const [y, m, d] = iso.split("-").map(Number);
-  const dt = new Date(y, m - 1, d);
-  dt.setDate(dt.getDate() + n);
-  const mm = String(dt.getMonth() + 1).padStart(2, "0");
-  const dd = String(dt.getDate()).padStart(2, "0");
-  return `${dt.getFullYear()}-${mm}-${dd}`;
-}
-
-// Given the current stage and the date it began, the transplant date that makes
-// today land in that stage on the calendar.
-export function deriveTransplantDate(currentStage, stageStartDate) {
-  if (!stageStartDate) return "";
-  const off = STAGE_TO_TRANSPLANT_OFFSET[currentStage] ?? 0;
-  return addDaysIso(stageStartDate, off);
-}
-
-// Returns a copy of the survey ready for setup: transplantDate computed from the
-// current stage, startType derived, and each strain expanded into one roster
-// entry per plant (count), every plant tagged with the current stage (the grower
-// can fine-tune individual plants later on the Plants tab).
+// Returns a copy of the survey ready for setup: each strain expanded into one
+// roster entry per plant (count), every plant tagged with the current stage
+// (the grower can advance individual plants later on the Plants tab).
 export function resolveSurveyForSetup(survey) {
   const currentStage = survey.currentStage || "seedling";
-  const transplantDate = deriveTransplantDate(currentStage, survey.stageStartDate) || survey.transplantDate || survey.stageStartDate;
 
   // Expand each strain into `count` roster entries (same strain name - they're
   // the same strain, just different plants, distinguished by id). Keeping the
@@ -59,8 +24,6 @@ export function resolveSurveyForSetup(survey) {
   return {
     ...survey,
     currentStage,
-    startType: stageToStartType(currentStage),
-    transplantDate,
     plantCount: strains.length,
     strains,
   };

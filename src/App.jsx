@@ -1,16 +1,15 @@
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useToday } from "./lib/dates.js";
-import { PHASES, getPhase } from "./lib/growData.js";
 import { useAuth } from "./lib/auth.jsx";
 import { usePlan } from "./lib/usePlan.jsx";
-import { useJournalMonth } from "./lib/useJournal.js";
+import { useJournalMonth, useStageTimeline } from "./lib/useJournal.js";
 import { api, ymd } from "./lib/api.js";
 import { buildSuggestions } from "./lib/mjSuggestions.js";
 import { useOnlineStatus } from "./lib/useOnlineStatus.js";
 import { useTheme } from "./lib/useTheme.js";
 import { hasGrowLocation } from "./lib/growProfile.js";
-import { dayOfGrow } from "./lib/journalStats.js";
+import { currentStageOf, dayOfGrow, stageLabel } from "./lib/stageTimeline.js";
 import { getLifecyclePhase, phaseMeta } from "./lib/lifecycle.js";
 
 import TopBar from "./components/TopBar.jsx";
@@ -72,7 +71,7 @@ export default function App() {
   const today    = useToday();
   const online   = useOnlineStatus();
   const { theme, setTheme } = useTheme();
-  const { grows, activeGrowId, setActiveGrowId, config, survey, lifecycle, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
+  const { grows, activeGrowId, setActiveGrowId, survey, lifecycle, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
   const lifecyclePhase = getLifecyclePhase(lifecycle);
   // The month the calendar shows - real year + month, free to roam.
   const [viewYM, setViewYM] = useState(() => ({ y: today.getFullYear(), m: today.getMonth() }));
@@ -96,6 +95,8 @@ export default function App() {
   // Which days of the visible month hold journal content (the .note flag
   // drives the calendar's journaled-day dots).
   const journalMonthDays = useJournalMonth(monthKey, Boolean(user) && Boolean(activeGrowId), activeGrowId);
+  // The grow's real timeline: every stage switch the grower recorded.
+  const { events: stageEvents, firstDate: growStart } = useStageTimeline(activeGrowId, Boolean(user));
 
   // From anywhere in the app (a calendar day, plant history, MJ, a shared
   // link) straight to a day's journal page. push=false for browser-driven
@@ -140,7 +141,7 @@ export default function App() {
   // journal page directly.
   const deepLinkApplied = useRef(false);
   useEffect(() => {
-    if (deepLinkApplied.current || !config) return;
+    if (deepLinkApplied.current || !survey) return;
     const url = new URL(window.location.href);
     const d = url.searchParams.get("d");
     if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
@@ -150,7 +151,7 @@ export default function App() {
     if (Number.isNaN(date.getTime()) || ymd(date) !== d) return;
     deepLinkApplied.current = true;
     openJournalAt(date, { push: false });
-  }, [config, openJournalAt]);
+  }, [survey, openJournalAt]);
 
   // Lock body scroll while chat is open.
   useEffect(() => {
@@ -178,11 +179,11 @@ export default function App() {
       </div>
     );
   }
-  // Only blank to the skeleton on the FIRST load (no config yet). reload() and
+  // Only blank to the skeleton on the FIRST load (nothing loaded yet). reload() and
   // grow switches also flip planLoading, but we keep the current UI on screen
   // while they refetch so the whole app doesn't flash to a skeleton every time
   // MJ acts, a phase transitions, or a plant is edited.
-  if (planLoading && !config) {
+  if (planLoading && !survey) {
     return (
       <div style={SHELL_STYLE}>
         <AppShellSkeleton />
@@ -203,7 +204,7 @@ export default function App() {
     // shows as IN SETUP on the Spaces tab) and the wizard's autosaved draft, so
     // backing out never loses progress; usePlan prefers configured grows on
     // reload, so the unfinished one can't re-trap the app.
-    const canExit = grows.some(g => g.config);
+    const canExit = grows.some(g => g.survey);
     return (
       <div style={SHELL_STYLE}>
         <Suspense fallback={<PanelSkeleton />}>
@@ -234,7 +235,7 @@ export default function App() {
     );
   }
 
-  if (!config) {
+  if (!survey) {
     return (
       <div style={SHELL_STYLE}>
         <AppShellSkeleton />
@@ -242,9 +243,9 @@ export default function App() {
     );
   }
 
-  const todayPhase = getPhase(today, config);
-  const todayStyle = todayPhase ? PHASES[todayPhase] : null;
-  const todayDayNum = dayOfGrow(today, config);
+  const todayStage = currentStageOf(survey?.strains ?? []);
+  const todayStyle = todayStage ? { label: stageLabel(todayStage) } : null;
+  const todayDayNum = dayOfGrow(growStart, ymd(today));
 
   const suggestions = buildSuggestions({
     contextDate: chatContext,
@@ -377,9 +378,9 @@ export default function App() {
                   setMainView(v);
                 }}
               />
-              {/* Drying entry point - main page shows it only once final
-                  harvest has passed; starting early lives in More. */}
-              {Boolean(config?.hazeHarvest && today >= config.hazeHarvest) && (
+              {/* Drying entry point - offered once a plant actually reaches
+                  harvest. Starting earlier lives behind the environment gear. */}
+              {todayStage === "harvest" && (
                 <PhasePrompt today={today} due />
               )}
               {/* No location = no auto weather. Nudge once, fix in one tap. */}
@@ -391,10 +392,10 @@ export default function App() {
                   today={today}
                   date={journalDate ?? today}
                   onChangeDate={(d) => { setJournalDate(d); setViewYM({ y: d.getFullYear(), m: d.getMonth() }); }}
-                  config={config}
+                  stageEvents={stageEvents}
+                  firstDate={growStart}
                   growId={activeGrowId}
                   onOpenPlant={openPlantFromJournal}
-                  onConfigChanged={reloadPlan}
                   onExit={exitJournal}
                   plants={survey?.strains ?? []}
                   environment={survey?.environment ?? "outdoor"}
@@ -405,7 +406,8 @@ export default function App() {
                   year={viewYM.y}
                   month={viewYM.m}
                   onChangeMonth={(y, m) => setViewYM({ y, m })}
-                  config={config}
+                  stageEvents={stageEvents}
+                  firstDate={growStart}
                   journalDays={journalMonthDays}
                   onPickDay={pickDay}
                 />
@@ -457,7 +459,7 @@ export default function App() {
             style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--c-bg)", overflowY: "auto" }}
           >
             <Suspense fallback={null}>
-              <StatsScreen config={config} today={today} onClose={() => setShowStats(false)} />
+              <StatsScreen today={today} onClose={() => setShowStats(false)} />
             </Suspense>
           </motion.div>
         )}
@@ -471,7 +473,7 @@ export default function App() {
             style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--c-bg)", overflowY: "auto" }}
           >
             <Suspense fallback={null}>
-              <GardenMap config={config} today={today} onClose={() => setShowMap(false)} />
+              <GardenMap today={today} onClose={() => setShowMap(false)} />
             </Suspense>
           </motion.div>
         )}

@@ -20,7 +20,7 @@ function parseSurvey(raw) {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
-async function ownedGrowRow(env, userId, growId) {
+export async function ownedGrowRow(env, userId, growId) {
   return env.DB.prepare(
     "SELECT survey FROM grows WHERE id = ? AND user_id = ?"
   ).bind(growId, userId).first();
@@ -69,6 +69,42 @@ export async function ensurePlantLogSchema(env) {
   }
 }
 
+// Write one "moved to <stage>" entry per plant, dated the day the grower says
+// that stage began. This is what the calendar, the day counter and every stage
+// label are read back out of - nothing is predicted, so without a first entry a
+// space has no timeline at all.
+export async function seedStageEntries(env, userId, growId, survey) {
+  const date = typeof survey?.stageStartDate === "string" && DATE_ONLY_RE.test(survey.stageStartDate)
+    ? survey.stageStartDate
+    : new Date().toISOString().slice(0, 10);
+  const plants = (survey?.strains ?? []).filter((p) => p?.id && STAGE_SET.has(p.stage ?? DEFAULT_STAGE));
+  if (plants.length === 0) return;
+  try {
+    await ensurePlantLogSchema(env);
+    const now = new Date().toISOString();
+    // Re-running setup must not stack duplicate seeds on the same day.
+    await env.DB.prepare(
+      "DELETE FROM plant_log WHERE user_id = ? AND grow_id = ? AND kind = 'stage' AND date = ?"
+    ).bind(userId, growId, date).run();
+    const stmt = env.DB.prepare(
+      `INSERT INTO plant_log
+         (user_id, grow_id, plant_id, date, kind, detail, body, height, height_unit, health, created_at, updated_at)
+       VALUES (?, ?, ?, ?, 'stage', ?, ?, NULL, NULL, NULL, ?, ?)`
+    );
+    await env.DB.batch(plants.map((p) => {
+      const stage = p.stage ?? DEFAULT_STAGE;
+      return stmt.bind(
+        userId, growId, p.id, date,
+        JSON.stringify({ stage }),
+        `Stage → ${STAGE_LABELS[stage]}`,
+        now, now,
+      );
+    }));
+  } catch (err) {
+    logError("grow-setup-stage-seed", { message: String(err?.message) });
+  }
+}
+
 // POST /api/grows/:id/plants
 export async function addPlant(request, env, user, growId) {
   const row = await ownedGrowRow(env, user.id, growId);
@@ -98,8 +134,13 @@ export async function addPlant(request, env, user, growId) {
       await env.DB.prepare(
         `INSERT INTO plant_log
            (user_id, grow_id, plant_id, date, kind, detail, body, height, height_unit, health, created_at, updated_at)
-         VALUES (?, ?, ?, ?, 'stage', NULL, ?, NULL, NULL, NULL, ?, ?)`
-      ).bind(user.id, growId, plant.id, stageStartDate, `Stage → ${STAGE_LABELS[stage]}`, now, now).run();
+         VALUES (?, ?, ?, ?, 'stage', ?, ?, NULL, NULL, NULL, ?, ?)`
+      ).bind(
+        user.id, growId, plant.id, stageStartDate,
+        JSON.stringify({ stage }),
+        `Stage → ${STAGE_LABELS[stage]}`,
+        now, now,
+      ).run();
     } catch (err) {
       logError("plant-add-stage-seed", { message: String(err?.message) });
     }
@@ -158,7 +199,7 @@ export async function deletePlant(env, user, growId, plantId) {
   return json({ ok: true });
 }
 
-export { ownedGrowRow, parseSurvey, saveSurvey };
+export { parseSurvey, saveSurvey };
 
 // GET /api/grows/:id/plants/:plantId/log
 export async function listPlantLog(env, user, growId, plantId) {

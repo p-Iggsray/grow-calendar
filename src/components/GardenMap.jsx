@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { RotateCcw } from "lucide-react";
-import { getPhase, PHASES } from "../lib/growData.js";
+import { currentStageOf, stageGroup, stageLabel } from "../lib/stageTimeline.js";
 import { usePlan } from "../lib/usePlan.jsx";
 import ScreenHeader from "./ScreenHeader.jsx";
 import HeaderMenu from "./HeaderMenu.jsx";
@@ -94,7 +94,7 @@ function sunT(hour) {
   return Math.max(0, Math.min(1, t));
 }
 
-export default function GardenMap({ today, config, onClose }) {
+export default function GardenMap({ today, onClose }) {
   const { survey, activeGrowId } = usePlan();
   const plantNames = growStrains(survey);
   const svgRef = useRef(null);
@@ -102,8 +102,9 @@ export default function GardenMap({ today, config, onClose }) {
   const [dragging, setDragging] = useState(null); // { id, offsetCx, offsetCy }
   const [selected, setSelected] = useState(null);
 
-  const phase = config ? getPhase(today, config) : null;
-  const phaseColor = (phase && PHASES[phase]?.color) ?? "var(--c-accent)";
+  // The map is tinted by where the plants actually are right now.
+  const stage = currentStageOf(survey?.strains ?? []);
+  const phaseColor = (stage && stageGroup(stage)?.color) ?? "var(--c-accent)";
 
   function clientToNorm(clientX, clientY) {
     const el = svgRef.current;
@@ -288,7 +289,7 @@ export default function GardenMap({ today, config, onClose }) {
               <div style={{ width: 10, height: 10, borderRadius: "50%", background: phaseColor, flexShrink: 0 }} />
               <div style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--c-text-dim)" }}>
                 <span style={{ fontWeight: 700, color: "var(--c-text)" }}>{selPot.strain}</span>
-                {phase && <span style={{ color: "var(--c-text-faint)", marginLeft: 8 }}>· {PHASES[phase]?.label ?? phase} phase</span>}
+                {stage && <span style={{ color: "var(--c-text-faint)", marginLeft: 8 }}>· {stageLabel(stage)} stage</span>}
               </div>
             </div>
           ) : (

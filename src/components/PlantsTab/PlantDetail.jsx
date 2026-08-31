@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { Plus, Trash2, Archive, Pencil, ArrowRight, BookOpen } from "lucide-react";
 import { usePlantLog } from "../../lib/usePlantLog.js";
 import { api } from "../../lib/api.js";
-import { dayOfGrow } from "../../lib/journalStats.js";
+import { dayOfGrow } from "../../lib/stageTimeline.js";
+import { ymd } from "../../lib/api.js";
 import {
   MONO, SERIF, TYPE_LABEL, HEALTH_MAP, STAGE_ORDER, stageLabel, nextStage,
   LOG_KINDS, kindLabel, summarizeEntry, fmtDateKey, plantHistoryStats,
@@ -34,7 +35,7 @@ function keyToDate(key) {
   return y && m && d ? new Date(y, m - 1, d) : null;
 }
 
-export default function PlantDetail({ growId, plant, harvestLabel, today, config, onOpenJournalDay, onClose, onArchive, onDelete, onLogChange, onChanged }) {
+export default function PlantDetail({ growId, plant, today, firstDate, onOpenJournalDay, onClose, onArchive, onDelete, onLogChange, onChanged }) {
   const { entries, loading: logLoading, addEntry, removeEntry } = usePlantLog(growId, plant.id, true);
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -42,6 +43,9 @@ export default function PlantDetail({ growId, plant, harvestLabel, today, config
   const [savingEdit, setSavingEdit] = useState(false);
   const [stageBusy, setStageBusy] = useState(false);
   const [confirmStage, setConfirmStage] = useState(false);
+  // The day the switch actually happened. Defaults to today; a grower who
+  // flipped a plant last Tuesday can say so.
+  const [stageDate, setStageDate] = useState(() => ymd(today ?? new Date()));
   const [histFilter, setHistFilter] = useState("all");
   const [daily, setDaily] = useState([]);
 
@@ -64,7 +68,7 @@ export default function PlantDetail({ growId, plant, harvestLabel, today, config
   const upcoming = stageIdx < STAGE_ORDER.length - 1 ? nextStage(stage) : null;
 
   // At-a-glance numbers derived from the history + grow timeline.
-  const age = today && config ? dayOfGrow(today, config) : null;
+  const age = today ? dayOfGrow(firstDate, ymd(today)) : null;
   const { stageDays, lastHealth } = plantHistoryStats(combined, today);
   const healthInfo = lastHealth ? HEALTH_MAP[lastHealth] : null;
 
@@ -98,7 +102,9 @@ export default function PlantDetail({ growId, plant, harvestLabel, today, config
     setStageBusy(true);
     try {
       await api.patchPlant(growId, plant.id, { stage: upcoming });
-      await addEntry({ kind: "stage", body: `Stage → ${stageLabel(upcoming)}` });
+      await addEntry({ kind: "stage", date: stageDate, body: `Stage → ${stageLabel(upcoming)}`, detail: { stage: upcoming } });
+      // The calendar reads its colours from these switches - tell it to refetch.
+      window.dispatchEvent(new Event("growlog-mutated"));
       onLogChange?.();
       onChanged?.();
     } finally { setStageBusy(false); }
@@ -168,7 +174,7 @@ export default function PlantDetail({ growId, plant, harvestLabel, today, config
                 type="button"
                 className="touch-target"
                 disabled={stageBusy}
-                onClick={() => setConfirmStage(true)}
+                onClick={() => { setStageDate(ymd(today ?? new Date())); setConfirmStage(true); }}
                 style={{
                   display: "flex", alignItems: "center", gap: 6,
                   padding: "9px 15px", borderRadius: 18,
@@ -188,7 +194,6 @@ export default function PlantDetail({ growId, plant, harvestLabel, today, config
           {age && <Meta label="Age" value={`Day ${age}`} />}
           <Meta label="In stage" value={stageDays != null ? `${stageDays}d` : "-"} />
           {healthInfo && <Meta label="Health" value={healthInfo.label} accent={healthInfo.color} />}
-          <Meta label="Est. harvest" value={harvestLabel || "-"} />
         </div>
 
         {/* Photos of this plant */}
@@ -267,8 +272,8 @@ export default function PlantDetail({ growId, plant, harvestLabel, today, config
                         fontFamily: MONO, fontSize: 11, color: "var(--c-text-dim)",
                       }}>
                       {fmtDateKey(e.date)}
-                      {config && keyToDate(e.date) && dayOfGrow(keyToDate(e.date), config) && (
-                        <span style={{ color: "var(--c-text-ghost)" }}>· Day {dayOfGrow(keyToDate(e.date), config)}</span>
+                      {dayOfGrow(firstDate, e.date) && (
+                        <span style={{ color: "var(--c-text-ghost)" }}>· Day {dayOfGrow(firstDate, e.date)}</span>
                       )}
                       {onOpenJournalDay && <BookOpen size={11} strokeWidth={2} style={{ color: "var(--c-text-ghost)" }} />}
                     </button>
@@ -301,7 +306,23 @@ export default function PlantDetail({ growId, plant, harvestLabel, today, config
         cancelLabel="Not yet"
         onConfirm={advanceStage}
         onCancel={() => setConfirmStage(false)}
-      />
+      >
+        <label style={{ display: "block", fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>
+          Day it happened
+          <input
+            type="date"
+            value={stageDate}
+            max={ymd(today ?? new Date())}
+            onChange={(e) => setStageDate(e.target.value)}
+            style={{
+              display: "block", width: "100%", marginTop: 6,
+              background: "var(--c-surface-1)", border: "1px solid var(--c-border-strong)",
+              borderRadius: 10, padding: "9px 11px", color: "var(--c-text)",
+              fontFamily: MONO, fontSize: 13,
+            }}
+          />
+        </label>
+      </ConfirmModal>
     </motion.div>
   );
 }

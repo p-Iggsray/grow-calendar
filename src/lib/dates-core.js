@@ -24,5 +24,12 @@ export function daysBetween(a, b) {
   return Math.round((ua - ub) / 86400000);
 }
 
+// ISO YYYY-MM-DD parsed as a LOCAL date. `new Date("2026-05-05")` would parse
+// as UTC and shift the day in western timezones.
+export function parseDate(iso) {
+  const [y, m, d] = String(iso).split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
 export const fmt  = d => `${MONTH_NAMES[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
 export const fmtL = d => `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}`;

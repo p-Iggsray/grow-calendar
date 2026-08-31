@@ -6,7 +6,7 @@
 // and curing trackers that finish the grow. State lives in a grow's `lifecycle`
 // JSON field (see worker/grows.js) - never inside `config`, which is date-parsed.
 import { daysBetween } from "./dates-core.js";
-import { parseDate } from "./planConfig.js";
+import { parseDate } from "./dates-core.js";
 
 export const PHASE_ORDER = ["growing", "drying", "curing", "done"];
 export const LIFECYCLE_PHASES = new Set(PHASE_ORDER);

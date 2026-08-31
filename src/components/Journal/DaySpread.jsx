@@ -3,16 +3,14 @@ import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, PenLine, Droplets, Sprout, LayoutGrid, CloudSun, Pencil } from "lucide-react";
 import { ymd } from "../../lib/api.js";
 import { sameDay, MONTH_NAMES } from "../../lib/dates.js";
-import { getPhase, PHASES, phaseFamily } from "../../lib/growData.js";
 import { useJournalDay, useJournalMonth } from "../../lib/useJournal.js";
 import { useDayNote } from "../../lib/useDayNote.js";
-import { dayOfGrow } from "../../lib/journalStats.js";
+import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../../lib/stageTimeline.js";
 import { kindLabel, summarizeEntry, HEALTH_MAP } from "../PlantsTab/constants.js";
 import { Skeleton } from "../Skeleton.jsx";
 import { tapHaptic } from "../../lib/haptics.js";
 import RichEntryEditor from "./RichEntryEditor.jsx";
 import ScreenHeader from "../ScreenHeader.jsx";
-import MilestonesCard from "./MilestonesCard.jsx";
 import PhotosCard from "./PhotosCard.jsx";
 import DayLogEditor from "./DayLogEditor.jsx";
 
@@ -96,7 +94,7 @@ function PlantRow({ name, children }) {
 // all-days timeline. This IS the day surface - tapping a calendar day lands
 // here.
 export default function DaySpread({
-  today, date, onChangeDate, config, growId, onOpenPlant, onZoomOut, onConfigChanged, onExit,
+  today, date, onChangeDate, stageEvents = [], firstDate = null, growId, onOpenPlant, onZoomOut, onExit,
   plants = [], environment = "outdoor", focusSignal = 0, active = true,
 }) {
   const dateKey = ymd(date);
@@ -110,10 +108,11 @@ export default function DaySpread({
   const [editingLog, setEditingLog] = useState(false);
   useEffect(() => { setEditingLog(false); }, [dateKey, growId]);
 
-  const phase = config ? getPhase(date, config) : null;
-  const famColor = phase ? phaseFamily(phase)?.color : null;
+  // The stage this day was in, read back out of the recorded switches.
+  const stage = firstDate && dateKey >= firstDate ? stageOnDate(stageEvents, dateKey) : null;
+  const famColor = stage ? stageGroup(stage)?.color : null;
   const isToday = sameDay(date, today);
-  const growDay = dayOfGrow(date, config);
+  const growDay = dayOfGrow(firstDate, dateKey);
 
   function go(delta) {
     tapHaptic();
@@ -194,10 +193,10 @@ export default function DaySpread({
             {MONTH_NAMES[date.getMonth()]} {date.getDate()}, {date.getFullYear()}
           </div>
           <div style={{ fontFamily: UI, fontSize: 10.5, color: "var(--c-text-ghost)", marginTop: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-            {phase && (
+            {stage && (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
                 {famColor && <span style={{ width: 6, height: 6, borderRadius: 3, background: famColor, display: "inline-block" }} />}
-                {PHASES[phase]?.label}
+                {stageLabel(stage)}
               </span>
             )}
             {growDay && <span style={{ fontFamily: NUM }}>Day {growDay}</span>}
@@ -284,9 +283,6 @@ export default function DaySpread({
             minHeight={88}
           />
         </Card>
-
-        {/* Season milestones on this day - tappable to move their dates. */}
-        <MilestonesCard date={date} growId={growId} config={config} onConfigChanged={onConfigChanged} />
 
         {/* The day's photos + the journal's add-a-photo action. */}
         <PhotosCard date={date} growId={growId} photos={day.photos} plants={plants} />

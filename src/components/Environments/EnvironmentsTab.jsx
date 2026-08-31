@@ -4,9 +4,7 @@ import { Plus, Thermometer, Droplets, Gauge, CalendarCheck, Home, Trees, Warehou
 import { api } from "../../lib/api.js";
 import { usePlan } from "../../lib/usePlan.jsx";
 import { useToday } from "../../lib/dates.js";
-import { getPhase, PHASES } from "../../lib/growData.js";
-import { parseConfig } from "../../lib/planConfig.js";
-import { dayOfGrow } from "../../lib/journalStats.js";
+import { currentStageOf, stageLabel } from "../../lib/stageTimeline.js";
 import { tapHaptic } from "../../lib/haptics.js";
 import { MONO, partitionPlants } from "../PlantsTab/constants.js";
 import EnvironmentDetail, { ENV_KIND_LABEL } from "./EnvironmentDetail.jsx";
@@ -33,15 +31,15 @@ function Reading({ icon: Icon, color, value, unit }) {
   );
 }
 
-function EnvironmentCard({ grow, isActive, conditions, today, onOpen }) {
+function EnvironmentCard({ grow, isActive, conditions, onOpen }) {
   const survey = grow.survey ?? null;
-  const config = grow.config ? parseConfig(grow.config) : null;
   const KindIcon = KIND_ICON[survey?.environment] ?? Home;
   const kind = ENV_KIND_LABEL[survey?.environment] ?? "Space";
   const { active: plants } = partitionPlants(survey);
-  const phase = config ? getPhase(today, config) : null;
-  const dayNum = config ? dayOfGrow(today, config) : null;
-  const status = !grow.config
+  // The space's stage is simply the furthest its plants have reached; there
+  // are no predicted dates to read it off any more.
+  const stage = currentStageOf(plants);
+  const status = !survey
     ? { label: "IN SETUP", color: "var(--c-warn)", bg: "rgba(251,191,36,0.10)" }
     : STATUS_STYLE[grow.status] ?? null;
 
@@ -83,8 +81,7 @@ function EnvironmentCard({ grow, isActive, conditions, today, onOpen }) {
 
       <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 5 }}>
         {plants.length} plant{plants.length === 1 ? "" : "s"}
-        {phase ? ` · ${PHASES[phase]?.label}` : ""}
-        {dayNum ? ` · Day ${dayNum}` : ""}
+        {stage ? ` · ${stageLabel(stage)}` : ""}
       </div>
 
       {conditions?.samples > 0 && (
@@ -140,7 +137,7 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
   async function handleNew() {
     if (creating) return;
     // Resume an unfinished space instead of stacking another empty one.
-    const unfinished = grows.find((g) => !g.config);
+    const unfinished = grows.find((g) => !g.survey);
     if (unfinished) { onNewEnvironment(unfinished.id); return; }
     setCreating(true);
     try {
@@ -154,7 +151,7 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
     const grow = grows.find((g) => g.id === id);
     // A space that never finished setup has no calendar to show - offer to
     // finish it rather than opening a hollow page.
-    if (grow && !grow.config) { setResumeGrow(grow); return; }
+    if (grow && !grow.survey) { setResumeGrow(grow); return; }
     setOpenId(id);
   }
 
@@ -193,7 +190,6 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
             grow={g}
             isActive={g.id === activeGrowId}
             conditions={conditions[g.id]}
-            today={today}
             onOpen={handleOpen}
           />
         ))}

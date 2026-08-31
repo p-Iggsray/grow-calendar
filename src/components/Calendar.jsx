@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { MONTH_NAMES, DOW_SHORT, sameDay, daysBetween } from "../lib/dates.js";
-import { PHASES, getPhase, phaseFamily, buildMilestones } from "../lib/growData.js";
+import { stageGroup, stageLabel, stageOnDate } from "../lib/stageTimeline.js";
 import { tapHaptic } from "../lib/haptics.js";
 
 // Tuned for one-thumb phone use. Threshold below ~40px catches incidental drag
@@ -39,11 +39,13 @@ function MonthArrow({ onClick, label, children }) {
 }
 
 // The app's main feature: a full-screen month, every day tappable straight
-// into its journal page. Phase families tint the grow season, milestones mark
-// their days (tap the day to move them), and quiet marks track what each day
-// holds (journaled, done). Free navigation across months and years.
+// into its journal page.
+//
+// Colour comes from what actually happened: the grow is tinted from the day
+// you moved a plant into each stage onward, and the switch days themselves are
+// marked. Nothing here is predicted.
 export default function Calendar({
-  today, year, month, onChangeMonth, config,
+  today, year, month, onChangeMonth, stageEvents = [], firstDate = null,
   journalDays, onPickDay,
 }) {
   const touchStart = useRef(null);
@@ -60,14 +62,8 @@ export default function Calendar({
 
   const onCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
 
-  // Milestones are the calendar's built-in events. A day can hold more than
-  // one (Cal-Mag and Feeding often share a date) - keep them all.
-  const milestonesByDay = {};
-  if (config) {
-    for (const m of buildMilestones(config)) {
-      if (m.date) (milestonesByDay[ymdKey(m.date)] ??= []).push(m);
-    }
-  }
+  // The days a stage actually changed, so those get a marker.
+  const switchByDay = Object.fromEntries((stageEvents ?? []).map((e) => [e.date, e.stage]));
 
   function go(delta) {
     tapHaptic();
@@ -177,14 +173,13 @@ export default function Calendar({
         {cells.map((date, i) => {
           if (!date) return <div key={`e${i}`} />;
           const key = ymdKey(date);
-          const phase = config ? getPhase(date, config) : null;
-          const pStyle = phase ? PHASES[phase] : null;
-          // One consolidated color per phase family keeps the calendar from
-          // turning into a 13-color quilt.
-          const famColor = phase ? phaseFamily(phase)?.color : null;
+          // The stage the grow was in on this day, read from real switches.
+          const stage = firstDate && key >= firstDate ? stageOnDate(stageEvents, key) : null;
+          const group = stage ? stageGroup(stage) : null;
+          const famColor = group?.color ?? null;
+          const pStyle = group ? { label: stageLabel(stage) } : null;
           const isToday = sameDay(date, today);
-          const milestones = milestonesByDay[key] ?? [];
-          const milestone = milestones[0] ?? null;
+          const switchedTo = switchByDay[key] ?? null;
 
           // A grow day that has ended is "done": muted fill, tiny check.
           const isPast = Boolean(pStyle) && !isToday && daysBetween(today, date) > 0;
@@ -193,10 +188,10 @@ export default function Calendar({
 
           const ariaParts = [
             `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`,
-            pStyle ? `${pStyle.label} phase` : null,
+            pStyle ? `${pStyle.label} stage` : null,
             isToday ? "today" : null,
             isPast ? "day complete" : null,
-            ...milestones.map(m => m.label),
+            switchedTo ? `moved to ${stageLabel(switchedTo)}` : null,
             hasEntry ? "journal entry written" : null,
             "opens this day's journal",
           ].filter(Boolean);
@@ -229,7 +224,7 @@ export default function Calendar({
                   : "transparent",
                 border: isToday
                   ? `2px solid ${famColor || "var(--c-accent)"}`
-                  : milestone
+                  : switchedTo
                   ? `2px dashed ${famColor || "var(--c-text-muted)"}`
                   : "2px solid transparent",
                 position: "relative",
@@ -237,7 +232,7 @@ export default function Calendar({
               }}>
               <span style={{
                 fontSize: 13, fontFamily: "var(--font-num)",
-                fontWeight: (isToday || milestone) ? 800 : 400,
+                fontWeight: (isToday || switchedTo) ? 800 : 400,
                 color: isToday
                   ? "var(--c-text)"
                   : isPast
@@ -250,11 +245,12 @@ export default function Calendar({
                 {date.getDate()}
               </span>
 
-              {/* Built-in milestones show their glyphs (a day can hold two) */}
-              {milestones.length > 0 && (
-                <span aria-hidden="true" style={{ fontSize: 9.5, lineHeight: 1.2, textAlign: "center", letterSpacing: 1 }}>
-                  {milestones.slice(0, 2).map(m => m.icon).join("")}
-                </span>
+              {/* The day a stage actually changed */}
+              {switchedTo && (
+                <span aria-hidden="true" style={{
+                  display: "block", margin: "1px auto 0", width: 5, height: 5, borderRadius: 3,
+                  background: famColor ?? "var(--c-text-muted)",
+                }} />
               )}
 
               {isPast && (
@@ -294,7 +290,7 @@ export default function Calendar({
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
           <span style={{ width: 10, height: 10, borderRadius: 4, border: "2px dashed var(--c-text-muted)", flexShrink: 0 }} />
-          Milestone
+          Stage change
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
           <span style={{

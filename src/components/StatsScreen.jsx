@@ -1,15 +1,20 @@
-import { Droplets, Thermometer, BookOpen } from "lucide-react";
+import { Droplets, Thermometer, BookOpen, CalendarDays } from "lucide-react";
 import ScreenHeader from "./ScreenHeader.jsx";
 import { useStats } from "../lib/useStats.js";
+import { useStageTimeline } from "../lib/useJournal.js";
 import { Skeleton } from "./Skeleton.jsx";
 import { usePlan } from "../lib/usePlan.jsx";
+import { ymd } from "../lib/api.js";
+import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../lib/stageTimeline.js";
 import { distinctStrains, growLocation } from "../lib/growProfile.js";
 
 const MONO  = "var(--font-ui)";
 const SERIF = "var(--font-ui)";
 
-function ms(a, b) {
-  return Math.round((a - b) / 86400000);
+// Whole days between two YYYY-MM-DD keys, inclusive of both ends.
+function spanDays(fromKey, toKey) {
+  const n = dayOfGrow(fromKey, toKey);
+  return n == null ? null : n;
 }
 
 function SectionTitle({ children }) {
@@ -40,64 +45,67 @@ function StatRow({ icon: Icon, label, value, iconColor }) {
   );
 }
 
-function StrainCard({ name, harvestDate, today, config }) {
-  const daysLeft    = ms(harvestDate, today);
-  const totalDays   = ms(harvestDate, config.transplant);
-  const elapsed     = Math.max(0, ms(today, config.transplant));
-  const pct         = Math.min(100, totalDays > 0 ? Math.round((elapsed / totalDays) * 100) : 100);
-  const harvested   = daysLeft <= 0;
-  const harvestLabel = harvestDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-
+// One stage the grow actually spent time in, with its share of the whole run.
+function StageBar({ stage, days, totalDays, range, current }) {
+  const color = stageGroup(stage)?.color ?? "var(--c-accent)";
+  const pct = totalDays > 0 ? Math.round((days / totalDays) * 100) : 0;
   return (
-    <div style={{
-      flex: 1, padding: "14px 12px",
-      background: "var(--c-surface-1)",
-      border: "1px solid var(--c-border)",
-      borderRadius: 12,
-    }}>
-      <div style={{ fontFamily: SERIF, fontSize: 12, color: "var(--c-text-muted)", marginBottom: 8, lineHeight: 1.3 }}>
-        {name}
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5, gap: 8 }}>
+        <span style={{ fontFamily: SERIF, fontSize: 13, color: "var(--c-text)" }}>
+          {stageLabel(stage)}
+          {current && (
+            <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "var(--c-accent)", marginLeft: 7 }}>
+              NOW
+            </span>
+          )}
+        </span>
+        <span style={{ fontFamily: "var(--font-num)", fontSize: 12, color: "var(--c-text-dim)", flexShrink: 0 }}>
+          {days}d
+        </span>
       </div>
-      <div style={{
-        fontFamily: "var(--font-num)", fontSize: 26, fontWeight: 700, lineHeight: 1,
-        color: harvested ? "var(--c-text-ghost)" : "var(--c-accent)",
-        marginBottom: 2,
-      }}>
-        {harvested ? "✓" : daysLeft}
+      <div style={{ height: 6, background: "var(--c-border)", borderRadius: 3, overflow: "hidden" }}>
+        <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 3, transition: "width 0.4s" }} />
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", letterSpacing: 0.5, marginBottom: 12 }}>
-        {harvested ? "harvested" : "days left"}
-      </div>
-      <div style={{ height: 3, background: "var(--c-border)", borderRadius: 2, overflow: "hidden", marginBottom: 5 }}>
-        <div style={{ width: `${pct}%`, height: "100%", background: harvested ? "var(--c-text-ghost)" : "var(--c-accent)", borderRadius: 2, transition: "width 0.4s" }} />
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)" }}>{pct}%</span>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)" }}>{harvestLabel}</span>
+      <div style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--c-text-ghost)", marginTop: 4 }}>
+        {range}
       </div>
     </div>
   );
 }
 
-export default function StatsScreen({ config, today, onClose }) {
+function fmtKey(key) {
+  const [y, m, d] = String(key).split("-").map(Number);
+  if (!y) return key;
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+// Everything here is measured, never projected: the stage breakdown comes from
+// the switches the grower recorded, so there is no countdown to a harvest date
+// the app does not actually know.
+export default function StatsScreen({ today, onClose }) {
   const { survey, activeGrowId } = usePlan();
-  const { stats, loading } = useStats(Boolean(config), activeGrowId);
+  const { stats, loading } = useStats(Boolean(activeGrowId), activeGrowId);
+  const { events, firstDate } = useStageTimeline(activeGrowId, Boolean(activeGrowId));
   const location = growLocation(survey);
-
-  // Up to two strain cards: primary maps to gdpHarvest, secondary to hazeHarvest.
   const strainList = distinctStrains(survey);
-  const strainCards = [
-    { name: strainList[0] || "Primary strain", harvestDate: config.gdpHarvest },
-    strainList[1] && config.hazeHarvest
-      ? { name: strainList[1], harvestDate: config.hazeHarvest }
-      : null,
-  ].filter(Boolean);
 
-  const totalSeasonDays = ms(config.hazeHarvest, config.transplant);
-  const seasonElapsed   = Math.max(0, ms(today, config.transplant));
-  const seasonPct       = Math.min(100, Math.round((seasonElapsed / totalSeasonDays) * 100));
-  const startLabel      = config.transplant.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const endLabel        = config.hazeHarvest.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const todayKey = ymd(today);
+  const growDay = dayOfGrow(firstDate, todayKey);
+  const currentStage = stageOnDate(events, todayKey);
+
+  // Each recorded stage runs until the next switch, or until today if current.
+  const stageSpans = events.map((e, i) => {
+    const endKey = i + 1 < events.length ? events[i + 1].date : todayKey;
+    const days = spanDays(e.date, endKey);
+    return days == null ? null : {
+      stage: e.stage,
+      days,
+      current: i === events.length - 1,
+      range: e.date === endKey ? fmtKey(e.date) : `${fmtKey(e.date)} - ${fmtKey(endKey)}`,
+    };
+  }).filter(Boolean);
+  const longestStage = stageSpans.reduce((m, s) => Math.max(m, s.days), 0);
 
   const tempVal = stats?.log.tempMin != null
     ? `${stats.log.tempMax}° / ${stats.log.tempMin}°F`
@@ -105,58 +113,65 @@ export default function StatsScreen({ config, today, onClose }) {
 
   return (
     <div style={{ minHeight: "100vh", paddingBottom: 48 }}>
-      <ScreenHeader eyebrow="Insights" title="Season Analytics" onBack={onClose} />
+      <ScreenHeader eyebrow="Insights" title="Grow Analytics" onBack={onClose} />
       <div style={{
         paddingLeft: "calc(14px + env(safe-area-inset-left, 0px))",
         paddingRight: "calc(14px + env(safe-area-inset-right, 0px))",
       }}>
 
-      {/* Season Overview */}
-      <SectionTitle>Season Overview</SectionTitle>
+      {/* Where the grow is right now */}
+      <SectionTitle>This Grow</SectionTitle>
       <div style={{
         background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
         borderRadius: 12, padding: "16px",
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-          <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)" }}>
-            Day {seasonElapsed} of {totalSeasonDays}
-          </span>
-          <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-accent)" }}>
-            {seasonPct}%
-          </span>
-        </div>
-        <div style={{ height: 6, background: "var(--c-border)", borderRadius: 3, overflow: "hidden" }}>
-          <div style={{
-            width: `${seasonPct}%`, height: "100%",
-            background: "var(--c-accent)", borderRadius: 3, transition: "width 0.4s",
-          }} />
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
-          <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)" }}>Transplant · {startLabel}</span>
-          <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)" }}>Final harvest · {endLabel}</span>
-        </div>
+        {growDay ? (
+          <>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+              <span style={{ fontFamily: "var(--font-num)", fontSize: 30, fontWeight: 700, lineHeight: 1, color: "var(--c-accent)" }}>
+                {growDay}
+              </span>
+              <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>
+                days in
+              </span>
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 11.5, color: "var(--c-text-muted)", marginTop: 8, letterSpacing: 0.4 }}>
+              {[
+                currentStage ? stageLabel(currentStage) : null,
+                `started ${fmtKey(firstDate)}`,
+                strainList.length ? strainList.join(" · ") : null,
+                location,
+              ].filter(Boolean).join(" · ")}
+            </div>
+          </>
+        ) : (
+          <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-ghost)", lineHeight: 1.7 }}>
+            Nothing recorded yet. Move a plant into a stage on the Environments
+            tab and this grow&rsquo;s clock starts.
+          </div>
+        )}
       </div>
 
-      {/* Strain Comparison */}
-      <SectionTitle>{strainCards.length > 1 ? "Strain Comparison" : "Strain"}</SectionTitle>
-      <div style={{ display: "flex", gap: 10 }}>
-        {strainCards.map(card => (
-          <StrainCard
-            key={card.name}
-            name={card.name}
-            harvestDate={card.harvestDate}
-            today={today}
-            config={config}
-          />
-        ))}
-      </div>
-      {strainCards.length > 1 && (
-        <div style={{
-          fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", letterSpacing: 0.5,
-          marginTop: 8, textAlign: "center",
-        }}>
-          {strainCards[0].name} harvests {Math.abs(ms(strainCards[0].harvestDate, strainCards[1].harvestDate))} days {ms(strainCards[0].harvestDate, strainCards[1].harvestDate) < 0 ? "before" : "after"} {strainCards[1].name}
-        </div>
+      {/* How long each stage actually took */}
+      {stageSpans.length > 0 && (
+        <>
+          <SectionTitle>Time In Each Stage</SectionTitle>
+          <div style={{
+            background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
+            borderRadius: 12, padding: "16px 16px 6px",
+          }}>
+            {stageSpans.map((s) => (
+              <StageBar
+                key={s.stage}
+                stage={s.stage}
+                days={s.days}
+                totalDays={longestStage}
+                range={s.range}
+                current={s.current}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       {/* By the Numbers */}
@@ -180,47 +195,13 @@ export default function StatsScreen({ config, today, onClose }) {
           background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
           borderRadius: 12, padding: "0 16px",
         }}>
+          <StatRow icon={CalendarDays} label="Stage changes recorded" value={events.length} iconColor="#c084fc" />
           <StatRow icon={Droplets} label="Total water logged" value={`${stats.log.totalWater} gal`} />
           <StatRow icon={Thermometer} label="Temp range logged" value={tempVal} iconColor="#60a5fa" />
           <StatRow icon={BookOpen} label="Journal entries" value={stats.notes.count} iconColor="#f59e0b" />
-
         </div>
       ) : null}
 
-      {/* Previous Seasons */}
-      <SectionTitle>Previous Seasons</SectionTitle>
-      <div style={{
-        background: "var(--c-surface-1)", border: "1px solid var(--c-border-strong)",
-        borderRadius: 12, padding: "14px 16px", marginBottom: 10,
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-      }}>
-        <div>
-          <div style={{ fontFamily: SERIF, fontSize: 14, color: "var(--c-text)", marginBottom: 3 }}>
-            2026 Season
-          </div>
-          <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)", letterSpacing: 0.4 }}>
-            {location ? `${location} · ` : ""}{totalSeasonDays} days
-          </div>
-        </div>
-        <span style={{
-          fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, padding: "3px 7px",
-          color: "var(--c-accent)", borderRadius: 4,
-          background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)",
-        }}>
-          CURRENT
-        </span>
-      </div>
-      <div style={{
-        background: "var(--c-surface-1)", border: "1px dashed var(--c-border)",
-        borderRadius: 12, padding: "16px", textAlign: "center", opacity: 0.45,
-      }}>
-        <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", letterSpacing: 0.8 }}>
-          Year 2 and beyond
-        </div>
-        <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 4, opacity: 0.7 }}>
-          Season comparisons will appear here
-        </div>
-      </div>
       </div>
     </div>
   );

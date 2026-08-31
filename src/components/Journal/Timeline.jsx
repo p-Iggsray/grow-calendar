@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { PenLine, Search, X, BookOpen, Droplets, Thermometer, Sprout, Flame, FlaskConical, CloudSun, Camera } from "lucide-react";
 import { api, ymd } from "../../lib/api.js";
 import { MONTH_NAMES } from "../../lib/dates.js";
-import { getPhase, PHASES, phaseFamily } from "../../lib/growData.js";
 import { useJournalTimeline } from "../../lib/useJournal.js";
-import { journalStreak, dayOfGrow } from "../../lib/journalStats.js";
+import { journalStreak } from "../../lib/journalStats.js";
+import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../../lib/stageTimeline.js";
 import { Skeleton } from "../Skeleton.jsx";
 import { tapHaptic } from "../../lib/haptics.js";
 import ScreenHeader from "../ScreenHeader.jsx";
@@ -34,11 +34,11 @@ function StatChip({ icon, children }) {
 }
 
 // One day in the feed: date block on the left, entry preview on the right,
-// phase color as the spine accent. Tap opens the full day spread.
-function DayCard({ dayInfo, config, onOpen }) {
+// the stage colour as the spine accent. Tap opens the full day spread.
+function DayCard({ dayInfo, stageEvents, firstDate, onOpen }) {
   const date = keyToDate(dayInfo.date);
-  const phase = config ? getPhase(date, config) : null;
-  const famColor = phase ? phaseFamily(phase)?.color : null;
+  const stage = firstDate && dayInfo.date >= firstDate ? stageOnDate(stageEvents, dayInfo.date) : null;
+  const famColor = stage ? stageGroup(stage)?.color : null;
   const log = dayInfo.log;
 
   return (
@@ -71,7 +71,7 @@ function DayCard({ dayInfo, config, onOpen }) {
           </div>
         ) : (
           <div style={{ fontFamily: UI, fontSize: 12, color: "var(--c-text-muted)", marginBottom: 8 }}>
-            {phase ? PHASES[phase]?.label : "Logged day"}
+            {stage ? stageLabel(stage) : "Logged day"}
           </div>
         )}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
@@ -120,7 +120,7 @@ function DayCard({ dayInfo, config, onOpen }) {
 
 // The journal's home: masthead with stats, a write-today prompt, search, and
 // the month-grouped feed of every journaled day.
-export default function Timeline({ today, config, growId, active, onOpenDate, onWrite, onBack }) {
+export default function Timeline({ today, stageEvents = [], firstDate = null, growId, active, onOpenDate, onWrite, onBack }) {
   const { days, totalDays, hasMore, loading, loadingMore, loadMore } = useJournalTimeline(active, growId);
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -151,7 +151,7 @@ export default function Timeline({ today, config, growId, active, onOpenDate, on
   const todayKey = ymd(today);
   const todayJournaled = days.some((d) => d.date === todayKey);
   const streak = journalStreak(days.map((d) => d.date), today);
-  const growDay = dayOfGrow(today, config);
+  const growDay = dayOfGrow(firstDate, todayKey);
 
   // Group the feed by month for date-book style section headers.
   const sections = [];
@@ -322,7 +322,7 @@ export default function Timeline({ today, config, growId, active, onOpenDate, on
                     {sec.label}
                   </div>
                   {sec.items.map((d) => (
-                    <DayCard key={d.date} dayInfo={d} config={config} onOpen={onOpenDate} />
+                    <DayCard key={d.date} dayInfo={d} stageEvents={stageEvents} firstDate={firstDate} onOpen={onOpenDate} />
                   ))}
                 </div>
               ))}
