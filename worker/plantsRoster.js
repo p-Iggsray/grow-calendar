@@ -110,12 +110,20 @@ export function backfillStrainsFromPlan(survey, generatedPlan, idGen = newPlantI
   return { survey: { ...base, strains }, changed: true };
 }
 
-export function addPlantToSurvey(survey, fields, idGen = newPlantId) {
+// `createdAt` is the day the plant was added to the app, and it is the only
+// anchor for its day counter: a plant added at week 6 of flower is still day 0
+// today, because the app has no idea what happened before it was told.
+export function addPlantToSurvey(survey, fields, idGen = newPlantId, todayIso = todayKey()) {
   const base = survey && typeof survey === "object" ? survey : {};
   const strains = Array.isArray(base.strains) ? base.strains.slice() : [];
-  const plant = { ...fields, id: idGen(), status: "growing" };
+  const plant = { ...fields, id: idGen(), status: "growing", createdAt: todayIso };
   strains.push(plant);
   return { survey: { ...base, strains }, plant };
+}
+
+// Today as YYYY-MM-DD, in UTC (the Worker's clock).
+export function todayKey() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 export function updatePlantInSurvey(survey, plantId, patch) {

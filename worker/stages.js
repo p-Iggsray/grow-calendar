@@ -26,8 +26,17 @@ export function stageFromRow(row) {
   return LABEL_TO_STAGE[key] ?? null;
 }
 
-// GET /api/grows/:id/stages -> the running timeline plus the first day
-// anything was recorded, which is day 1 of the grow.
+// The space's day 0: the day it was created. Older grows may hold stage
+// records that were backdated before the app stopped allowing that, so anything
+// earlier still wins - their history should not disappear.
+function anchorDate(growCreatedAt, earliestRecord) {
+  const created = typeof growCreatedAt === "string" ? growCreatedAt.slice(0, 10) : null;
+  if (!created) return earliestRecord ?? null;
+  if (!earliestRecord) return created;
+  return earliestRecord < created ? earliestRecord : created;
+}
+
+// GET /api/grows/:id/stages -> the running timeline plus the space's day 0.
 export async function getStageTimeline(env, user, growId) {
   const row = await ownedGrowRow(env, user.id, growId);
   if (!row) return error(404, "grow not found");
@@ -44,9 +53,7 @@ export async function getStageTimeline(env, user, growId) {
     .filter((r) => r.stage);
 
   const events = buildRunningTimeline(records);
-  // Day 1 is the earliest recorded day, even if that record was a later stage
-  // (a plant added mid-flower still starts its environment's clock).
-  const firstDate = records.length ? records[0].date : null;
+  const firstDate = anchorDate(row.created_at, records.length ? records[0].date : null);
   return json({ events, firstDate });
 }
 
@@ -54,6 +61,9 @@ export async function getStageTimeline(env, user, growId) {
 export async function loadStageTimeline(env, userId, growId) {
   try {
     await ensurePlantLogSchema(env);
+    const grow = await env.DB.prepare(
+      "SELECT created_at FROM grows WHERE id = ? AND user_id = ?"
+    ).bind(growId, userId).first();
     const res = await env.DB.prepare(
       `SELECT date, body, detail FROM plant_log
        WHERE user_id = ? AND grow_id = ? AND kind = 'stage'
@@ -62,7 +72,10 @@ export async function loadStageTimeline(env, userId, growId) {
     const records = (res.results ?? [])
       .map((r) => ({ date: r.date, stage: stageFromRow(r) }))
       .filter((r) => r.stage);
-    return { events: buildRunningTimeline(records), firstDate: records.length ? records[0].date : null };
+    return {
+      events: buildRunningTimeline(records),
+      firstDate: anchorDate(grow?.created_at, records.length ? records[0].date : null),
+    };
   } catch {
     return { events: [], firstDate: null };
   }

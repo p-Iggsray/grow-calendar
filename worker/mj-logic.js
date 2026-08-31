@@ -22,7 +22,7 @@ export function buildDayInfo(date, timeline) {
     date,
     stage: stage ?? null,
     stageLabel: stage ? stageLabel(stage) : null,
-    // Day 1 = the first day anything was recorded for this space.
+    // Day 0 = the day the space was created in the app.
     growDay: dayOfGrow(firstDate, date),
     // Set only on a day the grower actually moved a plant forward.
     stageChangedTo: switched ? stageLabel(switched.stage) : null,
@@ -52,7 +52,7 @@ You're warm but not soft. You celebrate real wins specifically - not generic hyp
 
 ## The calendar and journal
 
-The app's home view is the month calendar. Nothing on it is predicted: a day takes its colour from the stage the plants were actually in on that day, and that colour starts the day the grower moved a plant into that stage on the Plants tab. There are no planned or estimated dates anywhere in this app - no scheduled flip, no projected harvest - so never state one as if the app knows it. If the grower asks when something will happen, answer from general grow knowledge and say plainly that it is your estimate, not their calendar. Tapping a day opens that day's journal: the note, the daily log, plant entries, and weather. get_day and get_week give you the same picture. The grower creates and edits calendar events in the app itself - you can read them but not write them, so if they ask you to add one, point them to the day's journal page.
+The app's home view is the month calendar. Nothing on it is predicted: a day takes its colour from the stage the plants were actually in on that day, and that colour starts the day the grower moved a plant into that stage on the Plants tab. Day numbers count from the day the space (or the plant) was created in the app, and that day is **day 0** - a plant added today is day 0 no matter what stage it joined at, because the app knows nothing about the days before it was told. There are no planned or estimated dates anywhere in this app - no scheduled flip, no projected harvest - so never state one as if the app knows it. If the grower asks when something will happen, answer from general grow knowledge and say plainly that it is your estimate, not their calendar. Tapping a day opens that day's journal: the note, the daily log, plant entries, and weather. get_day and get_week give you the same picture. The grower creates and edits calendar events in the app itself - you can read them but not write them, so if they ask you to add one, point them to the day's journal page.
 
 ## Stage changes
 
@@ -147,7 +147,7 @@ export const MJ_TOOLS = [
   },
   {
     name: "get_day",
-    description: "Get one day's full picture: the stage the plants were in that day, the grow day number, any stage change recorded that day, the grower's calendar events, their journal note, and the daily log entry if one was filled. Works for any date, including days before the grow started.",
+    description: "Get one day's full picture: the stage the plants were in that day, the grow day number (day 0 is the day the space was created), any stage change recorded that day, the grower's calendar events, their journal note, and the daily log entry if one was filled. Works for any date, including days before the grow started.",
     parameters: {
       type: "object",
       properties: { date: { type: "string", description: "Target day as YYYY-MM-DD" } },
@@ -203,7 +203,7 @@ export const MJ_TOOLS = [
   },
   {
     name: "add_plant",
-    description: "Add a plant to the active grow's Plants roster. Call this once per plant - e.g. call it three times to add three plants. If the grower didn't give names/strains, either ask or use sensible names (the grow's existing strains, or 'Plant 1', 'Plant 2', …).",
+    description: "Add a plant to the active grow's Plants roster. Call this once per plant - e.g. call it three times to add three plants. A plant added now starts at day 0 today whatever stage it is in; there is no way to backdate it. If the grower didn't give names/strains, either ask or use sensible names (the grow's existing strains, or 'Plant 1', 'Plant 2', …).",
     parameters: {
       type: "object",
       properties: {

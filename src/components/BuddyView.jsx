@@ -100,7 +100,7 @@ function TodayCard({ today, stageEvents, firstDate }) {
           {stageLabel(stage)} · Today
         </span>
       </div>
-      {growDay && (
+      {growDay != null && (
         <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)", letterSpacing: -0.2 }}>
           Day {growDay} of the grow
         </div>
@@ -137,7 +137,7 @@ function StageHistory({ today, stageEvents, firstDate }) {
             </span>
             <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)", flexShrink: 0 }}>
               {fmtL(new Date(y, m - 1, d))}
-              {e.date === todayKey ? " · today" : day ? ` · day ${day}` : ""}
+              {e.date === todayKey ? " · today" : day != null ? ` · day ${day}` : ""}
             </span>
           </div>
         );

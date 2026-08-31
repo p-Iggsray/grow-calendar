@@ -1,9 +1,9 @@
-import { MONO, SERIF, Label } from "./styleHelpers.jsx";
+import { MONO, Label } from "./styleHelpers.jsx";
 
-// "Where are you now" survey. The grower picks the stage their plants are
-// currently in and the day it started; that single answer becomes day 1 of the
-// space and the first entry on its calendar. Nothing after it is predicted -
-// the rest of the calendar is written as the grow actually happens.
+// "Where are you now" survey: the one question is which stage the plants are in
+// today. The app never asks when that stage started, because it would only be
+// guessing about days it was not around for. Today is day 0, and every stage
+// date after it is written by the grower moving a plant on by hand.
 export const WIZARD_STAGES = [
   { value: "germination", label: "Germination", icon: "🌰", blurb: "Cracking seeds, taproot showing" },
   { value: "seedling",    label: "Seedling",    icon: "🌱", blurb: "First leaves, gentle light" },
@@ -13,16 +13,8 @@ export const WIZARD_STAGES = [
   { value: "harvest",     label: "Harvest",     icon: "✂️", blurb: "Ready to cut" },
 ];
 
-function todayIso() {
-  const d = new Date();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
-}
-
 export function StepTimeline({ survey, update }) {
   const stage = survey.currentStage || "seedling";
-  const meta = WIZARD_STAGES.find(s => s.value === stage);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
@@ -54,35 +46,10 @@ export function StepTimeline({ survey, update }) {
         </div>
       </div>
 
-      <div>
-        <Label>When did {meta?.label.toLowerCase() || "this stage"} start?</Label>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input
-            type="date"
-            value={survey.stageStartDate}
-            onChange={e => update("stageStartDate", e.target.value)}
-            style={{
-              flex: 1, background: "var(--c-surface-1)", color: "var(--c-text)",
-              border: "1px solid var(--c-border-strong)", borderRadius: 10,
-              padding: "12px 14px", fontSize: 16, fontFamily: SERIF,
-              outline: "none", boxSizing: "border-box",
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => update("stageStartDate", todayIso())}
-            style={{
-              flexShrink: 0, padding: "0 16px", borderRadius: 10,
-              background: "var(--c-surface-1)", border: "1px solid var(--c-border-strong)",
-              color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 12, letterSpacing: 0.5, cursor: "pointer",
-            }}>
-            Today
-          </button>
-        </div>
-        <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 6, lineHeight: 1.7 }}>
-          This becomes day 1 of your calendar. Even a rough guess is fine - you
-          can log the next stage change whenever it happens.
-        </div>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", lineHeight: 1.8 }}>
+        Today is day 0 of this space. We will not ask when this stage started -
+        the app only records what it sees. When a plant moves to its next stage,
+        tell it on the Plants tab and that day fills in on the calendar.
       </div>
 
     </div>

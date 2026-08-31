@@ -125,7 +125,7 @@ export default function StatsScreen({ today, onClose }) {
         background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
         borderRadius: 12, padding: "16px",
       }}>
-        {growDay ? (
+        {growDay != null ? (
           <>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
               <span style={{ fontFamily: "var(--font-num)", fontSize: 30, fontWeight: 700, lineHeight: 1, color: "var(--c-accent)" }}>

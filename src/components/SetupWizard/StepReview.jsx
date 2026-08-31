@@ -21,7 +21,6 @@ export function StepReview({ survey }) {
     ["Plants", `${totalPlants} × ${survey.containerType !== "ground" ? `${survey.containerGallons}-gal` : "in-ground"}`],
     ...strainRows,
     ["Current stage", STAGE_LABEL[survey.currentStage] || "Seedling"],
-    ["Stage started", survey.stageStartDate || "(not set)"],
     ["Location", survey.location || "(not set)"],
     ["Experience", survey.experienceLevel],
     ["Watering", survey.wateringMethod],
@@ -31,7 +30,7 @@ export function StepReview({ survey }) {
   return (
     <div>
       <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-faint)", marginBottom: 14, lineHeight: 1.8 }}>
-        Review your answers. Your calendar starts on the day you gave and fills in from there, as you record what actually happens.
+        Review your answers. Your calendar starts today at day 0 and fills in from there, as you record what actually happens.
       </div>
       <div style={{
         background: "var(--c-surface-1)", borderRadius: 12,

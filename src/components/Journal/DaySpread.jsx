@@ -199,7 +199,7 @@ export default function DaySpread({
                 {stageLabel(stage)}
               </span>
             )}
-            {growDay && <span style={{ fontFamily: NUM }}>Day {growDay}</span>}
+            {growDay != null && <span style={{ fontFamily: NUM }}>Day {growDay}</span>}
             <span>Tap to jump</span>
           </div>
         </button>

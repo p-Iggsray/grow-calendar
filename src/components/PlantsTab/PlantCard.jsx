@@ -5,12 +5,14 @@ import { ymd } from "../../lib/api.js";
 import StageTimeline from "./StageTimeline.jsx";
 
 export default function PlantCard({ plant, metrics, today, firstDate, onOpen }) {
+  // A plant counts from the day IT was added, not from the space's day 0.
+  // Older plants predate that stamp, so they fall back to the space.
   const health = metrics?.health ? HEALTH_MAP[metrics.health] : null;
-  const age = today ? dayOfGrow(firstDate, ymd(today)) : null;
+  const age = today ? dayOfGrow(plant.createdAt ?? firstDate, ymd(today)) : null;
   const lastLog = metrics?.date ? relDayLabel(metrics.date, today) : null;
 
   const activityBits = [
-    age ? `Day ${age}` : null,
+    age != null ? `Day ${age}` : null,
     lastLog ? `last log ${lastLog}` : null,
   ].filter(Boolean);
 

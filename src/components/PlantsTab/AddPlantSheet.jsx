@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { api, ymd } from "../../lib/api.js";
-import { Label, Input, RadioGroup, NumStepper, MONO } from "../SetupWizard/styleHelpers.jsx";
+import { api } from "../../lib/api.js";
+import { Label, RadioGroup, NumStepper, MONO } from "../SetupWizard/styleHelpers.jsx";
 import { STAGE_OPTIONS } from "./constants.js";
 import AutocompleteInput from "../AutocompleteInput.jsx";
 
@@ -21,7 +21,6 @@ function btn(kind, disabled) {
 export default function AddPlantSheet({ onSave, onCancel, saving, initial, saveLabel = "Add plant", savingLabel = "Adding…" }) {
   const isNew = !initial;
   const [f, setF] = useState(() => ({ ...BLANK, ...(initial || {}), potSize: initial?.potSize ?? 0 }));
-  const [stageStartDate, setStageStartDate] = useState(() => ymd(new Date()));
   // Strains other growers have logged, offered as you type.
   const [catalog, setCatalog] = useState([]);
   useEffect(() => {
@@ -36,8 +35,8 @@ export default function AddPlantSheet({ onSave, onCancel, saving, initial, saveL
 
   function submit() {
     const out = { ...f, potSize: f.potSize || null };
-    if (isNew) out.stageStartDate = stageStartDate;
-    else delete out.stage; // edits never change stage; the stage control does
+    // Edits never change stage; the one-way stage control does that.
+    if (!isNew) delete out.stage;
     onSave(out);
   }
 
@@ -74,17 +73,17 @@ export default function AddPlantSheet({ onSave, onCancel, saving, initial, saveL
               aria-label="Current stage"
               style={{
                 width: "100%", boxSizing: "border-box", padding: "12px 14px",
-                borderRadius: 10, background: "rgba(0,0,0,0.3)", color: "var(--c-text)",
-                border: "1px solid rgba(255,255,255,0.14)", fontFamily: MONO, fontSize: 14, outline: "none",
+                borderRadius: 10, background: "var(--c-surface-1)", color: "var(--c-text)",
+                border: "1px solid var(--c-border-strong)", fontFamily: MONO, fontSize: 14, outline: "none",
               }}>
               {STAGE_OPTIONS.map((s) => (
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>
           </div>
-          <div>
-            <Label>When did this stage start?</Label>
-            <Input type="date" value={stageStartDate} onChange={setStageStartDate} />
+          <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", lineHeight: 1.7, marginTop: -6 }}>
+            This plant starts at day 0 today. Its next stage gets a date when you
+            move it on yourself.
           </div>
         </>
       )}

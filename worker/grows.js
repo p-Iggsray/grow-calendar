@@ -439,8 +439,6 @@ export async function setupGrow(request, env, user, growId) {
   survey = ensurePlantIds(resolveSurveyForSetup(survey)).survey;
   if (!Array.isArray(survey.strains) || survey.strains.length === 0)
     return error(400, "Add at least one strain before finishing setup.");
-  if (typeof survey.stageStartDate !== "string" || !DATE_RE.test(survey.stageStartDate))
-    return error(400, "Set the date your current stage started (the Where You're At step) and try again.");
 
   // Resolve coordinates for weather/frost if the GPS button didn't already
   // provide them. Best-effort; a failure just means no weather until it's set.
@@ -466,9 +464,9 @@ export async function setupGrow(request, env, user, growId) {
     user.id,
   ).run();
 
-  // Day 1 of this space is the day the grower says their current stage began.
-  // Seeding one stage entry per plant is what makes the calendar light up
-  // immediately instead of staying blank until the next stage change.
+  // Day 0 of this space is today, the day it was created. Seeding one stage
+  // entry per plant is what makes the calendar light up immediately instead of
+  // staying blank until the next stage change.
   await seedStageEntries(env, user.id, growId, survey);
 
   await recordStrains(env, survey.strains);

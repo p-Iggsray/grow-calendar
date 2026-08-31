@@ -157,7 +157,7 @@ export async function getPushToday(env, user) {
     const label = stageLabel(stage) ?? "Growing";
     const body = switchedToday
       ? `${label} day! Open your journal to log it.`
-      : day
+      : day != null
         ? `Day ${day} - ${label}. Open your journal to log today.`
         : `${label}. Open your journal to log today.`;
     return json({

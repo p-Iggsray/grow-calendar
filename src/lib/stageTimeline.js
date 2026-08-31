@@ -87,16 +87,20 @@ export function buildRunningTimeline(records) {
   return out;
 }
 
-// Pure: which day of the grow a date is, counting from the first thing ever
-// recorded. Returns null before that day, or when nothing is recorded yet.
-export function dayOfGrow(firstDate, dateKey) {
-  if (!firstDate || !dateKey || dateKey < firstDate) return null;
-  const [y1, m1, d1] = firstDate.split("-").map(Number);
+// Pure: how many days a date is into a grow (or into one plant's life),
+// counting from the day it was created in the app. The day something is created
+// is day 0, the next day is day 1. Returns null before the anchor day, or when
+// there is no anchor yet.
+//
+// Zero is a real answer here, so callers must test `!= null`, never truthiness.
+export function dayOfGrow(anchorDate, dateKey) {
+  if (!anchorDate || !dateKey || dateKey < anchorDate) return null;
+  const [y1, m1, d1] = anchorDate.split("-").map(Number);
   const [y2, m2, d2] = dateKey.split("-").map(Number);
   if (!y1 || !y2) return null;
   const a = Date.UTC(y1, m1 - 1, d1);
   const b = Date.UTC(y2, m2 - 1, d2);
-  return Math.round((b - a) / 86400000) + 1;
+  return Math.round((b - a) / 86400000);
 }
 
 // Pure: the furthest stage the plants are in right now. Used for labels when

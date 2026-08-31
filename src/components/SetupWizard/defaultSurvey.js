@@ -1,12 +1,5 @@
 import { SUPPLY_ITEMS } from "./supplyChecklist.js";
 
-function todayIso() {
-  const d = new Date();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
-}
-
 // ─── Default wizard state ───────────────────────────────────────────────────
 
 export function defaultSurvey() {
@@ -21,7 +14,6 @@ export function defaultSurvey() {
       { name: "", type: "hybrid", photo: true, flowerWeeks: 9, count: 1 },
     ],
     currentStage: "germination",
-    stageStartDate: todayIso(),
     location: "",
     experienceLevel: "beginner",
     wateringMethod: "hand",

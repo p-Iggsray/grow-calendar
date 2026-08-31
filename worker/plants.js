@@ -4,7 +4,7 @@ import { logError } from "./log.js";
 import {
   ensurePlantIds, validatePlantFields, addPlantToSurvey,
   updatePlantInSurvey, removePlantFromSurvey, normalizeLogEntry,
-  PLANT_STAGES, STAGE_SET, DEFAULT_STAGE,
+  PLANT_STAGES, STAGE_SET, DEFAULT_STAGE, todayKey,
 } from "./plantsRoster.js";
 
 const STAGE_LABELS = {
@@ -12,7 +12,6 @@ const STAGE_LABELS = {
   flowering: "Flowering", flushing: "Flushing", harvest: "Harvest",
   drying: "Drying", curing: "Curing", done: "Done",
 };
-const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
 import { ensureGrowLogSchema } from "./growLog.js";
 
 function parseSurvey(raw) {
@@ -22,7 +21,7 @@ function parseSurvey(raw) {
 
 export async function ownedGrowRow(env, userId, growId) {
   return env.DB.prepare(
-    "SELECT survey FROM grows WHERE id = ? AND user_id = ?"
+    "SELECT survey, created_at FROM grows WHERE id = ? AND user_id = ?"
   ).bind(growId, userId).first();
 }
 
@@ -69,14 +68,12 @@ export async function ensurePlantLogSchema(env) {
   }
 }
 
-// Write one "moved to <stage>" entry per plant, dated the day the grower says
-// that stage began. This is what the calendar, the day counter and every stage
-// label are read back out of - nothing is predicted, so without a first entry a
-// space has no timeline at all.
+// Write one "moved to <stage>" entry per plant, dated the day the space was
+// created. This is the ONLY date the app writes on its own, and it is not a
+// guess about the past: it records what the grower said was true on the day
+// they set the space up. Every later stage date comes from a manual switch.
 export async function seedStageEntries(env, userId, growId, survey) {
-  const date = typeof survey?.stageStartDate === "string" && DATE_ONLY_RE.test(survey.stageStartDate)
-    ? survey.stageStartDate
-    : new Date().toISOString().slice(0, 10);
+  const date = todayKey();
   const plants = (survey?.strains ?? []).filter((p) => p?.id && STAGE_SET.has(p.stage ?? DEFAULT_STAGE));
   if (plants.length === 0) return;
   try {
@@ -116,14 +113,12 @@ export async function addPlant(request, env, user, growId) {
   const v = validatePlantFields(body ?? {}, false);
   if (!v.ok) return error(400, v.error);
 
-  // A plant can join at ANY stage. An optional stageStartDate backdates the
-  // stage clock ("in stage Nd") by seeding the stage log entry on that day.
-  const stageStartDate = typeof body?.stageStartDate === "string" && DATE_ONLY_RE.test(body.stageStartDate)
-    ? body.stageStartDate
-    : new Date().toISOString().slice(0, 10);
+  // A plant can join at ANY stage, but its clock always starts today: the app
+  // never backdates a stage it was not around to see.
+  const createdAt = todayKey();
 
   const survey = parseSurvey(row.survey) ?? {};
-  const { survey: nextSurvey, plant } = addPlantToSurvey(survey, v.value);
+  const { survey: nextSurvey, plant } = addPlantToSurvey(survey, v.value, undefined, createdAt);
   await saveSurvey(env, user.id, growId, nextSurvey);
 
   const stage = plant.stage ?? DEFAULT_STAGE;
@@ -136,7 +131,7 @@ export async function addPlant(request, env, user, growId) {
            (user_id, grow_id, plant_id, date, kind, detail, body, height, height_unit, health, created_at, updated_at)
          VALUES (?, ?, ?, ?, 'stage', ?, ?, NULL, NULL, NULL, ?, ?)`
       ).bind(
-        user.id, growId, plant.id, stageStartDate,
+        user.id, growId, plant.id, createdAt,
         JSON.stringify({ stage }),
         `Stage → ${STAGE_LABELS[stage]}`,
         now, now,

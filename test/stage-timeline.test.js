@@ -8,6 +8,7 @@ import { stageFromRow } from "../worker/stages.js";
 import { buildDayInfo } from "../worker/mj-logic.js";
 import { buildTimelineText } from "../src/lib/timelineText.js";
 import { resolveSurveyForSetup } from "../src/lib/stageAnchor.js";
+import { addPlantToSurvey } from "../worker/plantsRoster.js";
 
 // ── buildRunningTimeline ─────────────────────────────────────────────────────
 test("buildRunningTimeline sorts, and only ever moves forward", () => {
@@ -59,17 +60,25 @@ test("stageOnDate holds a stage from its switch day until the next one", () => {
 });
 
 // ── dayOfGrow ────────────────────────────────────────────────────────────────
-test("dayOfGrow: day 1 is the first recorded day; earlier days are null", () => {
-  assert.equal(dayOfGrow("2026-06-01", "2026-06-01"), 1);
-  assert.equal(dayOfGrow("2026-06-01", "2026-07-03"), 33);
+test("dayOfGrow: the anchor day is day 0; earlier days are null", () => {
+  assert.equal(dayOfGrow("2026-06-01", "2026-06-01"), 0);
+  assert.equal(dayOfGrow("2026-06-01", "2026-06-02"), 1);
+  assert.equal(dayOfGrow("2026-06-01", "2026-07-03"), 32);
   assert.equal(dayOfGrow("2026-06-01", "2026-05-31"), null);
   assert.equal(dayOfGrow(null, "2026-07-03"), null);
   assert.equal(dayOfGrow("2026-06-01", null), null);
 });
 
+test("dayOfGrow returns a real 0, not a nullish one, on the anchor day", () => {
+  // Callers render with `!= null`; a falsy-but-valid 0 must survive that.
+  const n = dayOfGrow("2026-06-01", "2026-06-01");
+  assert.equal(n, 0);
+  assert.ok(n != null);
+});
+
 test("dayOfGrow counts across a DST boundary without drifting", () => {
   // Mar 8 2026 is a US DST spring-forward day; UTC math must ignore it.
-  assert.equal(dayOfGrow("2026-03-01", "2026-03-15"), 15);
+  assert.equal(dayOfGrow("2026-03-01", "2026-03-15"), 14);
 });
 
 // ── labels, groups, ordering ─────────────────────────────────────────────────
@@ -121,8 +130,11 @@ test("buildDayInfo reports the recorded stage, day number, and switch days", () 
   const mid = buildDayInfo("2026-06-20", timeline);
   assert.equal(mid.stage, "vegetative");
   assert.equal(mid.stageLabel, "Vegetative");
-  assert.equal(mid.growDay, 20);
+  assert.equal(mid.growDay, 19);
   assert.equal(mid.stageChangedTo, null);
+
+  // The anchor day itself is day 0, and must be reported as such.
+  assert.equal(buildDayInfo("2026-06-01", timeline).growDay, 0);
 
   const flip = buildDayInfo("2026-07-20", timeline);
   assert.equal(flip.stageChangedTo, "Flowering");
@@ -142,8 +154,9 @@ test("buildDayInfo on a grow with nothing recorded reports no stage", () => {
 // ── buildTimelineText (MJ context) ───────────────────────────────────────────
 test("buildTimelineText lists real switches and never invents a schedule", () => {
   const text = buildTimelineText(TIMELINE, "2026-06-01", "2026-06-20");
-  assert.match(text, /2026-06-15 \(day 15\): moved to Vegetative/);
-  assert.match(text, /Today \(2026-06-20\) is day 20 and the grow is in Vegetative/);
+  assert.match(text, /2026-06-01 \(day 0\): moved to Seedling/);
+  assert.match(text, /2026-06-15 \(day 14\): moved to Vegetative/);
+  assert.match(text, /Today \(2026-06-20\) is day 19 and the grow is in Vegetative/);
   assert.match(text, /no scheduled or estimated dates/);
   assert.doesNotMatch(text, /harvest on|projected|expected harvest/i);
 });
@@ -153,23 +166,39 @@ test("buildTimelineText on an empty grow tells MJ not to invent dates", () => {
 });
 
 // ── resolveSurveyForSetup ────────────────────────────────────────────────────
-test("resolveSurveyForSetup expands counts and tags every plant with the stage", () => {
+test("resolveSurveyForSetup expands counts and stamps every plant with day 0", () => {
   const out = resolveSurveyForSetup({
     currentStage: "flowering",
-    stageStartDate: "2026-07-20",
     strains: [{ name: "Haze", count: 3 }, { name: "GDP" }],
-  });
+  }, "2026-07-20");
   assert.equal(out.strains.length, 4);
   assert.equal(out.plantCount, 4);
   assert.ok(out.strains.every(s => s.stage === "flowering"));
   assert.ok(out.strains.every(s => s.count === undefined));
-  // No derived dates survive: the grower's own date is the only one.
+  // Setup derives NO dates: creation day is the only one, and it is today
+  // even though these plants joined mid-flower.
+  assert.ok(out.strains.every(s => s.createdAt === "2026-07-20"));
   assert.equal(out.transplantDate, undefined);
-  assert.equal(out.stageStartDate, "2026-07-20");
+  assert.equal(dayOfGrow(out.strains[0].createdAt, "2026-07-20"), 0);
 });
 
 test("resolveSurveyForSetup defaults to seedling and clamps silly counts", () => {
   const out = resolveSurveyForSetup({ strains: [{ name: "X", count: 999 }] });
   assert.equal(out.currentStage, "seedling");
   assert.equal(out.strains.length, 12);
+});
+
+// ── addPlantToSurvey ─────────────────────────────────────────────────────────
+test("a plant added at any stage is stamped with today, never backdated", () => {
+  const { plant } = addPlantToSurvey(
+    { strains: [] },
+    { name: "Late Joiner", stage: "flowering" },
+    () => "p_test",
+    "2026-09-01",
+  );
+  assert.equal(plant.createdAt, "2026-09-01");
+  assert.equal(plant.stage, "flowering");
+  // Day 0 today regardless of the stage it joined at.
+  assert.equal(dayOfGrow(plant.createdAt, "2026-09-01"), 0);
+  assert.equal(dayOfGrow(plant.createdAt, "2026-09-11"), 10);
 });

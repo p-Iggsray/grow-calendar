@@ -184,7 +184,7 @@ function renderReport(ctx) {
   // ── Headline stat strip ──────────────────────────────────────────────────
   const stats = [
     firstDate ? ["Grow started", fmtNice(asDate(firstDate))] : null,
-    growDay ? ["Day", String(growDay)] : null,
+    growDay != null ? ["Day", String(growDay)] : null,
     currentStage ? ["Current stage", stageLabel(currentStage)] : null,
     plants.length ? ["Plants", String(plants.length)] : null,
     ["Days logged", String(logDays)],
@@ -251,7 +251,7 @@ function renderReport(ctx) {
     timelineSection = section("Stage Changes",
       `<div class="timeline">${stageEvents.map(e => {
         const day = dayOfGrow(firstDate, e.date);
-        return `<div class="tl"><span class="tl-icon">•</span><span class="tl-label">Moved to ${esc(stageLabel(e.stage))}</span><span class="tl-date">${fmtNice(asDate(e.date))}${day ? ` · day ${day}` : ""}</span></div>`;
+        return `<div class="tl"><span class="tl-icon">•</span><span class="tl-label">Moved to ${esc(stageLabel(e.stage))}</span><span class="tl-date">${fmtNice(asDate(e.date))}${day != null ? ` · day ${day}` : ""}</span></div>`;
       }).join("")}</div>`);
   }
 

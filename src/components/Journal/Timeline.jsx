@@ -252,7 +252,7 @@ export default function Timeline({ today, stageEvents = [], firstDate = null, gr
         <>
           {/* Stats row */}
           <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-            {growDay && (
+            {growDay != null && (
               <StatChip icon={<Sprout size={11} strokeWidth={2} style={{ color: "var(--c-accent)" }} />}>
                 Day {growDay}
               </StatChip>

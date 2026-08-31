@@ -56,9 +56,6 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
     if (step === 1 && !survey.strains.every(s => s.name.trim().length > 0)) {
       return "Name each strain to continue";
     }
-    if (step === 2 && !(survey.stageStartDate || "").length) {
-      return "Pick when your current stage started";
-    }
     return null;
   }
   function canAdvance() { return advanceHint() === null; }

@@ -11,7 +11,7 @@ export function buildTimelineText(events = [], firstDate = null, todayKey = null
   const lines = ["GROW TIMELINE (recorded, not predicted):"];
   for (const e of events) {
     const day = dayOfGrow(firstDate, e.date);
-    lines.push(`- ${e.date}${day ? ` (day ${day})` : ""}: moved to ${stageLabel(e.stage)}`);
+    lines.push(`- ${e.date}${day != null ? ` (day ${day})` : ""}: moved to ${stageLabel(e.stage)}`);
   }
 
   if (todayKey) {
@@ -20,7 +20,7 @@ export function buildTimelineText(events = [], firstDate = null, todayKey = null
     lines.push(
       stage
         ? `Today (${todayKey}) is day ${day} and the grow is in ${stageLabel(stage)}.`
-        : `Today (${todayKey}) is before this grow's first recorded day.`,
+        : `Today (${todayKey}) is before this grow started in the app.`,
     );
   }
 

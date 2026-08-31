@@ -44,7 +44,7 @@ async function writeSurvey(env, userId, growId, survey) {
 }
 
 function plantOut(p) {
-  return { id: p.id, name: p.name, type: p.type, photo: p.photo, flowerWeeks: p.flowerWeeks, status: p.status };
+  return { id: p.id, name: p.name, type: p.type, photo: p.photo, flowerWeeks: p.flowerWeeks, status: p.status, createdAt: p.createdAt ?? null };
 }
 
 function dateToYmd(dt) {

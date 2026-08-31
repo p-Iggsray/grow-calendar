@@ -68,7 +68,9 @@ export default function PlantDetail({ growId, plant, today, firstDate, onOpenJou
   const upcoming = stageIdx < STAGE_ORDER.length - 1 ? nextStage(stage) : null;
 
   // At-a-glance numbers derived from the history + grow timeline.
-  const age = today ? dayOfGrow(firstDate, ymd(today)) : null;
+  // Day 0 is the day this plant was added, whatever stage it joined at.
+  const plantStart = plant.createdAt ?? firstDate;
+  const age = today ? dayOfGrow(plantStart, ymd(today)) : null;
   const { stageDays, lastHealth } = plantHistoryStats(combined, today);
   const healthInfo = lastHealth ? HEALTH_MAP[lastHealth] : null;
 
@@ -191,7 +193,7 @@ export default function PlantDetail({ growId, plant, today, firstDate, onOpenJou
 
         {/* At a glance */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 18 }}>
-          {age && <Meta label="Age" value={`Day ${age}`} />}
+          {age != null && <Meta label="Age" value={`Day ${age}`} />}
           <Meta label="In stage" value={stageDays != null ? `${stageDays}d` : "-"} />
           {healthInfo && <Meta label="Health" value={healthInfo.label} accent={healthInfo.color} />}
         </div>
@@ -272,8 +274,8 @@ export default function PlantDetail({ growId, plant, today, firstDate, onOpenJou
                         fontFamily: MONO, fontSize: 11, color: "var(--c-text-dim)",
                       }}>
                       {fmtDateKey(e.date)}
-                      {dayOfGrow(firstDate, e.date) && (
-                        <span style={{ color: "var(--c-text-ghost)" }}>· Day {dayOfGrow(firstDate, e.date)}</span>
+                      {dayOfGrow(plantStart, e.date) != null && (
+                        <span style={{ color: "var(--c-text-ghost)" }}>· Day {dayOfGrow(plantStart, e.date)}</span>
                       )}
                       {onOpenJournalDay && <BookOpen size={11} strokeWidth={2} style={{ color: "var(--c-text-ghost)" }} />}
                     </button>
@@ -312,6 +314,7 @@ export default function PlantDetail({ growId, plant, today, firstDate, onOpenJou
           <input
             type="date"
             value={stageDate}
+            min={plantStart ?? undefined}
             max={ymd(today ?? new Date())}
             onChange={(e) => setStageDate(e.target.value)}
             style={{
