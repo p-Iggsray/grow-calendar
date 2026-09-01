@@ -1,6 +1,6 @@
 // Journal photos: pictures attached to a day's journal page. Stored in D1 as
-// data URLs (the client downscales before upload - see AddPhotoButton), with a
-// small thumbnail column so month/day reads never pull full images.
+// data URLs (the client downscales before upload - see src/lib/photoFiles.js),
+// with a small thumbnail column so month/day reads never pull full images.
 import { json, error, nowIso, safeJsonBounded } from "./util.js";
 import { ownedGrowRow } from "./plants.js";
 import { logError } from "./log.js";
@@ -12,7 +12,10 @@ const DATA_URL_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
 // Kept safely under D1's ~1MB bound-parameter ceiling.
 const MAX_DATA_CHARS = 980_000;
 const MAX_THUMB_CHARS = 80_000;
-const MAX_PER_DAY = 6;
+// A day's shoot is a whole set of plants, so the cap has to be big enough for
+// one library pick to land in full - it matches MAX_BATCH on the client. Day
+// reads only pull thumbnails, which are capped at 80k chars each.
+const MAX_PER_DAY = 20;
 const MAX_PER_GROW = 800;
 
 let _schemaReady = false;

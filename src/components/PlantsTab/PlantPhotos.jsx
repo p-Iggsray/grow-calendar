@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, Images } from "lucide-react";
 import { api, ymd } from "../../lib/api.js";
-import { fileToDataUrls, Viewer } from "../Journal/PhotosCard.jsx";
+import { batchResultMessage, fileToDataUrls, MAX_BATCH } from "../../lib/photos.js";
+import PhotoViewer from "../PhotoViewer.jsx";
 import { fmtDateKey, MONO } from "./constants.js";
 import { tapHaptic } from "../../lib/haptics.js";
 
@@ -12,9 +13,10 @@ export default function PlantPhotos({ growId, plantId }) {
   const cameraRef = useRef(null);
   const libraryRef = useRef(null);
   const [photos, setPhotos] = useState([]);
-  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(null); // {done, total} while uploading
   const [error, setError] = useState("");
-  const [viewing, setViewing] = useState(null);
+  const [viewIndex, setViewIndex] = useState(null);
+  const busy = progress !== null;
 
   const load = () => {
     api.listPlantPhotos(growId, plantId)
@@ -23,29 +25,48 @@ export default function PlantPhotos({ growId, plantId }) {
   };
   useEffect(load, [growId, plantId]);
 
-  async function upload(file, fromCamera) {
-    setBusy(true);
+  // One at a time: each photo is most of a megabyte, and firing a batch at
+  // once would spike memory on the phone and hammer the worker.
+  async function uploadAll(files, fromCamera) {
+    const batch = files.slice(0, MAX_BATCH);
+    setProgress({ done: 0, total: batch.length });
     setError("");
-    try {
-      const { data, thumb } = await fileToDataUrls(file);
-      await api.createJournalPhoto(growId, { date: ymd(new Date()), data, thumb, plantId, fromCamera });
+    const failures = [];
+    let added = 0;
+    for (const file of batch) {
+      try {
+        const { data, thumb } = await fileToDataUrls(file);
+        await api.createJournalPhoto(growId, { date: ymd(new Date()), data, thumb, plantId, fromCamera });
+        added++;
+      } catch (err) {
+        failures.push(err?.message || "Could not add that photo.");
+      }
+      setProgress({ done: added + failures.length, total: batch.length });
+    }
+    if (added > 0) {
       tapHaptic();
       window.dispatchEvent(new CustomEvent("journal-mutated"));
       load();
-    } catch (err) {
-      setError(err?.message || "Could not add that photo. Try again.");
-    } finally {
-      setBusy(false);
     }
+    setError(
+      files.length > batch.length
+        ? `Only the first ${MAX_BATCH} were added. ${batchResultMessage(added, failures)}`.trim()
+        : batchResultMessage(added, failures),
+    );
+    setProgress(null);
   }
 
   function onPick(fromCamera) {
     return (e) => {
-      const file = e.target.files?.[0];
+      const files = Array.from(e.target.files ?? []);
       e.target.value = "";
-      if (file) upload(file, fromCamera);
+      if (files.length) uploadAll(files, fromCamera);
     };
   }
+
+  const addLabel = busy
+    ? (progress.total > 1 ? `${progress.done + 1}/${progress.total}…` : "Adding…")
+    : null;
 
   return (
     <div style={{ marginTop: 24 }}>
@@ -66,7 +87,7 @@ export default function PlantPhotos({ growId, plantId }) {
               opacity: busy ? 0.6 : 1,
             }}>
             <Camera size={13} strokeWidth={2} />
-            {busy ? "Adding…" : "Take"}
+            {addLabel ?? "Take"}
           </button>
           <button
             type="button"
@@ -93,11 +114,11 @@ export default function PlantPhotos({ growId, plantId }) {
 
       {photos.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7 }}>
-          {photos.map((p) => (
+          {photos.map((p, i) => (
             <button
               key={p.id}
               type="button"
-              onClick={() => { tapHaptic(); setViewing(p); }}
+              onClick={() => { tapHaptic(); setViewIndex(i); }}
               aria-label={`Open photo from ${fmtDateKey(p.date)}`}
               style={{
                 padding: 0, border: "1px solid var(--c-border-faint)", borderRadius: 10,
@@ -142,18 +163,21 @@ export default function PlantPhotos({ growId, plantId }) {
         ref={libraryRef}
         type="file"
         accept="image/*"
+        multiple
         onChange={onPick(false)}
         style={{ display: "none" }}
         aria-hidden="true"
         tabIndex={-1}
       />
 
-      {viewing && (
-        <Viewer
+      {viewIndex !== null && photos.length > 0 && (
+        <PhotoViewer
           growId={growId}
-          photo={viewing}
-          onClose={() => setViewing(null)}
-          onDeleted={() => { setViewing(null); load(); }}
+          photos={photos}
+          startIndex={viewIndex}
+          subtitleFor={(p) => fmtDateKey(p.date)}
+          onClose={() => setViewIndex(null)}
+          onDeleted={load}
         />
       )}
     </div>

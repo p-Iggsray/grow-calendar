@@ -12,7 +12,13 @@ const UI = "var(--font-ui)";
 //
 // items: [{ icon, label, detail, onClick, tone }] - tone "destructive" for
 // deletes. A falsy entry is skipped, so callers can inline conditions.
-export default function HeaderMenu({ items = [], title = "Settings", label = "Settings" }) {
+//
+// `icon` and `buttonStyle` let a screen that is not a settings screen borrow
+// the same sheet - the photo viewer uses a "..." over the picture.
+export default function HeaderMenu({
+  items = [], title = "Settings", label = "Settings",
+  icon: TriggerIcon = Settings, buttonStyle,
+}) {
   const [open, setOpen] = useState(false);
   const shown = items.filter(Boolean);
   if (shown.length === 0) return null;
@@ -37,8 +43,9 @@ export default function HeaderMenu({ items = [], title = "Settings", label = "Se
           background: "var(--c-surface-2)", border: "none",
           color: "var(--c-text)", cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
+          ...buttonStyle,
         }}>
-        <Settings size={19} strokeWidth={2} />
+        <TriggerIcon size={19} strokeWidth={2} />
       </button>
 
       <AnimatePresence>
