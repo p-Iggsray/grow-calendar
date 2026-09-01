@@ -18,12 +18,14 @@ const INPUT_STYLE = {
   width: "100%",
 };
 
+// This app has exactly one account and no way to make another. A stranger who
+// finds the link gets this and nothing else: no sign-up, no "request access",
+// no hint about who it belongs to or what is inside. The only other public
+// surface is a /share/:token buddy link, which the owner hands out by hand.
 export default function LoginGate() {
-  const { login, signup } = useAuth();
-  const [mode, setMode] = useState("login"); // login | signup | reset
+  const { login } = useAuth();
+  const [mode, setMode] = useState("login"); // login | reset
   const [username,        setUsername]        = useState("");
-  const [firstName,       setFirstName]       = useState("");
-  const [lastName,        setLastName]        = useState("");
   const [password,        setPassword]        = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [resetToken,      setResetToken]      = useState(null);
@@ -56,8 +58,6 @@ export default function LoginGate() {
     try {
       if (mode === "login") {
         await login(username.trim(), password);
-      } else if (mode === "signup") {
-        await signup(username.trim(), firstName.trim(), lastName.trim(), password);
       } else if (mode === "reset") {
         if (password !== confirmPassword) { setError("Passwords don't match"); return; }
         await api.resetPassword(resetToken, password);
@@ -74,15 +74,13 @@ export default function LoginGate() {
   }
 
   const submitLabel = {
-    login:   busy ? "..." : "LOG IN",
-    signup:  busy ? "..." : "REQUEST ACCOUNT",
-    reset:   busy ? "..." : "SET NEW PASSWORD",
+    login: busy ? "..." : "LOG IN",
+    reset: busy ? "..." : "SET NEW PASSWORD",
   }[mode];
 
   const submitDisabled = busy || (
-    mode === "login"  ? (!username || !password) :
-    mode === "signup" ? (!username || !firstName || !lastName || !password) :
-    mode === "reset"  ? (!password || !confirmPassword) :
+    mode === "login" ? (!username || !password) :
+    mode === "reset" ? (!password || !confirmPassword) :
     false
   );
 
@@ -119,27 +117,11 @@ export default function LoginGate() {
         )}
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {/* Username - login / signup only */}
-            {(mode === "login" || mode === "signup") && (
-              <Field label="Username" value={username} onChange={setUsername} autoComplete="username" autoFocus={mode === "login"} />
-            )}
-
-            {/* Name fields - signup only */}
-            {mode === "signup" && (
+            {mode === "login" && (
               <>
-                <Field label="First name" value={firstName} onChange={setFirstName} autoComplete="given-name" />
-                <Field label="Last name"  value={lastName}  onChange={setLastName}  autoComplete="family-name" />
+                <Field label="Username" value={username} onChange={setUsername} autoComplete="username" autoFocus />
+                <PasswordField label="Password" value={password} onChange={setPassword} autoComplete="current-password" />
               </>
-            )}
-
-            {/* Password - login / signup / reset */}
-            {(mode === "login" || mode === "signup") && (
-              <PasswordField
-                label="Password"
-                value={password}
-                onChange={setPassword}
-                autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              />
             )}
             {mode === "reset" && (
               <>
@@ -171,23 +153,19 @@ export default function LoginGate() {
               {submitLabel}
             </button>
 
-            {/* No self-service reset, and no in-app way to issue one either:
-                a reset token has to be inserted into the database by hand. */}
-            {mode === "login" && (
-              <div style={{ fontSize: 11, letterSpacing: 0.5, color: "var(--c-text-faint)", fontFamily: "var(--font-ui)", textAlign: "center", lineHeight: 1.6, marginTop: 2 }}>
-                Forgot your password? A reset link has to be issued from the database.
-              </div>
-            )}
           </form>
 
-        {/* Mode toggle - login ↔ signup */}
-        {(mode === "login" || mode === "signup") && (
-          <button
-            type="button"
-            onClick={() => { setError(""); setSuccessMsg(""); setMode(mode === "login" ? "signup" : "login"); }}
-            style={{ ...linkBtnStyle, marginTop: 14, width: "100%" }}>
-            {mode === "login" ? "Need an account? Request one" : "Have an account? Log in"}
-          </button>
+        {/* The whole point of this screen for anyone who is not the owner:
+            say the door is closed, and offer no other control. */}
+        {mode === "login" && (
+          <div style={{
+            marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--c-surface-2)",
+            fontFamily: "var(--font-ui)", fontSize: 11.5, lineHeight: 1.7,
+            color: "var(--c-text-faint)", textAlign: "center",
+          }}>
+            This is a private grow log for one person. There is no sign-up and no
+            way to request access.
+          </div>
         )}
 
         {/* Back to login - reset */}
@@ -197,20 +175,6 @@ export default function LoginGate() {
           </button>
         )}
 
-        {/* Legal / privacy disclaimer - signup screen only */}
-        {mode === "signup" && (
-          <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--c-surface-2)", fontFamily: "var(--font-ui)" }}>
-            <p style={{ fontSize: 10, lineHeight: 1.6, color: "var(--c-text-faint)", margin: 0 }}>
-              For educational and personal record-keeping only - not medical, legal, or professional cultivation advice. Intended for adults of legal age. You are responsible for complying with the cannabis laws in your area.
-            </p>
-            <details style={{ marginTop: 8 }}>
-              <summary style={{ fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", cursor: "pointer", textTransform: "uppercase" }}>Privacy</summary>
-              <p style={{ fontSize: 10, lineHeight: 1.6, color: "var(--c-text-faint)", margin: "6px 0 0" }}>
-                Your account and grow data are stored privately to run the app and are never sold. AI features send your grow details to Google&apos;s Gemini API to generate replies. Your account and data can be deleted from the database at any time.
-              </p>
-            </details>
-          </div>
-        )}
       </div>
     </div>
   );

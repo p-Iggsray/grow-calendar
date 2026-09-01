@@ -5,6 +5,7 @@ import {
   parseCookies, sessionCookie, clearSessionCookie, isHttps,
   safeJsonBounded,
 } from "./util.js";
+import { isOwner } from "./owner.js";
 
 const MAX_AUTH_REQUEST_BYTES = 1024;
 
@@ -40,17 +41,6 @@ export function validatePassword(password) {
   if (password.length < MIN_PASSWORD_LENGTH) {
     return `password must be at least ${MIN_PASSWORD_LENGTH} characters`;
   }
-  return null;
-}
-
-/**
- * @param {unknown} value
- * @param {string} label  e.g. "first name" or "last name"
- * @returns {string | null}
- */
-export function validateName(value, label) {
-  if (typeof value !== "string" || !value.trim()) return `${label} required`;
-  if (value.trim().length > 50) return `${label} must be 50 characters or fewer`;
   return null;
 }
 
@@ -188,53 +178,6 @@ export async function getMe(request, env) {
   return attachSessionCookie(res, request, user.rotateTo);
 }
 
-export async function signup(request, env) {
-  const parsed = await safeJsonBounded(request, MAX_AUTH_REQUEST_BYTES);
-  if (!parsed.ok) return error(parsed.status, parsed.error);
-  const body = parsed.data;
-  if (!body) return error(400, "invalid json");
-  const username  = String(body.username  || "").trim();
-  const firstName = String(body.firstName || "").trim();
-  const lastName  = String(body.lastName  || "").trim();
-  const password  = String(body.password  || "");
-
-  const usernameErr = validateUsername(username);
-  if (usernameErr) return error(400, usernameErr);
-  const firstNameErr = validateName(firstName, "first name");
-  if (firstNameErr) return error(400, firstNameErr);
-  const lastNameErr = validateName(lastName, "last name");
-  if (lastNameErr) return error(400, lastNameErr);
-  const passwordErr = validatePassword(password);
-  if (passwordErr) return error(400, passwordErr);
-
-  const ip = getClientIp(request);
-  const rateCheck = await checkRateLimit(env, ip, username);
-  if (rateCheck.blocked) {
-    return json(
-      { error: "too many attempts, please try again later" },
-      { status: 429, headers: { "retry-after": String(rateCheck.retryAfter) } },
-    );
-  }
-
-  const existing = await env.DB.prepare("SELECT id FROM users WHERE username = ?").bind(username).first();
-  if (existing) {
-    await recordFailedAttempt(env, ip, username);
-    return error(409, "username unavailable");
-  }
-
-  const { salt, hash } = await hashPassword(password);
-  const createdAt = nowIso();
-  const result = await env.DB.prepare(
-    "INSERT INTO users (username, first_name, last_name, password_hash, password_salt, created_at, role, status) VALUES (?, ?, ?, ?, ?, ?, 'user', 'pending')",
-  ).bind(username, firstName, lastName, hash, salt, createdAt).run();
-
-  await clearRateLimit(env, ip, username);
-  const userId = result.meta.last_row_id;
-  return finishLogin(request, env, {
-    id: userId, username, role: "user", status: "pending",
-  });
-}
-
 export async function login(request, env) {
   const parsed = await safeJsonBounded(request, MAX_AUTH_REQUEST_BYTES);
   if (!parsed.ok) return error(parsed.status, parsed.error);
@@ -265,6 +208,14 @@ export async function login(request, env) {
 
   const { hash } = await hashPassword(password, base64ToBytes(user.password_salt));
   if (!constantTimeEqual(hash, user.password_hash)) {
+    await recordFailedAttempt(env, ip, username);
+    return error(401, "invalid credentials");
+  }
+
+  // Correct password, wrong person. This app has exactly one account; anyone
+  // else gets the same answer as a bad password, and the same rate limiting,
+  // so a leftover account can neither get in nor be probed for.
+  if (!isOwner(user)) {
     await recordFailedAttempt(env, ip, username);
     return error(401, "invalid credentials");
   }
@@ -302,6 +253,12 @@ export async function currentUser(request, env) {
   if (!row) return null;
   const nowMs = Date.now();
   if (new Date(row.expires_at).getTime() < nowMs) {
+    await env.DB.prepare("DELETE FROM sessions WHERE token = ?").bind(tokenHash).run();
+    return null;
+  }
+  // Anyone who held a session before this app became single-user loses it the
+  // moment they use it, rather than staying logged in until it expires.
+  if (!isOwner(row)) {
     await env.DB.prepare("DELETE FROM sessions WHERE token = ?").bind(tokenHash).run();
     return null;
   }

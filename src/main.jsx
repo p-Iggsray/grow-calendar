@@ -2,7 +2,6 @@ import { StrictMode, lazy, Suspense, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import LoginGate from "./components/LoginGate.jsx";
-import PendingScreen from "./components/PendingScreen.jsx";
 import Splash from "./components/Splash.jsx";
 import { AppShellSkeleton } from "./components/LoadingScreens.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
@@ -96,7 +95,6 @@ function Root() {
     <>
       {!loading && (
         !user ? <LoginGate />
-        : user.status !== "approved" ? <PendingScreen />
         : (
           <PlanProvider>
             <Suspense fallback={<AppShellSkeleton />}>

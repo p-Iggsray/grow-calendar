@@ -1,6 +1,6 @@
 // @ts-check
 import { error } from "./util.js";
-import { signup, login, logout, getMe, currentUser, attachSessionCookie } from "./auth.js";
+import { login, logout, getMe, currentUser, attachSessionCookie } from "./auth.js";
 import { postResetPassword } from "./authReset.js";
 import { ensurePerDayGrowScope, resolveGrowId } from "./perDayScope.js";
 import { getNote, putNote } from "./notes.js";
@@ -20,7 +20,7 @@ import { getStageTimeline } from "./stages.js";
 import { addPlant, patchPlant, deletePlant, listPlantLog, addPlantLogEntry, patchPlantLogEntry, deletePlantLogEntry, plantLogSummary, dailyLogForPlant } from "./plants.js";
 import { getGrowReport } from "./report.js";
 import { getStats } from "./stats.js";
-import { requireApproved } from "./guard.js";
+import { requireOwner } from "./owner.js";
 import { logError, logInfo } from "./log.js";
 import { getShareToken, createShareToken, deleteShareToken, getSharedView } from "./share.js";
 
@@ -94,7 +94,6 @@ async function route(request, env, path) {
   if (shareViewMatch && method === "GET") return getSharedView(env, shareViewMatch[1]);
 
   // public auth routes
-  if (path === "/api/auth/signup"          && method === "POST") return signup(request, env);
   if (path === "/api/auth/login"           && method === "POST") return login(request, env);
   if (path === "/api/auth/logout"          && method === "POST") return logout(request, env);
   if (path === "/api/auth/me"              && method === "GET")  return getMe(request, env);
@@ -112,8 +111,9 @@ async function route(request, env, path) {
 }
 
 async function authenticatedRoute(request, env, path, method, user) {
-  // app routes require an approved user
-  const gate = requireApproved(user); if (gate) return gate;
+  // Every app route is owner-only. currentUser already refuses a non-owner
+  // session, so this is the second lock on the same door.
+  const gate = requireOwner(user); if (gate) return gate;
 
   // Ensure the per-day tables are grow-scoped before any handler touches them.
   await ensurePerDayGrowScope(env);

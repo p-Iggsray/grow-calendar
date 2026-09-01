@@ -1,5 +1,6 @@
 import { json, error, safeJsonBounded } from "./util.js";
 import { hashPassword, hashToken } from "./auth.js";
+import { isOwner } from "./owner.js";
 
 // Redeems a one-time password-reset token. There is no in-app way to mint one
 // any more (that lived in the deleted admin panel), so a token has to be
@@ -23,7 +24,17 @@ export async function postResetPassword(request, env) {
   if (!row) return error(400, "invalid or expired reset link");
   if (new Date(row.expires_at).getTime() < Date.now()) {
     await env.DB.prepare("DELETE FROM password_reset_tokens WHERE token = ?").bind(tokenHash).run();
-    return error(400, "reset link has expired - please ask the admin for a new one");
+    return error(400, "reset link has expired");
+  }
+
+  // A token may only ever set the owner's password. Belt and braces: a row for
+  // some other account cannot be turned into a way in.
+  const target = await env.DB.prepare(
+    "SELECT id, role, status FROM users WHERE id = ?"
+  ).bind(row.user_id).first();
+  if (!isOwner(target)) {
+    await env.DB.prepare("DELETE FROM password_reset_tokens WHERE token = ?").bind(tokenHash).run();
+    return error(400, "invalid or expired reset link");
   }
 
   const { salt, hash } = await hashPassword(newPassword);
