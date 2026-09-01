@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bold, Italic, Underline, Heading1, Heading2, List, ListOrdered, Type } from "lucide-react";
-import { sanitizeHtml, noteToHtml, htmlIsEmpty } from "../../lib/richText.js";
+import { sanitizeHtml, noteToHtml, htmlIsEmpty, trimTrailingSpace } from "../../lib/richText.js";
 
 const SIZES = [
   { label: "Small",  value: "2" },
@@ -105,7 +105,10 @@ export default function RichEntryEditor({ value, onChange, onBlur, placeholder =
     if (el.textContent.trim() === "" && !el.querySelector("li") && el.innerHTML !== "") {
       el.innerHTML = "";
     }
-    const html = sanitizeHtml(el.innerHTML);
+    // Sanitizing turns the browser's non-breaking spaces back into ordinary
+    // ones; trimming stops a trailing one from being stored at all. Only the
+    // emitted value is touched, never the DOM, so the caret does not move.
+    const html = trimTrailingSpace(sanitizeHtml(el.innerHTML));
     const out = htmlIsEmpty(html) ? "" : html;
     lastEmitted.current = out;
     onChange(out);

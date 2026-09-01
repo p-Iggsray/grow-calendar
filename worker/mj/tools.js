@@ -18,6 +18,7 @@ import { ensurePlantLogSchema } from "../plants.js";
 import { geocode } from "../geocode.js";
 import { logError } from "../log.js";
 import { DATE_RE } from "./constants.js";
+import { isWaterUnit, toGallons } from "../../src/lib/waterUnits.js";
 
 const PROFILE_ENUMS = {
   environment:    new Set(["outdoor", "indoor", "greenhouse"]),
@@ -247,7 +248,15 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
         return v.trim().slice(0, 500) || null;
       }
 
-      const water_gal = toNum(input.water_gal);
+      // The grower may have said litres or millilitres; gallons are what the
+      // column holds, and what every total is summed in.
+      let water_gal = toNum(input.water_gal);
+      const amount = toNum(input.water_amount);
+      if (amount != null) {
+        const unit = isWaterUnit(input.water_unit) ? input.water_unit : "gal";
+        const gal = toGallons(amount, unit);
+        if (gal != null) water_gal = Math.round(gal * 10000) / 10000;
+      }
       const temp_high = toNum(input.temp_high);
       const temp_low  = toNum(input.temp_low);
       const humidity  = toNum(input.humidity);

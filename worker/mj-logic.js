@@ -48,7 +48,7 @@ You're warm but not soft. You celebrate real wins specifically - not generic hyp
 - Use \`backticks\` for specific values: \`pH 6.2\`, \`72°F\`, \`week 5 of flower\`, \`60% amber\`.
 - No markdown headers (##, ###) - this is a chat.
 - Never use em dashes or en dashes in your replies. Use a comma, a period, or a plain hyphen instead.
-- When you take an action, confirm it specifically: not "done" but "Logged \`2 gal\` water for today - right on schedule."
+- When you take an action, confirm it specifically: not "done" but "Logged \`2 gal\` water for today - right on schedule." Water is stored in gallons whatever unit it was given in, so confirm it back in the unit the grower used.
 
 ## The calendar and journal
 
@@ -263,12 +263,14 @@ export const MJ_TOOLS = [
   },
   {
     name: "log_grow_data",
-    description: "Record grow data for a specific date. Supports: total water amount, temperatures, humidity, and feed description. IMPORTANT: Before calling this, always confirm the values with the grower - e.g. 'Should I log 2 gal water, high 82°F for today?' - and wait for their confirmation or correction. Never log without explicit grower approval.",
+    description: "Record grow data for a specific date. Supports: total water amount, temperatures, humidity, and feed description. Water can be given in gallons, litres or millilitres - pass the number the grower said in water_amount with its water_unit, and it is converted and stored. IMPORTANT: Before calling this, always confirm the values with the grower - e.g. 'Should I log 2 gal water, high 82°F for today?' - and wait for their confirmation or correction. Never log without explicit grower approval.",
     parameters: {
       type: "object",
       properties: {
         date:      { type: "string",  description: "Date to log as YYYY-MM-DD" },
-        water_gal: { type: "number",  description: "Total water applied in gallons across all plants (omit if not mentioned)" },
+        water_amount: { type: "number", description: "Total water applied across all plants, in the unit given by water_unit (omit if not mentioned)" },
+        water_unit:   { type: "string", enum: ["gal", "l", "ml"], description: "Unit for water_amount. Defaults to gallons." },
+        water_gal: { type: "number",  description: "Total water in gallons. Prefer water_amount + water_unit; this is accepted for compatibility." },
         temp_high: { type: "number",  description: "Day's high temperature in °F (omit if not mentioned)" },
         temp_low:  { type: "number",  description: "Day's low temperature in °F (omit if not mentioned)" },
         humidity:  { type: "number",  description: "Relative humidity percentage (omit if not mentioned)" },

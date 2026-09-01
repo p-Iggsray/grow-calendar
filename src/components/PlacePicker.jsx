@@ -49,7 +49,7 @@ export default function PlacePicker({ value = "", onPick, onUseMyLocation, locat
     <div>
       <div style={{
         display: "flex", alignItems: "center", gap: 9, padding: "0 12px",
-        borderRadius: 10, background: "rgba(0,0,0,0.25)",
+        borderRadius: 10, background: "var(--c-surface-1)",
         border: "1px solid var(--c-border-strong)",
       }}>
         <Search size={16} strokeWidth={2} style={{ color: "var(--c-text-ghost)", flexShrink: 0 }} />

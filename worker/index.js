@@ -210,7 +210,10 @@ async function authenticatedRoute(request, env, path, method, user) {
     if (method === "DELETE") return deletePlantLogEntry(env, user, gId, pId, eId);
   }
   const growReportMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/report$/);
-  if (growReportMatch && method === "GET") return getGrowReport(env, user, growReportMatch[1]);
+  if (growReportMatch && method === "GET") {
+    const reportUrl = new URL(request.url);
+    return getGrowReport(env, user, growReportMatch[1], reportUrl.searchParams.get("unit") || "gal");
+  }
 
   if (path === "/api/share" && method === "GET")    return getShareToken(env, user);
   if (path === "/api/share" && method === "POST")   return createShareToken(env, user);

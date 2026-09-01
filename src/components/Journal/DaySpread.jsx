@@ -7,6 +7,7 @@ import { useJournalDay, useJournalMonth } from "../../lib/useJournal.js";
 import { useDayNote } from "../../lib/useDayNote.js";
 import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../../lib/stageTimeline.js";
 import { kindLabel, summarizeEntry, HEALTH_MAP } from "../PlantsTab/constants.js";
+import { fromGallons, loadWaterUnit, rowDisplay, unitLabel } from "../../lib/waterUnits.js";
 import { Skeleton } from "../Skeleton.jsx";
 import { tapHaptic } from "../../lib/haptics.js";
 import RichEntryEditor from "./RichEntryEditor.jsx";
@@ -136,6 +137,13 @@ export default function DaySpread({
   const entryDays = Object.keys(monthDays).sort();
   const log = day.log;
   const waterPlants = (log?.water_plants ?? []).filter(w => w && (w.plant || w.plantId));
+  // Totals read in the unit you last watered in; a single row reads in the unit
+  // it was actually logged in.
+  const waterUnit = loadWaterUnit();
+  const waterAmount = (w) => {
+    const { amount, unit } = rowDisplay(w);
+    return amount == null || amount === "" ? "" : ` ${amount} ${unitLabel(unit)}`;
+  };
   const trainingRows = (log?.training ?? []).filter(t => t && (t.action ?? "").trim());
   const healthRows = (log?.plant_health ?? []).filter(h => h && (h.plant || h.plantId || h.color || h.trichomes || h.notes));
   const hasStats = log && (log.water_gal != null || log.temp_high != null || log.temp_low != null || log.humidity != null || log.feed);
@@ -382,7 +390,7 @@ export default function DaySpread({
                 }>
                 {hasStats && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-                    {log.water_gal != null && <Stat label="Water" value={log.water_gal} unit="gal" />}
+                    {log.water_gal != null && <Stat label="Water" value={fromGallons(log.water_gal, waterUnit)} unit={unitLabel(waterUnit)} />}
                     {log.temp_high != null && <Stat label="Temp high" value={log.temp_high} unit="F" />}
                     {log.temp_low != null && <Stat label="Temp low" value={log.temp_low} unit="F" />}
                     {log.humidity != null && <Stat label="Humidity" value={log.humidity} unit="%" />}
@@ -398,7 +406,7 @@ export default function DaySpread({
                   <div style={{ marginTop: 11 }}>
                     {waterPlants.map((w, i) => (
                       <PlantRow key={i} name={w.plant || "Plant"}>
-                        watered{w.gal ? ` ${w.gal} gal` : ""}
+                        watered{waterAmount(w)}
                       </PlantRow>
                     ))}
                   </div>

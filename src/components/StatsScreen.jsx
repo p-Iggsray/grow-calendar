@@ -7,6 +7,7 @@ import { usePlan } from "../lib/usePlan.jsx";
 import { ymd } from "../lib/api.js";
 import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../lib/stageTimeline.js";
 import { distinctStrains, growLocation } from "../lib/growProfile.js";
+import { formatWater, loadWaterUnit } from "../lib/waterUnits.js";
 
 const MONO  = "var(--font-ui)";
 const SERIF = "var(--font-ui)";
@@ -196,7 +197,7 @@ export default function StatsScreen({ today, onClose }) {
           borderRadius: 12, padding: "0 16px",
         }}>
           <StatRow icon={CalendarDays} label="Stage changes recorded" value={events.length} iconColor="#c084fc" />
-          <StatRow icon={Droplets} label="Total water logged" value={`${stats.log.totalWater} gal`} />
+          <StatRow icon={Droplets} label="Total water logged" value={formatWater(stats.log.totalWater, loadWaterUnit())} />
           <StatRow icon={Thermometer} label="Temp range logged" value={tempVal} iconColor="#60a5fa" />
           <StatRow icon={BookOpen} label="Journal entries" value={stats.notes.count} iconColor="#f59e0b" />
         </div>

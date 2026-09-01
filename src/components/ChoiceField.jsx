@@ -89,7 +89,7 @@ export default function ChoiceField({
         maxLength={80}
         style={{
           flex: 1, minWidth: 0, padding: "11px 13px", borderRadius: 10,
-          background: "rgba(0,0,0,0.25)", border: "1px solid var(--c-border-strong)",
+          background: "var(--c-surface-1)", border: "1px solid var(--c-border-strong)",
           color: "var(--c-text)", fontFamily: UI, fontSize: 16, outline: "none",
         }}
       />
@@ -137,7 +137,7 @@ export default function ChoiceField({
         onClick={() => { tapHaptic(); setSheetOpen(true); }}
         style={{
           width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 10,
-          background: "rgba(0,0,0,0.25)", border: "1px solid var(--c-border-strong)",
+          background: "var(--c-surface-1)", border: "1px solid var(--c-border-strong)",
           color: value ? "var(--c-text)" : "var(--c-text-ghost)",
           fontFamily: UI, fontSize: 15, cursor: "pointer", textAlign: "left",
           display: "flex", alignItems: "center", gap: 10, minHeight: 48,

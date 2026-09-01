@@ -9,6 +9,7 @@ import {
 import EnvSensorCard from "./EnvSensorCard.jsx";
 import ChoiceField from "../ChoiceField.jsx";
 import { NUTRIENT_PRODUCTS } from "../../lib/choices.js";
+import { formatWater, loadWaterUnit } from "../../lib/waterUnits.js";
 
 // The structured daily log, edited in place on the journal page: environment
 // numbers (or the controller-import rollup), per-plant watering & nutrients,
@@ -42,7 +43,13 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
   // Per-plant watering. water_gal is kept as the day's total (sum of all
   // plants) so the stats "total water" aggregation keeps working.
   function addWater()           { const a = [...(logEntry.water_plants ?? []), newRow({ gal: "" })]; setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
-  function updateWater(i, k, v) { const a = [...(logEntry.water_plants ?? [])]; a[i] = { ...a[i], [k]: v }; setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
+  // "__row" replaces the whole row: the amount and its unit have to move
+  // together or the canonical gallons drift out of step with what is shown.
+  function updateWater(i, k, v) {
+    const a = [...(logEntry.water_plants ?? [])];
+    a[i] = k === "__row" ? v : { ...a[i], [k]: v };
+    setLogFields({ water_plants: a, water_gal: sumWater(a) });
+  }
   function removeWater(i)       { const a = [...(logEntry.water_plants ?? [])]; a.splice(i, 1); setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
 
   function addTraining()           { setLogField("training", [...(logEntry.training ?? []), newRow({ action: "" })]); }
@@ -133,7 +140,7 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
             fontFamily: "var(--font-ui)", fontSize: 12,
             letterSpacing: 0.5, color: "var(--c-text-faint)",
           }}>
-            Total: {sumWater(logEntry.water_plants)} gal
+            Total: {formatWater(sumWater(logEntry.water_plants), loadWaterUnit())}
           </div>
         )}
         <div style={{ marginTop: 14 }}>

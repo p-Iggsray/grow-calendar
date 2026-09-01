@@ -9,6 +9,7 @@ import { parseDate } from "../src/lib/dates-core.js";
 import { loadStageTimeline } from "./stages.js";
 import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../src/lib/stageTimeline.js";
 import { growLocation, strainSummary } from "../src/lib/growProfile.js";
+import { formatWater, isWaterUnit, rowDisplay, unitLabel } from "../src/lib/waterUnits.js";
 import { ensureGrowEventsSchema } from "./events.js";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -107,7 +108,8 @@ function renderValue(v) {
   return esc(String(v));
 }
 
-export async function getGrowReport(env, user, growId) {
+export async function getGrowReport(env, user, growId, unit = "gal") {
+  const waterUnit = isWaterUnit(unit) ? unit : "gal";
   const row = await env.DB.prepare(
     "SELECT * FROM grows WHERE id = ? AND user_id = ?",
   ).bind(growId, user.id).first();
@@ -146,7 +148,7 @@ export async function getGrowReport(env, user, growId) {
     eventRows = r.results ?? [];
   } catch { /* grow_events unavailable */ }
 
-  const html = renderReport({ row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows, eventRows });
+  const html = renderReport({ row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows, eventRows, waterUnit });
 
   return new Response(html, {
     headers: {
@@ -157,7 +159,7 @@ export async function getGrowReport(env, user, growId) {
 }
 
 function renderReport(ctx) {
-  const { row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows, eventRows } = ctx;
+  const { row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows, eventRows, waterUnit } = ctx;
 
   const name = row.display_name || "My Grow";
   const status = row.status || "active";
@@ -188,7 +190,7 @@ function renderReport(ctx) {
     currentStage ? ["Current stage", stageLabel(currentStage)] : null,
     plants.length ? ["Plants", String(plants.length)] : null,
     ["Days logged", String(logDays)],
-    ["Total water", `${Math.round(totalWater * 10) / 10} gal`],
+    ["Total water", formatWater(totalWater, waterUnit)],
     feedDays ? ["Feed days", String(feedDays)] : null,
     eventRows.length ? ["Events", String(eventRows.length)] : null,
   ].filter(Boolean);
@@ -292,12 +294,20 @@ function renderReport(ctx) {
     const metrics = [];
     if (e.log) {
       const L = e.log;
-      if (num(L.water_gal) != null) metrics.push(["Water", `${num(L.water_gal)} gal`]);
+      if (num(L.water_gal) != null) metrics.push(["Water", formatWater(num(L.water_gal), waterUnit)]);
       if (L.feed) metrics.push(["Feed", esc(L.feed)]);
       if (num(L.temp_high) != null || num(L.temp_low) != null) metrics.push(["Temp", `${L.temp_high ?? "?"}° / ${L.temp_low ?? "?"}°F`]);
       if (num(L.humidity) != null) metrics.push(["Humidity", `${num(L.humidity)}%`]);
       if (num(L.ec_in) != null || num(L.ec_out) != null) metrics.push(["EC in/out", `${L.ec_in ?? "?"} / ${L.ec_out ?? "?"}`]);
-      const wp = tryArr(L.water_plants); if (wp.length) metrics.push(["Watered", esc(wp.join(", "))]);
+      const wp = tryArr(L.water_plants);
+      if (wp.length) {
+        // Each row reads in the unit it was actually logged in.
+        metrics.push(["Watered", esc(wp.map((w) => {
+          const { amount, unit } = rowDisplay(w);
+          const who = w?.plant || "plant";
+          return amount ? `${who} ${amount} ${unitLabel(unit)}` : who;
+        }).join(", "))]);
+      }
       const tr = tryArr(L.training); if (tr.length) metrics.push(["Training", esc(tr.join(", "))]);
       const ph = tryArr(L.plant_health); if (ph.length) metrics.push(["Plant health", esc(ph.join(", "))]);
     }
@@ -328,7 +338,7 @@ function renderReport(ctx) {
   // ── Stats summary ────────────────────────────────────────────────────────
   const summaryRows = [
     ["Days with a log entry", String(logDays)],
-    ["Total water applied", `${Math.round(totalWater * 10) / 10} gal`],
+    ["Total water applied", formatWater(totalWater, waterUnit)],
     ["Feed days", String(feedDays)],
     tempMin != null ? ["Lowest temp recorded", `${tempMin}°F`] : null,
     tempMax != null ? ["Highest temp recorded", `${tempMax}°F`] : null,

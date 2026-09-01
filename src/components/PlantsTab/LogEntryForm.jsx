@@ -4,6 +4,9 @@ import { Label, Input, RadioGroup, MONO, SERIF } from "../SetupWizard/styleHelpe
 import { HEALTH_OPTIONS, FORM_KINDS } from "./constants.js";
 import ChoiceField from "../ChoiceField.jsx";
 import { NUTRIENT_PRODUCTS, NUTRIENT_DOSES, TRAINING_ACTIONS } from "../../lib/choices.js";
+import {
+  WATER_UNITS, UNIT_STEP, loadWaterUnit, rememberWaterUnit, toGallons, isWaterUnit,
+} from "../../lib/waterUnits.js";
 
 function btn(kind, disabled) {
   const base = { flex: 1, padding: "12px 14px", borderRadius: 10, fontFamily: MONO, fontSize: 12, letterSpacing: 1, cursor: disabled ? "default" : "pointer" };
@@ -27,7 +30,17 @@ export default function LogEntryForm({ initial, onSave, onCancel, saving }) {
 
   function buildDetail() {
     let obj = {};
-    if (kind === "watering") obj = { gal: num(d.gal), ec_in: num(d.ec_in), ec_out: num(d.ec_out) };
+    if (kind === "watering") {
+      // Canonical gallons for anything that sums, plus what was actually typed
+      // so the entry reads back in the unit it was logged in.
+      const unit = isWaterUnit(d.unit) ? d.unit : loadWaterUnit();
+      const gal = toGallons(d.amount, unit);
+      obj = {
+        amount: num(d.amount), unit,
+        gal: gal == null ? undefined : Math.round(gal * 10000) / 10000,
+        ec_in: num(d.ec_in), ec_out: num(d.ec_out),
+      };
+    }
     else if (kind === "nutrients") obj = { mix: str(d.mix), dose: str(d.dose) };
     else if (kind === "training") obj = { action: str(d.action) };
     else if (kind === "environment") obj = { temp_high: num(d.temp_high), temp_low: num(d.temp_low), humidity: num(d.humidity) };
@@ -72,7 +85,31 @@ export default function LogEntryForm({ initial, onSave, onCancel, saving }) {
 
       {kind === "watering" && (
         <div style={{ display: "flex", gap: 10 }}>
-          <div style={{ flex: 1 }}><Label>Water (gal)</Label><Input type="number" value={d.gal ?? ""} onChange={(v) => sd("gal", v)} placeholder="0" /></div>
+          <div style={{ flex: 1 }}>
+            <Label>Water</Label>
+            <Input
+              type="number"
+              step={UNIT_STEP[isWaterUnit(d.unit) ? d.unit : loadWaterUnit()] ?? 0.25}
+              value={d.amount ?? ""}
+              onChange={(v) => sd("amount", v)}
+              placeholder="0"
+            />
+          </div>
+          <div style={{ width: 92 }}>
+            <Label>Unit</Label>
+            <select
+              value={isWaterUnit(d.unit) ? d.unit : loadWaterUnit()}
+              onChange={(e) => { rememberWaterUnit(e.target.value); sd("unit", e.target.value); }}
+              aria-label="Water unit"
+              style={{
+                width: "100%", boxSizing: "border-box", padding: "12px 14px",
+                borderRadius: 10, background: "var(--c-surface-1)", color: "var(--c-text)",
+                border: "1px solid var(--c-border-strong)", fontSize: 16,
+                fontFamily: "var(--font-ui)", outline: "none",
+              }}>
+              {WATER_UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+            </select>
+          </div>
           <div style={{ flex: 1 }}><Label>EC in</Label><Input type="number" value={d.ec_in ?? ""} onChange={(v) => sd("ec_in", v)} placeholder="-" /></div>
           <div style={{ flex: 1 }}><Label>EC out</Label><Input type="number" value={d.ec_out ?? ""} onChange={(v) => sd("ec_out", v)} placeholder="-" /></div>
         </div>
@@ -140,7 +177,7 @@ export default function LogEntryForm({ initial, onSave, onCancel, saving }) {
           onChange={(e) => setBody(e.target.value)}
           rows={3}
           placeholder="What did you observe or do?"
-          style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,0.3)", color: "var(--c-text)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10, padding: "12px 14px", fontSize: 16, fontFamily: SERIF, outline: "none", resize: "vertical" }}
+          style={{ width: "100%", boxSizing: "border-box", background: "var(--c-surface-1)", color: "var(--c-text)", border: "1px solid var(--c-border-strong)", borderRadius: 10, padding: "12px 14px", fontSize: 16, fontFamily: SERIF, outline: "none", resize: "vertical" }}
         />
       </div>
 

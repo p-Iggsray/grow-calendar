@@ -10,8 +10,28 @@ const SIMPLE_TAG = /^<(\/?)(b|strong|i|em|u|p|div|br|ul|ol|li|h1|h2|h3)(\s*\/)?>
 const FONT_OPEN = /^<font\s+size="?([1-7])"?\s*>$/i;
 const FONT_CLOSE = /^<\/font\s*>$/i;
 
+// contentEditable inserts a non-breaking space whenever you type a space at the
+// end of a line, or a second space in a row - that is how a browser stops the
+// space from collapsing. Left alone it gets STORED, and a note with no other
+// markup then fails the looksLikeHtml check on the way back in, gets escaped,
+// and reappears as the literal text "&nbsp;" at the end of the entry. So it is
+// turned back into an ordinary space at every boundary: on the way in, on the
+// way out, and on the way to plain text.
+export function normalizeSpaces(text) {
+  return String(text ?? "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\u00A0/g, " ");
+}
+
+// Trailing blanks left by the editor are never meaningful and are exactly what
+// used to be stored as a dangling "&nbsp;". Tags are left alone: a blank line
+// the grower deliberately typed at the end is theirs to keep.
+export function trimTrailingSpace(html) {
+  return String(html ?? "").replace(/[\s\u00A0]+$/, "");
+}
+
 export function sanitizeHtml(html) {
-  return String(html ?? "").replace(/<[^>]*>?/g, (tag) => {
+  return normalizeSpaces(html).replace(/<[^>]*>?/g, (tag) => {
     const simple = tag.match(SIMPLE_TAG);
     if (simple) return `<${simple[1]}${simple[2].toLowerCase()}>`;
     const font = tag.match(FONT_OPEN);
@@ -38,7 +58,9 @@ export function looksLikeHtml(text) {
 // Prepare a stored note for the editor: legacy plain-text notes are escaped
 // and their newlines preserved; HTML notes are re-sanitized on the way in.
 export function noteToHtml(raw) {
-  const text = String(raw ?? "");
+  // Normalize first: an older entry that already carries a stored "&nbsp;"
+  // would otherwise be escaped into visible "&amp;nbsp;" text.
+  const text = normalizeSpaces(raw);
   if (!text) return "";
   if (looksLikeHtml(text)) return sanitizeHtml(text);
   return escapeHtml(text).replace(/\n/g, "<br>");
@@ -47,7 +69,8 @@ export function noteToHtml(raw) {
 // Flatten entry HTML to readable plain text (for excerpts, search results,
 // and MJ's view of the day). Block-level closes become newlines.
 export function htmlToPlainText(html) {
-  const text = String(html ?? "");
+  // Plain notes get the space fix too - they are the ones the bug bit.
+  const text = normalizeSpaces(html);
   if (!looksLikeHtml(text)) return text;
   return text
     .replace(/<br\s*\/?>/gi, "\n")
@@ -68,9 +91,8 @@ export function htmlToPlainText(html) {
 // empty bullet left behind by an emptied editor) so blank entries are stored
 // as "".
 export function htmlIsEmpty(html) {
-  return String(html ?? "")
+  return normalizeSpaces(html)
     .replace(/<[^>]*>/g, "")
-    .replace(/&nbsp;/gi, " ")
     .trim() === "";
 }
 

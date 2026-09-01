@@ -65,7 +65,7 @@ export function NumStepper({ value, onChange, min = 1, max = 10, label }) {
         onClick={() => onChange(Math.max(min, value - 1))}
         disabled={value <= min}
         style={{
-          width: 40, height: 40, borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)",
+          width: 40, height: 40, borderRadius: 10, border: "1px solid var(--c-border-strong)",
           background: "rgba(255,255,255,0.05)", color: value <= min ? "var(--c-text-ghost)" : "var(--c-text-dim)",
           fontSize: 20, cursor: value <= min ? "default" : "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -81,7 +81,7 @@ export function NumStepper({ value, onChange, min = 1, max = 10, label }) {
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
         style={{
-          width: 40, height: 40, borderRadius: 10, border: "1px solid rgba(255,255,255,0.14)",
+          width: 40, height: 40, borderRadius: 10, border: "1px solid var(--c-border-strong)",
           background: "rgba(255,255,255,0.05)", color: value >= max ? "var(--c-text-ghost)" : "var(--c-text-dim)",
           fontSize: 20, cursor: value >= max ? "default" : "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",

@@ -1,3 +1,4 @@
+import { rowDisplay, unitLabel } from "../../lib/waterUnits.js";
 export const MONO = "var(--font-ui)";
 export const SERIF = "var(--font-ui)";
 
@@ -63,7 +64,10 @@ export function summarizeEntry(e) {
     case "measurement": return e.height != null ? `${e.height}${e.height_unit || ""}` : "";
     case "watering": {
       const parts = [];
-      if (d.gal) parts.push(`${d.gal} gal`);
+      // Shown in the unit it was logged in, falling back to gallons for
+      // entries written before units existed.
+      const { amount, unit } = rowDisplay(d);
+      if (amount) parts.push(`${amount} ${unitLabel(unit)}`);
       if (d.ec_in) parts.push(`EC in ${d.ec_in}`);
       if (d.ec_out) parts.push(`EC out ${d.ec_out}`);
       return parts.join(" · ");

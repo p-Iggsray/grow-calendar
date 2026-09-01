@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   sanitizeHtml, escapeHtml, looksLikeHtml, noteToHtml,
   htmlToPlainText, htmlIsEmpty, appendToNote,
+  normalizeSpaces,
+  trimTrailingSpace,
 } from "../src/lib/richText.js";
 
 // ── Sanitizer ────────────────────────────────────────────────────────────────
@@ -62,4 +64,50 @@ test("appendToNote: plain entries gain a newline, rich entries a paragraph", () 
   assert.equal(appendToNote("", "first"), "first");
   assert.equal(appendToNote("<p>rich</p>", "MJ: check runoff <ph>"), "<p>rich</p><p>MJ: check runoff &lt;ph&gt;</p>");
   assert.equal(appendToNote("plain", "  "), "plain");
+});
+
+// ── Non-breaking spaces ──────────────────────────────────────────────────────
+// contentEditable emits &nbsp; for a trailing space. Stored, it came back as
+// the literal text "&nbsp;" on the end of the entry.
+
+test("normalizeSpaces turns both the entity and the raw character into a space", () => {
+  assert.equal(normalizeSpaces("watered today&nbsp;"), "watered today ");
+  assert.equal(normalizeSpaces("watered\u00A0today"), "watered today");
+  assert.equal(normalizeSpaces("a&NBSP;b"), "a b");
+  assert.equal(normalizeSpaces(null), "");
+});
+
+test("a plain note with a trailing nbsp survives the editor round trip clean", () => {
+  // What the browser hands us after typing "watered today " into an empty box.
+  const emitted = trimTrailingSpace(sanitizeHtml("watered today&nbsp;"));
+  assert.equal(emitted, "watered today");
+  // And loading it back must not escape anything into visible "&amp;nbsp;".
+  assert.equal(noteToHtml(emitted), "watered today");
+  assert.doesNotMatch(noteToHtml(emitted), /nbsp/i);
+});
+
+test("an entry already stored with the entity is healed on the way back in", () => {
+  // The bug baked these into the database; loading one must not show it.
+  assert.equal(noteToHtml("fed 2 gal&nbsp;"), "fed 2 gal ");
+  assert.doesNotMatch(noteToHtml("fed 2 gal&nbsp;"), /&amp;/);
+  assert.equal(htmlToPlainText("fed 2 gal&nbsp;"), "fed 2 gal ");
+  assert.equal(htmlToPlainText("<p>fed 2 gal&nbsp;</p>"), "fed 2 gal");
+});
+
+test("sanitizing never lets a non-breaking space through to storage", () => {
+  assert.doesNotMatch(sanitizeHtml("<p>a&nbsp;&nbsp;b</p>"), /nbsp/i);
+  assert.equal(sanitizeHtml("<p>a&nbsp;b</p>"), "<p>a b</p>");
+});
+
+test("trimTrailingSpace leaves the grower's own blank line alone", () => {
+  assert.equal(trimTrailingSpace("<p>one</p><p><br></p>"), "<p>one</p><p><br></p>");
+  assert.equal(trimTrailingSpace("<p>one</p>   "), "<p>one</p>");
+  assert.equal(trimTrailingSpace("one\u00A0 "), "one");
+});
+
+test("an entry of nothing but a non-breaking space is still empty", () => {
+  assert.equal(htmlIsEmpty("&nbsp;"), true);
+  assert.equal(htmlIsEmpty("<div>&nbsp;</div>"), true);
+  assert.equal(htmlIsEmpty("\u00A0"), true);
+  assert.equal(htmlIsEmpty("<p>real words</p>"), false);
 });

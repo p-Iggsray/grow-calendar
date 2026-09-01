@@ -4,6 +4,7 @@ import { api, ymd } from "../../lib/api.js";
 import { MONTH_NAMES } from "../../lib/dates.js";
 import { useJournalTimeline } from "../../lib/useJournal.js";
 import { journalStreak } from "../../lib/journalStats.js";
+import { formatWater, loadWaterUnit } from "../../lib/waterUnits.js";
 import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../../lib/stageTimeline.js";
 import { Skeleton } from "../Skeleton.jsx";
 import { tapHaptic } from "../../lib/haptics.js";
@@ -87,7 +88,7 @@ function DayCard({ dayInfo, stageEvents, firstDate, onOpen }) {
             </StatChip>
           )}
           {log?.water_gal != null && (
-            <StatChip icon={<Droplets size={10.5} strokeWidth={2} style={{ color: "#60a5fa" }} />}>{log.water_gal} gal</StatChip>
+            <StatChip icon={<Droplets size={10.5} strokeWidth={2} style={{ color: "#60a5fa" }} />}>{formatWater(log.water_gal, loadWaterUnit())}</StatChip>
           )}
           {(log?.temp_high != null || log?.temp_low != null) && (
             <StatChip icon={<Thermometer size={10.5} strokeWidth={2} style={{ color: "var(--c-warn)" }} />}>

@@ -1,6 +1,9 @@
 import { X, Plus } from "lucide-react";
 import ChoiceField from "../ChoiceField.jsx";
 import { TRAINING_ACTIONS } from "../../lib/choices.js";
+import {
+  WATER_UNITS, UNIT_STEP, rowDisplay, waterRow, rememberWaterUnit,
+} from "../../lib/waterUnits.js";
 
 // ── Log tab helpers ────────────────────────────────────────────────────────
 
@@ -37,7 +40,7 @@ export function LogField({ label, name, entry, setField, step, min, max, placeho
         onChange={e => setField(name, e.target.value)}
         placeholder={placeholder}
         style={{
-          background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
+          background: "var(--c-surface-1)", color: "var(--c-text)",
           border: "1px solid var(--c-border-strong)", borderRadius: 8,
           padding: "10px 12px", fontSize: 16, outline: "none",
           fontFamily: "var(--font-ui)",
@@ -70,7 +73,7 @@ export function AddEntryButton({ onClick, label }) {
 }
 
 const _entryCard = {
-  background: "rgba(0,0,0,0.2)",
+  background: "var(--c-surface-1)",
   border: "1px solid var(--c-surface-2)",
   borderRadius: 10,
   padding: "12px",
@@ -83,7 +86,7 @@ const _entryRemove = {
   padding: "4px", minWidth: 26, minHeight: 26, flexShrink: 0,
 };
 const _entryInput = {
-  background: "rgba(0,0,0,0.25)", color: "var(--c-text)",
+  background: "var(--c-surface-1)", color: "var(--c-text)",
   border: "1px solid var(--c-border-strong)", borderRadius: 8,
   padding: "9px 10px", fontSize: 14, outline: "none",
   fontFamily: "var(--font-ui)",
@@ -95,13 +98,15 @@ const _entryLabel = {
   marginBottom: 5, display: "block",
 };
 
-// Sum the per-plant water amounts into a day total (string, or "" if none).
+// The day's total, in canonical gallons (string, or "" if none). Rows may be
+// in different units; `gal` is the one field they all share, which is the whole
+// reason it is stored alongside what the grower typed.
 export function sumWater(arr) {
   const total = (arr ?? []).reduce((s, w) => {
     const n = parseFloat(w?.gal);
     return Number.isFinite(n) ? s + n : s;
   }, 0);
-  return total > 0 ? String(Math.round(total * 100) / 100) : "";
+  return total > 0 ? String(Math.round(total * 10000) / 10000) : "";
 }
 
 const _selectInput = {
@@ -135,27 +140,45 @@ export function PlantSelect({ value, onChange, plants = [] }) {
 }
 
 export function WaterEntry({ entry, onChangeField, onRemove, hidePlant, plants = [] }) {
+  const { amount, unit } = rowDisplay(entry);
+
+  // Changing either the number or the unit rewrites the whole row, so the
+  // canonical gallons stay in step with what is on screen. Switching the unit
+  // keeps the number you typed - 2 gal becomes 2 L, not 7.57 L - because you
+  // are correcting the unit, not converting the measurement.
+  const setAmount = (v) => onChangeField("__row", waterRow(entry, v, unit));
+  const setUnit = (v) => { rememberWaterUnit(v); onChangeField("__row", waterRow(entry, amount ?? "", v)); };
+
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "flex-end", marginBottom: 8 }}>
       {!hidePlant && (
-      <label style={{ flex: 2, display: "flex", flexDirection: "column" }}>
+      <label style={{ flex: 2, display: "flex", flexDirection: "column", minWidth: 0 }}>
         <span style={_entryLabel}>Plant</span>
         <PlantSelect value={entry.plant} onChange={(v) => onChangeField("plant", v)} plants={plants} />
       </label>
       )}
-      <label style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <span style={_entryLabel}>Water (gal)</span>
+      <label style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <span style={_entryLabel}>Water</span>
         <input
           type="number"
           inputMode="decimal"
-          step={0.25}
+          step={UNIT_STEP[unit] ?? 0.25}
           min={0}
-          max={99}
-          value={entry.gal ?? ""}
-          onChange={e => onChangeField("gal", e.target.value)}
-          placeholder="0.00"
+          value={amount ?? ""}
+          onChange={e => setAmount(e.target.value)}
+          placeholder="0"
           style={{ ..._entryInput, WebkitAppearance: "none", MozAppearance: "textfield" }}
         />
+      </label>
+      <label style={{ flexShrink: 0, display: "flex", flexDirection: "column", width: 74 }}>
+        <span style={_entryLabel}>Unit</span>
+        <select
+          value={unit}
+          onChange={(e) => setUnit(e.target.value)}
+          style={_selectInput}
+          aria-label="Water unit">
+          {WATER_UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+        </select>
       </label>
       <button
         type="button"

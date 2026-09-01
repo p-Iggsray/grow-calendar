@@ -11,6 +11,7 @@ import { currentStageOf, dayOfGrow, stageLabel } from "../lib/stageTimeline.js";
 import { partitionPlants } from "./PlantsTab/constants.js";
 import { useToast } from "../lib/useToast.jsx";
 import { api } from "../lib/api.js";
+import { loadWaterUnit } from "../lib/waterUnits.js";
 
 const THEME_OPTIONS = [
   { value: "auto",  label: "Auto",  Icon: Monitor },
@@ -105,7 +106,7 @@ export default function SettingsScreen({
     if (!activeGrowId || reportBusy) return;
     setReportBusy(true);
     try {
-      const html = await api.getGrowReport(activeGrowId);
+      const html = await api.getGrowReport(activeGrowId, loadWaterUnit());
       const blob = new Blob([html], { type: "text/html" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
