@@ -3,7 +3,7 @@
 // are built from now that there are no predicted dates.
 import { json, error } from "./util.js";
 import { ownedGrowRow, ensurePlantLogSchema } from "./plants.js";
-import { buildRunningTimeline, STAGE_ORDER } from "../src/lib/stageTimeline.js";
+import { buildRunningTimeline, growAnchor, STAGE_ORDER } from "../src/lib/stageTimeline.js";
 
 const LABEL_TO_STAGE = Object.fromEntries(
   STAGE_ORDER.map((s) => [s.toLowerCase(), s]),
@@ -26,16 +26,6 @@ export function stageFromRow(row) {
   return LABEL_TO_STAGE[key] ?? null;
 }
 
-// The space's day 0: the day it was created. Older grows may hold stage
-// records that were backdated before the app stopped allowing that, so anything
-// earlier still wins - their history should not disappear.
-function anchorDate(growCreatedAt, earliestRecord) {
-  const created = typeof growCreatedAt === "string" ? growCreatedAt.slice(0, 10) : null;
-  if (!created) return earliestRecord ?? null;
-  if (!earliestRecord) return created;
-  return earliestRecord < created ? earliestRecord : created;
-}
-
 // GET /api/grows/:id/stages -> the running timeline plus the space's day 0.
 export async function getStageTimeline(env, user, growId) {
   const row = await ownedGrowRow(env, user.id, growId);
@@ -53,7 +43,7 @@ export async function getStageTimeline(env, user, growId) {
     .filter((r) => r.stage);
 
   const events = buildRunningTimeline(records);
-  const firstDate = anchorDate(row.created_at, records.length ? records[0].date : null);
+  const firstDate = growAnchor(row.created_at, records.length ? records[0].date : null);
   return json({ events, firstDate });
 }
 
@@ -74,7 +64,7 @@ export async function loadStageTimeline(env, userId, growId) {
       .filter((r) => r.stage);
     return {
       events: buildRunningTimeline(records),
-      firstDate: anchorDate(grow?.created_at, records.length ? records[0].date : null),
+      firstDate: growAnchor(grow?.created_at, records.length ? records[0].date : null),
     };
   } catch {
     return { events: [], firstDate: null };

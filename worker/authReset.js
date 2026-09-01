@@ -1,32 +1,9 @@
-import { json, error, bytesToBase64Url, safeJsonBounded } from "./util.js";
+import { json, error, safeJsonBounded } from "./util.js";
 import { hashPassword, hashToken } from "./auth.js";
 
-// Admin-generated reset links are sent to the user out-of-band (text/DM), so
-// give them a comfortable window - there is no self-service email reset.
-const RESET_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-// POST /api/admin/users/:id/reset-link
-// Admin-only (gated by the caller). Mints a one-time password-reset token for
-// the target user and returns the link for the admin to pass along. Replaces
-// any existing token for that user, so only the newest link works.
-export async function postAdminResetLink(request, env, targetUserId) {
-  const target = await env.DB.prepare(
-    "SELECT id, username FROM users WHERE id = ?"
-  ).bind(targetUserId).first();
-  if (!target) return error(404, "user not found");
-
-  const token = bytesToBase64Url(crypto.getRandomValues(new Uint8Array(32)));
-  const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString();
-  await env.DB.batch([
-    env.DB.prepare("DELETE FROM password_reset_tokens WHERE user_id = ?").bind(target.id),
-    env.DB.prepare(
-      "INSERT INTO password_reset_tokens (token, user_id, expires_at) VALUES (?, ?, ?)"
-    ).bind(await hashToken(token), target.id, expiresAt),
-  ]);
-
-  const origin = new URL(request.url).origin;
-  return json({ resetUrl: `${origin}?reset=${token}`, expiresAt, username: target.username });
-}
+// Redeems a one-time password-reset token. There is no in-app way to mint one
+// any more (that lived in the deleted admin panel), so a token has to be
+// inserted into password_reset_tokens directly.
 
 export async function postResetPassword(request, env) {
   let body;

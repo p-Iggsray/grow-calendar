@@ -3,7 +3,10 @@ import { ChevronLeft } from "lucide-react";
 // Shared native-style screen header: a round back button, an eyebrow + title
 // stack, and an optional right-side slot. Sticky with a blur so content slides
 // beneath it like a real mobile app header.
-export default function ScreenHeader({ eyebrow, title, onBack, backLabel = "Back", right, sticky = true }) {
+//
+// `titleSlot` replaces the plain title with your own node, for headers whose
+// title is interactive (the grow switcher). It owns its own type styles.
+export default function ScreenHeader({ eyebrow, title, titleSlot, onBack, backLabel = "Back", right, sticky = true }) {
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 12,
@@ -39,12 +42,14 @@ export default function ScreenHeader({ eyebrow, title, onBack, backLabel = "Back
             {eyebrow}
           </div>
         )}
-        <div style={{
-          fontSize: 19, fontWeight: 700, letterSpacing: -0.4, color: "var(--c-text)",
-          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-        }}>
-          {title}
-        </div>
+        {titleSlot ?? (
+          <div style={{
+            fontSize: 19, fontWeight: 700, letterSpacing: -0.4, color: "var(--c-text)",
+            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          }}>
+            {title}
+          </div>
+        )}
       </div>
       {right}
     </div>

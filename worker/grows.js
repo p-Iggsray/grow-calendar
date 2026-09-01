@@ -7,6 +7,7 @@ import { LIFECYCLE_PHASES } from "../src/lib/lifecycle.js";
 import { recordStrains } from "./strains.js";
 import { seedStageEntries } from "./plants.js";
 import { resolveSurveyForSetup } from "../src/lib/stageAnchor.js";
+import { growAnchor } from "../src/lib/stageTimeline.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -182,11 +183,23 @@ export async function listGrows(env, user) {
     return json([]);
   }
 
+  // Each space's day 0, so the grow switcher can show "Day N" for every space
+  // without a round trip each. One aggregate beats N /stages calls.
+  const oldestStage = new Map();
+  try {
+    const agg = await env.DB.prepare(
+      `SELECT grow_id, MIN(date) AS first_date FROM plant_log
+       WHERE user_id = ? AND kind = 'stage' GROUP BY grow_id`
+    ).bind(user.id).all();
+    for (const r of agg.results ?? []) oldestStage.set(r.grow_id, r.first_date);
+  } catch { /* plant_log may not exist yet; fall back to created_at */ }
+
   return json((res.results ?? []).map(r => ({
     id:            r.id,
     displayName:   r.display_name,
     status:        r.status,
     survey:        parseField(r.survey),
+    firstDate:     growAnchor(r.created_at, oldestStage.get(r.id)),
     createdAt:     r.created_at,
     updatedAt:     r.updated_at,
   })));

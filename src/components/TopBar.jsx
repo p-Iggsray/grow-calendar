@@ -1,18 +1,19 @@
 import { CalendarDays, BookOpen } from "lucide-react";
 import { tapHaptic } from "../lib/haptics.js";
 import ScreenHeader from "./ScreenHeader.jsx";
+import GrowSwitcher from "./GrowSwitcher.jsx";
 
 // The main screen's top strip. Same header every other window wears - it just
-// has no back button, because the calendar is a root tab. The environment's
-// name is the title, today's phase the eyebrow, and the Calendar | Journal
-// switch sits in the right slot.
+// has no back button, because the calendar is a root tab. The title is the grow
+// switcher, so any space is one tap away from here; today's stage is the
+// eyebrow, and the Calendar | Journal switch sits in the right slot.
 
 const VIEWS = [
   { id: "calendar", label: "Calendar", Icon: CalendarDays },
   { id: "journal",  label: "Journal",  Icon: BookOpen },
 ];
 
-export default function TopBar({ growName, todayStyle, dayNum, view, onChangeView }) {
+export default function TopBar({ today, todayStyle, dayNum, view, onChangeView, onNewEnvironment }) {
   const eyebrow = [
     todayStyle?.label ?? "Off season",
     dayNum != null ? `Day ${dayNum}` : null,
@@ -21,7 +22,7 @@ export default function TopBar({ growName, todayStyle, dayNum, view, onChangeVie
   return (
     <ScreenHeader
       eyebrow={eyebrow}
-      title={growName || "Grow Calendar"}
+      titleSlot={<GrowSwitcher today={today} onNewEnvironment={onNewEnvironment} />}
       right={(
         <div style={{
           display: "flex", gap: 3, padding: 3, borderRadius: 12, flexShrink: 0,

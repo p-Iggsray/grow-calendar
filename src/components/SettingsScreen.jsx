@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Users, FileText, Bell, BellOff, BarChart2, Sun, Moon, Monitor, Map, Share2, ChevronRight } from "lucide-react";
+import { BarChart2, ChevronRight, FileText, Monitor, Moon, Pencil, Share2, Sun } from "lucide-react";
 import ScreenHeader from "./ScreenHeader.jsx";
 import ShareSheet from "./ShareSheet.jsx";
-import PhaseLegend from "./PhaseLegend.jsx";
 import AuthFooter from "./AuthFooter.jsx";
+import GrowSwitcher from "./GrowSwitcher.jsx";
 import { usePlan } from "../lib/usePlan.jsx";
-import { growLocation, strainSummary } from "../lib/growProfile.js";
-import { useNotifications } from "../lib/useNotifications.js";
+import { ymd } from "../lib/api.js";
+import { currentStageOf, dayOfGrow, stageLabel } from "../lib/stageTimeline.js";
+import { partitionPlants } from "./PlantsTab/constants.js";
 import { useToast } from "../lib/useToast.jsx";
 import { api } from "../lib/api.js";
 
@@ -18,7 +19,7 @@ const THEME_OPTIONS = [
 ];
 
 // iOS-settings-style row: tinted icon square, label, trailing detail + chevron.
-function Row({ icon: Icon, tint, label, detail, onClick, disabled, last, trailing }) {
+function Row({ icon: Icon, tint, label, detail, onClick, disabled, last }) {
   return (
     <button
       type="button"
@@ -41,16 +42,20 @@ function Row({ icon: Icon, tint, label, detail, onClick, disabled, last, trailin
       }}>
         <Icon size={16} strokeWidth={2} />
       </span>
-      <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: "var(--c-text)" }}>{label}</span>
-      {detail && <span style={{ fontSize: 13, color: "var(--c-text-faint)" }}>{detail}</span>}
-      {trailing ?? <ChevronRight size={17} strokeWidth={2} style={{ color: "var(--c-text-ghost)", flexShrink: 0 }} />}
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontSize: 15, fontWeight: 500, color: "var(--c-text)" }}>{label}</span>
+        {detail && (
+          <span style={{ display: "block", fontSize: 12.5, color: "var(--c-text-faint)", marginTop: 1 }}>{detail}</span>
+        )}
+      </span>
+      <ChevronRight size={17} strokeWidth={2} style={{ color: "var(--c-text-ghost)", flexShrink: 0 }} />
     </button>
   );
 }
 
-function Group({ title, children }) {
+function Group({ title, footer, children }) {
   return (
-    <div style={{ marginTop: 20 }}>
+    <div style={{ marginTop: 22 }}>
       {title && (
         <div style={{
           fontSize: 12, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase",
@@ -62,18 +67,34 @@ function Group({ title, children }) {
       <div className="card" style={{ overflow: "hidden" }}>
         {children}
       </div>
+      {footer && (
+        <div style={{ fontSize: 12, lineHeight: 1.6, color: "var(--c-text-ghost)", margin: "7px 4px 0" }}>
+          {footer}
+        </div>
+      )}
     </div>
   );
 }
 
-export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMap, onBeforeSignOut, theme, setTheme }) {
-  const { survey, activeGrowId } = usePlan();
-  const location = growLocation(survey);
-  const strains = strainSummary(survey);
+// Settings. Deliberately short: anything that belongs to ONE space (its name,
+// what the space is, starting the dry) lives behind that space's gear in
+// Spaces. What is left here is the active grow's outputs and app-wide things.
+export default function SettingsScreen({
+  today, onOpenStats, onOpenGrowSettings, onNewEnvironment, onBeforeSignOut, theme, setTheme,
+}) {
+  const { grows, activeGrowId } = usePlan();
   const [showShare, setShowShare] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
   const { addToast } = useToast();
-  const { supported: notifSupported, permission, subscribed, busy: notifBusy, error: notifError, subscribe, unsubscribe } = useNotifications();
+
+  const activeGrow = grows.find((g) => g.id === activeGrowId) ?? null;
+  const { active: plants } = partitionPlants(activeGrow?.survey);
+  const stage = currentStageOf(plants);
+  const day = dayOfGrow(activeGrow?.firstDate, ymd(today ?? new Date()));
+  const eyebrow = [
+    stage ? stageLabel(stage) : null,
+    day != null ? `Day ${day}` : null,
+  ].filter(Boolean).join(" · ") || null;
 
   // Downloads the full, print-ready grow report as a self-contained HTML file
   // (it has a built-in "Save as PDF / Print" button). We fetch + save rather
@@ -104,9 +125,11 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
 
   return (
     <div>
+      {/* The title is the switcher, so Settings always acts on the space you
+          can see, and changing which one is a single tap. */}
       <ScreenHeader
-        eyebrow={[location, strains].filter(Boolean).join(" · ") || null}
-        title="More"
+        eyebrow={eyebrow}
+        titleSlot={<GrowSwitcher today={today} onNewEnvironment={onNewEnvironment} />}
       />
       <div style={{
         paddingTop: 4,
@@ -114,51 +137,41 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
         paddingRight: "calc(14px + env(safe-area-inset-right, 0px))",
       }}>
 
-      {/* Settings that belong to ONE environment (its name, dates, and
-          starting the dry) live behind that environment's gear in Spaces.
-          What is left here are views and app-wide things. */}
-      <Group title="Views & sharing">
-        <Row icon={Map} tint="#f59e0b" label="Garden map" onClick={onOpenMap} />
-        <Row icon={BarChart2} tint="#a855f7" label="Season analytics" onClick={onOpenStats} />
-        <Row icon={Share2} tint="#22c55e" label="Share with a buddy" onClick={() => setShowShare(true)} />
+      <Group
+        title="This space"
+        footer={grows.length > 1 ? "Tap the name above to work on a different space." : null}>
+        <Row
+          icon={Pencil} tint="#60a5fa"
+          label="Name & status"
+          detail={activeGrow?.displayName || undefined}
+          onClick={() => activeGrowId && onOpenGrowSettings(activeGrowId)}
+          disabled={!activeGrowId}
+        />
+        <Row
+          icon={BarChart2} tint="#a855f7"
+          label="Analytics"
+          detail="Day count, time in each stage, totals"
+          onClick={onOpenStats}
+          disabled={!activeGrowId}
+        />
+        <Row
+          icon={Share2} tint="#22c55e"
+          label="Share with a buddy"
+          detail="A read-only link to this grow"
+          onClick={() => setShowShare(true)}
+        />
         <Row
           icon={FileText} tint="#94a3b8"
           label={reportBusy ? "Preparing report…" : "Export full report"}
-          onClick={openReport} disabled={!activeGrowId || reportBusy} last
+          detail="Print-ready HTML of everything recorded"
+          onClick={openReport}
+          disabled={!activeGrowId || reportBusy}
+          last
         />
       </Group>
 
-      {(notifSupported || isAdmin) && (
-        <Group title="App">
-          {notifSupported && (
-            <Row
-              icon={subscribed ? Bell : BellOff}
-              tint={subscribed ? "#4ade80" : "#94a3b8"}
-              label={notifBusy ? "Working…" : permission === "denied" ? "Notifications blocked" : "Daily reminders"}
-              onClick={subscribed ? unsubscribe : subscribe}
-              disabled={notifBusy || permission === "denied"}
-              last={!isAdmin}
-              trailing={
-                <span style={{
-                  fontSize: 12, fontWeight: 700, letterSpacing: 0.5,
-                  color: subscribed ? "var(--c-accent)" : "var(--c-text-ghost)",
-                }}>
-                  {subscribed ? "ON" : "OFF"}
-                </span>
-              }
-            />
-          )}
-          {isAdmin && <Row icon={Users} tint="#f87171" label="Manage members" onClick={onOpenAdmin} last />}
-        </Group>
-      )}
-      {notifError && (
-        <div style={{ fontSize: 12, color: "var(--c-danger-soft)", marginTop: 6, paddingLeft: 4 }}>
-          {notifError}
-        </div>
-      )}
-
       {/* Appearance */}
-      <div style={{ marginTop: 20 }}>
+      <div style={{ marginTop: 22 }}>
         <div style={{
           fontSize: 12, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase",
           color: "var(--c-text-faint)", margin: "0 4px 7px",
@@ -173,6 +186,7 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
                 key={value}
                 type="button"
                 onClick={() => setTheme(value)}
+                aria-pressed={active}
                 style={{
                   flex: 1, padding: "10px 4px", borderRadius: 12,
                   display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
@@ -192,17 +206,13 @@ export default function MoreScreen({ isAdmin, onOpenAdmin, onOpenStats, onOpenMa
         </div>
       </div>
 
-      <div style={{ marginTop: 20 }}>
-        <PhaseLegend />
-      </div>
-
       <AnimatePresence>
         {showShare && <ShareSheet key="share" onClose={() => setShowShare(false)} />}
       </AnimatePresence>
 
-      <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--c-surface-2)" }}>
+      <div style={{ marginTop: 26, paddingTop: 16, borderTop: "1px solid var(--c-surface-2)" }}>
         <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--c-text-faint)", margin: 0 }}>
-          For educational and personal record-keeping only - not medical, legal, or professional cultivation advice. You are responsible for complying with the cannabis laws in your area. Your data is stored privately and never sold; AI features send your grow details to Google&apos;s Gemini API. Contact the admin to delete your account and data.
+          For educational and personal record-keeping only - not medical, legal, or professional cultivation advice. You are responsible for complying with the cannabis laws in your area. Your data is stored privately and never sold; AI features send your grow details to Google&apos;s Gemini API.
         </p>
       </div>
 

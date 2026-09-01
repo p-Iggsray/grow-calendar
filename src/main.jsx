@@ -110,7 +110,7 @@ function Root() {
   );
 }
 
-// Register service worker for offline caching and push notifications.
+// Register service worker for offline caching.
 // updateViaCache:"none" tells the browser to always fetch sw.js from the
 // network (not its HTTP cache) so new deploys are detected immediately.
 //
@@ -119,7 +119,7 @@ function Root() {
 // and when it takes control the page reloads once - safe because each build's
 // worker pre-caches its own shell during install. Update checks run on every
 // open/resume and hourly, so a phone PWA that never fully closes still picks
-// up each push the next time it is looked at.
+// up each deploy the next time it is looked at.
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker

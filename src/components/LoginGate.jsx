@@ -171,10 +171,11 @@ export default function LoginGate() {
               {submitLabel}
             </button>
 
-            {/* No self-service reset - the admin issues reset links by hand */}
+            {/* No self-service reset, and no in-app way to issue one either:
+                a reset token has to be inserted into the database by hand. */}
             {mode === "login" && (
               <div style={{ fontSize: 11, letterSpacing: 0.5, color: "var(--c-text-faint)", fontFamily: "var(--font-ui)", textAlign: "center", lineHeight: 1.6, marginTop: 2 }}>
-                Forgot your password? Contact the admin to get a reset link.
+                Forgot your password? A reset link has to be issued from the database.
               </div>
             )}
           </form>
@@ -205,7 +206,7 @@ export default function LoginGate() {
             <details style={{ marginTop: 8 }}>
               <summary style={{ fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", cursor: "pointer", textTransform: "uppercase" }}>Privacy</summary>
               <p style={{ fontSize: 10, lineHeight: 1.6, color: "var(--c-text-faint)", margin: "6px 0 0" }}>
-                Your account and grow data are stored privately to run the app and are never sold. AI features send your grow details to Google&apos;s Gemini API to generate replies. Ask the admin to delete your account and data at any time.
+                Your account and grow data are stored privately to run the app and are never sold. AI features send your grow details to Google&apos;s Gemini API to generate replies. Your account and data can be deleted from the database at any time.
               </p>
             </details>
           </div>

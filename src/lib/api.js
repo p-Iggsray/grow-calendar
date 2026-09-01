@@ -128,7 +128,7 @@ export const api = {
   },
   // Full print-ready grow report (self-contained HTML). Fetched (not navigated
   // to) so an installed standalone PWA doesn't capture the navigation and
-  // replace the running app - see MoreScreen.openReport.
+  // replace the running app - see SettingsScreen.openReport.
   getGrowReport: async (growId) => {
     const res = await fetch(`/api/grows/${encodeURIComponent(growId)}/report`, { credentials: "same-origin" });
     if (!res.ok) throw new Error(`Report failed: ${res.status}`);
@@ -137,12 +137,6 @@ export const api = {
 
   getWeather: (growId) =>
     request(`/api/weather${growId ? `?growId=${encodeURIComponent(growId)}` : ""}`),
-
-  getPushVapidKey: () => request("/api/push/vapid-key"),
-  pushSubscribe: (sub) =>
-    request("/api/push/subscribe", { method: "POST", body: JSON.stringify(sub) }),
-  pushUnsubscribe: (sub) =>
-    request("/api/push/subscribe", { method: "DELETE", body: JSON.stringify(sub) }),
 
   reportError: ({ message, stack, url }) =>
     request("/api/errors", { method: "POST", body: JSON.stringify({ message, stack, url }) }).catch(() => {}),
@@ -208,12 +202,6 @@ export const api = {
   getSharedView: (token) => fetch(`/api/share/${token}`)
     .then(r => r.json().then(d => r.ok ? d : Promise.reject(new Error(d.error || "Not found")))),
 
-
-
-  adminListUsers: () => request("/api/admin/users"),
-  approveUser: (id) => request(`/api/admin/users/${id}/approve`, { method: "POST" }),
-  deleteUser: (id) => request(`/api/admin/users/${id}`, { method: "DELETE" }),
-  adminResetLink: (id) => request(`/api/admin/users/${id}/reset-link`, { method: "POST" }),
 };
 
 /**

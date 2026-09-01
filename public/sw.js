@@ -1,5 +1,5 @@
-// Service worker: cache-first for static assets, pass-through for API,
-// push notification handler, and offline fallback.
+// Service worker: cache-first for static assets, pass-through for API, and an
+// offline fallback.
 
 const CACHE = "grow-calendar-v2";
 // Vite-built JS/CSS files have content-hash suffixes — treat them as immutable.
@@ -66,42 +66,5 @@ self.addEventListener("fetch", evt => {
         });
       }
     })
-  );
-});
-
-// ── Push: fetch notification content from the server and show it ─────────────
-self.addEventListener("push", evt => {
-  evt.waitUntil(
-    fetch("/api/push/today", { credentials: "include" })
-      .then(r => (r.ok ? r.json() : null))
-      .catch(() => null)
-      .then(data => {
-        const title = data?.title ?? "The Grow Calendar";
-        const body = data?.body ?? "Check in on your grow today.";
-        const url = data?.url ?? "/";
-        return self.registration.showNotification(title, {
-          body,
-          icon: "/icon-180.png",
-          badge: "/icon-32.png",
-          data: { url },
-          tag: "grow-reminder",
-          renotify: false,
-        });
-      })
-  );
-});
-
-// ── Notification click: focus or open the app ────────────────────────────────
-self.addEventListener("notificationclick", evt => {
-  evt.notification.close();
-  const url = evt.notification.data?.url ?? "/";
-  evt.waitUntil(
-    clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then(list => {
-        const existing = list.find(c => c.url.includes(self.location.origin));
-        if (existing) return existing.focus();
-        return clients.openWindow(url);
-      })
   );
 });

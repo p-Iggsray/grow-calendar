@@ -1,7 +1,7 @@
 // @ts-check
 import { error } from "./util.js";
 import { signup, login, logout, getMe, currentUser, attachSessionCookie } from "./auth.js";
-import { postResetPassword, postAdminResetLink } from "./authReset.js";
+import { postResetPassword } from "./authReset.js";
 import { ensurePerDayGrowScope, resolveGrowId } from "./perDayScope.js";
 import { getNote, putNote } from "./notes.js";
 import { getJournalDay, getJournalMonth, getJournalTimeline, searchJournal, getJournalWeather } from "./journal.js";
@@ -10,7 +10,6 @@ import { getGrowLog, putGrowLog, exportGrowLogCsv , getMonthGrowLog } from "./gr
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
 import { getHealth, postClientError } from "./health.js";
 import { getWeather } from "./weather.js";
-import { getPushVapidKey, postPushSubscribe, deletePushSubscribe, getPushToday, sendDailyReminders } from "./push.js";
 import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, patchGrowLifecycle, setupGrow } from "./grows.js";
 import { listGrowEvents, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./events.js";
 import { createJournalPhoto, getJournalPhoto, deleteJournalPhoto, listPlantPhotos } from "./photos.js";
@@ -20,9 +19,8 @@ import { listStrains } from "./strains.js";
 import { getStageTimeline } from "./stages.js";
 import { addPlant, patchPlant, deletePlant, listPlantLog, addPlantLogEntry, patchPlantLogEntry, deletePlantLogEntry, plantLogSummary, dailyLogForPlant } from "./plants.js";
 import { getGrowReport } from "./report.js";
-import { listUsers, approveUser, deleteUser } from "./admin.js";
 import { getStats } from "./stats.js";
-import { requireApproved, requireAdmin } from "./guard.js";
+import { requireApproved } from "./guard.js";
 import { logError, logInfo } from "./log.js";
 import { getShareToken, createShareToken, deleteShareToken, getSharedView } from "./share.js";
 
@@ -59,8 +57,6 @@ export default {
           "DELETE FROM sessions WHERE expires_at < ?"
         ).bind(now).run();
         logInfo("session-cleanup", { deleted: meta.changes });
-      } else if (event.cron === "0 12 * * *") {
-        await sendDailyReminders(env);
       }
       // Both runs auto-log the weather: 12:00 UTC (morning ET) finalizes
       // yesterday and seeds today; 03:00 UTC (late evening ET) captures the
@@ -116,27 +112,6 @@ async function route(request, env, path) {
 }
 
 async function authenticatedRoute(request, env, path, method, user) {
-  // admin routes
-  if (path === "/api/admin/users" && method === "GET") {
-    const gate = requireAdmin(user); if (gate) return gate;
-    return listUsers(env);
-  }
-  const approveMatch = path.match(/^\/api\/admin\/users\/(\d+)\/approve$/);
-  if (approveMatch && method === "POST") {
-    const gate = requireAdmin(user); if (gate) return gate;
-    return approveUser(env, Number(approveMatch[1]));
-  }
-  const adminUserMatch = path.match(/^\/api\/admin\/users\/(\d+)$/);
-  if (adminUserMatch && method === "DELETE") {
-    const gate = requireAdmin(user); if (gate) return gate;
-    return deleteUser(env, user, Number(adminUserMatch[1]));
-  }
-  const resetLinkMatch = path.match(/^\/api\/admin\/users\/(\d+)\/reset-link$/);
-  if (resetLinkMatch && method === "POST") {
-    const gate = requireAdmin(user); if (gate) return gate;
-    return postAdminResetLink(request, env, Number(resetLinkMatch[1]));
-  }
-
   // app routes require an approved user
   const gate = requireApproved(user); if (gate) return gate;
 
@@ -144,10 +119,6 @@ async function authenticatedRoute(request, env, path, method, user) {
   await ensurePerDayGrowScope(env);
 
   if (path === "/api/weather"          && method === "GET")    return getWeather(request, env, user);
-  if (path === "/api/push/vapid-key"   && method === "GET")    return getPushVapidKey(env);
-  if (path === "/api/push/subscribe"   && method === "POST")   return postPushSubscribe(request, env, user);
-  if (path === "/api/push/subscribe"   && method === "DELETE") return deletePushSubscribe(request, env, user);
-  if (path === "/api/push/today"       && method === "GET")    return getPushToday(env, user);
   if (path === "/api/mj"              && method === "POST")   return postMj(request, env, user);
   if (path === "/api/mj/undo"         && method === "POST")   return postMjUndo(request, env, user);
   if (path === "/api/mj/usage"        && method === "GET")    return getMjUsage(env, user);

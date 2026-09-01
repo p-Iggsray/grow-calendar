@@ -87,6 +87,16 @@ export function buildRunningTimeline(records) {
   return out;
 }
 
+// Pure: a space's day 0. Normally the day it was created, but older grows may
+// hold stage records that were backdated before the app stopped allowing that,
+// and anything earlier wins so their history is never hidden.
+export function growAnchor(createdAt, earliestRecord) {
+  const created = typeof createdAt === "string" ? createdAt.slice(0, 10) : null;
+  if (!created) return earliestRecord ?? null;
+  if (!earliestRecord) return created;
+  return earliestRecord < created ? earliestRecord : created;
+}
+
 // Pure: how many days a date is into a grow (or into one plant's life),
 // counting from the day it was created in the app. The day something is created
 // is day 0, the next day is day 1. Returns null before the anchor day, or when

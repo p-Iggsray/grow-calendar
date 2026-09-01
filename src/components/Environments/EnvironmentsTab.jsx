@@ -134,16 +134,12 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
 
   const openGrow = grows.find((g) => g.id === openId) || null;
 
+  // Creating (and resuming an unfinished space) is App's job, so the grow
+  // switcher and this button can never disagree about what "new" means.
   async function handleNew() {
     if (creating) return;
-    // Resume an unfinished space instead of stacking another empty one.
-    const unfinished = grows.find((g) => !g.survey);
-    if (unfinished) { onNewEnvironment(unfinished.id); return; }
     setCreating(true);
-    try {
-      const { id } = await api.createGrow({ displayName: "New Environment" });
-      onNewEnvironment(id);
-    } catch { /* user can retry */ }
+    try { await onNewEnvironment(null); }
     finally { setCreating(false); }
   }
 

@@ -15,7 +15,7 @@ import { getLifecyclePhase, phaseMeta } from "./lib/lifecycle.js";
 import TopBar from "./components/TopBar.jsx";
 import Calendar from "./components/Calendar.jsx";
 import TabBar from "./components/TabBar.jsx";
-import MoreScreen from "./components/MoreScreen.jsx";
+import SettingsScreen from "./components/SettingsScreen.jsx";
 import EnvironmentsTab from "./components/Environments/EnvironmentsTab.jsx";
 import PhasePrompt from "./components/Lifecycle/PhasePrompt.jsx";
 import LocationBanner from "./components/LocationBanner.jsx";
@@ -26,9 +26,7 @@ import { AppShellSkeleton, PanelSkeleton } from "./components/LoadingScreens.jsx
 // initial bundle. The service worker runtime-caches each chunk on first use.
 const SetupWizard   = lazy(() => import("./components/SetupWizard/SetupWizard.jsx"));
 const ChatPanel     = lazy(() => import("./components/ChatPanel/ChatPanel.jsx"));
-const AdminPanel    = lazy(() => import("./components/AdminPanel.jsx"));
 const StatsScreen   = lazy(() => import("./components/StatsScreen.jsx"));
-const GardenMap     = lazy(() => import("./components/GardenMap.jsx"));
 const GrowSettings  = lazy(() => import("./components/GrowSettings.jsx"));
 const DryingTracker = lazy(() => import("./components/Lifecycle/DryingTracker.jsx"));
 const CuringTracker = lazy(() => import("./components/Lifecycle/CuringTracker.jsx"));
@@ -78,9 +76,7 @@ export default function App() {
   const [activeTab,   setActiveTab]  = useState("calendar");
   const [chatOpen,      setChatOpen]      = useState(false);
   const [chatContext,   setChatContext]   = useState(null);
-  const [showAdmin,     setShowAdmin]     = useState(false);
   const [showStats,     setShowStats]     = useState(false);
-  const [showMap,       setShowMap]       = useState(false);
   const [showSettings,  setShowSettings]  = useState(false);
   const [settingsGrowId, setSettingsGrowId] = useState(null);
   const [wizardGrowId,  setWizardGrowId]  = useState(null); // growId for SetupWizard
@@ -255,6 +251,20 @@ export default function App() {
 
   function pickDay(date) { openJournalAt(date); }
 
+  // "New space", from the grow switcher or the Spaces tab. A growId means
+  // resume that unfinished space; null means make a fresh one first. Either way
+  // it lands in the setup wizard.
+  async function handleNewEnvironment(growId) {
+    if (growId) { setWizardGrowId(growId); return; }
+    // Resume an unfinished space instead of stacking another empty one.
+    const unfinished = grows.find((g) => !g.survey);
+    if (unfinished) { setWizardGrowId(unfinished.id); return; }
+    try {
+      const { id } = await api.createGrow({ displayName: "New Environment" });
+      setWizardGrowId(id);
+    } catch { /* user can retry */ }
+  }
+
   // From a journal page's plant entries straight to that plant's detail,
   // inside its environment.
   function openPlantFromJournal(plantId) {
@@ -317,11 +327,11 @@ export default function App() {
               exit={{ opacity: 0 }}
               transition={FADE_DURATION}
             >
-              <MoreScreen
-                isAdmin={user?.role === "admin"}
-                onOpenAdmin={() => setShowAdmin(true)}
+              <SettingsScreen
+                today={today}
                 onOpenStats={() => setShowStats(true)}
-                onOpenMap={() => setShowMap(true)}
+                onOpenGrowSettings={(growId) => { setSettingsGrowId(growId); setShowSettings(true); }}
+                onNewEnvironment={handleNewEnvironment}
                 theme={theme}
                 setTheme={setTheme}
               />
@@ -338,7 +348,7 @@ export default function App() {
                 openPlantId={plantsOpenId}
                 onOpenPlantConsumed={() => setPlantsOpenId(null)}
                 onOpenJournalDay={openJournalAt}
-                onNewEnvironment={(growId) => setWizardGrowId(growId)}
+                onNewEnvironment={handleNewEnvironment}
                 onOpenSettings={(growId) => { setSettingsGrowId(growId); setShowSettings(true); }}
               />
             </motion.div>
@@ -368,10 +378,11 @@ export default function App() {
               } : undefined}
             >
               <TopBar
-                growName={grows.find(g => g.id === activeGrowId)?.displayName}
+                today={today}
                 todayStyle={todayStyle}
                 dayNum={todayDayNum}
                 view={mainView}
+                onNewEnvironment={handleNewEnvironment}
                 onChangeView={(v) => {
                   // Like a paper journal, toggling into it opens today's page.
                   if (v === "journal") setJournalDate(today);
@@ -435,20 +446,6 @@ export default function App() {
 
       {/* Full-screen panels - slide in from the right */}
       <AnimatePresence>
-        {showAdmin && (
-          <motion.div
-            key="admin"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={PUSH_SPRING}
-            style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--c-bg)", overflowY: "auto" }}
-          >
-            <Suspense fallback={null}>
-              <AdminPanel onClose={() => setShowAdmin(false)} />
-            </Suspense>
-          </motion.div>
-        )}
         {showStats && (
           <motion.div
             key="stats"
@@ -460,20 +457,6 @@ export default function App() {
           >
             <Suspense fallback={null}>
               <StatsScreen today={today} onClose={() => setShowStats(false)} />
-            </Suspense>
-          </motion.div>
-        )}
-        {showMap && (
-          <motion.div
-            key="map"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={PUSH_SPRING}
-            style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--c-bg)", overflowY: "auto" }}
-          >
-            <Suspense fallback={null}>
-              <GardenMap today={today} onClose={() => setShowMap(false)} />
             </Suspense>
           </motion.div>
         )}
