@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { batchResultMessage, MAX_BATCH, nextEdgeGuess, nextIndex } from "../src/lib/photos.js";
+import { batchResultMessage, MAX_BATCH, nextEdgeGuess, nextIndex, screenTargetEdge } from "../src/lib/photos.js";
 import { validatePhotoInput } from "../worker/photos.js";
 
 // ── batchResultMessage ───────────────────────────────────────────────────────
@@ -82,14 +82,44 @@ test("every guess makes progress, so the loop cannot stall", () => {
   // Even barely over budget, the edge must actually decrease.
   assert.ok(nextEdgeGuess(2000, 660_001, 660_000) < 2000);
   for (const [edge, bytes, budget] of [[2000, 660_001, 660_000], [900, 1_000_000, 100], [3200, 5_000_000, 660_000]]) {
-    assert.ok(nextEdgeGuess(edge, bytes, budget) < edge || nextEdgeGuess(edge, bytes, budget) === 640);
+    assert.ok(nextEdgeGuess(edge, bytes, budget) < edge || nextEdgeGuess(edge, bytes, budget) === 480);
   }
 });
 
 test("shrinking bottoms out rather than collapsing to nothing", () => {
-  assert.equal(nextEdgeGuess(700, 90_000_000, 1000), 640);
-  assert.equal(nextEdgeGuess(640, 90_000_000, 1000), 640);
+  // 480 is the floor: a size at which no photo can miss the budget.
+  assert.equal(nextEdgeGuess(700, 90_000_000, 1000), 480);
+  assert.equal(nextEdgeGuess(480, 90_000_000, 1000), 480);
   // Garbage measurements must not produce NaN or a negative edge.
   assert.ok(nextEdgeGuess(2000, 0, 660_000) > 0);
   assert.ok(nextEdgeGuess(2000, 500, 0) > 0);
+});
+
+// ── screenTargetEdge: photos are sized for the screen that shows them ────────
+// The viewer is full-bleed, so a long edge equal to the display's real pixel
+// count is pin sharp, and anything past it is bytes no screen will ever draw.
+
+test("a phone's long edge is its CSS size times its pixel ratio", () => {
+  assert.equal(screenTargetEdge(430, 932, 3), 2796);   // iPhone 15 Pro Max
+  assert.equal(screenTargetEdge(932, 430, 3), 2796);   // held sideways, same answer
+});
+
+test("a small or low-density screen still gets a worthwhile photo", () => {
+  // 375x667 at 2x is only 1334px; storing that little would be a shame.
+  assert.equal(screenTargetEdge(375, 667, 2), 1600);
+  assert.equal(screenTargetEdge(320, 480, 1), 1600);
+});
+
+test("a huge display does not ask for more than a camera gives", () => {
+  assert.equal(screenTargetEdge(3840, 2160, 2), 3200);
+  assert.equal(screenTargetEdge(1512, 982, 2), 3024);  // 16in MacBook, in range
+});
+
+test("a missing or nonsense screen falls back to something sensible", () => {
+  for (const bad of [[0, 0, 0], [null, null, null], ["x", "y", "z"], [undefined, undefined, 3]]) {
+    const edge = screenTargetEdge(...bad);
+    assert.ok(edge >= 1600 && edge <= 3200, `got ${edge} for ${JSON.stringify(bad)}`);
+  }
+  // A ratio of 0 or missing is treated as 1, not as "no screen".
+  assert.equal(screenTargetEdge(2000, 1000, 0), 2000);
 });

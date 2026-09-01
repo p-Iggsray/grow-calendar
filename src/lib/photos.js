@@ -30,29 +30,50 @@ const b64Bytes = (chars) => Math.floor((chars * 3) / 4) - 64; // -64 for the dat
 const MAX_DATA_BYTES = b64Bytes(MAX_DATA_CHARS);
 const MAX_THUMB_BYTES = b64Bytes(MAX_THUMB_CHARS);
 
-// Full native resolution for a normal phone camera (12MP is 4032x3024), so a
-// photo is only ever shrunk because the byte budget forced it, never because we
-// decided in advance. Bigger sensor modes come down to this: past it we would
-// be storing grain, and decoding it on the phone gets slow.
-const MAX_EDGE = 4096;
-const MIN_EDGE = 640;          // below this a photo is not worth keeping
-const THUMB_EDGE = 480;        // 3-up grid on a 3x screen, and the viewer's placeholder
+// What a photo is sized FOR: the screen it will be looked at on. The viewer
+// shows it full-bleed, so a long edge matching the phone's own pixel count is
+// pin sharp, and anything beyond that is bytes spent on detail no screen will
+// ever draw. The floor keeps a small-screen phone from storing something too
+// coarse to be worth keeping; the cap stops a desktop from asking for more than
+// a phone camera gives.
+const SCREEN_MIN_EDGE = 1600;
+const SCREEN_MAX_EDGE = 3200;
+const FALLBACK_EDGE = 2400;       // no window to measure (tests, workers)
+const MIN_EDGE = 480;             // a size that always fits, whatever the photo
+const THUMB_EDGE = 480;           // 3-up grid on a 3x screen, and the viewer's placeholder
 
-// At a given size, use the best quality that fits. Only once even the FLOOR
-// quality is too big do we give up pixels - for a fixed byte budget more pixels
-// at decent quality beats fewer pixels at perfect quality, and pixels thrown
-// away are gone for good. The floor is where compression starts to show.
-const QUALITY_LADDER = [0.92, 0.86, 0.8, 0.74];
-const QUALITY_FLOOR_STEPS = [0.68, 0.6];
-const MAX_RESIZE_ATTEMPTS = 5;
-// Walking the whole quality ladder only buys back about 2.5x in bytes. If the
-// top quality came out further over budget than that, no amount of softening
-// will save this size, so shrink immediately instead of burning several encodes
-// of a huge canvas to learn what we already know. This is what keeps a photo
-// that barely compresses - the worst case - from taking ten seconds.
-const QUALITY_HEADROOM = 2.5;
-// How much of that headroom to bank on when choosing the next size down.
-const QUALITY_RESERVE = 1.7;
+// Quality to aim for. WebP at 0.85 is visually indistinguishable from maximum
+// on a photo, at a fraction of the bytes; the rest is the ladder down for a
+// picture whose detail refuses to compress.
+const QUALITY_LADDER = [0.85, 0.78, 0.7, 0.62, 0.54];
+const MAX_ROUNDS = 6;
+// Walking the ladder from 0.85 down to 0.54 only buys back about 1.9x in bytes.
+// If the first encode is further over the budget than that, softening cannot
+// rescue this size, and encoding four more full-size copies just to prove it is
+// what made a grainy photo take seven seconds. Shrink instead.
+const LADDER_RESCUE = 2.2;
+// ...and when we skip the ladder, aim the shrink at a budget inflated by the
+// softening still in hand, or the next size lands far smaller than it needed to.
+const LADDER_RESERVE = 1.8;
+
+/**
+ * Pure: the long edge to store, for a screen of this size.
+ *
+ * CSS pixels times the device ratio is the real pixel count of the display, so
+ * a photo at that long edge fills it exactly.
+ */
+export function screenTargetEdge(cssWidth, cssHeight, dpr) {
+  const longEdge = Math.max(Number(cssWidth) || 0, Number(cssHeight) || 0);
+  const ratio = Number(dpr) > 0 ? Number(dpr) : 1;
+  const px = Math.round(longEdge * ratio);
+  if (!px) return FALLBACK_EDGE;
+  return Math.min(SCREEN_MAX_EDGE, Math.max(SCREEN_MIN_EDGE, px));
+}
+
+function displayTargetEdge() {
+  if (typeof window === "undefined" || !window.screen) return FALLBACK_EDGE;
+  return screenTargetEdge(window.screen.width, window.screen.height, window.devicePixelRatio);
+}
 
 // How many files one pick may add at once. Guards against an accidental
 // "select all" on a 3000-photo camera roll, and matches the server's per-day
@@ -60,17 +81,16 @@ const QUALITY_RESERVE = 1.7;
 export const MAX_BATCH = 20;
 
 /**
- * Pure: given an encode that came out too big, the edge length to try next.
- *
- * Bytes scale roughly with pixel count, and pixel count with the square of the
- * edge, so the square root of how far over budget we are is a good guess. The
- * 0.94 undershoots deliberately: one encode that lands just inside the budget
- * beats two that bracket it. Never grows, never drops below MIN_EDGE.
+ * Pure: given an encode of `bytes` at `edge`, the edge that should land on
+ * `budget`. Bytes scale with pixel count and pixel count with the square of the
+ * edge, so the square root of the ratio is the estimate; 0.92 undershoots
+ * deliberately, because one encode inside the budget beats two that bracket it.
+ * Clamped so it always makes progress and never collapses to nothing.
  */
 export function nextEdgeGuess(edge, bytes, budget) {
   if (!(bytes > 0) || !(budget > 0)) return Math.max(MIN_EDGE, Math.round(edge * 0.75));
-  const scale = Math.sqrt(budget / bytes) * 0.94;
-  const next = Math.round(edge * Math.min(0.96, scale));   // always make progress
+  const scale = Math.sqrt(budget / bytes) * 0.92;
+  const next = Math.round(edge * Math.min(0.96, scale));   // always shrink
   return Math.max(MIN_EDGE, next);
 }
 
@@ -100,10 +120,14 @@ function makeCanvas(w, h) {
 }
 
 function canvasToBlob(canvas, type, quality) {
-  if (typeof canvas.convertToBlob === "function") {
-    return canvas.convertToBlob({ type, quality });
+  try {
+    if (typeof canvas.convertToBlob === "function") {
+      return canvas.convertToBlob({ type, quality }).catch(() => null);
+    }
+    return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+  } catch {
+    return Promise.resolve(null);
   }
-  return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
 }
 
 function blobToDataUrl(blob) {
@@ -153,50 +177,73 @@ function drawAt(bitmap, maxEdge) {
   return out;
 }
 
-// Encode as large as the budget allows.
-//
-// Each size is drawn ONCE and then encoded at descending quality, because the
-// redraw is the expensive part. If even the softest quality is too big, the
-// picture shrinks and the loop goes round again.
-async function encodeAt(bitmap, type, edge, budgetBytes) {
-  const canvas = drawAt(bitmap, edge);
-  const ladder = edge <= MIN_EDGE
-    ? [...QUALITY_LADDER, ...QUALITY_FLOOR_STEPS]   // last resort: soften further
-    : QUALITY_LADDER;
-  let last = null;
-  let softened = false;
-  for (const quality of ladder) {
-    const blob = await canvasToBlob(canvas, type, quality);
-    if (!blob) break;
-    last = blob;
-    if (blob.size <= budgetBytes) return { fit: blob, over: null, softened };
-    // Hopeless at this size: stop softening and go smaller.
-    if (blob.size > budgetBytes * QUALITY_HEADROOM) break;
-    softened = true;
+// One encode, tolerant of a canvas that will not produce bytes. A phone that is
+// short on memory, or a Safari that will not encode WebP at this size, returns
+// null rather than throwing - and a null used to abort the whole upload with
+// "could not be compressed enough", which was never true.
+async function encodeOnce(bitmap, type, edge, quality, state) {
+  const blob = await canvasToBlob(drawAt(bitmap, edge), type, quality);
+  if (blob) return blob;
+  // Once WebP has failed at a real size, stop asking for it.
+  if (state && type === "image/webp" && !state.jpegOnly) {
+    state.jpegOnly = true;
+    return canvasToBlob(drawAt(bitmap, edge), "image/jpeg", quality);
   }
-  return { fit: null, over: last, softened };
+  return null;
 }
 
+/**
+ * Encode the largest, best-looking version that fits `budgetBytes`.
+ *
+ * Start at the size the screen can actually show, then give up QUALITY before
+ * SIZE: a slightly softer photo at full screen resolution beats a crisp one too
+ * small to fill the display. Only when the whole ladder has failed does the
+ * picture shrink, and then by however much the measured bytes say it must.
+ *
+ * Something always fits. Every exit either returns bytes inside the budget or
+ * falls through to a floor encode no photo can exceed, so the "could not be
+ * compressed" error is unreachable for a picture the browser could decode.
+ */
 async function encodeWithin(bitmap, type, startEdge, budgetBytes) {
-  let edge = startEdge;
-  let smallest = null;     // fallback when nothing ever fits
+  const state = { jpegOnly: type !== "image/webp" };
+  const fmt = () => (state.jpegOnly ? "image/jpeg" : type);
 
-  for (let attempt = 0; attempt < MAX_RESIZE_ATTEMPTS; attempt++) {
-    const { fit, over, softened } = await encodeAt(bitmap, type, edge, budgetBytes);
-    if (fit) return fit;
-    if (!over) break;
-    smallest = over;
-    // `over` was measured at the TOP quality unless the ladder was walked, so
-    // there is still compression in hand. Aim at a budget inflated by what
-    // softening will win back, or the next size lands far smaller than it had
-    // to and pixels are thrown away for nothing.
-    const aim = budgetBytes * (softened ? 1 : QUALITY_RESERVE);
-    const next = nextEdgeGuess(edge, over.size, aim);
-    if (next === edge) break;      // already as small as we go
+  let edge = startEdge;
+  let best = null;
+  for (let round = 0; round < MAX_ROUNDS; round++) {
+    let last = null;
+    let softened = false;
+    for (const quality of QUALITY_LADDER) {
+      const blob = await encodeOnce(bitmap, fmt(), edge, quality, state);
+      if (!blob) break;
+      last = blob;
+      if (blob.size <= budgetBytes) return blob;
+      if (blob.size > budgetBytes * LADDER_RESCUE) break;   // hopeless at this size
+      softened = true;
+    }
+    if (!last) {
+      // Nothing encodes at this size at all - go smaller and try again.
+      const smaller = Math.round(edge * 0.6);
+      if (smaller < MIN_EDGE) break;
+      edge = smaller;
+      continue;
+    }
+    best = last;
+    // If the ladder ran to the end, `last` is the softest encode and an honest
+    // basis. If it broke early there is still quality in hand, so aim higher.
+    const aim = budgetBytes * (softened ? 1 : LADDER_RESERVE);
+    const next = nextEdgeGuess(edge, last.size, aim);
+    if (next === edge) break;
     edge = next;
   }
 
-  return smallest;
+  // Last resort: the smallest thing this module will ever make. A photo that
+  // does not fit here does not exist.
+  if (!best || best.size > budgetBytes) {
+    const floor = await encodeOnce(bitmap, fmt(), MIN_EDGE, 0.45, state);
+    if (floor && (!best || floor.size < best.size)) best = floor;
+  }
+  return best;
 }
 
 export async function fileToDataUrls(file) {
@@ -207,9 +254,10 @@ export async function fileToDataUrls(file) {
 
   try {
     const type = await bestFormat();
-    // Never upscale: a small photo stays its own size rather than being blown
-    // up into a bigger, blurrier file.
-    const startEdge = Math.min(MAX_EDGE, Math.max(bitmap.width, bitmap.height));
+    // Sized for the screen it will be viewed on, and never upscaled: a photo
+    // smaller than the display stays its own size rather than being blown up
+    // into a bigger, blurrier file.
+    const startEdge = Math.min(displayTargetEdge(), Math.max(bitmap.width, bitmap.height));
 
     const blob = await encodeWithin(bitmap, type, startEdge, MAX_DATA_BYTES);
     if (!blob || blob.size > MAX_DATA_BYTES) {
