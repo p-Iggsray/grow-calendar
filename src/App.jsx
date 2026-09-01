@@ -19,6 +19,7 @@ import SettingsScreen from "./components/SettingsScreen.jsx";
 import EnvironmentsTab from "./components/Environments/EnvironmentsTab.jsx";
 import PhasePrompt from "./components/Lifecycle/PhasePrompt.jsx";
 import LocationBanner from "./components/LocationBanner.jsx";
+import UpcomingReminder from "./components/UpcomingReminder.jsx";
 import JournalScreen from "./components/Journal/JournalScreen.jsx";
 import { AppShellSkeleton, PanelSkeleton } from "./components/LoadingScreens.jsx";
 
@@ -397,6 +398,11 @@ export default function App() {
               {/* No location = no auto weather. Nudge once, fix in one tap. */}
               {survey && !hasGrowLocation(survey) && (
                 <LocationBanner key={activeGrowId} growId={activeGrowId} onSaved={reloadPlan} />
+              )}
+              {/* The soonest reminder, above the month it belongs to. The
+                  journal already shows a day's own, so only on the grid. */}
+              {mainView === "calendar" && (
+                <UpcomingReminder growId={activeGrowId} today={today} onOpenDay={openJournalAt} />
               )}
               {mainView === "journal" ? (
                 <JournalScreen

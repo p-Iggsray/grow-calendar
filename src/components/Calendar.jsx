@@ -185,6 +185,9 @@ export default function Calendar({
           const isPast = Boolean(pStyle) && !isToday && daysBetween(today, date) > 0;
           // A written journal entry earns its own quiet accent dot.
           const hasEntry = Boolean(journalDays?.[key]?.note);
+          // A day you asked to be reminded about gets its own mark, so a
+          // reminder is visible from the month without opening the day.
+          const hasReminder = Number(journalDays?.[key]?.events) > 0;
 
           const ariaParts = [
             `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`,
@@ -192,6 +195,7 @@ export default function Calendar({
             isToday ? "today" : null,
             isPast ? "day complete" : null,
             switchedTo ? `moved to ${stageLabel(switchedTo)}` : null,
+            hasReminder ? "has a reminder" : null,
             hasEntry ? "journal entry written" : null,
             "opens this day's journal",
           ].filter(Boolean);
@@ -271,6 +275,16 @@ export default function Calendar({
                   }}
                 />
               )}
+              {hasReminder && (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute", top: 3, left: 3,
+                    width: 5, height: 5, borderRadius: 3,
+                    background: "#a855f7",
+                  }}
+                />
+              )}
             </button>
           );
         })}
@@ -305,6 +319,10 @@ export default function Calendar({
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
           <span style={{ width: 6, height: 6, borderRadius: 3, background: "var(--c-accent)", flexShrink: 0 }} />
           Journaled
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <span style={{ width: 6, height: 6, borderRadius: 3, background: "#a855f7", flexShrink: 0 }} />
+          Reminder
         </span>
       </div>
     </div>

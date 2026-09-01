@@ -88,24 +88,35 @@ function shapeEvent(r) {
 // untimed ("all-day") after them, ties by creation.
 const ORDER = "ORDER BY date, time IS NULL, time, created_at";
 
-// GET /api/grows/:id/events?month=YYYY-MM  (or ?date=YYYY-MM-DD)
+// GET /api/grows/:id/events?month=YYYY-MM | ?date=YYYY-MM-DD | ?from=YYYY-MM-DD
+//
+// `from` is what a reminder is for: everything still ahead of you, soonest
+// first, so the app can say what is coming up without walking month by month.
+const MAX_UPCOMING = 50;
+
 export async function listGrowEvents(env, user, growId, url) {
   const row = await ownedGrowRow(env, user.id, growId);
   if (!row) return error(404, "grow not found");
   await ensureGrowEventsSchema(env);
   const month = url.searchParams.get("month");
   const date = url.searchParams.get("date");
+  const from = url.searchParams.get("from");
   let where, bind;
+  let limit = "";
   if (date && DATE_RE.test(date)) {
     where = "date = ?"; bind = date;
   } else if (month && MONTH_RE.test(month)) {
     where = "date LIKE ?"; bind = month + "-%";
+  } else if (from && DATE_RE.test(from)) {
+    where = "date >= ?"; bind = from;
+    const asked = Number(url.searchParams.get("limit"));
+    limit = ` LIMIT ${Number.isFinite(asked) && asked > 0 ? Math.min(asked, MAX_UPCOMING) : MAX_UPCOMING}`;
   } else {
-    return error(400, "month=YYYY-MM or date=YYYY-MM-DD query param required");
+    return error(400, "month=YYYY-MM, date=YYYY-MM-DD or from=YYYY-MM-DD query param required");
   }
   const res = await env.DB.prepare(
     `SELECT id, date, title, time, notes FROM grow_events
-     WHERE user_id = ? AND grow_id = ? AND ${where} ${ORDER}`
+     WHERE user_id = ? AND grow_id = ? AND ${where} ${ORDER}${limit}`
   ).bind(user.id, growId, bind).all();
   return json({ events: (res.results ?? []).map(shapeEvent) });
 }

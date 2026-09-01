@@ -13,6 +13,7 @@ import { tapHaptic } from "../../lib/haptics.js";
 import RichEntryEditor from "./RichEntryEditor.jsx";
 import ScreenHeader from "../ScreenHeader.jsx";
 import PhotosCard from "./PhotosCard.jsx";
+import RemindersCard from "./RemindersCard.jsx";
 import DayLogEditor from "./DayLogEditor.jsx";
 
 const UI = "var(--font-ui)";
@@ -89,7 +90,7 @@ function PlantRow({ name, children }) {
   );
 }
 
-// A single day's page: the written entry edited in place, the day's events,
+// A single day's page: the written entry edited in place, the day's reminders,
 // the daily log (edited right here), and every plant's entries. Swipe (or use
 // the arrows) to turn the page; the LayoutGrid button zooms out to the
 // all-days timeline. This IS the day surface - tapping a calendar day lands
@@ -291,6 +292,9 @@ export default function DaySpread({
             minHeight={88}
           />
         </Card>
+
+        {/* What you meant to do on this day. Offered on today and ahead. */}
+        <RemindersCard date={date} growId={growId} events={day.events} today={today} />
 
         {/* The day's photos + the journal's add-a-photo action. */}
         <PhotosCard date={date} growId={growId} photos={day.photos} plants={plants} />

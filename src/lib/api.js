@@ -162,6 +162,15 @@ export const api = {
   getJournalPhoto: (id, photoId) =>
     request(`/api/grows/${id}/photos/${photoId}`),
   getStageTimeline: (id) => request(`/api/grows/${id}/stages`),
+  // Reminders. `month`, `date` or `from` (+ optional `limit`) pick the window.
+  listGrowEvents: (id, params) =>
+    request(`/api/grows/${id}/events?${new URLSearchParams(params).toString()}`),
+  createGrowEvent: (id, event) =>
+    request(`/api/grows/${id}/events`, { method: "POST", body: JSON.stringify(event) }),
+  patchGrowEvent: (id, eventId, patch) =>
+    request(`/api/grows/${id}/events/${eventId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  deleteGrowEvent: (id, eventId) =>
+    request(`/api/grows/${id}/events/${eventId}`, { method: "DELETE", body: "{}" }),
   listPlantPhotos: (id, plantId) =>
     request(`/api/grows/${id}/plants/${plantId}/photos`),
   deleteJournalPhoto: (id, photoId) =>
