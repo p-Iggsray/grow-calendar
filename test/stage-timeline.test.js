@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  STAGE_ORDER, buildRunningTimeline, currentStageOf, dayOfGrow,
+  STAGE_ORDER, buildRunningTimeline, currentStageOf, dayOfGrow, growAnchor,
   stageGroup, stageIndex, stageLabel, stageOnDate,
 } from "../src/lib/stageTimeline.js";
 import { stageFromRow } from "../worker/stages.js";
@@ -201,4 +201,63 @@ test("a plant added at any stage is stamped with today, never backdated", () => 
   // Day 0 today regardless of the stage it joined at.
   assert.equal(dayOfGrow(plant.createdAt, "2026-09-01"), 0);
   assert.equal(dayOfGrow(plant.createdAt, "2026-09-11"), 10);
+});
+
+
+// ── growAnchor: a space is exactly as old as it is ───────────────────────────
+// A space set up while the wizard still asked "when did this stage start" holds
+// a stage record backdated to that answer. Day 0 must ignore it completely: a
+// space made yesterday is on day 1, whatever its plants were doing before.
+
+test("day 0 is the day the space was created, from an ISO timestamp", () => {
+  assert.equal(growAnchor("2026-08-31T14:22:05.000Z"), "2026-08-31");
+  assert.equal(growAnchor("2026-08-31"), "2026-08-31");
+});
+
+test("day 0 ignores a backdated stage seed entirely", () => {
+  // The real shape of the bug: created 08-31, seeded at 08-01.
+  const created = growAnchor("2026-08-31T09:00:00.000Z");
+  const events = buildRunningTimeline(
+    [{ date: "2026-08-01", stage: "vegetative" }],
+    created,
+  );
+  // Two days later the space is on day 2, not day 32.
+  assert.equal(dayOfGrow(created, "2026-09-02"), 2);
+  // And the seed is pulled forward rather than dropped, so the space still
+  // starts in the stage it was set up in.
+  assert.deepEqual(events, [{ date: "2026-08-31", stage: "vegetative" }]);
+  assert.equal(stageOnDate(events, "2026-08-31"), "vegetative");
+});
+
+test("switches made after creation keep their own dates", () => {
+  const created = "2026-08-31";
+  const events = buildRunningTimeline([
+    { date: "2026-08-01", stage: "seedling" },     // backdated seed
+    { date: "2026-09-04", stage: "vegetative" },   // a real switch
+    { date: "2026-09-20", stage: "flowering" },
+  ], created);
+  assert.deepEqual(events, [
+    { date: "2026-08-31", stage: "seedling" },
+    { date: "2026-09-04", stage: "vegetative" },
+    { date: "2026-09-20", stage: "flowering" },
+  ]);
+  assert.equal(dayOfGrow(created, "2026-09-04"), 4);
+});
+
+test("several backdated seeds collapse onto day 0 as the furthest stage", () => {
+  const events = buildRunningTimeline([
+    { date: "2026-07-01", stage: "seedling" },
+    { date: "2026-07-15", stage: "vegetative" },
+  ], "2026-08-31");
+  assert.deepEqual(events, [{ date: "2026-08-31", stage: "vegetative" }]);
+});
+
+test("with no start date nothing is clamped, and a missing one is null", () => {
+  assert.deepEqual(
+    buildRunningTimeline([{ date: "2026-07-01", stage: "seedling" }]),
+    [{ date: "2026-07-01", stage: "seedling" }],
+  );
+  assert.equal(growAnchor(null), null);
+  assert.equal(growAnchor(""), null);
+  assert.equal(growAnchor(undefined), null);
 });

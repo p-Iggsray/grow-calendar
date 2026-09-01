@@ -68,9 +68,15 @@ export function stageOnDate(events, dateKey) {
 // Pure: collapse raw stage records into a forward-only running timeline.
 // Each entry is {date, stage}; several plants switching on the same day
 // collapse into the furthest stage reached that day.
-export function buildRunningTimeline(records) {
+//
+// `startDate` is the space's day 0. A record older than that is one of the
+// backdated seeds the wizard used to write, so it is pulled forward to day 0
+// rather than dropped: the space still starts in the stage it was set up in,
+// it just stops claiming to have been running before it existed.
+export function buildRunningTimeline(records, startDate = null) {
   const sorted = [...(records ?? [])]
     .filter((r) => r?.date && stageIndex(r.stage) >= 0)
+    .map((r) => (startDate && r.date < startDate ? { ...r, date: startDate } : r))
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
   const out = [];
@@ -87,14 +93,15 @@ export function buildRunningTimeline(records) {
   return out;
 }
 
-// Pure: a space's day 0. Normally the day it was created, but older grows may
-// hold stage records that were backdated before the app stopped allowing that,
-// and anything earlier wins so their history is never hidden.
-export function growAnchor(createdAt, earliestRecord) {
-  const created = typeof createdAt === "string" ? createdAt.slice(0, 10) : null;
-  if (!created) return earliestRecord ?? null;
-  if (!earliestRecord) return created;
-  return earliestRecord < created ? earliestRecord : created;
+// Pure: a space's day 0. It is the day the space was created, and nothing else.
+//
+// It used to take the earlier of that and the oldest stage record, to keep the
+// history of grows set up while the wizard still asked "when did this stage
+// start". That backdated seed then aged the space by however far back the
+// answer went - a space made yesterday reporting day 31 - which is exactly the
+// assumption this app is supposed to have stopped making.
+export function growAnchor(createdAt) {
+  return typeof createdAt === "string" && createdAt ? createdAt.slice(0, 10) : null;
 }
 
 // Pure: how many days a date is into a grow (or into one plant's life),

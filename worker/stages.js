@@ -42,8 +42,8 @@ export async function getStageTimeline(env, user, growId) {
     .map((r) => ({ date: r.date, stage: stageFromRow(r), plantId: r.plant_id }))
     .filter((r) => r.stage);
 
-  const events = buildRunningTimeline(records);
-  const firstDate = growAnchor(row.created_at, records.length ? records[0].date : null);
+  const firstDate = growAnchor(row.created_at);
+  const events = buildRunningTimeline(records, firstDate);
   return json({ events, firstDate });
 }
 
@@ -62,10 +62,8 @@ export async function loadStageTimeline(env, userId, growId) {
     const records = (res.results ?? [])
       .map((r) => ({ date: r.date, stage: stageFromRow(r) }))
       .filter((r) => r.stage);
-    return {
-      events: buildRunningTimeline(records),
-      firstDate: growAnchor(grow?.created_at, records.length ? records[0].date : null),
-    };
+    const firstDate = growAnchor(grow?.created_at);
+    return { events: buildRunningTimeline(records, firstDate), firstDate };
   } catch {
     return { events: [], firstDate: null };
   }
