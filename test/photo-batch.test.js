@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { batchResultMessage, MAX_BATCH, nextIndex } from "../src/lib/photos.js";
+import { batchResultMessage, MAX_BATCH, nextEdgeGuess, nextIndex } from "../src/lib/photos.js";
 import { validatePhotoInput } from "../worker/photos.js";
 
 // ── batchResultMessage ───────────────────────────────────────────────────────
@@ -64,4 +64,32 @@ test("a batch cannot smuggle past the upload validator", () => {
 
 test("the client batch cap is a real number the day limit can absorb", () => {
   assert.ok(Number.isInteger(MAX_BATCH) && MAX_BATCH > 1);
+});
+
+// ── nextEdgeGuess (spending the byte budget) ─────────────────────────────────
+test("an over-budget encode shrinks by roughly the square root of the overshoot", () => {
+  // 4x over budget means about half the edge, less the deliberate undershoot.
+  const next = nextEdgeGuess(3200, 2_000_000, 500_000);
+  assert.ok(next > 1400 && next < 1600, `expected ~1500, got ${next}`);
+});
+
+test("a near miss shrinks only a little, so the budget is not wasted", () => {
+  const next = nextEdgeGuess(2400, 700_000, 660_000);
+  assert.ok(next > 2100 && next < 2304, `expected a small step down, got ${next}`);
+});
+
+test("every guess makes progress, so the loop cannot stall", () => {
+  // Even barely over budget, the edge must actually decrease.
+  assert.ok(nextEdgeGuess(2000, 660_001, 660_000) < 2000);
+  for (const [edge, bytes, budget] of [[2000, 660_001, 660_000], [900, 1_000_000, 100], [3200, 5_000_000, 660_000]]) {
+    assert.ok(nextEdgeGuess(edge, bytes, budget) < edge || nextEdgeGuess(edge, bytes, budget) === 640);
+  }
+});
+
+test("shrinking bottoms out rather than collapsing to nothing", () => {
+  assert.equal(nextEdgeGuess(700, 90_000_000, 1000), 640);
+  assert.equal(nextEdgeGuess(640, 90_000_000, 1000), 640);
+  // Garbage measurements must not produce NaN or a negative edge.
+  assert.ok(nextEdgeGuess(2000, 0, 660_000) > 0);
+  assert.ok(nextEdgeGuess(2000, 500, 0) > 0);
 });
