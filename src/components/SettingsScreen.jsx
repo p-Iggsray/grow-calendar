@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { BarChart2, ChevronRight, FileText, Monitor, Moon, Pencil, Share2, Sun } from "lucide-react";
+import { AlarmClock, BarChart2, ChevronRight, FileText, Monitor, Moon, Pencil, Share2, Sun } from "lucide-react";
 import ScreenHeader from "./ScreenHeader.jsx";
 import ShareSheet from "./ShareSheet.jsx";
+import CalendarFeedSheet from "./CalendarFeedSheet.jsx";
 import AuthFooter from "./AuthFooter.jsx";
 import GrowSwitcher from "./GrowSwitcher.jsx";
 import { usePlan } from "../lib/usePlan.jsx";
@@ -85,6 +86,7 @@ export default function SettingsScreen({
 }) {
   const { grows, activeGrowId } = usePlan();
   const [showShare, setShowShare] = useState(false);
+  const [showFeed, setShowFeed] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
   const { addToast } = useToast();
 
@@ -156,6 +158,12 @@ export default function SettingsScreen({
           disabled={!activeGrowId}
         />
         <Row
+          icon={AlarmClock} tint="#a855f7"
+          label="Reminders in your calendar"
+          detail="Subscribe once, and your phone does the alerts"
+          onClick={() => setShowFeed(true)}
+        />
+        <Row
           icon={Share2} tint="#22c55e"
           label="Share with a buddy"
           detail="A read-only link to this grow"
@@ -209,6 +217,7 @@ export default function SettingsScreen({
 
       <AnimatePresence>
         {showShare && <ShareSheet key="share" onClose={() => setShowShare(false)} />}
+        {showFeed && <CalendarFeedSheet key="feed" onClose={() => setShowFeed(false)} />}
       </AnimatePresence>
 
       <div style={{ marginTop: 26, paddingTop: 16, borderTop: "1px solid var(--c-surface-2)" }}>

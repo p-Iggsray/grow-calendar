@@ -203,6 +203,10 @@ export const api = {
   deletePlantLogEntry: (growId, plantId, entryId) =>
     request(`/api/grows/${growId}/plants/${plantId}/log/${entryId}`, { method: "DELETE", body: "{}" }),
 
+  getCalendarToken: () => request("/api/calendar"),
+  createCalendarToken: () => request("/api/calendar", { method: "POST", body: "{}" }),
+  deleteCalendarToken: () => request("/api/calendar", { method: "DELETE", body: "{}" }),
+
   getShareToken: () => request("/api/share"),
   createShareToken: () => request("/api/share", { method: "POST", body: "{}" }),
   deleteShareToken: () => request("/api/share", { method: "DELETE", body: "{}" }),

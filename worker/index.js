@@ -23,6 +23,7 @@ import { getStats } from "./stats.js";
 import { requireOwner } from "./owner.js";
 import { logError, logInfo } from "./log.js";
 import { getShareToken, createShareToken, deleteShareToken, getSharedView } from "./share.js";
+import { getCalendarToken, createCalendarToken, deleteCalendarToken, getCalendarFeed } from "./calendarFeed.js";
 
 export default {
   async fetch(request, env, _ctx) {
@@ -92,6 +93,10 @@ async function route(request, env, path) {
   if (path === "/api/health" && method === "GET") return getHealth(env);
   const shareViewMatch = path.match(/^\/api\/share\/([A-Za-z0-9_-]{10,60})$/);
   if (shareViewMatch && method === "GET") return getSharedView(env, shareViewMatch[1]);
+  // The reminder feed. Public by necessity - a calendar app has no session -
+  // so the unguessable token in the path is what authorises it.
+  const calFeedMatch = path.match(/^\/api\/calendar\/([A-Za-z0-9_-]{10,60})\.ics$/);
+  if (calFeedMatch && method === "GET") return getCalendarFeed(env, calFeedMatch[1], request);
 
   // public auth routes
   if (path === "/api/auth/login"           && method === "POST") return login(request, env);
@@ -214,6 +219,10 @@ async function authenticatedRoute(request, env, path, method, user) {
     const reportUrl = new URL(request.url);
     return getGrowReport(env, user, growReportMatch[1], reportUrl.searchParams.get("unit") || "gal");
   }
+
+  if (path === "/api/calendar" && method === "GET")    return getCalendarToken(env, user);
+  if (path === "/api/calendar" && method === "POST")   return createCalendarToken(env, user);
+  if (path === "/api/calendar" && method === "DELETE") return deleteCalendarToken(env, user);
 
   if (path === "/api/share" && method === "GET")    return getShareToken(env, user);
   if (path === "/api/share" && method === "POST")   return createShareToken(env, user);
