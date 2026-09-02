@@ -275,6 +275,9 @@ export default function DaySpread({
         }}
         style={{ display: "flex", flexDirection: "column", gap: 12 }}
       >
+        {/* First thing on the page: what you meant to do today. */}
+        <RemindersCard date={date} growId={growId} events={day.events} today={today} />
+
         {/* The written entry, edited in place like a real journal page. */}
         <Card
           title="Entry"
@@ -292,9 +295,6 @@ export default function DaySpread({
             minHeight={88}
           />
         </Card>
-
-        {/* What you meant to do on this day. Offered on today and ahead. */}
-        <RemindersCard date={date} growId={growId} events={day.events} today={today} />
 
         {/* The day's photos + the journal's add-a-photo action. */}
         <PhotosCard date={date} growId={growId} photos={day.photos} plants={plants} />

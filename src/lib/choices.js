@@ -84,23 +84,6 @@ export const LIGHT_TYPES = [
 
 export const LIGHT_WATTS = ["100", "150", "200", "240", "320", "480", "600", "1000"];
 
-// Things a grower actually sets a reminder for. Anything else is typed once
-// under "Something else" and offered as a choice from then on.
-export const REMINDER_TITLES = [
-  "Feed day",
-  "Water",
-  "Flip to 12/12",
-  "Defoliate",
-  "Top / FIM",
-  "Transplant",
-  "Start flush",
-  "Check trichomes",
-  "Harvest",
-  "pH / EC check",
-  "Clean the space",
-  "Order supplies",
-];
-
 export const SPACE_SIZES = [
   "2x2 tent",
   "2x4 tent",

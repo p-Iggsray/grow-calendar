@@ -1,9 +1,7 @@
-import { useEffect, useState } from "react";
-import { AlarmClock, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AlarmClock, Clock, Plus, Trash2, X } from "lucide-react";
 import { api, ymd } from "../../lib/api.js";
 import { tapHaptic } from "../../lib/haptics.js";
-import { REMINDER_TITLES } from "../../lib/choices.js";
-import ChoiceField from "../ChoiceField.jsx";
 
 const UI = "var(--font-ui)";
 
@@ -17,35 +15,31 @@ export function fmtTime(hhmm) {
   return `${hour}:${m[2]} ${suffix}`;
 }
 
-const inputStyle = {
-  width: "100%", boxSizing: "border-box",
-  background: "var(--c-surface-1)", color: "var(--c-text)",
-  border: "1px solid var(--c-border-strong)", borderRadius: 10,
-  padding: "10px 12px", fontSize: 16, fontFamily: UI, outline: "none",
-};
-
-// Reminders for one day: what you meant to do, sitting on the day you meant to
-// do it. Offered on today and any day ahead; a past day only shows them if it
-// already has some, because there is nothing to remind you about yesterday.
+// Reminders for one day, at the top of the day's page because that is the
+// point of them: open the day, see what you meant to do.
+//
+// Deliberately one line of chrome. You type what you want to remember and
+// press Add - no list to pick from, no note field, and a time only if you
+// bother to ask for one. A past day only shows the card when it already has
+// reminders, because there is nothing to remind you about yesterday.
 export default function RemindersCard({ date, growId, events = [], today }) {
   const dateKey = ymd(date);
   const isPast = today ? dateKey < ymd(today) : false;
 
-  const [adding, setAdding] = useState(false);
+  const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [time, setTime] = useState("");
-  const [notes, setNotes] = useState("");
+  const [showTime, setShowTime] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const inputRef = useRef(null);
 
   // A different day is a different set; never carry a half-typed one across.
-  useEffect(() => { setAdding(false); setTitle(""); setTime(""); setNotes(""); setError(""); }, [dateKey, growId]);
+  useEffect(() => {
+    setOpen(false); setTitle(""); setTime(""); setShowTime(false); setError("");
+  }, [dateKey, growId]);
 
   if (isPast && events.length === 0) return null;
-
-  function reload() {
-    window.dispatchEvent(new CustomEvent("journal-mutated"));
-  }
 
   async function save() {
     const clean = title.trim();
@@ -57,12 +51,12 @@ export default function RemindersCard({ date, growId, events = [], today }) {
         date: dateKey,
         title: clean,
         ...(time ? { time } : {}),
-        ...(notes.trim() ? { notes: notes.trim() } : {}),
       });
       tapHaptic();
-      setAdding(false);
-      setTitle(""); setTime(""); setNotes("");
-      reload();
+      setTitle(""); setTime(""); setShowTime(false);
+      // Stay open so a second reminder is just more typing.
+      inputRef.current?.focus();
+      window.dispatchEvent(new CustomEvent("journal-mutated"));
     } catch (err) {
       setError(err?.message || "Could not save that reminder.");
     } finally {
@@ -74,135 +68,169 @@ export default function RemindersCard({ date, growId, events = [], today }) {
     try {
       await api.deleteGrowEvent(growId, id);
       tapHaptic();
-      reload();
-    } catch { /* the list refetches on the next change */ }
+      window.dispatchEvent(new CustomEvent("journal-mutated"));
+    } catch { /* the day refetches on the next change */ }
   }
 
+  const canAdd = !isPast;
+
   return (
-    <div className="card" style={{ padding: "14px 14px 15px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: events.length || adding ? 11 : 0 }}>
-        <AlarmClock size={13} strokeWidth={2} style={{ color: "#a855f7" }} />
-        <span style={{
-          fontFamily: UI, fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
-          color: "var(--c-text-muted)", flex: 1,
-        }}>
-          Reminders
-        </span>
-        {events.length > 0 && (
-          <span style={{ fontFamily: UI, fontSize: 11, color: "var(--c-text-ghost)" }}>{events.length}</span>
-        )}
-      </div>
-
-      {events.map((e) => (
-        <div
-          key={e.id}
-          style={{
-            display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0",
-            borderTop: "1px solid var(--c-border-faint)",
-          }}>
-          <span style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ display: "block", fontFamily: UI, fontSize: 13.5, fontWeight: 650, color: "var(--c-text)" }}>
-              {e.title}
-            </span>
-            {(e.time || e.notes) && (
-              <span style={{ display: "block", fontFamily: UI, fontSize: 12, color: "var(--c-text-faint)", marginTop: 2, lineHeight: 1.5 }}>
-                {[fmtTime(e.time), e.notes].filter(Boolean).join(" · ")}
-              </span>
-            )}
-          </span>
-          <button
-            type="button"
-            className="touch-target"
-            onClick={() => remove(e.id)}
-            aria-label={`Delete reminder: ${e.title}`}
-            style={{
-              background: "none", border: "none", padding: 0, flexShrink: 0,
-              color: "var(--c-text-ghost)", cursor: "pointer", display: "flex",
+    <div className="card" style={{ padding: events.length ? "12px 14px 13px" : "8px 10px" }}>
+      {events.length > 0 && (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 9 }}>
+            <AlarmClock size={13} strokeWidth={2} style={{ color: "#a855f7", flexShrink: 0 }} />
+            <span style={{
+              fontFamily: UI, fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
+              color: "var(--c-text-muted)",
             }}>
-            <Trash2 size={14} />
-          </button>
-        </div>
-      ))}
-
-      {adding ? (
-        <div style={{ marginTop: events.length ? 12 : 0, display: "flex", flexDirection: "column", gap: 10 }}>
-          <ChoiceField
-            value={title}
-            onChange={setTitle}
-            presets={REMINDER_TITLES}
-            fieldKey="reminder-title"
-            placeholder="What should you remember?"
-          />
-          <div style={{ display: "flex", gap: 8 }}>
-            <label style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ display: "block", fontFamily: UI, fontSize: 11, letterSpacing: 1, textTransform: "uppercase", color: "var(--c-text-muted)", marginBottom: 5 }}>
-                Time (optional)
-              </span>
-              <input type="time" value={time} onChange={(e) => setTime(e.target.value)} style={inputStyle} />
-            </label>
-            <label style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ display: "block", fontFamily: UI, fontSize: 11, letterSpacing: 1, textTransform: "uppercase", color: "var(--c-text-muted)", marginBottom: 5 }}>
-                Note (optional)
-              </span>
-              <input
-                type="text"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Anything else"
-                maxLength={300}
-                style={inputStyle}
-              />
-            </label>
+              Reminders
+            </span>
           </div>
-          {error && (
-            <div role="status" style={{ fontFamily: UI, fontSize: 11.5, color: "var(--c-danger-soft)", lineHeight: 1.5 }}>
-              {error}
-            </div>
-          )}
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              type="button"
-              className="touch-target"
-              onClick={() => { setAdding(false); setError(""); }}
+          {events.map((e, i) => (
+            <div
+              key={e.id}
               style={{
-                flex: 1, padding: "10px 12px", borderRadius: 10,
-                background: "none", border: "1px solid var(--c-border-strong)",
-                color: "var(--c-text-muted)", fontFamily: UI, fontSize: 12.5, cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                display: "flex", alignItems: "center", gap: 10, padding: "7px 0",
+                borderTop: i === 0 ? "none" : "1px solid var(--c-border-faint)",
               }}>
-              <X size={13} strokeWidth={2} /> Cancel
-            </button>
+              <span style={{
+                flex: 1, minWidth: 0, fontFamily: UI, fontSize: 14, fontWeight: 600,
+                color: "var(--c-text)", lineHeight: 1.4,
+              }}>
+                {e.title}
+                {e.time && (
+                  <span style={{ fontWeight: 500, color: "var(--c-text-faint)", marginLeft: 7, fontSize: 12.5 }}>
+                    {fmtTime(e.time)}
+                  </span>
+                )}
+              </span>
+              <button
+                type="button"
+                className="touch-target"
+                onClick={() => remove(e.id)}
+                aria-label={`Delete reminder: ${e.title}`}
+                style={{
+                  background: "none", border: "none", padding: 0, flexShrink: 0,
+                  color: "var(--c-text-ghost)", cursor: "pointer", display: "flex",
+                }}>
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </>
+      )}
+
+      {canAdd && !open && (
+        <button
+          type="button"
+          className="touch-target"
+          onClick={() => { tapHaptic(); setOpen(true); setTimeout(() => inputRef.current?.focus(), 0); }}
+          style={{
+            display: "flex", alignItems: "center", gap: 7, width: "100%",
+            marginTop: events.length ? 8 : 0, padding: "6px 4px",
+            background: "none", border: "none", cursor: "pointer",
+            fontFamily: UI, fontSize: 13, fontWeight: 600, color: "var(--c-text-faint)",
+            textAlign: "left",
+          }}>
+          <Plus size={14} strokeWidth={2.2} style={{ color: "#a855f7", flexShrink: 0 }} />
+          {events.length ? "Add another" : "Remind me on this day"}
+        </button>
+      )}
+
+      {canAdd && open && (
+        <div style={{ marginTop: events.length ? 10 : 0 }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              ref={inputRef}
+              type="text"
+              value={title}
+              maxLength={80}
+              placeholder="Remind me to…"
+              onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); save(); }
+                if (e.key === "Escape") { setOpen(false); setTitle(""); }
+              }}
+              style={{
+                flex: 1, minWidth: 0, boxSizing: "border-box",
+                background: "var(--c-surface-1)", color: "var(--c-text)",
+                border: "1px solid var(--c-border-strong)", borderRadius: 10,
+                padding: "10px 12px", fontSize: 16, fontFamily: UI, outline: "none",
+              }}
+            />
             <button
               type="button"
               className="touch-target"
               onClick={save}
               disabled={busy || !title.trim()}
               style={{
-                flex: 1, padding: "10px 12px", borderRadius: 10,
+                flexShrink: 0, padding: "0 16px", borderRadius: 10,
                 background: "rgba(168,85,247,0.14)", border: "1px solid rgba(168,85,247,0.45)",
-                color: "#a855f7", fontFamily: UI, fontSize: 12.5, fontWeight: 700,
+                color: "#a855f7", fontFamily: UI, fontSize: 13, fontWeight: 700,
                 cursor: busy || !title.trim() ? "default" : "pointer",
-                opacity: busy || !title.trim() ? 0.5 : 1,
+                opacity: busy || !title.trim() ? 0.45 : 1,
               }}>
-              {busy ? "Saving…" : "Set reminder"}
+              {busy ? "…" : "Add"}
             </button>
           </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
+            {showTime ? (
+              <>
+                <input
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  aria-label="Time"
+                  style={{
+                    flexShrink: 0, boxSizing: "border-box",
+                    background: "var(--c-surface-1)", color: "var(--c-text)",
+                    border: "1px solid var(--c-border-strong)", borderRadius: 9,
+                    padding: "7px 10px", fontSize: 15, fontFamily: UI, outline: "none",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => { setShowTime(false); setTime(""); }}
+                  aria-label="Remove the time"
+                  style={{
+                    background: "none", border: "none", padding: 4, cursor: "pointer",
+                    color: "var(--c-text-ghost)", display: "flex", flexShrink: 0,
+                  }}>
+                  <X size={14} strokeWidth={2.2} />
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowTime(true)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  background: "none", border: "none", padding: "2px 4px", cursor: "pointer",
+                  fontFamily: UI, fontSize: 12, color: "var(--c-text-faint)",
+                }}>
+                <Clock size={12} strokeWidth={2} /> Add a time
+              </button>
+            )}
+            <span style={{ flex: 1 }} />
+            <button
+              type="button"
+              onClick={() => { setOpen(false); setTitle(""); setTime(""); setShowTime(false); setError(""); }}
+              style={{
+                background: "none", border: "none", padding: "2px 4px", cursor: "pointer",
+                fontFamily: UI, fontSize: 12, color: "var(--c-text-ghost)",
+              }}>
+              Done
+            </button>
+          </div>
+
+          {error && (
+            <div role="status" style={{ fontFamily: UI, fontSize: 11.5, color: "var(--c-danger-soft)", marginTop: 6, lineHeight: 1.5 }}>
+              {error}
+            </div>
+          )}
         </div>
-      ) : !isPast && (
-        <button
-          type="button"
-          className="touch-target"
-          onClick={() => { tapHaptic(); setAdding(true); }}
-          style={{
-            width: "100%", marginTop: events.length ? 12 : 0,
-            padding: "11px 12px", borderRadius: 11,
-            background: "none", border: "1px dashed var(--c-border-strong)",
-            color: "var(--c-text-dim)", fontFamily: UI, fontSize: 12.5, fontWeight: 600,
-            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-          }}>
-          <Plus size={14} strokeWidth={2.2} />
-          {events.length ? "Add another reminder" : "Remind me on this day"}
-        </button>
       )}
     </div>
   );
