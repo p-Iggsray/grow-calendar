@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { batchResultMessage, MAX_BATCH, nextEdgeGuess, nextIndex, screenTargetEdge } from "../src/lib/photos.js";
+import { batchResultMessage, descentSteps, MAX_BATCH, nextEdgeGuess, nextIndex, screenTargetEdge } from "../src/lib/photos.js";
 import { validatePhotoInput } from "../worker/photos.js";
 
 // ── batchResultMessage ───────────────────────────────────────────────────────
@@ -93,6 +93,46 @@ test("shrinking bottoms out rather than collapsing to nothing", () => {
   // Garbage measurements must not produce NaN or a negative edge.
   assert.ok(nextEdgeGuess(2000, 0, 660_000) > 0);
   assert.ok(nextEdgeGuess(2000, 500, 0) > 0);
+});
+
+// ── descentSteps: the reason an upload can no longer be refused ──────────────
+// When the measured search does not land, the size just keeps coming down.
+// Attaching a soft photo always beats telling somebody to go and crop it.
+
+test("the descent always reaches a size no photo can overflow", () => {
+  for (const start of [3200, 2532, 1600, 480, 300, 120, 60]) {
+    const steps = descentSteps(start);
+    assert.ok(steps.length > 0, `no steps for ${start}`);
+    assert.equal(steps.at(-1).edge, 120, `bottom rung for ${start}`);
+  }
+});
+
+test("it gets to the bottom in a handful of encodes, not a hundred", () => {
+  assert.ok(descentSteps(3200).length <= 8, `took ${descentSteps(3200).length} steps`);
+});
+
+test("every step is smaller and softer than the last, so it cannot stall", () => {
+  const steps = descentSteps(2532);
+  for (let i = 1; i < steps.length; i++) {
+    assert.ok(steps[i].edge < steps[i - 1].edge, `edge stalled at step ${i}`);
+    assert.ok(steps[i].quality <= steps[i - 1].quality, `quality rose at step ${i}`);
+    assert.ok(steps[i].quality >= 0.3, `quality fell through the floor at step ${i}`);
+  }
+});
+
+test("the descent never starts above the size the search already gave up on", () => {
+  // Handing over at 480 means the first rung is a real step down from anything
+  // the measured search was still trying.
+  assert.equal(descentSteps(3200)[0].edge, 480);
+  // A photo that was always small starts at its own size, not blown up to 480.
+  assert.equal(descentSteps(300)[0].edge, 300);
+});
+
+test("nonsense input still produces a usable ladder", () => {
+  for (const bad of [0, -50, NaN, undefined, null]) {
+    const steps = descentSteps(bad);
+    assert.ok(steps.length > 0 && steps.every((s) => s.edge >= 120 && s.quality > 0), `bad: ${bad}`);
+  }
 });
 
 // ── screenTargetEdge: photos are sized for the screen that shows them ────────

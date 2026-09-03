@@ -1,5 +1,5 @@
 // Journal photos: pictures attached to a day's journal page. Stored in D1 as
-// data URLs (the client downscales before upload - see src/lib/photoFiles.js),
+// data URLs (the client downscales before upload - see src/lib/photos.js),
 // with a small thumbnail column so month/day reads never pull full images.
 import { json, error, nowIso, safeJsonBounded } from "./util.js";
 import { ownedGrowRow } from "./plants.js";
