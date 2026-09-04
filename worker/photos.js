@@ -1,7 +1,7 @@
 // Journal photos: pictures attached to a day's journal page. Stored in D1 as
 // data URLs (the client downscales before upload - see src/lib/photos.js),
 // with a small thumbnail column so month/day reads never pull full images.
-import { json, error, nowIso, safeJsonBounded } from "./util.js";
+import { json, error, nowIso, safeJsonBounded, base64ToBytes } from "./util.js";
 import { ownedGrowRow } from "./plants.js";
 import { logError } from "./log.js";
 
@@ -130,6 +130,42 @@ export async function getJournalPhoto(env, user, growId, photoId) {
   ).bind(photoId, growId, user.id).first();
   if (!photo) return error(404, "photo not found");
   return json({ photo });
+}
+
+// GET /api/photos/:photoId/(thumb|full) - the picture itself, as an image.
+//
+// Everywhere else a photo travels inside JSON as a data URL, which is right
+// when the day's photos arrive with the day. It is wrong for a screen that
+// lists sixty strains: the browser cannot lazily skip what it has already been
+// handed, and it cannot cache it either. Served as real bytes, an <img> fetches
+// only what scrolls into view and never asks twice, because a photo id names
+// one picture that will never change.
+const DATA_URL_PREFIX = /^data:(image\/(?:jpeg|png|webp));base64,(.+)$/s;
+
+export async function getPhotoImage(env, user, photoId, size) {
+  await ensureJournalPhotosSchema(env);
+  const column = size === "full" ? "data" : "thumb";
+  const row = await env.DB.prepare(
+    `SELECT ${column} AS url FROM journal_photos WHERE id = ? AND user_id = ?`
+  ).bind(photoId, user.id).first();
+  if (!row?.url) return error(404, "photo not found");
+
+  const m = DATA_URL_PREFIX.exec(row.url);
+  if (!m) return error(500, "that photo is not stored as an image");
+  let bytes;
+  try { bytes = base64ToBytes(m[2]); }
+  catch { return error(500, "that photo could not be decoded"); }
+
+  return new Response(bytes, {
+    headers: {
+      "content-type": m[1],
+      "content-length": String(bytes.length),
+      // Private, because it is the owner's picture and no shared cache should
+      // ever hold it. Immutable, because the id will never name anything else.
+      "cache-control": "private, max-age=31536000, immutable",
+      "x-content-type-options": "nosniff",
+    },
+  });
 }
 
 // DELETE /api/grows/:id/photos/:photoId

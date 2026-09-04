@@ -185,6 +185,9 @@ export const api = {
   // facts are stored; the list of strains you have grown is derived from the
   // spaces you already have loaded.
   getStrainLibrary: () => request("/api/strain-library"),
+  // Ids only. The pictures themselves load per image from /api/photos/:id/thumb
+  // so the browser can skip what is offscreen and cache what is not.
+  getStrainPhotos: () => request("/api/strain-library/photos"),
   saveStrainEntry: (entry) =>
     request("/api/strain-library", { method: "PUT", body: JSON.stringify(entry) }),
   deleteStrainEntry: (name) =>

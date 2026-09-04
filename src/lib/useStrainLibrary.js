@@ -14,6 +14,7 @@ import { buildStrainLibrary, strainNameKey } from "./strainLibrary.js";
 export function useStrainLibrary() {
   const { grows } = usePlan();
   const [entries, setEntries] = useState([]);
+  const [photos, setPhotos] = useState({});   // strain key -> its few pictures
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   // The rows as they stand right now, for rolling back a failed save without
@@ -31,7 +32,21 @@ export function useStrainLibrary() {
     return () => { cancelled = true; };
   }, [put]);
 
-  const strains = useMemo(() => buildStrainLibrary(grows, entries), [grows, entries]);
+  // The pictures arrive separately and late. They are the slowest thing here
+  // and the least important, so nothing waits on them: the list draws with
+  // placeholders and fills in.
+  useEffect(() => {
+    let cancelled = false;
+    api.getStrainPhotos()
+      .then((d) => { if (!cancelled) setPhotos(d.photos ?? {}); })
+      .catch(() => { /* a library without pictures is still a library */ });
+    return () => { cancelled = true; };
+  }, []);
+
+  const strains = useMemo(() => {
+    const built = buildStrainLibrary(grows, entries);
+    return built.map((s) => ({ ...s, photos: photos[s.key] ?? [] }));
+  }, [grows, entries, photos]);
 
   // The rows with `patch` applied to one strain, creating its row if this is
   // the first thing ever written about it.

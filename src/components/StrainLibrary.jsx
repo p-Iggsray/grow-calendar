@@ -7,9 +7,36 @@ import StrainDetail from "./StrainDetail.jsx";
 import AddStrainSheet from "./AddStrainSheet.jsx";
 import { useStrainLibrary } from "../lib/useStrainLibrary.js";
 import { filterStrains, STRAIN_FILTERS, strainSummary, strainNameKey } from "../lib/strainLibrary.js";
+import { coverPhoto, photoUrl } from "../lib/strainPhotos.js";
 import { tapHaptic } from "../lib/haptics.js";
 
 const UI = "var(--font-ui)";
+
+// The strain's own face in the list: the furthest-along photo you have of it,
+// or a leaf while it has none. Loaded per image and lazily, so a library of
+// sixty costs only what you actually scroll past.
+function Cover({ strain }) {
+  const cover = coverPhoto(strain.photos);
+  return (
+    <span style={{
+      width: 42, height: 42, borderRadius: 9, flexShrink: 0, overflow: "hidden",
+      background: "var(--c-surface-2)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      {cover ? (
+        <img
+          src={photoUrl(cover.id)}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        />
+      ) : (
+        <Sprout size={17} strokeWidth={1.7} style={{ color: "var(--c-text-ghost)" }} />
+      )}
+    </span>
+  );
+}
 
 // One strain in the list. Everything you need to recognise it, plus the one
 // action worth having here: the heart, because favouriting should never cost
@@ -24,10 +51,11 @@ function StrainRow({ strain, onOpen, onToggleFavorite, last }) {
         type="button"
         onClick={() => { tapHaptic(); onOpen(strain); }}
         style={{
-          flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 10,
+          flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 11,
           padding: "11px 4px 11px 14px", minHeight: 58,
           background: "none", border: "none", cursor: "pointer", font: "inherit", textAlign: "left",
         }}>
+        <Cover strain={strain} />
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
             {strain.growingNow && (

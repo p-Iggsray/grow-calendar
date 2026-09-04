@@ -20,7 +20,12 @@ function fmtPhotoDate(key) {
 // The photo, full bleed on black, with everything else floating on top of it.
 // Swipe (or arrow-key) between every photo in the set, tap the picture to hide
 // the chrome and see the whole thing.
+//
+// `growId` names the space these photos came from. A set can also span several
+// spaces (a strain's photos do), in which case each photo carries its own and
+// that wins.
 export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClose, onDeleted, subtitleFor }) {
+  const growOf = (p) => p?.growId ?? growId;
   const [index, setIndex] = useState(() => Math.min(Math.max(0, startIndex), Math.max(0, photos.length - 1)));
   const [chrome, setChrome] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -45,10 +50,11 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
   }, [count, index]);
 
   const fetchFull = useCallback((p) => {
-    if (!p) return;
+    const gid = p?.growId ?? growId;
+    if (!p || !gid) return;
     setFulls((prev) => {
       if (prev[p.id] !== undefined) return prev;   // already loaded or loading
-      api.getJournalPhoto(growId, p.id)
+      api.getJournalPhoto(gid, p.id)
         .then((d) => setFulls((cur) => ({ ...cur, [p.id]: d.photo?.data ?? null })))
         .catch(() => setFulls((cur) => ({ ...cur, [p.id]: null })));
       return { ...prev, [p.id]: undefined };
@@ -98,10 +104,10 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
   }
 
   async function remove() {
-    if (busy || !photo) return;
+    if (busy || !photo || !growOf(photo)) return;
     setBusy(true);
     try {
-      await api.deleteJournalPhoto(growId, photo.id);
+      await api.deleteJournalPhoto(growOf(photo), photo.id);
       tapHaptic();
       window.dispatchEvent(new CustomEvent("journal-mutated"));
       onDeleted?.(photo.id);

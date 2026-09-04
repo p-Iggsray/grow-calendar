@@ -12,11 +12,12 @@ import { getHealth, postClientError } from "./health.js";
 import { getWeather } from "./weather.js";
 import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, patchGrowLifecycle, setupGrow } from "./grows.js";
 import { listGrowEvents, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./events.js";
-import { createJournalPhoto, getJournalPhoto, deleteJournalPhoto, listPlantPhotos } from "./photos.js";
+import { createJournalPhoto, getJournalPhoto, getPhotoImage, deleteJournalPhoto, listPlantPhotos } from "./photos.js";
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
 import { getReverseGeocode, getGeocodeSearch } from "./geocode.js";
 import { listStrains } from "./strains.js";
 import { listStrainEntries, putStrainEntry, deleteStrainEntry } from "./strainLibrary.js";
+import { getStrainPhotos } from "./strainPhotos.js";
 import { getStageTimeline } from "./stages.js";
 import { addPlant, patchPlant, deletePlant, listPlantLog, addPlantLogEntry, patchPlantLogEntry, deletePlantLogEntry, plantLogSummary, dailyLogForPlant } from "./plants.js";
 import { getGrowReport } from "./report.js";
@@ -139,6 +140,7 @@ async function authenticatedRoute(request, env, path, method, user) {
 
   // Your strain library. Only your opinions live here; the list of strains you
   // have grown is derived from your spaces on the client.
+  if (path === "/api/strain-library/photos" && method === "GET") return getStrainPhotos(env, user);
   if (path === "/api/strain-library" && method === "GET")    return listStrainEntries(env, user);
   if (path === "/api/strain-library" && method === "PUT")    return putStrainEntry(request, env, user);
   if (path === "/api/strain-library" && method === "DELETE") return deleteStrainEntry(request, env, user);
@@ -174,6 +176,13 @@ async function authenticatedRoute(request, env, path, method, user) {
     if (method === "POST"   && !eventId) return createGrowEvent(request, env, user, gid);
     if (method === "PATCH"  &&  eventId) return patchGrowEvent(request, env, user, gid, eventId);
     if (method === "DELETE" &&  eventId) return deleteGrowEvent(env, user, gid, eventId);
+  }
+
+  // A stored photo as an actual image, so an <img> can lazily load and cache
+  // it. Not scoped to a grow: the id already belongs to exactly one owner.
+  const photoImageMatch = path.match(/^\/api\/photos\/([A-Za-z0-9_]+)\/(thumb|full)$/);
+  if (photoImageMatch && method === "GET") {
+    return getPhotoImage(env, user, photoImageMatch[1], photoImageMatch[2]);
   }
 
   // Journal photos: attached to a day's journal page.

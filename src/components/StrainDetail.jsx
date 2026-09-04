@@ -5,10 +5,13 @@ import Portal from "./Portal.jsx";
 import ScreenHeader from "./ScreenHeader.jsx";
 import StrainStars from "./StrainStars.jsx";
 import ConfirmModal from "./ConfirmModal.jsx";
+import PhotoViewer from "./PhotoViewer.jsx";
 import { tapHaptic } from "../lib/haptics.js";
 import {
   FLOWER_WEEKS_MAX, FLOWER_WEEKS_MIN, NOTE_MAX, STRAIN_TYPES, strainTraits,
 } from "../lib/strainLibrary.js";
+import { photoUrl } from "../lib/strainPhotos.js";
+import { stageLabel } from "../lib/stageTimeline.js";
 
 const UI = "var(--font-ui)";
 const PUSH_SPRING = { type: "spring", damping: 34, stiffness: 320, restDelta: 0.5 };
@@ -49,6 +52,7 @@ export default function StrainDetail({ strain, onClose, onSave, onForget }) {
   const [note, setNote] = useState(strain.note ?? "");
   const [error, setError] = useState("");
   const [confirmForget, setConfirmForget] = useState(false);
+  const [viewIndex, setViewIndex] = useState(null);
   const savedNote = useRef(strain.note ?? "");
 
   // The note saves when you stop typing, so there is no button to forget to
@@ -190,6 +194,57 @@ export default function StrainDetail({ strain, onClose, onSave, onForget }) {
             </Field>
           </div>
 
+          {/* What it looked like, oldest to newest: one picture from each
+              stage it was photographed in, so the strip reads as the plant
+              growing rather than as an album. */}
+          {strain.photos?.length > 0 && (
+            <div className="card" style={{ padding: "14px 0 12px", marginBottom: 12 }}>
+              <div style={{
+                fontFamily: UI, fontSize: 11, fontWeight: 600, letterSpacing: 1.4,
+                textTransform: "uppercase", color: "var(--c-text-faint)",
+                margin: "0 14px 10px",
+              }}>
+                How it grew
+              </div>
+              <div style={{
+                display: "flex", gap: 8, overflowX: "auto",
+                padding: "0 14px 2px", scrollSnapType: "x proximity",
+              }}>
+                {strain.photos.map((p, i) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => { tapHaptic(); setViewIndex(i); }}
+                    aria-label={`Open photo ${i + 1} of ${strain.photos.length}${p.stage ? `, ${stageLabel(p.stage)}` : ""}`}
+                    style={{
+                      flexShrink: 0, width: 104, padding: 0, border: "none",
+                      background: "none", cursor: "pointer", scrollSnapAlign: "start",
+                    }}>
+                    <span style={{
+                      display: "block", width: 104, height: 104, borderRadius: 11,
+                      overflow: "hidden", background: "var(--c-surface-2)",
+                    }}>
+                      <img
+                        src={photoUrl(p.id)}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                      />
+                    </span>
+                    <span style={{
+                      display: "block", fontFamily: UI, fontSize: 11, fontWeight: 600,
+                      color: "var(--c-text-faint)", marginTop: 5, textAlign: "center",
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}>
+                      {p.stage ? stageLabel(p.stage) : fmtMonth(p.date)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Every time you have grown it. Derived from your spaces, so it is
               always current and there is nothing here to keep up to date. */}
           <div className="card" style={{ padding: "14px 14px 12px", marginBottom: 12 }}>
@@ -272,6 +327,17 @@ export default function StrainDetail({ strain, onClose, onSave, onForget }) {
             }}
             onCancel={() => setConfirmForget(false)}
         />
+
+        {/* The strain's photos span every space it was grown in, so each one
+            carries its own grow id for the viewer to fetch and delete by. */}
+        {viewIndex !== null && strain.photos?.length > 0 && (
+          <PhotoViewer
+            photos={strain.photos.map((p) => ({ ...p, thumb: photoUrl(p.id) }))}
+            startIndex={viewIndex}
+            subtitleFor={(p) => (p.stage ? `${strain.name} · ${stageLabel(p.stage)}` : strain.name)}
+            onClose={() => setViewIndex(null)}
+          />
+        )}
       </motion.div>
     </Portal>
   );
