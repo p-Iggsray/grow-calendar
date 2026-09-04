@@ -16,6 +16,7 @@ import { createJournalPhoto, getJournalPhoto, deleteJournalPhoto, listPlantPhoto
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
 import { getReverseGeocode, getGeocodeSearch } from "./geocode.js";
 import { listStrains } from "./strains.js";
+import { listStrainEntries, putStrainEntry, deleteStrainEntry } from "./strainLibrary.js";
 import { getStageTimeline } from "./stages.js";
 import { addPlant, patchPlant, deletePlant, listPlantLog, addPlantLogEntry, patchPlantLogEntry, deletePlantLogEntry, plantLogSummary, dailyLogForPlant } from "./plants.js";
 import { getGrowReport } from "./report.js";
@@ -135,6 +136,12 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (path === "/api/geocode/reverse" && method === "GET") return getReverseGeocode(request, env, user);
   if (path === "/api/geocode/search"  && method === "GET") return getGeocodeSearch(request, env, user);
   if (path === "/api/strains"         && method === "GET") return listStrains(env, user);
+
+  // Your strain library. Only your opinions live here; the list of strains you
+  // have grown is derived from your spaces on the client.
+  if (path === "/api/strain-library" && method === "GET")    return listStrainEntries(env, user);
+  if (path === "/api/strain-library" && method === "PUT")    return putStrainEntry(request, env, user);
+  if (path === "/api/strain-library" && method === "DELETE") return deleteStrainEntry(request, env, user);
 
   if (path === "/api/grows" && method === "GET")  return listGrows(env, user);
   if (path === "/api/grows" && method === "POST") return createGrow(request, env, user);

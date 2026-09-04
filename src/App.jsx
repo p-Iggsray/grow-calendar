@@ -28,6 +28,7 @@ import { AppShellSkeleton, PanelSkeleton } from "./components/LoadingScreens.jsx
 const SetupWizard   = lazy(() => import("./components/SetupWizard/SetupWizard.jsx"));
 const ChatPanel     = lazy(() => import("./components/ChatPanel/ChatPanel.jsx"));
 const StatsScreen   = lazy(() => import("./components/StatsScreen.jsx"));
+const StrainLibrary = lazy(() => import("./components/StrainLibrary.jsx"));
 const GrowSettings  = lazy(() => import("./components/GrowSettings.jsx"));
 const DryingTracker = lazy(() => import("./components/Lifecycle/DryingTracker.jsx"));
 const CuringTracker = lazy(() => import("./components/Lifecycle/CuringTracker.jsx"));
@@ -78,6 +79,7 @@ export default function App() {
   const [chatOpen,      setChatOpen]      = useState(false);
   const [chatContext,   setChatContext]   = useState(null);
   const [showStats,     setShowStats]     = useState(false);
+  const [showStrains,   setShowStrains]   = useState(false);
   const [showSettings,  setShowSettings]  = useState(false);
   const [settingsGrowId, setSettingsGrowId] = useState(null);
   const [wizardGrowId,  setWizardGrowId]  = useState(null); // growId for SetupWizard
@@ -331,6 +333,7 @@ export default function App() {
               <SettingsScreen
                 today={today}
                 onOpenStats={() => setShowStats(true)}
+                onOpenStrains={() => setShowStrains(true)}
                 onOpenGrowSettings={(growId) => { setSettingsGrowId(growId); setShowSettings(true); }}
                 onNewEnvironment={handleNewEnvironment}
                 theme={theme}
@@ -463,6 +466,20 @@ export default function App() {
           >
             <Suspense fallback={null}>
               <StatsScreen today={today} onClose={() => setShowStats(false)} />
+            </Suspense>
+          </motion.div>
+        )}
+        {showStrains && (
+          <motion.div
+            key="strains"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={PUSH_SPRING}
+            style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--c-bg)", overflowY: "auto" }}
+          >
+            <Suspense fallback={null}>
+              <StrainLibrary onClose={() => setShowStrains(false)} />
             </Suspense>
           </motion.div>
         )}

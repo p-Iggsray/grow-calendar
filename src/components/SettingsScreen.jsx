@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { AlarmClock, BarChart2, ChevronRight, FileText, Monitor, Moon, Pencil, Share2, Sun } from "lucide-react";
+import { AlarmClock, BarChart2, ChevronRight, FileText, Monitor, Moon, Pencil, Share2, Sprout, Sun } from "lucide-react";
 import ScreenHeader from "./ScreenHeader.jsx";
 import ShareSheet from "./ShareSheet.jsx";
 import CalendarFeedSheet from "./CalendarFeedSheet.jsx";
@@ -82,7 +82,7 @@ function Group({ title, footer, children }) {
 // what the space is, starting the dry) lives behind that space's gear in
 // Spaces. What is left here is the active grow's outputs and app-wide things.
 export default function SettingsScreen({
-  today, onOpenStats, onOpenGrowSettings, onNewEnvironment, onBeforeSignOut, theme, setTheme,
+  today, onOpenStats, onOpenStrains, onOpenGrowSettings, onNewEnvironment, onBeforeSignOut, theme, setTheme,
 }) {
   const { grows, activeGrowId } = usePlan();
   const [showShare, setShowShare] = useState(false);
@@ -175,6 +175,19 @@ export default function SettingsScreen({
           detail="Print-ready HTML of everything recorded"
           onClick={openReport}
           disabled={!activeGrowId || reportBusy}
+          last
+        />
+      </Group>
+
+      {/* Things that belong to you rather than to any one space. */}
+      <Group
+        title="Yours"
+        footer="Every strain you name on a plant, in every space, gathers here by itself.">
+        <Row
+          icon={Sprout} tint="#4ade80"
+          label="Strains"
+          detail="Notes, ratings and favourites"
+          onClick={onOpenStrains}
           last
         />
       </Group>

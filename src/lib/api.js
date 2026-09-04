@@ -180,6 +180,15 @@ export const api = {
   reverseGeocode: (lat, lon) => request(`/api/geocode/reverse?lat=${lat}&lon=${lon}`),
   searchPlaces: (q) => request(`/api/geocode/search?q=${encodeURIComponent(q)}`),
   getStrains: () => request("/api/strains"),
+
+  // Your strain library. Only the notes, stars, favourites and seed-packet
+  // facts are stored; the list of strains you have grown is derived from the
+  // spaces you already have loaded.
+  getStrainLibrary: () => request("/api/strain-library"),
+  saveStrainEntry: (entry) =>
+    request("/api/strain-library", { method: "PUT", body: JSON.stringify(entry) }),
+  deleteStrainEntry: (name) =>
+    request("/api/strain-library", { method: "DELETE", body: JSON.stringify({ name }) }),
   getEnvSummary: (id) => request(`/api/grows/${id}/env/summary`),
   getEnvDay: (id, date) => request(`/api/grows/${id}/env/day/${date}`),
   clearEnv: (id) =>
