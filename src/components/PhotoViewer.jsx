@@ -4,7 +4,7 @@ import { ChevronLeft, Download, MoreHorizontal, Trash2 } from "lucide-react";
 import { api } from "../lib/api.js";
 import { nextIndex } from "../lib/photos.js";
 import { tapHaptic } from "../lib/haptics.js";
-import { savePhotoToDevice } from "../lib/savePhoto.js";
+import { photoFileFrom, savePhotoFile, saveOutcomeMessage } from "../lib/savePhoto.js";
 import Portal from "./Portal.jsx";
 import HeaderMenu from "./HeaderMenu.jsx";
 
@@ -30,9 +30,13 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
   const [chrome, setChrome] = useState(true);
   const [busy, setBusy] = useState(false);
   const [saveState, setSaveState] = useState("");
+  const [saveError, setSaveError] = useState(null);
   const [width, setWidth] = useState(() => (typeof window === "undefined" ? 0 : window.innerWidth));
   // Full-size images, kept once fetched so swiping back is instant.
   const [fulls, setFulls] = useState({});
+  // ...and each one already turned into a File, because building one takes an
+  // await and an await is exactly what stops the OS save sheet from opening.
+  const [files, setFiles] = useState({});
   const dragged = useRef(false);
 
   const count = photos.length;
@@ -55,7 +59,18 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
     setFulls((prev) => {
       if (prev[p.id] !== undefined) return prev;   // already loaded or loading
       api.getJournalPhoto(gid, p.id)
-        .then((d) => setFulls((cur) => ({ ...cur, [p.id]: d.photo?.data ?? null })))
+        .then((d) => {
+          const data = d.photo?.data ?? null;
+          setFulls((cur) => ({ ...cur, [p.id]: data }));
+          // Build the File now, while nobody is waiting on it. By the time the
+          // grower taps Save to Photos it has to be ready to hand over on the
+          // spot, with no await between the tap and navigator.share.
+          if (data) {
+            photoFileFrom(data, `grow-${p.date || "photo"}.jpg`)
+              .then((file) => setFiles((cur) => ({ ...cur, [p.id]: file })))
+              .catch(() => { /* the menu item stays disabled */ });
+          }
+        })
         .catch(() => setFulls((cur) => ({ ...cur, [p.id]: null })));
       return { ...prev, [p.id]: undefined };
     });
@@ -87,20 +102,21 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
     return () => document.removeEventListener("keydown", onKey);
   }, [index, go, onClose]);
 
-  const full = photo ? fulls[photo.id] : null;
-
   // Shots taken inside the app never touched the camera roll, so they get a
-  // one-tap way in. Must run straight off the tap: the OS only opens its save
-  // sheet during a user gesture.
-  async function saveToRoll() {
-    if (!full || saveState === "saving") return;
+  // one-tap way in.
+  //
+  // Deliberately NOT async. The OS only opens its save sheet while the tap that
+  // asked for it is still counted as user activation, and a single await in
+  // front of the call spends that. The File was built when the picture loaded
+  // precisely so there is nothing to wait for here.
+  function saveToRoll() {
+    const file = files[photo?.id];
+    if (!file || saveState === "saving") return;
     setSaveState("saving");
-    try {
-      const result = await savePhotoToDevice(full, `grow-${photo.date || "photo"}.jpg`);
-      setSaveState(result === "cancelled" ? "" : "saved");
-    } catch {
-      setSaveState("error");
-    }
+    setSaveError(null);
+    savePhotoFile(file, `grow-${photo.date || "photo"}.jpg`)
+      .then((outcome) => setSaveState(outcome === "cancelled" ? "" : outcome))
+      .catch((err) => { setSaveError(err); setSaveState("error"); });
   }
 
   async function remove() {
@@ -120,11 +136,9 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
 
   if (!photo) return null;
 
-  const status =
-    saveState === "saving" ? "Opening your phone's save sheet…" :
-    saveState === "saved"  ? "Sent to your photos." :
-    saveState === "error"  ? "Could not save that photo. Try again." : "";
+  const status = saveOutcomeMessage(saveState, saveError);
   const subtitle = subtitleFor?.(photo) || "";
+  const fileReady = Boolean(files[photo.id]);
 
   return (
     <Portal>
@@ -230,12 +244,12 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
                       color: "#fff",
                     }}
                     items={[
-                      photo.fromCamera && {
+                      {
                         icon: Download,
-                        label: "Save to Photos",
+                        label: fileReady ? "Save to Photos" : "Save to Photos (loading…)",
                         detail: "Adds this shot to your camera roll",
                         onClick: saveToRoll,
-                        disabled: !full || saveState === "saving",
+                        disabled: !fileReady || saveState === "saving",
                       },
                       { icon: Trash2, label: busy ? "Deleting…" : "Delete photo", tone: "destructive", onClick: remove, disabled: busy },
                     ]}

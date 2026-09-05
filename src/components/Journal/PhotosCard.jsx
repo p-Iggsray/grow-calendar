@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, Images } from "lucide-react";
+import { Camera, Download, Images, X } from "lucide-react";
 import { api, ymd } from "../../lib/api.js";
 import { tapHaptic } from "../../lib/haptics.js";
 import { batchResultMessage, fileToDataUrls, MAX_BATCH } from "../../lib/photos.js";
+import {
+  canSharePhoto, loadSaveToRoll, savePhotoFile, saveOutcomeMessage,
+} from "../../lib/savePhoto.js";
 import PhotoViewer from "../PhotoViewer.jsx";
 
 const UI = "var(--font-ui)";
@@ -17,7 +20,14 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
   const [progress, setProgress] = useState(null); // {done, total} while uploading
   const [error, setError] = useState("");
   const [viewIndex, setViewIndex] = useState(null);
-  useEffect(() => { setViewIndex(null); setError(""); }, [date, growId]);
+  // The shot the OS would not take on its own, waiting for a deliberate tap.
+  const [rollPrompt, setRollPrompt] = useState(null);
+  const [rollState, setRollState] = useState("");
+  const [rollError, setRollError] = useState(null);
+  useEffect(() => {
+    setViewIndex(null); setError("");
+    setRollPrompt(null); setRollState(""); setRollError(null);
+  }, [date, growId]);
 
   const busy = progress !== null;
 
@@ -55,12 +65,57 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
     setProgress(null);
   }
 
+  // A shot taken through this app is NOT in your camera roll: the browser hands
+  // the picture to the page and nowhere else. Only the OS can file it, and the
+  // only way to ask is its own share sheet, which will only open while the tap
+  // that produced the photo still counts as user activation.
+  //
+  // So the offer is made here, in the change handler, synchronously, before the
+  // compressing and uploading that would spend that activation. It is as close
+  // to automatic as a web app is allowed to get: the sheet appears, and the
+  // grower taps Save Image. When the browser refuses, `rollPrompt` puts a
+  // one-tap button on the card instead, so there is always a way through.
+  function offerToRoll(file) {
+    if (!canSharePhoto(file)) { setRollPrompt(file); return; }
+    setRollState("saving");
+    setRollError(null);
+    savePhotoFile(file, `grow-${ymd(date)}.jpg`)
+      .then((outcome) => {
+        setRollState(outcome === "cancelled" ? "" : outcome);
+        setRollPrompt(null);
+      })
+      .catch((err) => {
+        // Usually the activation was spent anyway. Fall back to asking.
+        setRollError(err);
+        setRollState("");
+        setRollPrompt(file);
+      });
+  }
+
   function onPick(fromCamera) {
     return (e) => {
       const files = Array.from(e.target.files ?? []);
       e.target.value = "";
-      if (files.length) uploadAll(files, fromCamera);
+      if (!files.length) return;
+      // Straight off the tap, before anything is awaited.
+      if (fromCamera && loadSaveToRoll()) offerToRoll(files[0]);
+      uploadAll(files, fromCamera);
     };
+  }
+
+  // The fallback: a fresh tap, which always carries its own activation.
+  function saveNow() {
+    const file = rollPrompt;
+    if (!file) return;
+    tapHaptic();
+    setRollState("saving");
+    setRollError(null);
+    savePhotoFile(file, `grow-${ymd(date)}.jpg`)
+      .then((outcome) => {
+        setRollState(outcome === "cancelled" ? "" : outcome);
+        if (outcome !== "cancelled") setRollPrompt(null);
+      })
+      .catch((err) => { setRollError(err); setRollState("error"); });
   }
 
   const addLabel = busy
@@ -164,6 +219,54 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
             width: `${Math.round((progress.done / progress.total) * 100)}%`,
             height: "100%", background: "#fbbf24", transition: "width 0.25s",
           }} />
+        </div>
+      )}
+
+      {/* The browser would not open the save sheet by itself. Ask for the one
+          tap that will, rather than losing the shot out of the camera roll. */}
+      {rollPrompt && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 9, marginTop: 8,
+          padding: "9px 10px 9px 12px", borderRadius: 11,
+          background: "rgba(251,191,36,0.09)", border: "1px solid rgba(251,191,36,0.3)",
+        }}>
+          <span style={{ flex: 1, minWidth: 0, fontFamily: UI, fontSize: 11.5, color: "var(--c-text-dim)", lineHeight: 1.5 }}>
+            That shot is in your journal but not your camera roll yet.
+          </span>
+          <button
+            type="button"
+            className="touch-target"
+            onClick={saveNow}
+            disabled={rollState === "saving"}
+            style={{
+              flexShrink: 0, padding: "7px 12px", borderRadius: 9,
+              background: "rgba(251,191,36,0.16)", border: "1px solid rgba(251,191,36,0.45)",
+              color: "#fbbf24", fontFamily: UI, fontSize: 11.5, fontWeight: 700,
+              cursor: rollState === "saving" ? "default" : "pointer",
+              display: "flex", alignItems: "center", gap: 5,
+            }}>
+            <Download size={12} strokeWidth={2.2} />
+            {rollState === "saving" ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={() => { tapHaptic(); setRollPrompt(null); setRollState(""); }}
+            aria-label="Skip saving this shot to Photos"
+            style={{
+              flexShrink: 0, background: "none", border: "none", padding: 5,
+              color: "var(--c-text-ghost)", cursor: "pointer", display: "flex",
+            }}>
+            <X size={13} strokeWidth={2.2} />
+          </button>
+        </div>
+      )}
+
+      {saveOutcomeMessage(rollState, rollError) && (
+        <div role="status" style={{
+          fontFamily: UI, fontSize: 11.5, textAlign: "center", marginTop: 7, lineHeight: 1.5,
+          color: rollState === "error" ? "var(--c-danger-soft)" : "var(--c-text-faint)",
+        }}>
+          {saveOutcomeMessage(rollState, rollError)}
         </div>
       )}
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { AlarmClock, BarChart2, ChevronRight, FileText, Monitor, Moon, Pencil, Share2, Sprout, Sun } from "lucide-react";
+import { AlarmClock, BarChart2, Camera, ChevronRight, FileText, Monitor, Moon, Pencil, Share2, Sprout, Sun } from "lucide-react";
 import ScreenHeader from "./ScreenHeader.jsx";
 import ShareSheet from "./ShareSheet.jsx";
 import CalendarFeedSheet from "./CalendarFeedSheet.jsx";
@@ -13,12 +13,57 @@ import { partitionPlants } from "./PlantsTab/constants.js";
 import { useToast } from "../lib/useToast.jsx";
 import { api } from "../lib/api.js";
 import { loadWaterUnit } from "../lib/waterUnits.js";
+import { loadSaveToRoll, rememberSaveToRoll } from "../lib/savePhoto.js";
+import { tapHaptic } from "../lib/haptics.js";
 
 const THEME_OPTIONS = [
   { value: "auto",  label: "Auto",  Icon: Monitor },
   { value: "light", label: "Light", Icon: Sun },
   { value: "dark",  label: "Dark",  Icon: Moon },
 ];
+
+// The same row, but it flips a setting in place instead of pushing a screen.
+function ToggleRow({ icon: Icon, tint, label, detail, on, onToggle, last }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => { tapHaptic(); onToggle(!on); }}
+      style={{
+        display: "flex", alignItems: "center", gap: 12,
+        width: "100%", padding: "12px 14px",
+        background: "none", border: "none",
+        borderBottom: last ? "none" : "1px solid var(--c-border-faint)",
+        cursor: "pointer", font: "inherit", textAlign: "left", minHeight: 52,
+      }}>
+      <span style={{
+        width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+        background: `${tint}1f`, color: tint,
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <Icon size={16} strokeWidth={2} />
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontSize: 15, fontWeight: 500, color: "var(--c-text)" }}>{label}</span>
+        {detail && (
+          <span style={{ display: "block", fontSize: 12.5, color: "var(--c-text-faint)", marginTop: 1, lineHeight: 1.45 }}>{detail}</span>
+        )}
+      </span>
+      <span aria-hidden="true" style={{
+        flexShrink: 0, width: 44, height: 26, borderRadius: 13, padding: 3,
+        background: on ? "var(--c-accent)" : "var(--c-surface-2)",
+        transition: "background 0.15s", display: "flex",
+        justifyContent: on ? "flex-end" : "flex-start",
+      }}>
+        <span style={{
+          width: 20, height: 20, borderRadius: "50%", background: "var(--c-bg)",
+          transition: "transform 0.15s",
+        }} />
+      </span>
+    </button>
+  );
+}
 
 // iOS-settings-style row: tinted icon square, label, trailing detail + chevron.
 function Row({ icon: Icon, tint, label, detail, onClick, disabled, last }) {
@@ -88,6 +133,7 @@ export default function SettingsScreen({
   const [showShare, setShowShare] = useState(false);
   const [showFeed, setShowFeed] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
+  const [saveToRoll, setSaveToRoll] = useState(loadSaveToRoll);
   const { addToast } = useToast();
 
   const activeGrow = grows.find((g) => g.id === activeGrowId) ?? null;
@@ -188,6 +234,13 @@ export default function SettingsScreen({
           label="Strains"
           detail="Notes, ratings and favourites"
           onClick={onOpenStrains}
+        />
+        <ToggleRow
+          icon={Camera} tint="#fbbf24"
+          label="Save shots to Photos"
+          detail="A photo taken in the app is not in your camera roll until your phone puts it there, so it offers straight after the shot."
+          on={saveToRoll}
+          onToggle={(on) => { setSaveToRoll(on); rememberSaveToRoll(on); }}
           last
         />
       </Group>
