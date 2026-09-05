@@ -192,6 +192,11 @@ export const api = {
     request("/api/strain-library", { method: "PUT", body: JSON.stringify(entry) }),
   deleteStrainEntry: (name) =>
     request("/api/strain-library", { method: "DELETE", body: JSON.stringify({ name }) }),
+  // Renaming reaches the plants too, or the old name comes straight back.
+  renameStrain: (from, to) =>
+    request("/api/strain-library/rename", { method: "POST", body: JSON.stringify({ from, to }) }),
+  removeStrain: (name) =>
+    request("/api/strain-library/remove", { method: "POST", body: JSON.stringify({ name }) }),
   getEnvSummary: (id) => request(`/api/grows/${id}/env/summary`),
   getEnvDay: (id, date) => request(`/api/grows/${id}/env/day/${date}`),
   clearEnv: (id) =>
@@ -214,10 +219,6 @@ export const api = {
     request(`/api/grows/${growId}/plants/${plantId}/log/${entryId}`, { method: "PATCH", body: JSON.stringify(patch) }),
   deletePlantLogEntry: (growId, plantId, entryId) =>
     request(`/api/grows/${growId}/plants/${plantId}/log/${entryId}`, { method: "DELETE", body: "{}" }),
-
-  getCalendarToken: () => request("/api/calendar"),
-  createCalendarToken: () => request("/api/calendar", { method: "POST", body: "{}" }),
-  deleteCalendarToken: () => request("/api/calendar", { method: "DELETE", body: "{}" }),
 
   getShareToken: () => request("/api/share"),
   createShareToken: () => request("/api/share", { method: "POST", body: "{}" }),

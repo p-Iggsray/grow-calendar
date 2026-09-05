@@ -12,7 +12,7 @@ import { buildStrainLibrary, strainNameKey } from "./strainLibrary.js";
 // request follows; if it fails, the rows go back exactly as they were and the
 // error is reported.
 export function useStrainLibrary() {
-  const { grows } = usePlan();
+  const { grows, reload } = usePlan();
   const [entries, setEntries] = useState([]);
   const [photos, setPhotos] = useState({});   // strain key -> its few pictures
   const [loading, setLoading] = useState(true);
@@ -74,19 +74,38 @@ export function useStrainLibrary() {
     }
   }, [put]);
 
-  const forget = useCallback(async (name) => {
-    const before = latest.current;
-    const key = strainNameKey(name);
-    put(before.filter((e) => strainNameKey(e.name) !== key));
+  // Renaming and deleting both reach into the SPACES, not just these rows, so
+  // both reload the plan afterwards: the list is derived from the surveys and
+  // would otherwise keep showing the strain that is no longer there.
+  const rename = useCallback(async (from, to) => {
     try {
-      await api.deleteStrainEntry(name);
-      return true;
+      const d = await api.renameStrain(from, to);
+      const [entries2] = await Promise.all([api.getStrainLibrary().catch(() => null), reload()]);
+      if (entries2) put(entries2.entries ?? []);
+      api.getStrainPhotos().then((p) => setPhotos(p.photos ?? {})).catch(() => {});
+      return d;
     } catch (e) {
-      put(before);
       setError(e);
-      return false;
+      return null;
     }
-  }, [put]);
+  }, [put, reload]);
 
-  return { strains, loading, error, save, forget, clearError: useCallback(() => setError(null), []) };
+  const remove = useCallback(async (name) => {
+    try {
+      const d = await api.removeStrain(name);
+      const key = strainNameKey(name);
+      put(latest.current.filter((e) => strainNameKey(e.name) !== key));
+      reload();
+      api.getStrainPhotos().then((p) => setPhotos(p.photos ?? {})).catch(() => {});
+      return d;
+    } catch (e) {
+      setError(e);
+      return null;
+    }
+  }, [put, reload]);
+
+  return {
+    strains, loading, error, save, rename, remove,
+    clearError: useCallback(() => setError(null), []),
+  };
 }

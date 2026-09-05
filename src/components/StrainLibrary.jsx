@@ -126,7 +126,7 @@ function Section({ title, count, children }) {
 // you have made of each one. Reached from Settings because it belongs to you
 // rather than to any one space.
 export default function StrainLibrary({ onClose }) {
-  const { strains, loading, error, save, forget } = useStrainLibrary();
+  const { strains, loading, error, save, rename, remove } = useStrainLibrary();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [openKey, setOpenKey] = useState(null);
@@ -296,7 +296,10 @@ export default function StrainLibrary({ onClose }) {
             strain={open}
             onClose={() => setOpenKey(null)}
             onSave={save}
-            onForget={forget}
+            onRename={rename}
+            onDelete={remove}
+            // A rename changes the key this page is looked up by, so follow it.
+            onRenamed={(result) => setOpenKey(result?.key ?? null)}
           />
         )}
         {adding && (

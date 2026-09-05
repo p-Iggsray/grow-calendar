@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  buildStrainLibrary, cleanStrainName, filterStrains, normalizeFlowerWeeks,
-  normalizeRating, sortStrains, strainNameKey, strainSummary,
+  buildStrainLibrary, cleanStrainName, filterStrains, mergeStrainRows,
+  normalizeFlowerWeeks, normalizeRating, removeStrainFromSurvey,
+  renameStrainInSurvey, sortStrains, strainNameKey, strainSummary,
 } from "../src/lib/strainLibrary.js";
 import { entryWritePlan, validateStrainEntry } from "../worker/strainLibrary.js";
 
@@ -226,6 +227,134 @@ test("the summary states what is known and stays quiet about the rest", () => {
   );
   assert.equal(strainSummary({ type: "hybrid", photo: true, flowerWeeks: null, growCount: 1 }), "Hybrid · grown once");
   assert.equal(strainSummary({ type: null, photo: null, growCount: 0, neverGrown: true }), "not grown yet");
+});
+
+// ── renaming: it has to reach the plants ─────────────────────────────────────
+// The library list is derived from the roster, so a rename that only moved the
+// saved row would last until the next render and then snap back.
+
+const ROSTER = {
+  strains: [
+    { id: "p1", name: "Blue Dream", status: "growing" },
+    { id: "p2", name: "blue  dream", status: "harvested" },
+    { id: "p3", name: "Gelato", status: "growing" },
+  ],
+};
+
+test("every plant of the strain is renamed, however it was spelled", () => {
+  const { survey, count } = renameStrainInSurvey(ROSTER, "blue dream", "Azure Dream");
+  assert.equal(count, 2);
+  assert.deepEqual(survey.strains.map((p) => p.name), ["Azure Dream", "Azure Dream", "Gelato"]);
+});
+
+test("renaming keeps everything else about a plant intact", () => {
+  const { survey } = renameStrainInSurvey(ROSTER, "blue dream", "Azure Dream");
+  assert.equal(survey.strains[0].id, "p1");
+  assert.equal(survey.strains[0].status, "growing");
+  assert.equal(survey.strains[1].status, "harvested");
+});
+
+test("a space with none of that strain is left completely alone", () => {
+  const out = renameStrainInSurvey(ROSTER, "runtz", "Anything");
+  assert.equal(out.count, 0);
+  assert.equal(out.survey, ROSTER, "the very same object, so nothing gets written back");
+});
+
+test("renaming never mutates the roster it was given", () => {
+  renameStrainInSurvey(ROSTER, "blue dream", "Azure Dream");
+  assert.equal(ROSTER.strains[0].name, "Blue Dream");
+});
+
+test("a rename to nothing is refused rather than blanking every plant", () => {
+  for (const bad of ["", "   ", null, undefined]) {
+    assert.equal(renameStrainInSurvey(ROSTER, "blue dream", bad).count, 0, `for ${JSON.stringify(bad)}`);
+  }
+});
+
+test("the new name is tidied on the way in", () => {
+  const { survey } = renameStrainInSurvey(ROSTER, "gelato", "  Gelato   41 ");
+  assert.equal(survey.strains[2].name, "Gelato 41");
+});
+
+test("renaming copes with a space that has no roster at all", () => {
+  assert.equal(renameStrainInSurvey(null, "x", "Y").count, 0);
+  assert.equal(renameStrainInSurvey({}, "x", "Y").count, 0);
+});
+
+// ── deleting: the plants go with it ──────────────────────────────────────────
+test("deleting takes every plant of the strain and reports their ids", () => {
+  const { survey, removedIds } = removeStrainFromSurvey(ROSTER, "blue dream");
+  assert.deepEqual(removedIds, ["p1", "p2"]);
+  assert.deepEqual(survey.strains.map((p) => p.name), ["Gelato"]);
+});
+
+test("a space that never held it is untouched, so nothing is written back", () => {
+  const out = removeStrainFromSurvey(ROSTER, "runtz");
+  assert.deepEqual(out.removedIds, []);
+  assert.equal(out.survey, ROSTER);
+});
+
+test("deleting never mutates the roster it was given", () => {
+  removeStrainFromSurvey(ROSTER, "blue dream");
+  assert.equal(ROSTER.strains.length, 3);
+});
+
+test("deleting nothing in particular removes nothing", () => {
+  assert.deepEqual(removeStrainFromSurvey(ROSTER, "").removedIds, []);
+  assert.deepEqual(removeStrainFromSurvey(null, "gelato").removedIds, []);
+});
+
+// ── merging: renaming onto a name you already have ───────────────────────────
+// Almost always a typo being fixed, so the rows join rather than one being
+// refused or silently thrown away.
+
+const TARGET = { name: "Blue Dream", note: "the good one", rating: 5, favorite: true, type: "hybrid", photo: true, flowerWeeks: 9 };
+const SOURCE = { name: "Blu Dream", note: "smelled of diesel", rating: 3, favorite: false, type: "sativa", photo: false, flowerWeeks: 10 };
+
+test("the name you kept wins every field it actually has", () => {
+  const m = mergeStrainRows(TARGET, SOURCE);
+  assert.equal(m.rating, 5);
+  assert.equal(m.type, "hybrid");
+  assert.equal(m.photo, true);
+  assert.equal(m.flowerWeeks, 9);
+});
+
+test("both notes survive, because a note is the one thing that took effort", () => {
+  const m = mergeStrainRows(TARGET, SOURCE);
+  assert.match(m.note, /the good one/);
+  assert.match(m.note, /smelled of diesel/);
+});
+
+test("the same note written twice is not doubled up", () => {
+  const m = mergeStrainRows({ note: "same words" }, { note: "same words" });
+  assert.equal(m.note, "same words");
+});
+
+test("a blank on the one you kept is filled from the one you renamed", () => {
+  const m = mergeStrainRows(
+    { name: "Blue Dream", note: "", rating: 0, favorite: false, type: null, photo: null, flowerWeeks: null },
+    SOURCE,
+  );
+  assert.equal(m.rating, 3);
+  assert.equal(m.type, "sativa");
+  assert.equal(m.photo, false, "false is a real answer, not a blank");
+  assert.equal(m.flowerWeeks, 10);
+  assert.equal(m.note, "smelled of diesel");
+});
+
+test("a favourite on either side stays a favourite", () => {
+  assert.equal(mergeStrainRows({ favorite: false }, { favorite: true }).favorite, true);
+  assert.equal(mergeStrainRows({ favorite: true }, { favorite: false }).favorite, true);
+  assert.equal(mergeStrainRows({ favorite: false }, { favorite: false }).favorite, false);
+});
+
+test("merging with nothing on one side just keeps the other", () => {
+  assert.equal(mergeStrainRows(TARGET, null).rating, 5);
+  assert.equal(mergeStrainRows(null, SOURCE).rating, 3);
+  const empty = mergeStrainRows(null, null);
+  assert.equal(empty.rating, 0);
+  assert.equal(empty.note, "");
+  assert.equal(empty.favorite, false);
 });
 
 // ── the worker's validator ───────────────────────────────────────────────────

@@ -13,8 +13,11 @@
 // which is what lets an opinion outlive the grow that earned it. Delete the
 // space, and the rating is still waiting for the next time you run that strain.
 import { json, error, nowIso, safeJsonBounded } from "./util.js";
+import { ensurePlantLogSchema } from "./plants.js";
+import { ensureJournalPhotosSchema } from "./photos.js";
 import {
   strainNameKey, cleanStrainName, normalizeRating, normalizeFlowerWeeks,
+  renameStrainInSurvey, removeStrainFromSurvey, mergeStrainRows,
   NOTE_MAX, STRAIN_TYPES,
 } from "../src/lib/strainLibrary.js";
 
@@ -227,4 +230,137 @@ export async function deleteStrainEntry(request, env, user) {
   ).bind(user.id, key).run();
   if (!meta.changes) return error(404, "not in your library");
   return json({ ok: true });
+}
+
+// Every space, with its survey parsed. The plant roster only exists in there.
+async function loadSurveys(env, userId) {
+  const res = await env.DB.prepare(
+    "SELECT id, survey FROM grows WHERE user_id = ?"
+  ).bind(userId).all();
+  return (res.results ?? []).map((g) => {
+    let survey = null;
+    try { survey = g.survey ? JSON.parse(g.survey) : null; } catch { survey = null; }
+    return { id: g.id, survey };
+  });
+}
+
+async function saveSurvey(env, userId, growId, survey) {
+  await env.DB.prepare(
+    "UPDATE grows SET survey = ?, updated_at = datetime('now') WHERE id = ? AND user_id = ?"
+  ).bind(JSON.stringify(survey), growId, userId).run();
+}
+
+// POST /api/strain-library/rename  {from, to}
+//
+// Renaming has to reach the plants, or it lasts exactly until the next render:
+// the list is derived from them, so the old name would come straight back out
+// of the spaces. Every plant of the strain is renamed, in every space, and the
+// saved row moves with it.
+export async function renameStrain(request, env, user) {
+  const p = await safeJsonBounded(request, 4096);
+  if (!p.ok) return error(p.status, p.error);
+
+  const fromKey = strainNameKey(p.data?.from);
+  const toName = cleanStrainName(p.data?.to);
+  const toKey = strainNameKey(p.data?.to);
+  if (!fromKey) return error(400, "which strain?");
+  if (!toName || !toKey) return error(400, "a strain needs a name");
+  if (fromKey === toKey) {
+    // Only the capitalisation changed. Still worth doing, still not a merge.
+    if (cleanStrainName(p.data?.from) === toName) return json({ ok: true, renamed: 0, merged: false });
+  }
+
+  await ensureStrainLibrarySchema(env);
+  const surveys = await loadSurveys(env, user.id);
+
+  let renamed = 0;
+  let spaces = 0;
+  for (const g of surveys) {
+    const out = renameStrainInSurvey(g.survey, fromKey, toName);
+    if (!out.count) continue;
+    await saveSurvey(env, user.id, g.id, out.survey);
+    renamed += out.count;
+    spaces += 1;
+  }
+
+  // Move what you had written about it. Renaming onto a name already in the
+  // library is nearly always fixing a typo, so the two rows merge rather than
+  // one of them being refused or quietly lost.
+  const [source, target] = await Promise.all([
+    env.DB.prepare("SELECT * FROM strain_library WHERE user_id = ? AND name_key = ?").bind(user.id, fromKey).first(),
+    fromKey === toKey ? Promise.resolve(null)
+      : env.DB.prepare("SELECT * FROM strain_library WHERE user_id = ? AND name_key = ?").bind(user.id, toKey).first(),
+  ]);
+  const merged = Boolean(source && target);
+
+  if (source || target) {
+    const shaped = (r) => (r ? {
+      name: r.name, note: r.note ?? "", rating: r.rating ?? 0, favorite: r.favorite === 1,
+      type: r.type ?? null, photo: r.photo == null ? null : r.photo === 1, flowerWeeks: r.flower_weeks ?? null,
+    } : null);
+    const row = mergeStrainRows(shaped(target), shaped(source));
+    const now = nowIso();
+    await env.DB.prepare("DELETE FROM strain_library WHERE user_id = ? AND name_key IN (?, ?)")
+      .bind(user.id, fromKey, toKey).run();
+    await env.DB.prepare(`
+      INSERT INTO strain_library
+        (user_id, name_key, name, note, rating, favorite, type, photo, flower_weeks, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    // The name you typed wins over the merged row's, including its casing:
+    // the plants were just renamed to it, so anything else would disagree.
+    `).bind(
+      user.id, toKey, toName, row.note.slice(0, NOTE_MAX), row.rating,
+      row.favorite ? 1 : 0, row.type,
+      row.photo === null || row.photo === undefined ? null : (row.photo ? 1 : 0),
+      row.flowerWeeks, source?.created_at ?? target?.created_at ?? now, now,
+    ).run();
+  }
+
+  return json({ ok: true, name: toName, key: toKey, renamed, spaces, merged });
+}
+
+// POST /api/strain-library/remove  {name}
+//
+// The whole strain: every plant of it in every space, their per-plant history,
+// and what you had written about it. Photos are kept - they belong to the day
+// they were taken as much as to the plant - but they stop being tagged with a
+// plant that no longer exists.
+export async function removeStrain(request, env, user) {
+  const p = await safeJsonBounded(request, 4096);
+  if (!p.ok) return error(p.status, p.error);
+  const key = strainNameKey(p.data?.name);
+  if (!key) return error(400, "a strain needs a name");
+
+  await ensureStrainLibrarySchema(env);
+  await ensurePlantLogSchema(env);
+  await ensureJournalPhotosSchema(env);
+
+  const surveys = await loadSurveys(env, user.id);
+  let plants = 0;
+  let spaces = 0;
+  let photosUntagged = 0;
+
+  for (const g of surveys) {
+    const out = removeStrainFromSurvey(g.survey, key);
+    if (!out.removedIds.length) continue;
+    await saveSurvey(env, user.id, g.id, out.survey);
+    plants += out.removedIds.length;
+    spaces += 1;
+
+    const holes = out.removedIds.map(() => "?").join(",");
+    await env.DB.prepare(
+      `DELETE FROM plant_log WHERE user_id = ? AND grow_id = ? AND plant_id IN (${holes})`
+    ).bind(user.id, g.id, ...out.removedIds).run();
+    const { meta } = await env.DB.prepare(
+      `UPDATE journal_photos SET plant_id = NULL
+       WHERE user_id = ? AND grow_id = ? AND plant_id IN (${holes})`
+    ).bind(user.id, g.id, ...out.removedIds).run();
+    photosUntagged += meta?.changes ?? 0;
+  }
+
+  await env.DB.prepare(
+    "DELETE FROM strain_library WHERE user_id = ? AND name_key = ?"
+  ).bind(user.id, key).run();
+
+  return json({ ok: true, plants, spaces, photosUntagged });
 }

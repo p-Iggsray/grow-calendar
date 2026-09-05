@@ -16,7 +16,7 @@ import { createJournalPhoto, getJournalPhoto, getPhotoImage, deleteJournalPhoto,
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
 import { getReverseGeocode, getGeocodeSearch } from "./geocode.js";
 import { listStrains } from "./strains.js";
-import { listStrainEntries, putStrainEntry, deleteStrainEntry } from "./strainLibrary.js";
+import { listStrainEntries, putStrainEntry, deleteStrainEntry, renameStrain, removeStrain } from "./strainLibrary.js";
 import { getStrainPhotos } from "./strainPhotos.js";
 import { getStageTimeline } from "./stages.js";
 import { addPlant, patchPlant, deletePlant, listPlantLog, addPlantLogEntry, patchPlantLogEntry, deletePlantLogEntry, plantLogSummary, dailyLogForPlant } from "./plants.js";
@@ -25,7 +25,6 @@ import { getStats } from "./stats.js";
 import { requireOwner } from "./owner.js";
 import { logError, logInfo } from "./log.js";
 import { getShareToken, createShareToken, deleteShareToken, getSharedView } from "./share.js";
-import { getCalendarToken, createCalendarToken, deleteCalendarToken, getCalendarFeed } from "./calendarFeed.js";
 
 export default {
   async fetch(request, env, _ctx) {
@@ -95,10 +94,6 @@ async function route(request, env, path) {
   if (path === "/api/health" && method === "GET") return getHealth(env);
   const shareViewMatch = path.match(/^\/api\/share\/([A-Za-z0-9_-]{10,60})$/);
   if (shareViewMatch && method === "GET") return getSharedView(env, shareViewMatch[1]);
-  // The reminder feed. Public by necessity - a calendar app has no session -
-  // so the unguessable token in the path is what authorises it.
-  const calFeedMatch = path.match(/^\/api\/calendar\/([A-Za-z0-9_-]{10,60})\.ics$/);
-  if (calFeedMatch && method === "GET") return getCalendarFeed(env, calFeedMatch[1], request);
 
   // public auth routes
   if (path === "/api/auth/login"           && method === "POST") return login(request, env);
@@ -144,6 +139,8 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (path === "/api/strain-library" && method === "GET")    return listStrainEntries(env, user);
   if (path === "/api/strain-library" && method === "PUT")    return putStrainEntry(request, env, user);
   if (path === "/api/strain-library" && method === "DELETE") return deleteStrainEntry(request, env, user);
+  if (path === "/api/strain-library/rename" && method === "POST") return renameStrain(request, env, user);
+  if (path === "/api/strain-library/remove" && method === "POST") return removeStrain(request, env, user);
 
   if (path === "/api/grows" && method === "GET")  return listGrows(env, user);
   if (path === "/api/grows" && method === "POST") return createGrow(request, env, user);
@@ -235,10 +232,6 @@ async function authenticatedRoute(request, env, path, method, user) {
     const reportUrl = new URL(request.url);
     return getGrowReport(env, user, growReportMatch[1], reportUrl.searchParams.get("unit") || "gal");
   }
-
-  if (path === "/api/calendar" && method === "GET")    return getCalendarToken(env, user);
-  if (path === "/api/calendar" && method === "POST")   return createCalendarToken(env, user);
-  if (path === "/api/calendar" && method === "DELETE") return deleteCalendarToken(env, user);
 
   if (path === "/api/share" && method === "GET")    return getShareToken(env, user);
   if (path === "/api/share" && method === "POST")   return createShareToken(env, user);

@@ -211,6 +211,73 @@ export function filterStrains(list, { query = "", filter = "all" } = {}) {
   });
 }
 
+// ── Changing a strain ────────────────────────────────────────────────────────
+//
+// Renaming has to reach the plants. The library list is derived from them, so
+// changing only the saved row would last exactly until the next render, when
+// the old name reappeared out of the spaces. Same for deleting: a strain is
+// "in" your library because a plant somewhere still carries its name.
+
+/**
+ * Pure: rename every plant of one strain within a single space.
+ * Returns { survey, count } with count = how many plants were touched.
+ * Never mutates the input.
+ */
+export function renameStrainInSurvey(survey, fromKey, toName) {
+  const plants = Array.isArray(survey?.strains) ? survey.strains : [];
+  const clean = cleanStrainName(toName);
+  if (!fromKey || !clean) return { survey, count: 0 };
+  let count = 0;
+  const strains = plants.map((p) => {
+    if (strainNameKey(p?.name) !== fromKey) return p;
+    count += 1;
+    return { ...p, name: clean };
+  });
+  return count ? { survey: { ...survey, strains }, count } : { survey, count: 0 };
+}
+
+/**
+ * Pure: take every plant of one strain out of a single space.
+ * Returns { survey, removedIds } so the caller can clean up what hung off them.
+ */
+export function removeStrainFromSurvey(survey, key) {
+  const plants = Array.isArray(survey?.strains) ? survey.strains : [];
+  if (!key) return { survey, removedIds: [] };
+  const removedIds = [];
+  const strains = plants.filter((p) => {
+    if (strainNameKey(p?.name) !== key) return true;
+    if (p?.id) removedIds.push(p.id);
+    return false;
+  });
+  if (strains.length === plants.length) return { survey, removedIds: [] };
+  return { survey: { ...survey, strains }, removedIds };
+}
+
+/**
+ * Pure: fold a renamed strain's saved row into one that already exists under
+ * the new name.
+ *
+ * Renaming onto a name you already have is almost always fixing a typo, so it
+ * merges rather than refusing. The row you renamed ONTO is the established one
+ * and keeps everything it has; the row you renamed only fills its blanks. Two
+ * notes are kept, both of them, because a note is the one thing here that took
+ * real effort to write and silently dropping half would be unforgivable.
+ */
+export function mergeStrainRows(target, source) {
+  const t = target ?? {};
+  const s = source ?? {};
+  const notes = [t.note, s.note].map((n) => (typeof n === "string" ? n.trim() : "")).filter(Boolean);
+  return {
+    name: t.name || s.name,
+    note: [...new Set(notes)].join("\n\n"),
+    rating: normalizeRating(t.rating) || normalizeRating(s.rating),
+    favorite: Boolean(t.favorite || s.favorite),
+    type: t.type ?? s.type ?? null,
+    photo: t.photo === true || t.photo === false ? t.photo : (s.photo ?? null),
+    flowerWeeks: normalizeFlowerWeeks(t.flowerWeeks) ?? normalizeFlowerWeeks(s.flowerWeeks),
+  };
+}
+
 /**
  * Pure: what is true of the strain itself, whoever grows it. Blank parts are
  * dropped rather than shown as unknowns, so a strain nobody has told the app

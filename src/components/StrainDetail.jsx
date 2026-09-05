@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Heart, Trash2 } from "lucide-react";
+import { Heart, Pencil, Trash2 } from "lucide-react";
 import Portal from "./Portal.jsx";
 import ScreenHeader from "./ScreenHeader.jsx";
 import StrainStars from "./StrainStars.jsx";
@@ -48,12 +48,19 @@ const inputStyle = {
 
 // One strain's page: what you thought of it, what the packet claimed, and
 // every time you have grown it.
-export default function StrainDetail({ strain, onClose, onSave, onForget }) {
+export default function StrainDetail({ strain, onClose, onSave, onDelete, onRename, onRenamed }) {
   const [note, setNote] = useState(strain.note ?? "");
   const [error, setError] = useState("");
-  const [confirmForget, setConfirmForget] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [draftName, setDraftName] = useState(strain.name);
+  const [busy, setBusy] = useState(false);
   const [viewIndex, setViewIndex] = useState(null);
   const savedNote = useRef(strain.note ?? "");
+
+  // What a delete would actually cost, spelled out before it happens.
+  const plantCount = strain.grows.reduce((n, g) => n + g.plants, 0);
+  const spaceCount = strain.grows.length;
 
   // The note saves when you stop typing, so there is no button to forget to
   // press and no keystroke-per-request either.
@@ -285,21 +292,36 @@ export default function StrainDetail({ strain, onClose, onSave, onForget }) {
             ))}
           </div>
 
-          {(strain.rating > 0 || strain.note || strain.favorite || strain.neverGrown) && (
+          {/* Renaming reaches every plant that carries the name, so it sits
+              next to deleting rather than pretending to be a small edit. */}
+          <div style={{ display: "flex", gap: 8 }}>
             <button
               type="button"
               className="touch-target"
-              onClick={() => { tapHaptic(); setConfirmForget(true); }}
+              onClick={() => { tapHaptic(); setRenaming(true); }}
               style={{
-                width: "100%", padding: "11px 12px", borderRadius: 11,
+                flex: 1, padding: "11px 12px", borderRadius: 11,
                 background: "none", border: "1px solid var(--c-border-strong)",
-                color: "var(--c-text-faint)", fontFamily: UI, fontSize: 12.5, cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                color: "var(--c-text-dim)", fontFamily: UI, fontSize: 12.5, fontWeight: 600,
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+              }}>
+              <Pencil size={13} strokeWidth={2} />
+              Rename
+            </button>
+            <button
+              type="button"
+              className="touch-target"
+              onClick={() => { tapHaptic(); setConfirmDelete(true); }}
+              style={{
+                flex: 1, padding: "11px 12px", borderRadius: 11,
+                background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.32)",
+                color: "var(--c-danger-soft)", fontFamily: UI, fontSize: 12.5, fontWeight: 600,
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
               }}>
               <Trash2 size={13} strokeWidth={2} />
-              Clear what I have saved
+              Delete strain
             </button>
-          )}
+          </div>
 
           {error && (
             <div role="status" style={{
@@ -311,22 +333,56 @@ export default function StrainDetail({ strain, onClose, onSave, onForget }) {
           )}
         </div>
 
+        {/* Say exactly what goes. A strain you have grown is not just a row in
+            a list: deleting it takes the plants and their history with it. */}
         <ConfirmModal
-            open={confirmForget}
+            open={confirmDelete}
             tone="destructive"
-            title="Clear this strain?"
+            title={`Delete ${strain.name}?`}
             message={strain.neverGrown
-              ? "Your note, rating and favourite go, and the strain leaves the library because nothing you have grown mentions it."
-              : "Your note, rating and favourite go. The strain stays in the library, unrated, because you have actually grown it."}
-            confirmLabel="Clear it"
+              ? "It leaves your library, along with the note, rating and favourite. Nothing you have grown mentions it, so nothing else changes."
+              : `This removes ${plantCount} ${plantCount === 1 ? "plant" : "plants"} from ${spaceCount} ${spaceCount === 1 ? "space" : "spaces"}, and each plant's own history with them. Photos stay in the days you took them. Your note, rating and favourite go too. This cannot be undone.`}
+            confirmLabel={busy ? "Deleting…" : "Delete it"}
             onConfirm={async () => {
-              setConfirmForget(false);
-              const ok = await onForget(strain.name);
-              if (ok) onClose();
-              else setError("Could not clear that. Try again in a moment.");
+              if (busy) return;
+              setBusy(true);
+              const result = await onDelete(strain.name);
+              setBusy(false);
+              setConfirmDelete(false);
+              if (result) onClose();
+              else setError("Could not delete that. Try again in a moment.");
             }}
-            onCancel={() => setConfirmForget(false)}
+            onCancel={() => setConfirmDelete(false)}
         />
+
+        {/* Renaming is a real edit to the spaces, so it says so before doing it. */}
+        <ConfirmModal
+            open={renaming}
+            title={`Rename ${strain.name}`}
+            message={strain.neverGrown
+              ? "Only this library entry carries the name, so nothing else changes."
+              : `Every plant called "${strain.name}", in every space, is renamed with it. Rename it to something already in your library and the two become one.`}
+            confirmLabel={busy ? "Renaming…" : "Rename"}
+            onConfirm={async () => {
+              const next = draftName.trim();
+              if (!next || busy) return;
+              setBusy(true);
+              const result = await onRename(strain.name, next);
+              setBusy(false);
+              if (result) { setRenaming(false); onRenamed?.(result); }
+              else setError("Could not rename that. Try again in a moment.");
+            }}
+            onCancel={() => { setRenaming(false); setDraftName(strain.name); }}>
+          <input
+            type="text"
+            value={draftName}
+            maxLength={60}
+            autoFocus
+            onChange={(e) => setDraftName(e.target.value)}
+            aria-label="Strain name"
+            style={inputStyle}
+          />
+        </ConfirmModal>
 
         {/* The strain's photos span every space it was grown in, so each one
             carries its own grow id for the viewer to fetch and delete by. */}
