@@ -341,7 +341,7 @@ export default function StrainDetail({ strain, onClose, onSave, onDelete, onRena
             title={`Delete ${strain.name}?`}
             message={strain.neverGrown
               ? "It leaves your library, along with the note, rating and favourite. Nothing you have grown mentions it, so nothing else changes."
-              : `This removes ${plantCount} ${plantCount === 1 ? "plant" : "plants"} from ${spaceCount} ${spaceCount === 1 ? "space" : "spaces"}, and each plant's own history with them. Photos stay in the days you took them. Your note, rating and favourite go too. This cannot be undone.`}
+              : `Your note, rating and favourite go, and the ${plantCount} ${plantCount === 1 ? "plant" : "plants"} in ${spaceCount} ${spaceCount === 1 ? "space" : "spaces"} stop being counted as this strain. No plant is deleted: each keeps its name, its stage, its history and its photos.`}
             confirmLabel={busy ? "Deleting…" : "Delete it"}
             onConfirm={async () => {
               if (busy) return;
@@ -361,7 +361,7 @@ export default function StrainDetail({ strain, onClose, onSave, onDelete, onRena
             title={`Rename ${strain.name}`}
             message={strain.neverGrown
               ? "Only this library entry carries the name, so nothing else changes."
-              : `Every plant called "${strain.name}", in every space, is renamed with it. Rename it to something already in your library and the two become one.`}
+              : `The ${plantCount} ${plantCount === 1 ? "plant" : "plants"} grown from it will say they are "${draftName.trim() || "…"}" instead. Their own names do not change. Rename it to something already in your library and the two become one.`}
             confirmLabel={busy ? "Renaming…" : "Rename"}
             onConfirm={async () => {
               const next = draftName.trim();

@@ -4,7 +4,7 @@ import { Label, RadioGroup, NumStepper, MONO } from "../SetupWizard/styleHelpers
 import { STAGE_OPTIONS } from "./constants.js";
 import AutocompleteInput from "../AutocompleteInput.jsx";
 
-const BLANK = { name: "", type: "hybrid", photo: true, flowerWeeks: 9, potSize: 0, stage: "seedling" };
+const BLANK = { name: "", strain: "", type: "hybrid", photo: true, flowerWeeks: 9, potSize: 0, stage: "seedling" };
 
 function btn(kind, disabled) {
   const base = { flex: 1, padding: "12px 14px", borderRadius: 10, fontFamily: MONO, fontSize: 12, letterSpacing: 1, cursor: disabled ? "default" : "pointer" };
@@ -35,6 +35,13 @@ export default function AddPlantSheet({ onSave, onCancel, saving, initial, saveL
 
   function submit() {
     const out = { ...f, potSize: f.potSize || null };
+    // The strain field is blank in two quite different situations: this plant
+    // is simply called after its strain, or it was released from a strain that
+    // was deleted. Sending nothing when the field was not touched keeps
+    // whichever is true; blanking it deliberately means the first.
+    const typed = (f.strain ?? "").trim();
+    if (typed === (initial?.strain ?? "")) delete out.strain;
+    else out.strain = typed || null;
     // Edits never change stage; the one-way stage control does that.
     if (!isNew) delete out.stage;
     onSave(out);
@@ -43,10 +50,11 @@ export default function AddPlantSheet({ onSave, onCancel, saving, initial, saveL
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
-        {/* A plant's name is typed, like every other name in the app. The
-            shared catalogue only suggests as you go, and picking a suggestion
-            fills in what other growers recorded about that strain. */}
-        <Label>Strain name</Label>
+        {/* What you call THIS plant. Usually the strain, sometimes not, which
+            is why the strain has a field of its own below. The shared
+            catalogue suggests as you type and fills in what other growers
+            recorded, because naming a plant after its strain is the norm. */}
+        <Label>Name</Label>
         <AutocompleteInput
           value={f.name}
           onChange={(v) => up("name", v)}
@@ -62,6 +70,31 @@ export default function AddPlantSheet({ onSave, onCancel, saving, initial, saveL
           }))}
           placeholder="e.g. Blue Dream"
         />
+      </div>
+      <div>
+        {/* Only needed when the plant is called something else. Blank means the
+            name is the strain, which keeps the common case to one field. */}
+        <Label>Strain</Label>
+        <AutocompleteInput
+          value={f.strain ?? ""}
+          onChange={(v) => up("strain", v)}
+          suggestions={catalog}
+          getLabel={(c) => c?.name ?? ""}
+          getDetail={(c) => [c?.type, c?.flowerWeeks ? `${c.flowerWeeks}wk` : null].filter(Boolean).join(" · ")}
+          onPick={(c) => setF((prev) => ({
+            ...prev,
+            strain: c.name,
+            type: c.type ?? prev.type,
+            photo: typeof c.photo === "boolean" ? c.photo : prev.photo,
+            flowerWeeks: c.flowerWeeks ?? prev.flowerWeeks,
+          }))}
+          placeholder={initial?.strain === "" ? "No strain" : (f.name.trim() ? `Same as the name (${f.name.trim()})` : "Same as the name")}
+        />
+        <div style={{ fontSize: 11, color: "var(--c-text-ghost)", marginTop: 6, lineHeight: 1.5 }}>
+          {initial?.strain === ""
+            ? "This plant has no strain, because the one it had was removed from your library. Type one to give it another."
+            : "Only if you call the plant something other than its strain. This is what the strain library counts."}
+        </div>
       </div>
       {isNew && (
         <>

@@ -14,7 +14,7 @@ import { json } from "./util.js";
 import { ensureJournalPhotosSchema } from "./photos.js";
 import { ensurePlantLogSchema } from "./plants.js";
 import { stageFromRow } from "./stages.js";
-import { strainNameKey } from "../src/lib/strainLibrary.js";
+import { strainNameKey, plantStrain } from "../src/lib/strainLibrary.js";
 import { pickStrainPhotos } from "../src/lib/strainPhotos.js";
 
 // Enough to cover a long history without ever letting one request grow
@@ -39,7 +39,7 @@ export async function getStrainPhotos(env, user) {
     let survey = null;
     try { survey = g.survey ? JSON.parse(g.survey) : null; } catch { survey = null; }
     for (const plant of Array.isArray(survey?.strains) ? survey.strains : []) {
-      const key = strainNameKey(plant?.name);
+      const key = strainNameKey(plantStrain(plant));
       if (plant?.id && key) strainOfPlant.set(plant.id, key);
     }
   }

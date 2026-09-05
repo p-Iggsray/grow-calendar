@@ -13,11 +13,9 @@
 // which is what lets an opinion outlive the grow that earned it. Delete the
 // space, and the rating is still waiting for the next time you run that strain.
 import { json, error, nowIso, safeJsonBounded } from "./util.js";
-import { ensurePlantLogSchema } from "./plants.js";
-import { ensureJournalPhotosSchema } from "./photos.js";
 import {
   strainNameKey, cleanStrainName, normalizeRating, normalizeFlowerWeeks,
-  renameStrainInSurvey, removeStrainFromSurvey, mergeStrainRows,
+  renameStrainInSurvey, clearStrainInSurvey, mergeStrainRows,
   NOTE_MAX, STRAIN_TYPES,
 } from "../src/lib/strainLibrary.js";
 
@@ -321,10 +319,12 @@ export async function renameStrain(request, env, user) {
 
 // POST /api/strain-library/remove  {name}
 //
-// The whole strain: every plant of it in every space, their per-plant history,
-// and what you had written about it. Photos are kept - they belong to the day
-// they were taken as much as to the plant - but they stop being tagged with a
-// plant that no longer exists.
+// Removes the STRAIN, and only the strain: the saved row goes, and every plant
+// that claimed it is released from it. Not one plant is deleted. A plant is a
+// real thing that was grown, with its own name, its own stage, its own history
+// and photos, and none of that stops being true because the strain it came
+// from was removed from a list. Plants named after the strain keep that name;
+// they simply stop counting as it.
 export async function removeStrain(request, env, user) {
   const p = await safeJsonBounded(request, 4096);
   if (!p.ok) return error(p.status, p.error);
@@ -332,35 +332,21 @@ export async function removeStrain(request, env, user) {
   if (!key) return error(400, "a strain needs a name");
 
   await ensureStrainLibrarySchema(env);
-  await ensurePlantLogSchema(env);
-  await ensureJournalPhotosSchema(env);
-
   const surveys = await loadSurveys(env, user.id);
+
   let plants = 0;
   let spaces = 0;
-  let photosUntagged = 0;
-
   for (const g of surveys) {
-    const out = removeStrainFromSurvey(g.survey, key);
-    if (!out.removedIds.length) continue;
+    const out = clearStrainInSurvey(g.survey, key);
+    if (!out.count) continue;
     await saveSurvey(env, user.id, g.id, out.survey);
-    plants += out.removedIds.length;
+    plants += out.count;
     spaces += 1;
-
-    const holes = out.removedIds.map(() => "?").join(",");
-    await env.DB.prepare(
-      `DELETE FROM plant_log WHERE user_id = ? AND grow_id = ? AND plant_id IN (${holes})`
-    ).bind(user.id, g.id, ...out.removedIds).run();
-    const { meta } = await env.DB.prepare(
-      `UPDATE journal_photos SET plant_id = NULL
-       WHERE user_id = ? AND grow_id = ? AND plant_id IN (${holes})`
-    ).bind(user.id, g.id, ...out.removedIds).run();
-    photosUntagged += meta?.changes ?? 0;
   }
 
   await env.DB.prepare(
     "DELETE FROM strain_library WHERE user_id = ? AND name_key = ?"
   ).bind(user.id, key).run();
 
-  return json({ ok: true, plants, spaces, photosUntagged });
+  return json({ ok: true, plants, spaces });
 }

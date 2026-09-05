@@ -27,6 +27,22 @@ export const STRAIN_TYPES = ["indica", "sativa", "hybrid"];
 const TYPE_SET = new Set(STRAIN_TYPES);
 
 /**
+ * Pure: which strain a plant is.
+ *
+ * A plant has a name of its own - what you call that particular plant - and,
+ * separately, the strain it grew from. Most of the time they are the same and
+ * only the name is ever typed, so an unstated strain means "whatever it is
+ * called". An explicitly EMPTY strain is different: it means this plant claims
+ * no strain at all, which is what deleting a strain leaves behind. Without
+ * that third state a plant named after its strain could never be released
+ * from it, because a plant must keep its name.
+ */
+export function plantStrain(plant) {
+  if (typeof plant?.strain === "string") return plant.strain.trim();
+  return String(plant?.name ?? "").trim();
+}
+
+/**
  * Pure: the identity of a strain.
  *
  * Lowercased with runs of whitespace collapsed, so "Blue  Dream", "blue dream"
@@ -113,7 +129,9 @@ export function buildStrainLibrary(grows, entries) {
     // the six plants that shared one of them.
     const perGrow = new Map();
     for (const plant of plants) {
-      const key = strainNameKey(plant?.name);
+      // The strain, not the plant's own name: a plant called "Big Bertha" can
+      // still be a Blue Dream, and a plant released from its strain is neither.
+      const key = strainNameKey(plantStrain(plant));
       if (!key) continue;
       let g = perGrow.get(key);
       if (!g) {
@@ -133,7 +151,7 @@ export function buildStrainLibrary(grows, entries) {
         if (!s.lastGrown || date > s.lastGrown) s.lastGrown = date;
       }
       // The spelling you used most recently is the one the library shows.
-      if (!s.name || (date && s.lastGrown === date)) s.name = cleanStrainName(plant.name);
+      if (!s.name || (date && s.lastGrown === date)) s.name = cleanStrainName(plantStrain(plant));
     }
     for (const [key, g] of perGrow) {
       const s = take(key);
@@ -213,15 +231,19 @@ export function filterStrains(list, { query = "", filter = "all" } = {}) {
 
 // ── Changing a strain ────────────────────────────────────────────────────────
 //
-// Renaming has to reach the plants. The library list is derived from them, so
-// changing only the saved row would last exactly until the next render, when
-// the old name reappeared out of the spaces. Same for deleting: a strain is
-// "in" your library because a plant somewhere still carries its name.
+// Both of these have to reach the plants, because the library list is derived
+// from them: changing only the saved row would last exactly until the next
+// render, when the old strain reappeared out of the spaces.
+//
+// What they must NOT do is touch the plant itself. A plant is a real thing you
+// grew, with its own name, its own stage, its own history and photos. Editing
+// the strain it grew from is a note about its parentage, not a reason to
+// rename it and certainly not a reason to delete it. So both of these only
+// ever write `strain`, and nothing else on the plant changes.
 
 /**
- * Pure: rename every plant of one strain within a single space.
- * Returns { survey, count } with count = how many plants were touched.
- * Never mutates the input.
+ * Pure: point every plant of one strain at a new strain, within one space.
+ * The plants keep their own names. Returns { survey, count }; never mutates.
  */
 export function renameStrainInSurvey(survey, fromKey, toName) {
   const plants = Array.isArray(survey?.strains) ? survey.strains : [];
@@ -229,28 +251,31 @@ export function renameStrainInSurvey(survey, fromKey, toName) {
   if (!fromKey || !clean) return { survey, count: 0 };
   let count = 0;
   const strains = plants.map((p) => {
-    if (strainNameKey(p?.name) !== fromKey) return p;
+    if (strainNameKey(plantStrain(p)) !== fromKey) return p;
     count += 1;
-    return { ...p, name: clean };
+    return { ...p, strain: clean };
   });
   return count ? { survey: { ...survey, strains }, count } : { survey, count: 0 };
 }
 
 /**
- * Pure: take every plant of one strain out of a single space.
- * Returns { survey, removedIds } so the caller can clean up what hung off them.
+ * Pure: release every plant of one strain from it, within one space.
+ *
+ * The plants stay exactly as they are apart from no longer claiming the
+ * strain. A plant that was named after it keeps that name; it simply stops
+ * being counted as that strain, which is the only honest way to remove a
+ * strain without destroying something you actually grew.
  */
-export function removeStrainFromSurvey(survey, key) {
+export function clearStrainInSurvey(survey, key) {
   const plants = Array.isArray(survey?.strains) ? survey.strains : [];
-  if (!key) return { survey, removedIds: [] };
-  const removedIds = [];
-  const strains = plants.filter((p) => {
-    if (strainNameKey(p?.name) !== key) return true;
-    if (p?.id) removedIds.push(p.id);
-    return false;
+  if (!key) return { survey, count: 0 };
+  let count = 0;
+  const strains = plants.map((p) => {
+    if (strainNameKey(plantStrain(p)) !== key) return p;
+    count += 1;
+    return { ...p, strain: "" };
   });
-  if (strains.length === plants.length) return { survey, removedIds: [] };
-  return { survey: { ...survey, strains }, removedIds };
+  return count ? { survey: { ...survey, strains }, count } : { survey, count: 0 };
 }
 
 /**

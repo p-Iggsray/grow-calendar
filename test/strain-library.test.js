@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  buildStrainLibrary, cleanStrainName, filterStrains, mergeStrainRows,
-  normalizeFlowerWeeks, normalizeRating, removeStrainFromSurvey,
+  buildStrainLibrary, cleanStrainName, clearStrainInSurvey, filterStrains,
+  mergeStrainRows, normalizeFlowerWeeks, normalizeRating, plantStrain,
   renameStrainInSurvey, sortStrains, strainNameKey, strainSummary,
 } from "../src/lib/strainLibrary.js";
 import { entryWritePlan, validateStrainEntry } from "../worker/strainLibrary.js";
@@ -229,22 +229,78 @@ test("the summary states what is known and stays quiet about the rest", () => {
   assert.equal(strainSummary({ type: null, photo: null, growCount: 0, neverGrown: true }), "not grown yet");
 });
 
-// ── renaming: it has to reach the plants ─────────────────────────────────────
+// ── a plant is not its strain ────────────────────────────────────────────────
+// You can call a plant whatever you like. The strain is what it grew FROM, and
+// the library counts that, not the nickname on the pot.
+
+test("a plant with no strain stated is simply what it is called", () => {
+  assert.equal(plantStrain({ name: "Blue Dream" }), "Blue Dream");
+  assert.equal(plantStrain({ name: "  Blue Dream  " }), "Blue Dream");
+});
+
+test("a plant called something else still reports its real strain", () => {
+  assert.equal(plantStrain({ name: "Big Bertha", strain: "Blue Dream" }), "Blue Dream");
+});
+
+test("an empty strain means no strain, which is not the same as unstated", () => {
+  assert.equal(plantStrain({ name: "Big Bertha", strain: "" }), "");
+  assert.equal(plantStrain({ name: "Big Bertha", strain: "   " }), "");
+  assert.equal(strainNameKey(plantStrain({ name: "Big Bertha", strain: "" })), "",
+    "so it is skipped by the library entirely");
+});
+
+test("junk in never crashes the reader", () => {
+  assert.equal(plantStrain(null), "");
+  assert.equal(plantStrain({}), "");
+  assert.equal(plantStrain({ name: 42 }), "42");
+});
+
+test("the library counts strains, not what the plants are called", () => {
+  const list = buildStrainLibrary([
+    grow("g1", "Back Tent", "2026-01-05", [
+      plant("Big Bertha", { strain: "Blue Dream" }),
+      plant("The Runt", { tag: 2, strain: "Blue Dream" }),
+      plant("Gelato", { tag: 3 }),
+    ]),
+  ], []);
+  assert.deepEqual(list.map((s) => s.key).sort(), ["blue dream", "gelato"]);
+  const bd = list.find((s) => s.key === "blue dream");
+  assert.equal(bd.name, "Blue Dream", "the strain's name, not a plant's nickname");
+  assert.equal(bd.plantCount, 2);
+});
+
+test("a plant released from its strain leaves the library without leaving the space", () => {
+  const list = buildStrainLibrary([
+    grow("g1", "Back Tent", "2026-01-05", [
+      plant("Blue Dream", { strain: "" }),
+      plant("Gelato", { tag: 2 }),
+    ]),
+  ], []);
+  assert.deepEqual(list.map((s) => s.key), ["gelato"]);
+});
+
+// ── renaming: it must reach the plants, and stop there ───────────────────────
 // The library list is derived from the roster, so a rename that only moved the
-// saved row would last until the next render and then snap back.
+// saved row would last until the next render and then snap back. But a plant is
+// a real thing that was grown: renaming its strain must not rename IT.
 
 const ROSTER = {
   strains: [
     { id: "p1", name: "Blue Dream", status: "growing" },
-    { id: "p2", name: "blue  dream", status: "harvested" },
+    { id: "p2", name: "Big Bertha", strain: "blue  dream", status: "harvested" },
     { id: "p3", name: "Gelato", status: "growing" },
   ],
 };
 
-test("every plant of the strain is renamed, however it was spelled", () => {
+test("every plant of the strain is repointed, however it got there", () => {
   const { survey, count } = renameStrainInSurvey(ROSTER, "blue dream", "Azure Dream");
   assert.equal(count, 2);
-  assert.deepEqual(survey.strains.map((p) => p.name), ["Azure Dream", "Azure Dream", "Gelato"]);
+  assert.deepEqual(survey.strains.map((p) => p.strain), ["Azure Dream", "Azure Dream", undefined]);
+});
+
+test("renaming a strain NEVER renames the plant", () => {
+  const { survey } = renameStrainInSurvey(ROSTER, "blue dream", "Azure Dream");
+  assert.deepEqual(survey.strains.map((p) => p.name), ["Blue Dream", "Big Bertha", "Gelato"]);
 });
 
 test("renaming keeps everything else about a plant intact", () => {
@@ -263,6 +319,7 @@ test("a space with none of that strain is left completely alone", () => {
 test("renaming never mutates the roster it was given", () => {
   renameStrainInSurvey(ROSTER, "blue dream", "Azure Dream");
   assert.equal(ROSTER.strains[0].name, "Blue Dream");
+  assert.equal(ROSTER.strains[0].strain, undefined);
 });
 
 test("a rename to nothing is refused rather than blanking every plant", () => {
@@ -273,7 +330,7 @@ test("a rename to nothing is refused rather than blanking every plant", () => {
 
 test("the new name is tidied on the way in", () => {
   const { survey } = renameStrainInSurvey(ROSTER, "gelato", "  Gelato   41 ");
-  assert.equal(survey.strains[2].name, "Gelato 41");
+  assert.equal(survey.strains[2].strain, "Gelato 41");
 });
 
 test("renaming copes with a space that has no roster at all", () => {
@@ -281,27 +338,46 @@ test("renaming copes with a space that has no roster at all", () => {
   assert.equal(renameStrainInSurvey({}, "x", "Y").count, 0);
 });
 
-// ── deleting: the plants go with it ──────────────────────────────────────────
-test("deleting takes every plant of the strain and reports their ids", () => {
-  const { survey, removedIds } = removeStrainFromSurvey(ROSTER, "blue dream");
-  assert.deepEqual(removedIds, ["p1", "p2"]);
-  assert.deepEqual(survey.strains.map((p) => p.name), ["Gelato"]);
+// ── deleting: the plants survive ─────────────────────────────────────────────
+// This is the whole point. Removing a strain from a list is not a reason to
+// destroy something that was actually grown.
+
+test("deleting a strain deletes NO plants", () => {
+  const { survey, count } = clearStrainInSurvey(ROSTER, "blue dream");
+  assert.equal(count, 2);
+  assert.equal(survey.strains.length, 3, "every plant is still there");
+  assert.deepEqual(survey.strains.map((p) => p.name), ["Blue Dream", "Big Bertha", "Gelato"]);
+});
+
+test("the plants are released from the strain and keep everything else", () => {
+  const { survey } = clearStrainInSurvey(ROSTER, "blue dream");
+  assert.deepEqual(survey.strains.map((p) => p.strain), ["", "", undefined]);
+  assert.deepEqual(survey.strains.map((p) => p.id), ["p1", "p2", "p3"]);
+  assert.deepEqual(survey.strains.map((p) => p.status), ["growing", "harvested", "growing"]);
+});
+
+test("a plant named after the deleted strain keeps its name and drops out of the library", () => {
+  const { survey } = clearStrainInSurvey(ROSTER, "blue dream");
+  assert.equal(survey.strains[0].name, "Blue Dream", "still called that");
+  const list = buildStrainLibrary([{ id: "g1", displayName: "T", firstDate: "2026-01-05", survey }], []);
+  assert.deepEqual(list.map((s) => s.key), ["gelato"], "but no longer counted as a strain");
 });
 
 test("a space that never held it is untouched, so nothing is written back", () => {
-  const out = removeStrainFromSurvey(ROSTER, "runtz");
-  assert.deepEqual(out.removedIds, []);
+  const out = clearStrainInSurvey(ROSTER, "runtz");
+  assert.equal(out.count, 0);
   assert.equal(out.survey, ROSTER);
 });
 
 test("deleting never mutates the roster it was given", () => {
-  removeStrainFromSurvey(ROSTER, "blue dream");
+  clearStrainInSurvey(ROSTER, "blue dream");
   assert.equal(ROSTER.strains.length, 3);
+  assert.equal(ROSTER.strains[0].strain, undefined);
 });
 
-test("deleting nothing in particular removes nothing", () => {
-  assert.deepEqual(removeStrainFromSurvey(ROSTER, "").removedIds, []);
-  assert.deepEqual(removeStrainFromSurvey(null, "gelato").removedIds, []);
+test("deleting nothing in particular changes nothing", () => {
+  assert.equal(clearStrainInSurvey(ROSTER, "").count, 0);
+  assert.equal(clearStrainInSurvey(null, "gelato").count, 0);
 });
 
 // ── merging: renaming onto a name you already have ───────────────────────────

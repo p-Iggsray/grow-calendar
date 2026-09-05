@@ -46,6 +46,22 @@ export function validatePlantFields(fields, partial = false) {
     if (!name) return { ok: false, error: "name required" };
     out.name = name.slice(0, NAME_MAX);
   }
+  // The strain this plant grew from, when it differs from what you call the
+  // plant. Three states, and they are genuinely different things:
+  //
+  //   absent  the plant's own name is its strain (the usual case)
+  //   "Blue Dream"  an explicit strain, because the plant is called something else
+  //   ""      this plant claims NO strain, which is what removing a strain from
+  //           the library leaves behind on plants that were named after it
+  //
+  // null asks for the first: undefined here means JSON.stringify drops the key
+  // when the survey is saved, so the override really is removed rather than
+  // being stored as an empty string that would mean the opposite.
+  if (has("strain")) {
+    if (fields.strain === null) out.strain = undefined;
+    else if (typeof fields.strain !== "string") return { ok: false, error: "invalid strain" };
+    else out.strain = fields.strain.trim().slice(0, NAME_MAX);
+  }
   if (has("type") || !partial) {
     const type = String(fields.type ?? "hybrid");
     if (!PLANT_TYPES.has(type)) return { ok: false, error: "invalid type" };
