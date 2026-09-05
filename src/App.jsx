@@ -9,6 +9,7 @@ import { buildSuggestions } from "./lib/mjSuggestions.js";
 import { useOnlineStatus } from "./lib/useOnlineStatus.js";
 import { useTheme } from "./lib/useTheme.js";
 import { hasGrowLocation } from "./lib/growProfile.js";
+import { tracksOutdoorWeather } from "./lib/growEnvironment.js";
 import { currentStageOf, dayOfGrow, stageLabel } from "./lib/stageTimeline.js";
 import { getLifecyclePhase, phaseMeta } from "./lib/lifecycle.js";
 
@@ -398,8 +399,10 @@ export default function App() {
               {todayStage === "harvest" && (
                 <PhasePrompt today={today} due />
               )}
-              {/* No location = no auto weather. Nudge once, fix in one tap. */}
-              {survey && !hasGrowLocation(survey) && (
+              {/* No location = no auto weather. Nudge once, fix in one tap.
+                  Never asked of an indoor space: a tent's climate comes off
+                  its own thermometer, so a city would buy it nothing. */}
+              {survey && tracksOutdoorWeather(survey.environment) && !hasGrowLocation(survey) && (
                 <LocationBanner key={activeGrowId} growId={activeGrowId} onSaved={reloadPlan} />
               )}
               {/* The soonest reminder, above the month it belongs to. The

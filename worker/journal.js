@@ -8,12 +8,20 @@ import { getWeatherForDay, coordsFromSurvey, locKey } from "./weatherDays.js";
 import { resolveGrowCoords } from "./weather.js";
 import { eventsForDay, eventCountsForMonth } from "./events.js";
 import { photosForDay, photoCountsForMonth, photoCountsForDates } from "./photos.js";
+import { tracksOutdoorWeather } from "../src/lib/growEnvironment.js";
 
 // A grow "has a location" when it carries coordinates OR a geocodable place
 // name; resolveGrowCoords turns either into usable coordinates (persisting
 // the geocode result so it only happens once).
 function surveyHasLocation(survey) {
   return Boolean(coordsFromSurvey(survey) || (survey?.location ?? "").trim());
+}
+
+// ...and a location is only worth resolving where the sky is the climate. An
+// indoor space may still carry a city (it is where the grower lives) without
+// that city having anything to say about the inside of a tent.
+function usesWeather(survey) {
+  return tracksOutdoorWeather(survey?.environment) && surveyHasLocation(survey);
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -71,11 +79,13 @@ export async function getJournalDay(env, user, growId, date) {
   await ensureGrowLogSchema(env);
   await ensurePlantLogSchema(env);
 
-  // Observed weather documents the day automatically for EVERY grow with a
-  // location on file (indoor growers still care what's happening outside).
-  // Best-effort: null hides the card; hasWeatherLocation tells the client
-  // whether to hint that a location is missing.
-  const hasLocation = surveyHasLocation(survey);
+  // Observed weather documents the day automatically, but only where the sky
+  // is actually the climate. A tent's temperature is whatever its grower set
+  // it to, so fetching the city's forecast for one is a wasted upstream call
+  // and a misleading card. Best-effort: null hides the card, and
+  // hasWeatherLocation only asks for a location where one would be used.
+  const outdoor = tracksOutdoorWeather(survey?.environment);
+  const hasLocation = outdoor && surveyHasLocation(survey);
   const weatherPromise = (async () => {
     if (!hasLocation) return null;
     const coords = await resolveGrowCoords(env, user, growId).catch(() => null);
@@ -156,7 +166,7 @@ export async function getJournalWeather(env, user, growId, date) {
   if (!DATE_RE.test(date)) return error(400, "invalid date format, expected YYYY-MM-DD");
   const row = await ownedGrowRow(env, user.id, growId);
   if (!row) return error(404, "grow not found");
-  const hasLocation = surveyHasLocation(parseSurvey(row.survey));
+  const hasLocation = usesWeather(parseSurvey(row.survey));
   const coords = hasLocation ? await resolveGrowCoords(env, user, growId).catch(() => null) : null;
   const weather = coords ? await getWeatherForDay(env, coords.lat, coords.lon, date) : null;
   return json({ date, weather, hasWeatherLocation: hasLocation });
@@ -220,7 +230,7 @@ export async function getJournalTimeline(env, user, growId, before, limitRaw) {
 
   // Fold each day's weather onto its card. Reads the shared cache; touching
   // today first keeps the recent window fresh (and backfills the last week).
-  const coords = surveyHasLocation(parseSurvey(row.survey))
+  const coords = usesWeather(parseSurvey(row.survey))
     ? await resolveGrowCoords(env, user, growId).catch(() => null)
     : null;
   if (coords && days.length > 0) {

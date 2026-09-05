@@ -10,6 +10,7 @@ import EnvSensorCard from "./EnvSensorCard.jsx";
 import ChoiceField from "../ChoiceField.jsx";
 import { NUTRIENT_PRODUCTS } from "../../lib/choices.js";
 import { formatWater, loadWaterUnit } from "../../lib/waterUnits.js";
+import { readsOwnClimate } from "../../lib/growEnvironment.js";
 
 // The structured daily log, edited in place on the journal page: environment
 // numbers (or the controller-import rollup), per-plant watering & nutrients,
@@ -35,9 +36,11 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
   // plant's history; name is kept for display + back-compat.
   const newRow = (extra) => ({ plant: selPlant?.name ?? "", ...(scoped ? { plantId: logPlant } : {}), ...extra });
 
-  // Indoor and greenhouse grows pull the day's environment from the controller
-  // import (temp/RH/VPD) instead of hand-typed numbers.
+  // Indoor and greenhouse grows can pull the day's environment from a
+  // controller import (temp/RH/VPD); either way they read their own climate,
+  // which the Conditions card at the top of the day owns.
   const sensorGrow = environment !== "outdoor";
+  const ownClimate = readsOwnClimate(environment);
   const { day: envDay } = useEnvDay(growId, date ? ymd(date) : null, sensorGrow && active);
 
   // Per-plant watering. water_gal is kept as the day's total (sum of all
@@ -68,27 +71,30 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
         </span>
       </div>
 
-      {/* ── Environment ── */}
-      <LogSection label="Environment" first>
-        {sensorGrow && envDay ? (
-          <EnvSensorCard day={envDay} logEntry={logEntry} onFill={setLogFields} />
-        ) : (
-          <>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-              <LogField label="Temp High (°F)" name="temp_high" entry={logEntry} setField={setLogField} step={1} min={0} max={130} inputMode="numeric" />
-              <LogField label="Temp Low (°F)"  name="temp_low"  entry={logEntry} setField={setLogField} step={1} min={0} max={130} inputMode="numeric" />
-            </div>
-            <div style={{ maxWidth: "50%", paddingRight: 5 }}>
-              <LogField label="Humidity (%)" name="humidity" entry={logEntry} setField={setLogField} step={1} min={0} max={100} inputMode="numeric" />
-            </div>
-            <div style={{ fontSize: 11, color: "var(--c-text-ghost)", marginTop: 8, lineHeight: 1.6 }}>
-              {sensorGrow
-                ? "No imported readings for this day. Import your controller CSV in More, Environment and this fills in automatically."
-                : "Outdoor grow: log the day's conditions by hand."}
-            </div>
-          </>
-        )}
-      </LogSection>
+      {/* ── Environment ──
+          A space with its own climate types these three numbers into the
+          Conditions card at the top of the day instead, so the only thing
+          left for this section is a controller import, when there is one. */}
+      {(!ownClimate || envDay) && (
+        <LogSection label="Environment" first>
+          {sensorGrow && envDay ? (
+            <EnvSensorCard day={envDay} logEntry={logEntry} onFill={setLogFields} />
+          ) : (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                <LogField label="Temp High (°F)" name="temp_high" entry={logEntry} setField={setLogField} step={1} min={0} max={130} inputMode="numeric" />
+                <LogField label="Temp Low (°F)"  name="temp_low"  entry={logEntry} setField={setLogField} step={1} min={0} max={130} inputMode="numeric" />
+              </div>
+              <div style={{ maxWidth: "50%", paddingRight: 5 }}>
+                <LogField label="Humidity (%)" name="humidity" entry={logEntry} setField={setLogField} step={1} min={0} max={100} inputMode="numeric" />
+              </div>
+              <div style={{ fontSize: 11, color: "var(--c-text-ghost)", marginTop: 8, lineHeight: 1.6 }}>
+                Outdoor grow: the day&rsquo;s weather logs itself once this grow has a location.
+              </div>
+            </>
+          )}
+        </LogSection>
+      )}
 
       {/* ── Plant selector for the per-plant sections below ── */}
       {logPlants.length > 0 && (

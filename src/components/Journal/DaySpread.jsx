@@ -14,7 +14,9 @@ import RichEntryEditor from "./RichEntryEditor.jsx";
 import ScreenHeader from "../ScreenHeader.jsx";
 import PhotosCard from "./PhotosCard.jsx";
 import RemindersCard from "./RemindersCard.jsx";
+import ConditionsCard from "./ConditionsCard.jsx";
 import DayLogEditor from "./DayLogEditor.jsx";
+import { readsOwnClimate } from "../../lib/growEnvironment.js";
 
 const UI = "var(--font-ui)";
 const NUM = "var(--font-num)";
@@ -147,7 +149,13 @@ export default function DaySpread({
   };
   const trainingRows = (log?.training ?? []).filter(t => t && (t.action ?? "").trim());
   const healthRows = (log?.plant_health ?? []).filter(h => h && (h.plant || h.plantId || h.color || h.trichomes || h.notes));
-  const hasStats = log && (log.water_gal != null || log.temp_high != null || log.temp_low != null || log.humidity != null || log.feed);
+  // A space that reads its own thermometer shows those numbers in the
+  // Conditions card, so the daily log below stops repeating them.
+  const ownClimate = readsOwnClimate(environment);
+  const hasStats = log && (
+    log.water_gal != null || log.feed
+    || (!ownClimate && (log.temp_high != null || log.temp_low != null || log.humidity != null))
+  );
 
   // Group plant entries by plant for a tidy per-plant read.
   const groups = [];
@@ -323,8 +331,15 @@ export default function DaySpread({
                 </div>
               </Card>
             )}
-            {/* Never fail silently: say WHY there is no weather card. */}
-            {!day.hasWeatherLocation && (
+            {/* A space with its own climate gets read off its own instruments,
+                every day, right here rather than buried in the daily log. */}
+            {readsOwnClimate(environment) && (
+              <ConditionsCard date={date} growId={growId} environment={environment} active={active} />
+            )}
+
+            {/* Never fail silently: say WHY there is no weather card. Only
+                asked of a space the weather actually describes. */}
+            {!day.hasWeatherLocation && !readsOwnClimate(environment) && (
               <div style={{
                 fontFamily: UI, fontSize: 11, color: "var(--c-text-ghost)",
                 textAlign: "center", lineHeight: 1.6, padding: "2px 10px",
@@ -395,9 +410,12 @@ export default function DaySpread({
                 {hasStats && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
                     {log.water_gal != null && <Stat label="Water" value={fromGallons(log.water_gal, waterUnit)} unit={unitLabel(waterUnit)} />}
-                    {log.temp_high != null && <Stat label="Temp high" value={log.temp_high} unit="F" />}
-                    {log.temp_low != null && <Stat label="Temp low" value={log.temp_low} unit="F" />}
-                    {log.humidity != null && <Stat label="Humidity" value={log.humidity} unit="%" />}
+                    {/* The climate numbers belong to the Conditions card above
+                        wherever there is one; repeating them here would just be
+                        the same three readings twice on one page. */}
+                    {!ownClimate && log.temp_high != null && <Stat label="Temp high" value={log.temp_high} unit="F" />}
+                    {!ownClimate && log.temp_low != null && <Stat label="Temp low" value={log.temp_low} unit="F" />}
+                    {!ownClimate && log.humidity != null && <Stat label="Humidity" value={log.humidity} unit="%" />}
                   </div>
                 )}
                 {log.feed && (
