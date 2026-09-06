@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   WATER_UNITS, DEFAULT_WATER_UNIT, isWaterUnit, unitLabel,
   toGallons, fromGallons, formatWater, rowDisplay, waterRow, sumGallons,
-  displayUnit, fanOutWater, mergeWaterRows,
+  displayUnit, fanOutWater, mergeWaterRows, describeWater,
 } from "../src/lib/waterUnits.js";
 
 // Gallons are canonical: they are the only thing summed, and the only thing
@@ -144,6 +144,28 @@ test("watering them all again replaces those rows rather than doubling them", ()
   assert.deepEqual(rowDisplay(merged[0]), { amount: 1, unit: "l" });
   assert.equal(merged[0].plant, "Retired plant");
   assert.deepEqual(merged.slice(1).map(r => rowDisplay(r).amount), [3, 3]);
+});
+
+// ── Reading a day back out ───────────────────────────────────────────────────
+test("a day is described plant by plant, in the unit it was logged in", () => {
+  const rows = fanOutWater([{ id: "p_1", name: "Blue Dream" }, { id: "p_2", name: "Gelato" }], 3, "l");
+  assert.deepEqual(describeWater(sumGallons(rows), rows), {
+    per_plant: [
+      { plant: "Blue Dream", amount: 3, unit: "L" },
+      { plant: "Gelato", amount: 3, unit: "L" },
+    ],
+    total: "6 L",
+  });
+});
+
+test("a row naming no plant is described as the whole grow, not as nothing", () => {
+  const out = describeWater(2, [waterRow({ plant: "" }, 2, "gal")]);
+  assert.equal(out.per_plant[0].plant, "all plants");
+  // A total with no rows behind it is still a total.
+  assert.deepEqual(describeWater(2, []), { total: "2 gal" });
+  // And a day with nothing recorded describes nothing at all.
+  assert.equal(describeWater(null, []), null);
+  assert.equal(describeWater("", null), null);
 });
 
 test("merging matches a row that only ever had a plant name", () => {

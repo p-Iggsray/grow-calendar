@@ -48,7 +48,8 @@ You're warm but not soft. You celebrate real wins specifically - not generic hyp
 - Use \`backticks\` for specific values: \`pH 6.2\`, \`72°F\`, \`week 5 of flower\`, \`60% amber\`.
 - No markdown headers (##, ###) - this is a chat.
 - Never use em dashes or en dashes in your replies. Use a comma, a period, or a plain hyphen instead.
-- When you take an action, confirm it specifically: not "done" but "Logged \`2 gal\` water for today - right on schedule." Water is stored in gallons whatever unit it was given in, so confirm it back in the unit the grower used.
+- When you take an action, confirm it specifically: not "done" but "Logged \`2 gal\` water for today - right on schedule." Water is stored in gallons whatever unit it was given in, so confirm it back in the unit the grower used, never converted.
+- **Water is per plant, not a lump sum.** When every plant got the same amount, log it with \`water_per_plant\` and read it back plant by plant - "\`3 L\` each: Blue Dream, Gelato, Zkittlez" - and only then the day's total. A bare total does not tell the grower which plant got what, so never answer a watering question with one alone when the per-plant rows are there to read.
 
 ## The calendar and journal
 
@@ -147,7 +148,7 @@ export const MJ_TOOLS = [
   },
   {
     name: "get_day",
-    description: "Get one day's full picture: the stage the plants were in that day, the grow day number (day 0 is the day the space was created), any stage change recorded that day, the grower's calendar events, their journal note, and the daily log entry if one was filled. Works for any date, including days before the grow started.",
+    description: "Get one day's full picture: the stage the plants were in that day, the grow day number (day 0 is the day the space was created), any stage change recorded that day, the grower's calendar events, their journal note, and the daily log entry if one was filled. The log's `water` object is what to read out: `per_plant` says what each plant got, in the unit it was logged in, and `total` is the day's total in that same unit. Works for any date, including days before the grow started.",
     parameters: {
       type: "object",
       properties: { date: { type: "string", description: "Target day as YYYY-MM-DD" } },
@@ -156,7 +157,7 @@ export const MJ_TOOLS = [
   },
   {
     name: "get_week",
-    description: "Get a 7-day window starting from start_date: each day's stage, any stage change, calendar events, journal excerpt, and log entry. Use this to give a multi-day overview of what actually happened.",
+    description: "Get a 7-day window starting from start_date: each day's stage, any stage change, calendar events, journal excerpt, and log entry. Each day's log carries a `water` object with `per_plant` (what each plant got, in the unit logged) and `total`; quote those rather than the raw gallon figure. Use this to give a multi-day overview of what actually happened.",
     parameters: {
       type: "object",
       properties: {
@@ -167,7 +168,7 @@ export const MJ_TOOLS = [
   },
   {
     name: "get_grow_log",
-    description: "Retrieve grow log entries for a date or date range. Each entry includes: total water amount, per-plant water amounts (water_plants: how much water each plant received), high/low temperature, humidity, feed description, plant training actions (what was done and on which plant), and plant health observations (leaf color, trichome stage, notes per plant). Use this to check what was logged, spot patterns, diagnose issues from real data, or answer questions about recent grows.",
+    description: "Retrieve grow log entries for a date or date range. Each entry includes: water (a `water` object holding `per_plant` - what each plant received, in the unit it was logged in - and `total` in that same unit; water_gal and water_plants are the raw gallon-canonical forms behind it), high/low temperature, humidity, feed description, plant training actions (what was done and on which plant), and plant health observations (leaf color, trichome stage, notes per plant). Answer watering questions from `water.per_plant`, plant by plant, not from the day total alone. Use this to check what was logged, spot patterns, diagnose issues from real data, or answer questions about recent grows.",
     parameters: {
       type: "object",
       properties: {

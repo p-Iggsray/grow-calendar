@@ -20,6 +20,7 @@ import { logError } from "../log.js";
 import { DATE_RE } from "./constants.js";
 import {
   isWaterUnit, toGallons, unitLabel, fanOutWater, mergeWaterRows, sumGallons,
+  describeWater,
 } from "../../src/lib/waterUnits.js";
 
 const PROFILE_ENUMS = {
@@ -62,9 +63,18 @@ function tryParseArr(s) {
   try { const v = JSON.parse(s); return Array.isArray(v) ? v : []; } catch { return []; }
 }
 
+// How a day's watering is handed to MJ: what each plant got, in the unit it was
+// logged in, and only then the total. A gallon total on its own says nothing
+// about which plant got what, and reads back in a unit the grower never used.
+function shapeWater(waterGal, waterPlantsRaw) {
+  return describeWater(waterGal, tryParseArr(waterPlantsRaw));
+}
+
 function shapeLogRow(r) {
   return {
     date:         r.date,
+    // Read this one out, not water_gal: it is phrased in the grower's own unit.
+    water:        shapeWater(r.water_gal, r.water_plants),
     water_gal:    r.water_gal ?? null,
     temp_high:    r.temp_high ?? null,
     temp_low:     r.temp_low  ?? null,
@@ -174,7 +184,7 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
           "SELECT date, body FROM day_notes WHERE user_id = ? AND grow_id = ? AND date >= ? AND date <= ?"
         ).bind(userId, dayGrowId, startDate, endDate).all(),
         env.DB.prepare(
-          `SELECT date, water_gal, feed, temp_high, temp_low, humidity
+          `SELECT date, water_gal, feed, temp_high, temp_low, humidity, water_plants
            FROM grow_log WHERE user_id = ? AND grow_id = ? AND date >= ? AND date <= ?`
         ).bind(userId, dayGrowId, startDate, endDate).all(),
         env.DB.prepare(
@@ -203,6 +213,7 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
         const log = logByDate.get(date);
         if (log) {
           day.log = {
+            water:     shapeWater(log.water_gal, log.water_plants),
             water_gal: log.water_gal ?? null,
             temp_high: log.temp_high ?? null,
             temp_low:  log.temp_low  ?? null,

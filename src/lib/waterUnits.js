@@ -134,6 +134,29 @@ export function fanOutWater(plants, amount, unit) {
 }
 
 /**
+ * A day's watering described the way it should be read back: what each plant
+ * got, in the unit that plant's row was logged in, and only then the total in
+ * the unit the day was logged in.
+ *
+ * This is what MJ is handed, so that "how much did I water on Tuesday" is
+ * answered plant by plant in the grower's own measure, rather than as one
+ * canonical gallon figure nobody typed.
+ */
+export function describeWater(gal, rows) {
+  const list = (rows ?? []).filter(Boolean);
+  const out = {};
+  if (list.length) {
+    out.per_plant = list.map((w) => {
+      const { amount, unit } = rowDisplay(w);
+      return { plant: String(w.plant ?? "").trim() || "all plants", amount, unit: unitLabel(unit) };
+    });
+  }
+  const total = typeof gal === "number" ? gal : parseFloat(gal);
+  if (Number.isFinite(total)) out.total = formatWater(total, displayUnit(list));
+  return Object.keys(out).length ? out : null;
+}
+
+/**
  * Fold a fresh set of per-plant rows into what the day already holds.
  *
  * A plant named in the new set has its row REPLACED, so saying "they all got
