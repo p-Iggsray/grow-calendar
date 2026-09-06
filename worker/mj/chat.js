@@ -6,11 +6,12 @@ import { loadRawGrow, loadRawGrows } from "../grows.js";
 import { loadStageTimeline } from "../stages.js";
 import { parseDate } from "../../src/lib/dates-core.js";
 import { buildTimelineText } from "../../src/lib/timelineText.js";
-import { getLifecyclePhase, dryProgress, cureProgress } from "../../src/lib/lifecycle.js";
+import { getLifecyclePhase, dryProgress, cureProgress, dryGuide } from "../../src/lib/lifecycle.js";
+import { cropOf } from "../../src/lib/crops.js";
 import { growLocation, strainSummary } from "../../src/lib/growProfile.js";
 import { firstGrowId } from "../perDayScope.js";
 import { GEMINI_DAILY_LIMIT, GEMINI_PRO_DAILY_LIMIT, PER_USER_DAILY_CAP } from "../limits.js";
-import { MJ_PERSONA, MJ_TOOLS } from "../mj-logic.js";
+import { MJ_PERSONA, MJ_TOOLS, cropBrief } from "../mj-logic.js";
 import { runGemini } from "../providers/gemini.js";
 import { ProviderError } from "../providers/errors.js";
 import { logError } from "../log.js";
@@ -125,10 +126,12 @@ export async function postMj(request, env, user) {
   // Tell MJ which post-harvest phase the grow is in so advice matches reality
   // (the calendar is hidden once drying/curing starts).
   let lifecycleContext = "";
+  const crop = cropOf(raw.survey);
   const lcPhase = getLifecyclePhase(raw.lifecycle);
   if (lcPhase === "drying") {
-    const p = dryProgress(raw.lifecycle, parseDate(today));
-    lifecycleContext = `LIFECYCLE: This grow is DRYING${p ? ` (day ${p.dayNum}, target ~${p.target} days at ~60°F/60% RH)` : ""}. The calendar is finished; help with drying and when to move to jars/curing.`;
+    const p = dryProgress(raw.lifecycle, parseDate(today), crop);
+    const g = dryGuide(crop);
+    lifecycleContext = `LIFECYCLE: This grow is DRYING${p ? ` (day ${p.dayNum}, target ~${p.target} days; ${g.ideal})` : ""}. The calendar is finished; help with drying and when to ${cropOf(crop) === "mushrooms" ? "jar them with desiccant" : "move to jars and cure"}.`;
   } else if (lcPhase === "curing") {
     const p = cureProgress(raw.lifecycle, parseDate(today));
     lifecycleContext = `LIFECYCLE: This grow is CURING${p ? ` (day ${p.dayNum}; min 2 weeks, great at 4+)` : ""} in jars at ~62% RH. Help with burping cadence and when it's well cured.`;
@@ -138,7 +141,10 @@ export async function postMj(request, env, user) {
 
   // Assemble system prompt segments.
   const timelineText = buildTimelineText(timeline.events, timeline.firstDate, today);
-  const baseBlock = [MJ_PERSONA, "", timelineText, "", supplyContext].filter(s => s !== "").join("\n");
+  // The crop brief sits with the persona: it is what MJ knows, not what is
+  // happening today, and it changes only when the space itself does.
+  const baseBlock = [MJ_PERSONA, "", cropBrief(raw.survey), "", timelineText, "", supplyContext]
+    .filter(s => s !== "").join("\n");
 
   const rosterContext = buildRosterContext(raw.survey);
 

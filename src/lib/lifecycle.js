@@ -7,30 +7,84 @@
 // JSON field (see worker/grows.js) - never inside `config`, which is date-parsed.
 import { daysBetween } from "./dates-core.js";
 import { parseDate } from "./dates-core.js";
+import { cropOf } from "./crops.js";
 
 export const PHASE_ORDER = ["growing", "drying", "curing", "done"];
 export const LIFECYCLE_PHASES = new Set(PHASE_ORDER);
 
-// Drying guidance: hang at ~60°F / 60% RH ("60/60"), 7-14 days (target ~10);
-// ready when small stems snap instead of bending.
-export const DRY_MIN = 7;
-export const DRY_TARGET = 10;
-export const DRY_MAX = 14;
-export const DRY_IDEAL_TEMP_F = 60;
-export const DRY_IDEAL_RH = 60;
+// What happens after the harvest, per crop. Cannabis dries slowly and then
+// cures for weeks in jars; mushrooms dry fast, all the way to cracker dry, and
+// then they are simply stored. So a monotub has no curing phase at all - not a
+// shorter one, none - and its drying is measured in a day or two rather than
+// a fortnight.
+export const CROP_PHASES = {
+  cannabis: ["growing", "drying", "curing", "done"],
+  mushrooms: ["growing", "drying", "done"],
+};
+
+const DRY_GUIDE = {
+  // Hang at ~60F / 60% RH ("60/60"), 7-14 days, ready when small stems snap.
+  cannabis: {
+    min: 7, target: 10, max: 14, idealTempF: 60, idealRh: 60,
+    window: "7-14 day window",
+    ideal: "Ideal ~60°F / 60% RH",
+    checklist: [
+      { key: "smallStemsSnap", label: "Small stems snap (don't bend)" },
+      { key: "budsDryOutside", label: "Buds feel dry on the outside" },
+      { key: "stemSnap",       label: "Main stem snaps cleanly" },
+    ],
+    ready: "Stems snap and you're past the minimum - jar it up.",
+    overdue: "Past 14 days - move to jars now to avoid over-drying.",
+    windowNote: "In the ideal window - move once small stems snap.",
+    nextLabel: "Move to curing",
+  },
+  // Dehydrator at ~110-125F, or a fan and desiccant. Done when they snap
+  // rather than bend - anything softer will not keep.
+  mushrooms: {
+    min: 1, target: 2, max: 4, idealTempF: 115, idealRh: 30,
+    window: "1-4 day window",
+    ideal: "Ideal ~110-125°F in a dehydrator, or a fan and desiccant",
+    checklist: [
+      { key: "capsShrunk",  label: "Caps shrunk and lightened" },
+      { key: "stemsSnap",   label: "Stems snap, they do not bend" },
+      { key: "crackerDry",  label: "Cracker dry all the way through" },
+    ],
+    ready: "Snapping clean and past the minimum - jar them with desiccant.",
+    overdue: "Past four days - they are as dry as they are going to get.",
+    windowNote: "Nearly there - keep going until a stem snaps rather than bends.",
+    nextLabel: "Store them",
+  },
+};
+
+/** The phases this crop moves through after growing. */
+export function phaseOrder(crop) {
+  return CROP_PHASES[cropOf(crop)];
+}
+
+/** Drying targets and copy for this crop. */
+export function dryGuide(crop) {
+  return DRY_GUIDE[cropOf(crop)];
+}
+
+/** What comes after drying: jars for cannabis, the shelf for mushrooms. */
+export function phaseAfterDrying(crop) {
+  return cropOf(crop) === "mushrooms" ? "done" : "curing";
+}
+
+// Kept for the cannabis screens that read them directly.
+export const DRY_MIN = DRY_GUIDE.cannabis.min;
+export const DRY_TARGET = DRY_GUIDE.cannabis.target;
+export const DRY_MAX = DRY_GUIDE.cannabis.max;
+export const DRY_IDEAL_TEMP_F = DRY_GUIDE.cannabis.idealTempF;
+export const DRY_IDEAL_RH = DRY_GUIDE.cannabis.idealRh;
+export const DRY_CHECKLIST = DRY_GUIDE.cannabis.checklist;
 
 // Curing guidance: jars at ~62% RH, burp regularly. Min 2 weeks, good at 4,
-// premium past 8.
+// premium past 8. Cannabis only - nothing cures a mushroom.
 export const CURE_MIN = 14;
 export const CURE_GOOD = 28;
 export const CURE_MAX = 56;
 export const CURE_IDEAL_RH = 62;
-
-export const DRY_CHECKLIST = [
-  { key: "smallStemsSnap", label: "Small stems snap (don't bend)" },
-  { key: "budsDryOutside", label: "Buds feel dry on the outside" },
-  { key: "stemSnap",       label: "Main stem snaps cleanly" },
-];
 
 export function defaultLifecycle() {
   return {
@@ -96,39 +150,43 @@ function addDays(date, n) {
 }
 
 // ── Drying ──────────────────────────────────────────────────────────────────
-export function dryProgress(lifecycle, today) {
+export function dryProgress(lifecycle, today, crop) {
   if (!lifecycle?.dryStartedAt) return null;
+  const g = dryGuide(crop);
   const start = parseDate(lifecycle.dryStartedAt);
   const elapsed = Math.max(0, daysBetween(today, start));
   return {
     dayNum: elapsed + 1,            // the start day is "Day 1"
     elapsed,
-    pct: clampPct((elapsed / DRY_MAX) * 100),
-    estReadyDate: addDays(start, DRY_TARGET),
-    min: DRY_MIN, target: DRY_TARGET, max: DRY_MAX,
+    pct: clampPct((elapsed / g.max) * 100),
+    estReadyDate: addDays(start, g.target),
+    min: g.min, target: g.target, max: g.max,
   };
 }
 
 // Combine the day window, the dryness checklist, and (if logged) the average
 // recent RH/temp into a single readiness verdict.
-export function dryReadiness(lifecycle, today) {
+export function dryReadiness(lifecycle, today, crop) {
   if (!lifecycle?.dryStartedAt) return { status: "early", reason: "Drying hasn't started yet." };
+  const g = dryGuide(crop);
   const start = parseDate(lifecycle.dryStartedAt);
   const elapsed = Math.max(0, daysBetween(today, start));
-  const stemSnap = lifecycle.dryChecklist?.stemSnap === true;
+  // The last box on the list is the one that settles it, whichever crop it is:
+  // a main stem that snaps, or a fruit that is cracker dry.
+  const snapped = lifecycle.dryChecklist?.[g.checklist[g.checklist.length - 1].key] === true;
   const avgRh = recentAvg(lifecycle.dryLogs, "rh");
 
-  if (stemSnap && elapsed >= DRY_MIN) {
-    return { status: "ready", reason: "Stems snap and you're past the minimum - jar it up." };
+  if (snapped && elapsed >= g.min) {
+    return { status: "ready", reason: g.ready };
   }
-  if (elapsed >= DRY_MAX) {
-    return { status: "ready", reason: "Past 14 days - move to jars now to avoid over-drying." };
+  if (elapsed >= g.max) {
+    return { status: "ready", reason: g.overdue };
   }
-  if (elapsed >= DRY_MIN) {
-    const rhNote = avgRh != null && avgRh > 65 ? " Humidity is a touch high, so check stems before moving." : "";
-    return { status: "window", reason: `In the ideal window - move once small stems snap.${rhNote}` };
+  if (elapsed >= g.min) {
+    const rhNote = avgRh != null && avgRh > 65 ? " Humidity is a touch high, so check before moving." : "";
+    return { status: "window", reason: `${g.windowNote}${rhNote}` };
   }
-  const daysLeft = DRY_MIN - elapsed;
+  const daysLeft = g.min - elapsed;
   return { status: "early", reason: `Keep drying - about ${daysLeft} more day${daysLeft === 1 ? "" : "s"} before the move window opens.` };
 }
 

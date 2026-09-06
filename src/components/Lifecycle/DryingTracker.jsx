@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Scissors, Check, Thermometer, Droplets } from "lucide-react";
 import { usePlan } from "../../lib/usePlan.jsx";
 import {
-  normalizeLifecycle, dryProgress, dryReadiness,
-  DRY_CHECKLIST, DRY_MIN, DRY_MAX, DRY_IDEAL_TEMP_F, DRY_IDEAL_RH,
+  normalizeLifecycle, dryProgress, dryReadiness, dryGuide, phaseAfterDrying,
 } from "../../lib/lifecycle.js";
+import { cropOf, words } from "../../lib/crops.js";
 import { fmtL } from "../../lib/dates-core.js";
 import ConfirmModal from "../ConfirmModal.jsx";
 import {
@@ -15,13 +15,16 @@ import {
 const DRY_ACCENT = "#f59e0b"; // amber - drying
 
 export default function DryingTracker({ today }) {
-  const { lifecycle } = usePlan();
+  const { lifecycle, survey } = usePlan();
+  const crop = cropOf(survey);
+  const w = words(crop);
+  const guide = dryGuide(crop);
   const lc = normalizeLifecycle(lifecycle);
   const { save, busy } = useLifecycleSave();
   const [confirmCure, setConfirmCure] = useState(false);
 
-  const prog = dryProgress(lc, today);
-  const ready = dryReadiness(lc, today);
+  const prog = dryProgress(lc, today, crop);
+  const ready = dryReadiness(lc, today, crop);
   const checklist = lc.dryChecklist ?? {};
   const moveEmphasized = ready.status === "ready" || ready.status === "window";
 
@@ -46,15 +49,20 @@ export default function DryingTracker({ today }) {
     save({ dryLogs: [...rest, entry] });
   }
 
-  function moveToCuring() {
+  // Cannabis goes into jars to cure; mushrooms go straight into storage, which
+  // is the end of the run rather than another phase to sit in.
+  function moveOn() {
     setConfirmCure(false);
-    save({ phase: "curing", cureStartedAt: ymd(today) });
+    const next = phaseAfterDrying(crop);
+    save(next === "curing"
+      ? { phase: "curing", cureStartedAt: ymd(today) }
+      : { phase: "done", finishedAt: ymd(today) });
   }
 
   return (
     <PhaseScreen eyebrow="Harvest" title="Drying">
       <Card style={{ borderColor: "rgba(245,158,11,0.3)" }}>
-        <Eyebrow color={DRY_ACCENT}>Drying · {DRY_MIN}-{DRY_MAX} day window</Eyebrow>
+        <Eyebrow color={DRY_ACCENT}>Drying · {guide.window}</Eyebrow>
         <DayHero
           dayNum={prog?.dayNum ?? 1}
           accent={DRY_ACCENT}
@@ -65,8 +73,8 @@ export default function DryingTracker({ today }) {
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
           <Stat label="Day" value={prog?.dayNum ?? 1} />
-          <Stat label="Min" value={`${DRY_MIN}d`} />
-          <Stat label="Max" value={`${DRY_MAX}d`} />
+          <Stat label="Min" value={`${guide.min}d`} />
+          <Stat label="Max" value={`${guide.max}d`} />
         </div>
       </Card>
 
@@ -83,7 +91,7 @@ export default function DryingTracker({ today }) {
       <Card>
         <Eyebrow>Dryness check</Eyebrow>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {DRY_CHECKLIST.map(({ key, label }) => {
+          {guide.checklist.map(({ key, label }) => {
             const on = checklist[key] === true;
             return (
               <button
@@ -118,7 +126,7 @@ export default function DryingTracker({ today }) {
       <Card>
         <Eyebrow>Dry-space log (optional)</Eyebrow>
         <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginBottom: 12 }}>
-          Ideal ~{DRY_IDEAL_TEMP_F}°F / {DRY_IDEAL_RH}% RH
+          {guide.ideal}
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <EnvField icon={Thermometer} label="Temp °F" value={temp} onChange={setTemp} />
@@ -140,16 +148,18 @@ export default function DryingTracker({ today }) {
 
       <CTAButton onClick={() => setConfirmCure(true)} disabled={busy} emphasized={moveEmphasized}>
         <Scissors size={15} strokeWidth={2} style={{ verticalAlign: "-2px", marginRight: 6 }} />
-        Move to curing
+        {guide.nextLabel}
       </CTAButton>
 
       <ConfirmModal
         open={confirmCure}
-        title="Move to curing?"
-        message="This ends drying and starts the curing tracker (jars at ~62% RH). The drying day counter stops here."
-        confirmLabel="Start curing"
+        title={`${guide.nextLabel}?`}
+        message={phaseAfterDrying(crop) === "curing"
+          ? "This ends drying and starts the curing tracker (jars at ~62% RH). The drying day counter stops here."
+          : `This ends drying and finishes the run. Jar them airtight with a desiccant - nothing about a ${w.unit} improves from here, it only keeps or it does not.`}
+        confirmLabel={phaseAfterDrying(crop) === "curing" ? "Start curing" : "Finish"}
         cancelLabel="Not yet"
-        onConfirm={moveToCuring}
+        onConfirm={moveOn}
         onCancel={() => setConfirmCure(false)}
       />
     </PhaseScreen>

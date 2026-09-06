@@ -3,7 +3,8 @@ import { FileText, Plus } from "lucide-react";
 import { usePlan } from "../../lib/usePlan.jsx";
 import { useToast } from "../../lib/useToast.jsx";
 import { api } from "../../lib/api.js";
-import { normalizeLifecycle } from "../../lib/lifecycle.js";
+import { normalizeLifecycle, phaseAfterDrying } from "../../lib/lifecycle.js";
+import { cropOf, words } from "../../lib/crops.js";
 import { daysBetween, fmtL } from "../../lib/dates-core.js";
 import {
   MONO, PhaseScreen, Card, Eyebrow, Stat, useLifecycleSave,
@@ -30,7 +31,11 @@ export default function GrowComplete({ onStartNewGrow }) {
   const dryStart = parseLocal(lc.dryStartedAt);
   const cureStart = parseLocal(lc.cureStartedAt);
   const finished = parseLocal(lc.finishedAt);
-  const dryDays = dryStart && cureStart ? daysBetween(cureStart, dryStart) : null;
+  const crop = cropOf(survey);
+  const w = words(crop);
+  const cures = phaseAfterDrying(crop) === "curing";
+  // A mushroom run has no curing, so drying is measured against the finish.
+  const dryDays = dryStart ? daysBetween(cureStart ?? finished ?? dryStart, dryStart) : null;
   const cureDays = cureStart && finished ? daysBetween(finished, cureStart) : null;
 
   const dirty = (weight === "" ? null : Number(weight)) !== lc.finalWeightG || notes !== lc.finalNotes;
@@ -63,10 +68,10 @@ export default function GrowComplete({ onStartNewGrow }) {
   return (
     <PhaseScreen eyebrow="Harvest" title="Complete">
       <Card style={{ borderColor: "rgba(34,197,94,0.3)", textAlign: "center" }}>
-        <div style={{ fontSize: 40, marginBottom: 6 }}>🌿🏆</div>
+        <div style={{ fontSize: 40, marginBottom: 6 }}>{cures ? "🌿🏆" : "🍄🏆"}</div>
         <Eyebrow color={DONE_ACCENT}>Grow complete</Eyebrow>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.4 }}>
-          Harvested, dried &amp; cured
+          {cures ? "Harvested, dried & cured" : "Picked, dried & stored"}
         </div>
         {finished && (
           <div style={{ fontSize: 13, color: "var(--c-text-dim)", marginTop: 6 }}>
@@ -75,8 +80,8 @@ export default function GrowComplete({ onStartNewGrow }) {
         )}
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
           <Stat label="Dried" value={dryDays != null ? `${dryDays}d` : "-"} />
-          <Stat label="Cured" value={cureDays != null ? `${cureDays}d` : "-"} />
-          <Stat label="Plants" value={Array.isArray(survey?.strains) ? survey.strains.length : "-"} />
+          {cures && <Stat label="Cured" value={cureDays != null ? `${cureDays}d` : "-"} />}
+          <Stat label={w.Units} value={Array.isArray(survey?.strains) ? survey.strains.length : "-"} />
         </div>
       </Card>
 

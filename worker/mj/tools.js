@@ -19,17 +19,30 @@ import { geocode } from "../geocode.js";
 import { logError } from "../log.js";
 import { DATE_RE } from "./constants.js";
 import { autoLogsWeather } from "../../src/lib/growEnvironment.js";
+import { cropOf, words } from "../../src/lib/crops.js";
 import {
   isWaterUnit, toGallons, unitLabel, fanOutWater, mergeWaterRows, sumGallons,
   describeWater,
 } from "../../src/lib/waterUnits.js";
 
+// What a profile field is allowed to be. Three of them mean different things
+// per crop: a tent has a medium, pots and a watering method; a tub has a
+// substrate, a tub and a way of keeping the humidity up.
 const PROFILE_ENUMS = {
-  environment:    new Set(["outdoor", "indoor", "greenhouse"]),
-  medium:         new Set(["soil", "coco", "hydro", "other"]),
-  containerType:  new Set(["fabric", "plastic", "ground", "other"]),
-  experienceLevel:new Set(["beginner", "intermediate", "advanced"]),
-  wateringMethod: new Set(["hand", "drip"]),
+  cannabis: {
+    environment:    new Set(["outdoor", "indoor", "greenhouse"]),
+    medium:         new Set(["soil", "coco", "hydro", "other"]),
+    containerType:  new Set(["fabric", "plastic", "ground", "other"]),
+    experienceLevel:new Set(["beginner", "intermediate", "advanced"]),
+    wateringMethod: new Set(["hand", "drip"]),
+  },
+  mushrooms: {
+    environment:    new Set(["outdoor", "indoor", "greenhouse"]),
+    medium:         new Set(["cvg", "manure", "masters", "other"]),
+    containerType:  new Set(["monotub", "shoebox", "bag", "other"]),
+    experienceLevel:new Set(["beginner", "intermediate", "advanced"]),
+    wateringMethod: new Set(["mist", "perlite", "humidifier"]),
+  },
 };
 
 // Read/write a grow's survey JSON (where the plant roster lives). readSurvey
@@ -101,13 +114,19 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
       const ensured = ensurePlantIds(survey);
       if (ensured.changed) { survey = ensured.survey; await writeSurvey(env, userId, growId, survey); }
       const plants = Array.isArray(survey?.strains) ? survey.strains.map(plantOut) : [];
+      const crop = cropOf(survey);
+      const w = words(crop);
       return {
         displayName: rawGrow.displayName,
         status: rawGrow.status,
+        // What this space grows, and therefore what to call everything in it.
+        crop,
+        vocabulary: { unit: w.unit, units: w.units, variety: w.variety },
         strains: plants.map(p => p.name).filter(Boolean),
         plants,
         location: rawGrow.survey?.location ?? null,
         profile: {
+          crop,
           environment:          survey?.environment ?? null,
           medium:               survey?.medium ?? null,
           containerType:        survey?.containerType ?? null,
@@ -438,12 +457,13 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
       const survey = await readSurvey(env, userId, growId);
       if (survey === null) return { error: "Grow not found." };
 
+      const allowed = PROFILE_ENUMS[cropOf(survey)];
       const patch = {};
       const changes = [];
       const enumField = (inKey, surveyKey, label) => {
         if (input[inKey] === undefined) return null;
-        if (!PROFILE_ENUMS[surveyKey].has(input[inKey]))
-          return `${inKey} must be one of: ${[...PROFILE_ENUMS[surveyKey]].join(", ")}`;
+        if (!allowed[surveyKey].has(input[inKey]))
+          return `${inKey} must be one of: ${[...allowed[surveyKey]].join(", ")}`;
         patch[surveyKey] = input[inKey];
         changes.push(`${label} → ${input[inKey]}`);
         return null;
@@ -548,12 +568,26 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
       const survey = await readSurvey(env, userId, growId);
       if (survey === null) return { error: "Grow not found." };
       const plant = (survey.strains ?? []).find(sp => sp.id === plantId);
-      if (!plant) return { error: `No plant with id ${plantId}. Call get_grow_info to see plant ids.` };
+      if (!plant) return { error: `No ${words(cropOf(survey)).unit} with id ${plantId}. Call get_grow_info to see ids.` };
       const todayIso = todayInET();
+      // A flush carries its own numbers: which one it is, and what came off the
+      // tub wet and dry. They live in detail, the same shape the app writes.
+      const kind = input?.kind ?? "note";
+      let detail;
+      if (kind === "flush") {
+        const n = (v) => (v === null || v === undefined || v === "" ? undefined : Number(v));
+        const flushNo = n(input?.flush);
+        const fields = { flush: flushNo, wetG: n(input?.wet_g), dryG: n(input?.dry_g) };
+        for (const [k, v] of Object.entries(fields)) {
+          if (v === undefined || !Number.isFinite(v)) delete fields[k];
+        }
+        if (Object.keys(fields).length) detail = fields;
+      }
       const norm = normalizeLogEntry({
         date: input?.date ?? todayIso,
-        kind: input?.kind ?? "note",
+        kind,
         body: input?.body ?? "",
+        ...(detail ? { detail } : {}),
         ...(input?.height !== undefined ? { height: input.height } : {}),
         ...(input?.height_unit !== undefined ? { heightUnit: input.height_unit } : {}),
         ...(input?.health !== undefined ? { health: input.health } : {}),

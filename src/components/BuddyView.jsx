@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { api } from "../lib/api.js";
 import { useToday, MONTH_NAMES, DOW_SHORT, sameDay, fmtL } from "../lib/dates.js";
 import { ymd } from "../lib/api.js";
-import { STAGE_ORDER, dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../lib/stageTimeline.js";
+import { dayOfGrow, stageGroup, stageLabel, stageOnDate, stagesFor } from "../lib/stageTimeline.js";
+import { cropOf } from "../lib/crops.js";
 import { AppShellSkeleton } from "./LoadingScreens.jsx";
 
 const MONO = "var(--font-ui)";
@@ -148,20 +149,25 @@ function StageHistory({ today, stageEvents, firstDate }) {
 
 // Local copy of PhaseLegend: the shared component is fine to duplicate here
 // because this public route mounts outside PlanProvider.
-const SWATCHES = (() => {
+//
+// One crop's ladder only: a shared monotub has no use for a Veg swatch, and a
+// tent has none for Colonize.
+function swatchesFor(crop) {
+  const ladder = stagesFor(crop);
   const seen = new Set();
   const out = [];
-  for (const stage of STAGE_ORDER) {
+  for (const stage of ladder) {
     const group = stageGroup(stage);
     if (!group || seen.has(group.key)) continue;
     seen.add(group.key);
-    const members = STAGE_ORDER.filter((s) => stageGroup(s)?.key === group.key);
+    const members = ladder.filter((s) => stageGroup(s)?.key === group.key);
     out.push({ key: group.key, color: group.color, label: members.map(stageLabel).join(" · ") });
   }
   return out;
-})();
+}
 
-function BuddyPhaseLegend() {
+function BuddyPhaseLegend({ crop }) {
+  const SWATCHES = swatchesFor(crop);
   return (
     <details style={{
       background: "rgba(255,255,255,0.03)", borderRadius: 12,
@@ -204,6 +210,7 @@ export default function BuddyView({ token }) {
   const stageEvents = data?.stageEvents ?? [];
   const firstDate = data?.firstDate ?? null;
   const growName = data?.growName || "Grow Calendar";
+  const crop = cropOf(data?.survey);
   const strainNames = (data?.survey?.strains ?? []).map(s => s.name).filter(Boolean);
 
   if (loadErr) {
@@ -271,7 +278,7 @@ export default function BuddyView({ token }) {
 
       {/* Stage legend */}
       <div style={{ margin: "16px 14px 0" }}>
-        <BuddyPhaseLegend />
+        <BuddyPhaseLegend crop={crop} />
       </div>
 
       {stageEvents.length === 0 && (

@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, Thermometer, Droplets, Gauge, CalendarCheck, Home, Trees, Warehouse } from "lucide-react";
+import { Plus, Thermometer, Droplets, Gauge, CalendarCheck, Home, Trees, Warehouse, Sprout } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { usePlan } from "../../lib/usePlan.jsx";
 import { useToday } from "../../lib/dates.js";
 import { currentStageOf, stageLabel } from "../../lib/stageTimeline.js";
 import { tapHaptic } from "../../lib/haptics.js";
 import { MONO, partitionPlants } from "../PlantsTab/constants.js";
+import { cropOf, words } from "../../lib/crops.js";
 import EnvironmentDetail, { ENV_KIND_LABEL } from "./EnvironmentDetail.jsx";
 import DeleteGrowConfirm from "../DeleteGrowConfirm.jsx";
 import ConfirmModal from "../ConfirmModal.jsx";
@@ -33,8 +34,12 @@ function Reading({ icon: Icon, color, value, unit }) {
 
 function EnvironmentCard({ grow, isActive, conditions, onOpen }) {
   const survey = grow.survey ?? null;
-  const KindIcon = KIND_ICON[survey?.environment] ?? Home;
-  const kind = ENV_KIND_LABEL[survey?.environment] ?? "Space";
+  const crop = cropOf(survey);
+  const w = words(crop);
+  // A monotub is indoors by definition, so what the space GROWS is the more
+  // useful thing to lead with than where it sits.
+  const KindIcon = crop === "mushrooms" ? Sprout : (KIND_ICON[survey?.environment] ?? Home);
+  const kind = crop === "mushrooms" ? w.cropLabel : (ENV_KIND_LABEL[survey?.environment] ?? "Space");
   const { active: plants } = partitionPlants(survey);
   // The space's stage is simply the furthest its plants have reached; there
   // are no predicted dates to read it off any more.
@@ -80,7 +85,7 @@ function EnvironmentCard({ grow, isActive, conditions, onOpen }) {
       </div>
 
       <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 5 }}>
-        {plants.length} plant{plants.length === 1 ? "" : "s"}
+        {plants.length} {plants.length === 1 ? w.unit : w.units}
         {stage ? ` · ${stageLabel(stage)}` : ""}
       </div>
 

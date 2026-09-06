@@ -25,7 +25,7 @@ export default function PhasePrompt({ today, due }) {
     <ConfirmModal
       open={confirm}
       title="Start drying?"
-      message="This hides the calendar and opens the drying tracker, starting the dry-day counter today. You can keep logging in Plants and chatting with MJ."
+      message="This hides the calendar and opens the drying tracker, starting the dry-day counter today. You can keep logging in Spaces and chatting with MJ."
       confirmLabel="Start drying"
       cancelLabel="Not yet"
       onConfirm={startDrying}

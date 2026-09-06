@@ -1,4 +1,5 @@
 // @ts-check
+import { cropOf } from "../src/lib/crops.js";
 import { json, error, nowIso, bytesToBase64Url } from "./util.js";
 import { loadRawGrows } from "./grows.js";
 import { loadStageTimeline } from "./stages.js";
@@ -34,7 +35,8 @@ export async function deleteShareToken(env, user) {
   return json({ ok: true });
 }
 
-// Only the shareable survey fields: environment plus strain names/types.
+// Only the shareable survey fields: what it grows, the environment, and the
+// variety names/types.
 // Location, coordinates, plant ids, and free-form notes stay private.
 function surveyBasics(survey) {
   if (!survey || typeof survey !== "object") return null;
@@ -44,7 +46,7 @@ function surveyBasics(survey) {
       type: typeof s?.type === "string" ? s.type : "",
     }))
     .filter(s => s.name);
-  return { environment: survey.environment ?? null, strains };
+  return { crop: cropOf(survey), environment: survey.environment ?? null, strains };
 }
 
 // GET /api/share/:token - public endpoint, no auth required.

@@ -182,10 +182,14 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const BODY_MAX = 2000;
 const DETAIL_MAX = 2000;
 
-// Per-plant history entry categories. "stage" is produced by the stage control.
+// Per-entry history categories, across both crops. "stage" is produced by the
+// stage control; "flush" is a mushroom harvest, which a tub has many of.
+// Which of these a given space actually offers is a UI question (see
+// logKinds in src/components/PlantsTab/constants.js); this is just what the
+// column is allowed to hold.
 export const LOG_KINDS = new Set([
   "note", "measurement", "watering", "nutrients",
-  "training", "trim", "environment", "health", "stage",
+  "training", "trim", "environment", "health", "stage", "flush",
 ]);
 
 // Validates + normalizes a log entry. partial=true for PATCH. Returns DB-column
