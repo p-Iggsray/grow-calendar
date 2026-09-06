@@ -220,7 +220,7 @@ export default function SettingsScreen({
       {/* Things that belong to you rather than to any one space. */}
       <Group
         title="Yours"
-        footer="Every strain you name on a plant, in every space, gathers here by itself.">
+        footer="Every strain and species you name, in every space, gathers here by itself.">
         <Row
           icon={Sprout} tint="#4ade80"
           label="Strains"

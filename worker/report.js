@@ -10,6 +10,7 @@ import { loadStageTimeline } from "./stages.js";
 import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../src/lib/stageTimeline.js";
 import { growLocation, strainSummary } from "../src/lib/growProfile.js";
 import { displayUnit, formatWater, isWaterUnit, rowDisplay, unitLabel } from "../src/lib/waterUnits.js";
+import { cropOf, flushTotals, words } from "../src/lib/crops.js";
 import { ensureGrowEventsSchema } from "./events.js";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -58,6 +59,25 @@ function tryArr(s) {
   try { const v = JSON.parse(s); return Array.isArray(v) ? v : []; } catch { return []; }
 }
 function num(v) { return v == null || v === "" ? null : (Number.isFinite(+v) ? +v : null); }
+
+// A plant_log row's detail, parsed. Flushes carry their number and weights
+// there, the same shape the app writes.
+function shapeEntry(row) {
+  let detail = null;
+  if (row?.detail) { try { detail = JSON.parse(row.detail); } catch { detail = null; } }
+  return { kind: row?.kind ?? "note", detail };
+}
+function flushText(row) {
+  const e = shapeEntry(row);
+  if (e.kind !== "flush" || !e.detail) return "";
+  const d = e.detail;
+  return [
+    d.flush ? `Flush ${d.flush}` : "Flush",
+    d.wetG ? `${d.wetG} g wet` : null,
+    d.dryG ? `${d.dryG} g dry` : null,
+  ].filter(Boolean).join(" · ");
+}
+
 
 function chip(stage) {
   const label = stageLabel(stage);
@@ -132,7 +152,7 @@ export async function getGrowReport(env, user, growId, unit = "gal") {
   let plantLogRows = [];
   try {
     const r = await env.DB.prepare(
-      "SELECT plant_id, date, body, height, height_unit, health FROM plant_log WHERE user_id = ? AND grow_id = ? ORDER BY plant_id, date",
+      "SELECT plant_id, date, kind, detail, body, height, height_unit, health FROM plant_log WHERE user_id = ? AND grow_id = ? ORDER BY plant_id, date",
     ).bind(user.id, growId).all();
     plantLogRows = r.results ?? [];
   } catch { /* plant_log not created yet */ }
@@ -163,6 +183,9 @@ function renderReport(ctx) {
 
   const name = row.display_name || "My Grow";
   const status = row.status || "active";
+  // The report is written in the words of whatever this space grows.
+  const crop = cropOf(survey);
+  const w = words(crop);
   const location = growLocation(survey);
   const strains = strainSummary(survey);
   const plants = Array.isArray(survey.strains) ? survey.strains : [];
@@ -188,10 +211,11 @@ function renderReport(ctx) {
 
   // ── Headline stat strip ──────────────────────────────────────────────────
   const stats = [
-    firstDate ? ["Grow started", fmtNice(asDate(firstDate))] : null,
+    ["Growing", w.cropLabel],
+    firstDate ? ["Started", fmtNice(asDate(firstDate))] : null,
     growDay != null ? ["Day", String(growDay)] : null,
     currentStage ? ["Current stage", stageLabel(currentStage)] : null,
-    plants.length ? ["Plants", String(plants.length)] : null,
+    plants.length ? [w.Units, String(plants.length)] : null,
     ["Days logged", String(logDays)],
     ["Total water", formatWater(totalWater, growWaterUnit)],
     feedDays ? ["Feed days", String(feedDays)] : null,
@@ -203,8 +227,10 @@ function renderReport(ctx) {
   // ── Setup / profile ──────────────────────────────────────────────────────
   const profileRows = [];
   if (location) profileRows.push(["Location", esc(location)]);
-  if (strains) profileRows.push(["Strains", esc(strains)]);
-  const shownKeys = new Set(["location", "strains"]);
+  if (strains) profileRows.push([w.Varieties, esc(strains)]);
+  // The crop has its own line at the top of the report, so it does not need a
+  // second one down here among the raw survey fields.
+  const shownKeys = new Set(["location", "strains", "crop"]);
   for (const [k, v] of Object.entries(survey)) {
     if (shownKeys.has(k)) continue;
     const rendered = renderValue(v);
@@ -223,11 +249,11 @@ function renderReport(ctx) {
       logByPlant.get(r.plant_id).push(r);
     }
     const cards = plants.map((p, i) => {
-      const pname = (p?.name || "").trim() || `Plant ${i + 1}`;
+      const pname = (p?.name || "").trim() || `${w.Unit} ${i + 1}`;
       const meta = [
         p?.type ? humanize(p.type) : null,
-        p?.flowerWeeks ? `${p.flowerWeeks} wk flower` : null,
-        p?.photo === false ? "Autoflower" : (p?.photo === true ? "Photoperiod" : null),
+        p?.flowerWeeks ? `${p.flowerWeeks} wk ${crop === "mushrooms" ? "to flush" : "flower"}` : null,
+        crop === "mushrooms" ? null : (p?.photo === false ? "Autoflower" : (p?.photo === true ? "Photoperiod" : null)),
         p?.status ? humanize(p.status) : null,
       ].filter(Boolean).join(" · ");
       const entries = (logByPlant.get(p?.id) ?? []);
@@ -237,17 +263,24 @@ function renderReport(ctx) {
             return `<div class="prow">
               <span class="pdate">${fmtNice(e.date)}</span>
               ${h ? `<span class="pmetric">${h}</span>` : ""}
+              ${flushText(e) ? `<span class="pmetric">${esc(flushText(e))}</span>` : ""}
               ${e.health ? healthBadge(e.health) : ""}
               ${e.body ? `<span class="pbody">${esc(e.body)}</span>` : ""}
             </div>`;
           }).join("")}</div>`
-        : `<p class="empty">No measurements logged for this plant yet.</p>`;
+        : `<p class="empty">Nothing logged for this ${esc(w.unit)} yet.</p>`;
+      // What a tub has actually given, which is the number its whole run is for.
+      const yield_ = flushTotals(entries.map(shapeEntry));
+      const yieldLine = yield_.flushes
+        ? `<div class="plant-meta">${yield_.flushes} flush${yield_.flushes === 1 ? "" : "es"} · ${yield_.wetG} g wet · ${yield_.dryG} g dry</div>`
+        : "";
       return `<div class="plant">
         <div class="plant-head"><span class="plant-name">${esc(pname)}</span>${meta ? `<span class="plant-meta">${esc(meta)}</span>` : ""}</div>
+        ${yieldLine}
         ${timeline}
       </div>`;
     }).join("");
-    plantsSection = section(`Plants · ${plants.length}`, cards);
+    plantsSection = section(`${w.Units} · ${plants.length}`, cards);
   }
 
   // ── The recorded stage timeline ──────────────────────────────────────────

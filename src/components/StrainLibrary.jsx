@@ -6,7 +6,7 @@ import StrainStars from "./StrainStars.jsx";
 import StrainDetail from "./StrainDetail.jsx";
 import AddStrainSheet from "./AddStrainSheet.jsx";
 import { useStrainLibrary } from "../lib/useStrainLibrary.js";
-import { filterStrains, STRAIN_FILTERS, strainSummary, strainNameKey } from "../lib/strainLibrary.js";
+import { filterStrains, STRAIN_FILTERS, CROP_FILTERS, strainSummary, strainNameKey } from "../lib/strainLibrary.js";
 import { coverPhoto, photoUrl } from "../lib/strainPhotos.js";
 import { tapHaptic } from "../lib/haptics.js";
 
@@ -129,17 +129,27 @@ export default function StrainLibrary({ onClose }) {
   const { strains, loading, error, save, rename, remove } = useStrainLibrary();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
+  // The crop row only appears once the library actually holds both, because a
+  // filter with one possible answer is furniture.
+  const [cropFilter, setCropFilter] = useState("all");
+  const mixed = useMemo(
+    () => new Set(strains.map((s) => s.crop ?? "cannabis")).size > 1,
+    [strains],
+  );
   const [openKey, setOpenKey] = useState(null);
   const [adding, setAdding] = useState(false);
 
-  const visible = useMemo(() => filterStrains(strains, { query, filter }), [strains, query, filter]);
+  const visible = useMemo(
+    () => filterStrains(strains, { query, filter, crop: mixed ? cropFilter : "all" }),
+    [strains, query, filter, cropFilter, mixed],
+  );
   // The open strain is looked up fresh every render, so a star tapped on its
   // own page is reflected here the moment the save lands.
   const open = openKey ? strains.find((s) => s.key === openKey) ?? null : null;
 
   // Sections only earn their keep on the unfiltered list. Once you have typed
   // a search or picked a filter, one flat list of answers reads better.
-  const grouped = !query.trim() && filter === "all";
+  const grouped = !query.trim() && filter === "all" && cropFilter === "all";
   const growing = grouped ? visible.filter((s) => s.growingNow) : [];
   const rest = grouped ? visible.filter((s) => !s.growingNow) : visible;
 
@@ -212,6 +222,30 @@ export default function StrainLibrary({ onClose }) {
             </button>
           )}
         </div>
+
+        {mixed && (
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
+            {CROP_FILTERS.map((f) => {
+              const active = cropFilter === f.value;
+              return (
+                <button
+                  key={f.value}
+                  type="button"
+                  onClick={() => { tapHaptic(); setCropFilter(f.value); }}
+                  aria-pressed={active}
+                  style={{
+                    flexShrink: 0, padding: "6px 12px", borderRadius: 999,
+                    background: active ? "rgba(167,139,250,0.18)" : "var(--c-surface-1)",
+                    border: `1px solid ${active ? "rgba(167,139,250,0.5)" : "var(--c-border)"}`,
+                    color: active ? "#a78bfa" : "var(--c-text-dim)",
+                    fontFamily: UI, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                  }}>
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
           {STRAIN_FILTERS.map((f) => {

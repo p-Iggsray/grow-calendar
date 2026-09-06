@@ -6,6 +6,7 @@ import { usePlan } from "../lib/usePlan.jsx";
 import { ymd } from "../lib/api.js";
 import { currentStageOf, dayOfGrow, stageLabel } from "../lib/stageTimeline.js";
 import { partitionPlants } from "./PlantsTab/constants.js";
+import { words } from "../lib/crops.js";
 import { tapHaptic } from "../lib/haptics.js";
 
 const KIND_ICON = { indoor: Home, outdoor: Trees, greenhouse: Warehouse };
@@ -20,7 +21,7 @@ function growLine(grow, todayKey) {
   return [
     stage ? stageLabel(stage) : null,
     day != null ? `Day ${day}` : null,
-    `${active.length} plant${active.length === 1 ? "" : "s"}`,
+    `${active.length} ${active.length === 1 ? words(grow.survey).unit : words(grow.survey).units}`,
   ].filter(Boolean).join(" · ");
 }
 

@@ -147,7 +147,7 @@ export default function StatsScreen({ today, onClose }) {
           </>
         ) : (
           <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-ghost)", lineHeight: 1.7 }}>
-            Nothing recorded yet. Move a plant into a stage on the Environments
+            Nothing recorded yet. Move a plant or a tub into a stage on the Environments
             tab and this grow&rsquo;s clock starts.
           </div>
         )}

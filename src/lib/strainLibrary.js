@@ -16,6 +16,8 @@
 // one you are growing now with nothing written about it yet, or one you rated
 // two years ago whose space is long gone.
 
+import { cropOf } from "./crops.js";
+
 const NAME_MAX = 60;
 export const NOTE_MAX = 4000;
 export const MAX_RATING = 5;
@@ -109,6 +111,10 @@ export function buildStrainLibrary(grows, entries) {
     if (!s) {
       s = {
         key, name: "", plants: [], grows: [],
+        // What kind of thing this is, taken from the space that grew it. A row
+        // that only exists because it was rated years ago has no space to ask,
+        // and every one of those predates mushrooms.
+        crop: "cannabis",
         growingNow: false, plantCount: 0, growCount: 0,
         firstGrown: null, lastGrown: null,
         rating: 0, note: "", favorite: false,
@@ -122,6 +128,7 @@ export function buildStrainLibrary(grows, entries) {
 
   for (const grow of Array.isArray(grows) ? grows : []) {
     const plants = Array.isArray(grow?.survey?.strains) ? grow.survey.strains : [];
+    const growCrop = cropOf(grow?.survey);
     // A plant with no date of its own belongs to the day its space began.
     const growStart = grow?.firstDate || (typeof grow?.createdAt === "string" ? grow.createdAt.slice(0, 10) : null);
 
@@ -143,6 +150,7 @@ export function buildStrainLibrary(grows, entries) {
 
       const s = take(key);
       s.neverGrown = false;
+      s.crop = growCrop;
       s.plants.push(plant);
       s.plantCount += 1;
       const date = typeof plant.createdAt === "string" ? plant.createdAt.slice(0, 10) : growStart;
@@ -212,15 +220,24 @@ export const STRAIN_FILTERS = [
   { value: "rated",     label: "Rated" },
 ];
 
+// Offered only when the library actually holds both, because a filter with one
+// possible answer is furniture.
+export const CROP_FILTERS = [
+  { value: "all",       label: "All" },
+  { value: "cannabis",  label: "Strains" },
+  { value: "mushrooms", label: "Species" },
+];
+
 /**
  * Pure: the strains a search box and a filter chip leave behind.
  *
  * The search matches the name and the note, so "gave me a headache" finds the
  * strain you wrote that about even when you have forgotten which one it was.
  */
-export function filterStrains(list, { query = "", filter = "all" } = {}) {
+export function filterStrains(list, { query = "", filter = "all", crop = "all" } = {}) {
   const q = String(query).trim().toLowerCase();
   return (list ?? []).filter((s) => {
+    if (crop !== "all" && cropOf(s.crop) !== crop) return false;
     if (filter === "growing" && !s.growingNow) return false;
     if (filter === "favorites" && !s.favorite) return false;
     if (filter === "rated" && !(s.rating > 0)) return false;
