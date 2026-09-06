@@ -1,8 +1,9 @@
-import { X, Plus } from "lucide-react";
+import { useState } from "react";
+import { X, Plus, Droplets } from "lucide-react";
 import ChoiceField from "../ChoiceField.jsx";
 import { TRAINING_ACTIONS } from "../../lib/choices.js";
 import {
-  WATER_UNITS, UNIT_STEP, rowDisplay, waterRow, rememberWaterUnit,
+  WATER_UNITS, UNIT_STEP, rowDisplay, waterRow, rememberWaterUnit, loadWaterUnit,
 } from "../../lib/waterUnits.js";
 
 // ── Log tab helpers ────────────────────────────────────────────────────────
@@ -187,6 +188,70 @@ export function WaterEntry({ entry, onChangeField, onRemove, hidePlant, plants =
         style={{ ..._entryRemove, height: 38, minHeight: 38 }}
         aria-label="Remove plant watering">
         <X size={12} strokeWidth={2} />
+      </button>
+    </div>
+  );
+}
+
+// Watering the whole tent is one action but several waterings. Type the amount
+// once here and every plant gets its own row at that amount, which is what the
+// day, the report and each plant's own history then read back - a total on its
+// own never says which plant got what.
+export function WaterAllPlants({ count, onAdd }) {
+  const [amount, setAmount] = useState("");
+  const [unit, setUnit] = useState(loadWaterUnit);
+
+  function submit() {
+    rememberWaterUnit(unit);
+    onAdd(amount, unit);
+    setAmount("");
+  }
+
+  return (
+    <div style={{
+      border: "1px dashed var(--c-border-strong)", borderRadius: 10,
+      padding: "11px 11px 12px", marginTop: 6,
+    }}>
+      <span style={{ ..._entryLabel, marginBottom: 8 }}>Water every plant</span>
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+        <label style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+          <span style={{ ..._entryLabel, fontSize: 10 }}>Each plant got</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            step={UNIT_STEP[unit] ?? 0.25}
+            min={0}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } }}
+            placeholder="0"
+            style={{ ..._entryInput, WebkitAppearance: "none", MozAppearance: "textfield" }}
+          />
+        </label>
+        <label style={{ flexShrink: 0, display: "flex", flexDirection: "column", width: 74 }}>
+          <span style={{ ..._entryLabel, fontSize: 10 }}>Unit</span>
+          <select
+            value={unit}
+            onChange={(e) => setUnit(e.target.value)}
+            style={_selectInput}
+            aria-label="Water unit for every plant">
+            {WATER_UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+          </select>
+        </label>
+      </div>
+      <button
+        type="button"
+        className="touch-target"
+        onClick={submit}
+        style={{
+          width: "100%", padding: "10px", borderRadius: 10, marginTop: 9,
+          background: "rgba(96,165,250,0.14)", border: "1px solid rgba(96,165,250,0.4)",
+          color: "#60a5fa", cursor: "pointer",
+          fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1.5,
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+        }}>
+        <Droplets size={11} strokeWidth={2.5} />
+        {`LOG THIS FOR ALL ${count} ${count === 1 ? "PLANT" : "PLANTS"}`}
       </button>
     </div>
   );

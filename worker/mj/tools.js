@@ -18,7 +18,9 @@ import { ensurePlantLogSchema } from "../plants.js";
 import { geocode } from "../geocode.js";
 import { logError } from "../log.js";
 import { DATE_RE } from "./constants.js";
-import { isWaterUnit, toGallons } from "../../src/lib/waterUnits.js";
+import {
+  isWaterUnit, toGallons, unitLabel, fanOutWater, mergeWaterRows, sumGallons,
+} from "../../src/lib/waterUnits.js";
 
 const PROFILE_ENUMS = {
   environment:    new Set(["outdoor", "indoor", "greenhouse"]),
@@ -252,8 +254,8 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
       // column holds, and what every total is summed in.
       let water_gal = toNum(input.water_gal);
       const amount = toNum(input.water_amount);
+      const unit = isWaterUnit(input.water_unit) ? input.water_unit : "gal";
       if (amount != null) {
-        const unit = isWaterUnit(input.water_unit) ? input.water_unit : "gal";
         const gal = toGallons(amount, unit);
         if (gal != null) water_gal = Math.round(gal * 10000) / 10000;
       }
@@ -263,22 +265,50 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
       const feed      = toStr(input.feed);
 
       await ensureGrowLogSchema(env);
+
+      // "They all got 3 L" is one sentence but several waterings. Recorded as
+      // one row per plant, each holding the amount that plant received, the day
+      // can be read back plant by plant - which a single total never can - and
+      // it lands in each plant's own history too.
+      let watered = null;
+      let waterPlantsJson = null;
+      if (amount != null && input.water_per_plant === true) {
+        const survey = await readSurvey(env, userId, dayGrowId);
+        const roster = (survey?.strains ?? []).filter(
+          (p) => p && p.status !== "harvested" && p.status !== "dead"
+        );
+        if (roster.length) {
+          const existing = await env.DB.prepare(
+            "SELECT water_plants FROM grow_log WHERE user_id = ? AND grow_id = ? AND date = ?"
+          ).bind(userId, dayGrowId, date).first();
+          watered = fanOutWater(roster, amount, unit);
+          const rows = mergeWaterRows(tryParseArr(existing?.water_plants), watered);
+          waterPlantsJson = JSON.stringify(rows);
+          water_gal = Math.round(sumGallons(rows) * 10000) / 10000;
+        }
+      }
+
       await env.DB.prepare(`
-        INSERT INTO grow_log (user_id, grow_id, date, water_gal, feed, temp_high, temp_low, humidity, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        INSERT INTO grow_log (user_id, grow_id, date, water_gal, feed, temp_high, temp_low, humidity, water_plants, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
         ON CONFLICT(user_id, grow_id, date) DO UPDATE SET
-          water_gal  = COALESCE(excluded.water_gal,  grow_log.water_gal),
-          feed       = COALESCE(excluded.feed,       grow_log.feed),
-          temp_high  = COALESCE(excluded.temp_high,  grow_log.temp_high),
-          temp_low   = COALESCE(excluded.temp_low,   grow_log.temp_low),
-          humidity   = COALESCE(excluded.humidity,   grow_log.humidity),
-          updated_at = excluded.updated_at
-      `).bind(userId, dayGrowId, date, water_gal, feed, temp_high, temp_low, humidity).run();
+          water_gal    = COALESCE(excluded.water_gal,    grow_log.water_gal),
+          feed         = COALESCE(excluded.feed,         grow_log.feed),
+          temp_high    = COALESCE(excluded.temp_high,    grow_log.temp_high),
+          temp_low     = COALESCE(excluded.temp_low,     grow_log.temp_low),
+          humidity     = COALESCE(excluded.humidity,     grow_log.humidity),
+          water_plants = COALESCE(excluded.water_plants, grow_log.water_plants),
+          updated_at   = excluded.updated_at
+      `).bind(userId, dayGrowId, date, water_gal, feed, temp_high, temp_low, humidity, waterPlantsJson).run();
+
+      const waterText = watered
+        ? `${amount} ${unitLabel(unit)} to each of ${watered.length} ${watered.length === 1 ? "plant" : "plants"}`
+        : (amount != null ? `${amount} ${unitLabel(unit)} water` : (water_gal != null ? `${water_gal} gal water` : null));
 
       actions.push({
         type: "log_grow_data",
         date,
-        summary: buildLogSummary(date, water_gal, temp_high, temp_low, humidity, feed),
+        summary: buildLogSummary(date, waterText, temp_high, temp_low, humidity, feed),
         undoPayload: null, // grow log writes are not undoable via the undo system
       });
 
@@ -286,6 +316,11 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
         ok: true,
         date,
         logged: { water_gal, temp_high, temp_low, humidity, feed },
+        // Report these back to the grower plant by plant, in the unit they were
+        // logged in - the day total on its own does not say who got what.
+        ...(watered ? {
+          watered: watered.map((w) => ({ plant: w.plant, amount: w.amount, unit: unitLabel(w.unit) })),
+        } : {}),
       };
     }
 
@@ -565,9 +600,11 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
   }
 }
 
-function buildLogSummary(date, water_gal, temp_high, temp_low, humidity, feed) {
+// waterText is already phrased in the unit the grower used ("3 L to each of 4
+// plants"), because reading a litre watering back as gallons helps nobody.
+function buildLogSummary(date, waterText, temp_high, temp_low, humidity, feed) {
   const parts = [];
-  if (water_gal != null) parts.push(`${water_gal} gal water`);
+  if (waterText) parts.push(waterText);
   if (temp_high != null || temp_low != null) parts.push(`temp ${temp_high ?? "?"}°/${temp_low ?? "?"}°F`);
   if (humidity != null) parts.push(`${humidity}% RH`);
   if (feed) parts.push(`fed: ${feed.slice(0, 40)}`);

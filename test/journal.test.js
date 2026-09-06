@@ -72,6 +72,16 @@ test("buildTimelineDays: merges all three sources per day, newest first", () => 
   assert.deepEqual(days[1].plantKinds, ["watering", "training"]);
 });
 
+test("buildTimelineDays: a day carries the unit it was watered in", () => {
+  const days = buildTimelineDays([
+    { date: "2026-06-10", water_gal: 1.59, water_plants: '[{"plant":"A","amount":3,"unit":"l","gal":0.7925},{"plant":"B","amount":3,"unit":"l","gal":0.7925}]' },
+    { date: "2026-06-09", water_gal: 2, water_plants: '[{"plant":"A","gal":2}]' },
+  ], [], []);
+  assert.equal(days[0].log.water_unit, "l");
+  // Rows from before units existed only ever held gallons.
+  assert.equal(days[1].log.water_unit, "gal");
+});
+
 test("makeExcerpt: collapses whitespace and cuts on a word boundary", () => {
   assert.equal(makeExcerpt("  line one\n\nline two  "), "line one line two");
   const long = "word ".repeat(100);

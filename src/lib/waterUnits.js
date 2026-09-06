@@ -90,6 +90,70 @@ export function waterRow(base, amount, unit) {
   };
 }
 
+// Coarsest first. A set of rows reads out in the coarsest unit anyone actually
+// used, so litres and millilitres together come back as litres and a day logged
+// in litres is never read back as gallons.
+const UNIT_RANK = { gal: 3, l: 2, ml: 1 };
+
+/**
+ * The unit to READ a set of rows out in - a day's total, a stat tile, a chip.
+ *
+ * It comes from the rows themselves, never from whatever unit happens to be in
+ * hand today: what was logged in litres stays litres. Rows written before units
+ * existed only ever held gallons. With nothing recognisable to go on, the
+ * fallback (usually the remembered unit) decides; pass null for the fallback to
+ * get null back, for a caller that wants to say "the rows did not know".
+ */
+export function displayUnit(rows, fallback = DEFAULT_WATER_UNIT) {
+  let best = null;
+  for (const row of rows ?? []) {
+    if (!row) continue;
+    const unit = isWaterUnit(row.unit)
+      ? row.unit
+      : (Number.isFinite(parseFloat(row.gal)) ? DEFAULT_WATER_UNIT : null);
+    if (!unit) continue;
+    if (best == null || UNIT_RANK[unit] > UNIT_RANK[best]) best = unit;
+  }
+  return best ?? (isWaterUnit(fallback) ? fallback : null);
+}
+
+/**
+ * One water row per plant, each recording the SAME amount.
+ *
+ * "I watered them all with 3 L" is one sentence but several waterings: three
+ * litres went into each pot, and the record has to say so plant by plant.
+ */
+export function fanOutWater(plants, amount, unit) {
+  return (plants ?? [])
+    .filter(Boolean)
+    .map((p) => waterRow(
+      { plant: p.name ?? "", ...(p.id ? { plantId: p.id } : {}) },
+      amount,
+      unit,
+    ));
+}
+
+/**
+ * Fold a fresh set of per-plant rows into what the day already holds.
+ *
+ * A plant named in the new set has its row REPLACED, so saying "they all got
+ * 3 L" twice records it once. Every other row on the day - another plant, an
+ * unattributed whole-grow watering - is left exactly as it was.
+ */
+export function mergeWaterRows(existing, added) {
+  const ids = new Set();
+  const names = new Set();
+  for (const r of added ?? []) {
+    if (r?.plantId) ids.add(String(r.plantId));
+    const name = String(r?.plant ?? "").trim().toLowerCase();
+    if (name) names.add(name);
+  }
+  const replaced = (r) =>
+    (r?.plantId && ids.has(String(r.plantId)))
+    || names.has(String(r?.plant ?? "").trim().toLowerCase());
+  return [...(existing ?? []).filter((r) => r && !replaced(r)), ...(added ?? [])];
+}
+
 /** Total of a day's water rows, in canonical gallons. */
 export function sumGallons(rows) {
   return (rows ?? []).reduce((sum, r) => {

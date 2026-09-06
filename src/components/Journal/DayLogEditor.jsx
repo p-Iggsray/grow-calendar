@@ -4,12 +4,12 @@ import { useGrowLog } from "../../lib/useGrowLog.js";
 import { useEnvDay } from "../../lib/useEnvDay.js";
 import {
   LogSection, LogField, AddEntryButton, sumWater,
-  WaterEntry, TrainingEntry, PlantHealthEntry,
+  WaterEntry, WaterAllPlants, TrainingEntry, PlantHealthEntry,
 } from "./logEntries.jsx";
 import EnvSensorCard from "./EnvSensorCard.jsx";
 import ChoiceField from "../ChoiceField.jsx";
 import { NUTRIENT_PRODUCTS } from "../../lib/choices.js";
-import { formatWater, loadWaterUnit } from "../../lib/waterUnits.js";
+import { displayUnit, fanOutWater, formatWater, loadWaterUnit, waterRow } from "../../lib/waterUnits.js";
 import { readsOwnClimate } from "../../lib/growEnvironment.js";
 
 // The structured daily log, edited in place on the journal page: environment
@@ -45,15 +45,26 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
 
   // Per-plant watering. water_gal is kept as the day's total (sum of all
   // plants) so the stats "total water" aggregation keeps working.
-  function addWater()           { const a = [...(logEntry.water_plants ?? []), newRow({ gal: "" })]; setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
+  function setWater(a) { setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
+  // A fresh row starts in the unit you last watered in, so a litre grow never
+  // has to correct the unit on every row it adds.
+  function addWater()           { setWater([...(logEntry.water_plants ?? []), newRow({ amount: "", unit: loadWaterUnit(), gal: "" })]); }
+  // "All plants got 3 L" is several waterings, and it is recorded as several:
+  // one row per plant, each holding the amount that plant actually received.
+  function addWaterForAll(amount, unit) {
+    const rows = logPlants.length
+      ? fanOutWater(logPlants, amount, unit)
+      : [waterRow(newRow({}), amount, unit)];
+    setWater([...(logEntry.water_plants ?? []), ...rows]);
+  }
   // "__row" replaces the whole row: the amount and its unit have to move
   // together or the canonical gallons drift out of step with what is shown.
   function updateWater(i, k, v) {
     const a = [...(logEntry.water_plants ?? [])];
     a[i] = k === "__row" ? v : { ...a[i], [k]: v };
-    setLogFields({ water_plants: a, water_gal: sumWater(a) });
+    setWater(a);
   }
-  function removeWater(i)       { const a = [...(logEntry.water_plants ?? [])]; a.splice(i, 1); setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
+  function removeWater(i)       { const a = [...(logEntry.water_plants ?? [])]; a.splice(i, 1); setWater(a); }
 
   function addTraining()           { setLogField("training", [...(logEntry.training ?? []), newRow({ action: "" })]); }
   function updateTraining(i, k, v) { const a = [...(logEntry.training ?? [])]; a[i] = { ...a[i], [k]: v }; setLogField("training", a); }
@@ -139,14 +150,19 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
               onRemove={() => removeWater(i)}
             />
           ))}
-        <AddEntryButton onClick={addWater} label={scoped ? `ADD WATERING FOR ${(selPlant?.name || "PLANT").toUpperCase()}` : "ADD PLANT WATERING"} />
+        {!scoped && logPlants.length > 0 && (
+          <WaterAllPlants count={logPlants.length} onAdd={addWaterForAll} />
+        )}
+        <AddEntryButton onClick={addWater} label={scoped ? `ADD WATERING FOR ${(selPlant?.name || "PLANT").toUpperCase()}` : "ADD ONE PLANT'S WATERING"} />
         {sumWater(logEntry.water_plants) && (
           <div style={{
             marginTop: 10, textAlign: "right",
             fontFamily: "var(--font-ui)", fontSize: 12,
             letterSpacing: 0.5, color: "var(--c-text-faint)",
           }}>
-            Total: {formatWater(sumWater(logEntry.water_plants), loadWaterUnit())}
+            {/* Read out in the unit the day was actually logged in, never in
+                whatever unit happens to be remembered. */}
+            Total: {formatWater(sumWater(logEntry.water_plants), displayUnit(logEntry.water_plants, loadWaterUnit()))}
           </div>
         )}
         <div style={{ marginTop: 14 }}>

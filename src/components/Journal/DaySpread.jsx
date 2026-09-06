@@ -7,7 +7,7 @@ import { useJournalDay, useJournalMonth } from "../../lib/useJournal.js";
 import { useDayNote } from "../../lib/useDayNote.js";
 import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../../lib/stageTimeline.js";
 import { kindLabel, summarizeEntry, HEALTH_MAP } from "../PlantsTab/constants.js";
-import { fromGallons, loadWaterUnit, rowDisplay, unitLabel } from "../../lib/waterUnits.js";
+import { displayUnit, fromGallons, loadWaterUnit, rowDisplay, unitLabel } from "../../lib/waterUnits.js";
 import { Skeleton } from "../Skeleton.jsx";
 import { tapHaptic } from "../../lib/haptics.js";
 import RichEntryEditor from "./RichEntryEditor.jsx";
@@ -139,10 +139,15 @@ export default function DaySpread({
 
   const entryDays = Object.keys(monthDays).sort();
   const log = day.log;
-  const waterPlants = (log?.water_plants ?? []).filter(w => w && (w.plant || w.plantId));
-  // Totals read in the unit you last watered in; a single row reads in the unit
-  // it was actually logged in.
-  const waterUnit = loadWaterUnit();
+  // Every watering is listed, one line each - including a row that names no
+  // plant, which is a whole-grow watering rather than nothing at all. A total
+  // on its own does not say which plant got what.
+  const waterPlants = (log?.water_plants ?? []).filter(
+    w => w && (w.plant || w.plantId || rowDisplay(w).amount != null)
+  );
+  // The day's total reads in the unit the day was logged in, and each row in
+  // the unit that row was logged in.
+  const waterUnit = displayUnit(log?.water_plants, loadWaterUnit());
   const waterAmount = (w) => {
     const { amount, unit } = rowDisplay(w);
     return amount == null || amount === "" ? "" : ` ${amount} ${unitLabel(unit)}`;
@@ -427,7 +432,7 @@ export default function DaySpread({
                 {waterPlants.length > 0 && (
                   <div style={{ marginTop: 11 }}>
                     {waterPlants.map((w, i) => (
-                      <PlantRow key={i} name={w.plant || "Plant"}>
+                      <PlantRow key={i} name={w.plant || "All plants"}>
                         watered{waterAmount(w)}
                       </PlantRow>
                     ))}

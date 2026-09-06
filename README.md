@@ -56,6 +56,7 @@ MJ is a Claude-powered assistant that has full context of your plan, your phase,
 |   |   |
 |---|---|
 | **Grow log** | Record watering, feeding, temperature, and humidity for every day. |
+| **Water every plant at once** | Type the amount once and each plant is logged as watered with it, listed plant by plant — in gallons, litres or millilitres, and read back in the unit you logged it in. |
 | **Day notes** | Free-form notes per day — observations, wins, concerns. |
 | **Photos & voice memos** | Attach photos and audio recordings to any day — stored in Cloudflare R2. |
 | **CSV export** | Download your entire grow log as a spreadsheet anytime. |

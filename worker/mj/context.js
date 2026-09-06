@@ -1,5 +1,11 @@
 // @ts-check
 // System-prompt context builders: grow log, weather, stats, supplies, grows list.
+import { displayUnit, formatWater, rowDisplay, unitLabel } from "../../src/lib/waterUnits.js";
+
+function tryParseArr(s) {
+  if (!s) return [];
+  try { const v = JSON.parse(s); return Array.isArray(v) ? v : []; } catch { return []; }
+}
 
 export async function buildGrowLogContext(env, userId, growId) {
   const cutoff = new Date();
@@ -7,7 +13,7 @@ export async function buildGrowLogContext(env, userId, growId) {
   const cutoffStr = cutoff.toISOString().slice(0, 10);
 
   const res = await env.DB.prepare(
-    `SELECT date, water_gal, feed, temp_high, temp_low, humidity
+    `SELECT date, water_gal, feed, temp_high, temp_low, humidity, water_plants
      FROM grow_log
      WHERE user_id = ? AND grow_id = ? AND date >= ?
      ORDER BY date DESC`
@@ -19,7 +25,25 @@ export async function buildGrowLogContext(env, userId, growId) {
   const lines = ["RECENT GROW LOG (last 14 days):"];
   for (const r of rows) {
     const parts = [];
-    if (r.water_gal != null) parts.push(`${r.water_gal} gal water`);
+    // A day reads back in the unit it was watered in, and says which plant got
+    // what, so MJ answers in the grower's own measure rather than in gallons.
+    const waterRows = tryParseArr(r.water_plants);
+    if (waterRows.length) {
+      const each = waterRows.map((w) => {
+        const { amount, unit } = rowDisplay(w);
+        return { who: w?.plant || "all plants", amount, unit };
+      });
+      // A whole tent watered the same is one short phrase, not fifteen.
+      const same = each.every((w) => w.amount != null && w.amount === each[0].amount && w.unit === each[0].unit);
+      parts.push(same && each.length > 1
+        ? `water: ${each.length} plants, ${each[0].amount} ${unitLabel(each[0].unit)} each`
+        : `water: ${each.map((w) => (w.amount == null ? w.who : `${w.who} ${w.amount} ${unitLabel(w.unit)}`)).join("; ")}`);
+      if (r.water_gal != null) {
+        parts.push(`${formatWater(r.water_gal, displayUnit(waterRows))} total`);
+      }
+    } else if (r.water_gal != null) {
+      parts.push(`${r.water_gal} gal water`);
+    }
     if (r.temp_high != null || r.temp_low != null) {
       parts.push(`temp ${r.temp_high ?? "?"}°/${r.temp_low ?? "?"}°F`);
     }

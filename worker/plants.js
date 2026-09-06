@@ -13,6 +13,7 @@ const STAGE_LABELS = {
   drying: "Drying", curing: "Curing", done: "Done",
 };
 import { ensureGrowLogSchema } from "./growLog.js";
+import { isWaterUnit } from "../src/lib/waterUnits.js";
 
 function parseSurvey(raw) {
   if (!raw) return null;
@@ -306,7 +307,18 @@ export async function dailyLogForPlant(env, user, growId, plantId) {
   for (const r of res.results ?? []) {
     for (const w of parse(r.water_plants)) {
       if (!mine(w)) continue;
-      out.push({ id: `daily_${r.date}_w_${i++}`, date: r.date, kind: "watering", source: "daily", detail: { gal: numOrUndef(w.gal) }, body: "" });
+      // The number that was typed and its unit travel with the canonical
+      // gallons, so this reads "3 L" in the plant's history rather than the
+      // gallons it happens to be summed in.
+      out.push({
+        id: `daily_${r.date}_w_${i++}`, date: r.date, kind: "watering", source: "daily",
+        detail: {
+          gal: numOrUndef(w.gal),
+          amount: numOrUndef(w.amount),
+          unit: isWaterUnit(w.unit) ? w.unit : undefined,
+        },
+        body: "",
+      });
     }
     for (const t of parse(r.training)) {
       if (!mine(t) || !(t.action ?? "").trim()) continue;

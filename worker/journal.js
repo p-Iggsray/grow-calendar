@@ -9,6 +9,7 @@ import { resolveGrowCoords } from "./weather.js";
 import { eventsForDay, eventCountsForMonth } from "./events.js";
 import { photosForDay, photoCountsForMonth, photoCountsForDates } from "./photos.js";
 import { tracksOutdoorWeather } from "../src/lib/growEnvironment.js";
+import { displayUnit } from "../src/lib/waterUnits.js";
 
 // A grow "has a location" when it carries coordinates OR a geocodable place
 // name; resolveGrowCoords turns either into usable coordinates (persisting
@@ -140,6 +141,9 @@ export function buildTimelineDays(logRows, noteRows, plantRows) {
     const e = rowToEntry(r);
     at(r.date).log = {
       water_gal: e.water_gal, feed: e.feed,
+      // The unit the day was watered in travels with its total, so the chip
+      // reads litres for a day logged in litres.
+      water_unit: displayUnit(e.water_plants, null),
       temp_high: e.temp_high, temp_low: e.temp_low, humidity: e.humidity,
       waterings: e.water_plants.length, trainings: e.training.length, healthChecks: e.plant_health.length,
     };

@@ -263,13 +263,14 @@ export const MJ_TOOLS = [
   },
   {
     name: "log_grow_data",
-    description: "Record grow data for a specific date. Supports: total water amount, temperatures, humidity, and feed description. Water can be given in gallons, litres or millilitres - pass the number the grower said in water_amount with its water_unit, and it is converted and stored. IMPORTANT: Before calling this, always confirm the values with the grower - e.g. 'Should I log 2 gal water, high 82°F for today?' - and wait for their confirmation or correction. Never log without explicit grower approval.",
+    description: "Record grow data for a specific date. Supports: water (a day total, or the same amount given to every plant), temperatures, humidity, and feed description. Water can be given in gallons, litres or millilitres - pass the number the grower said in water_amount with its water_unit, and it is converted and stored. When the grower says every plant got the same amount ('watered them all with 3 L'), set water_per_plant true: one watering is then recorded per plant and the tool returns the list. Report water back the way it was given - in the same unit, and plant by plant when the result carries a `watered` list - never as a bare day total. IMPORTANT: Before calling this, always confirm the values with the grower - e.g. 'Should I log 3 L for each of your 4 plants and a high of 82°F for today?' - and wait for their confirmation or correction. Never log without explicit grower approval.",
     parameters: {
       type: "object",
       properties: {
         date:      { type: "string",  description: "Date to log as YYYY-MM-DD" },
-        water_amount: { type: "number", description: "Total water applied across all plants, in the unit given by water_unit (omit if not mentioned)" },
+        water_amount: { type: "number", description: "Water in the unit given by water_unit: the day's total across all plants, or - with water_per_plant true - the amount EACH plant received (omit if not mentioned)" },
         water_unit:   { type: "string", enum: ["gal", "l", "ml"], description: "Unit for water_amount. Defaults to gallons." },
+        water_per_plant: { type: "boolean", description: "True when water_amount is what EACH plant received, e.g. 'all of them got 3 L'. Records one watering per plant at that amount and sums the day's total from them. Omit or false when water_amount is the day's total." },
         water_gal: { type: "number",  description: "Total water in gallons. Prefer water_amount + water_unit; this is accepted for compatibility." },
         temp_high: { type: "number",  description: "Day's high temperature in °F (omit if not mentioned)" },
         temp_low:  { type: "number",  description: "Day's low temperature in °F (omit if not mentioned)" },

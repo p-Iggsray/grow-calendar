@@ -9,7 +9,7 @@ import { parseDate } from "../src/lib/dates-core.js";
 import { loadStageTimeline } from "./stages.js";
 import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../src/lib/stageTimeline.js";
 import { growLocation, strainSummary } from "../src/lib/growProfile.js";
-import { formatWater, isWaterUnit, rowDisplay, unitLabel } from "../src/lib/waterUnits.js";
+import { displayUnit, formatWater, isWaterUnit, rowDisplay, unitLabel } from "../src/lib/waterUnits.js";
 import { ensureGrowEventsSchema } from "./events.js";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -176,6 +176,9 @@ function renderReport(ctx) {
     if (num(r.temp_high) != null) tempMax = tempMax == null ? num(r.temp_high) : Math.max(tempMax, num(r.temp_high));
   }
   const logDays = new Set(logRows.map(r => r.date)).size;
+  // The unit this grow was actually watered in decides how its totals read;
+  // only a grow with nothing to go on falls back to the unit asked for.
+  const growWaterUnit = displayUnit(logRows.flatMap(r => tryArr(r.water_plants)), waterUnit);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -190,7 +193,7 @@ function renderReport(ctx) {
     currentStage ? ["Current stage", stageLabel(currentStage)] : null,
     plants.length ? ["Plants", String(plants.length)] : null,
     ["Days logged", String(logDays)],
-    ["Total water", formatWater(totalWater, waterUnit)],
+    ["Total water", formatWater(totalWater, growWaterUnit)],
     feedDays ? ["Feed days", String(feedDays)] : null,
     eventRows.length ? ["Events", String(eventRows.length)] : null,
   ].filter(Boolean);
@@ -294,12 +297,15 @@ function renderReport(ctx) {
     const metrics = [];
     if (e.log) {
       const L = e.log;
-      if (num(L.water_gal) != null) metrics.push(["Water", formatWater(num(L.water_gal), waterUnit)]);
+      const wp = tryArr(L.water_plants);
+      // The day's total reads in the unit that day was logged in; only a day
+      // with nothing to go on falls back to the unit the report was asked for.
+      const dayUnit = displayUnit(wp, waterUnit);
+      if (num(L.water_gal) != null) metrics.push(["Water", formatWater(num(L.water_gal), dayUnit)]);
       if (L.feed) metrics.push(["Feed", esc(L.feed)]);
       if (num(L.temp_high) != null || num(L.temp_low) != null) metrics.push(["Temp", `${L.temp_high ?? "?"}° / ${L.temp_low ?? "?"}°F`]);
       if (num(L.humidity) != null) metrics.push(["Humidity", `${num(L.humidity)}%`]);
       if (num(L.ec_in) != null || num(L.ec_out) != null) metrics.push(["EC in/out", `${L.ec_in ?? "?"} / ${L.ec_out ?? "?"}`]);
-      const wp = tryArr(L.water_plants);
       if (wp.length) {
         // Each row reads in the unit it was actually logged in.
         metrics.push(["Watered", esc(wp.map((w) => {
@@ -338,7 +344,7 @@ function renderReport(ctx) {
   // ── Stats summary ────────────────────────────────────────────────────────
   const summaryRows = [
     ["Days with a log entry", String(logDays)],
-    ["Total water applied", formatWater(totalWater, waterUnit)],
+    ["Total water applied", formatWater(totalWater, growWaterUnit)],
     ["Feed days", String(feedDays)],
     tempMin != null ? ["Lowest temp recorded", `${tempMin}°F`] : null,
     tempMax != null ? ["Highest temp recorded", `${tempMax}°F`] : null,
