@@ -19,26 +19,42 @@ import HeaderMenu from "../HeaderMenu.jsx";
 import { ymd as lifecycleYmd, useLifecycleSave } from "../Lifecycle/shared.jsx";
 
 export const ENV_KIND_LABEL = { indoor: "Indoor", outdoor: "Outdoor", greenhouse: "Greenhouse" };
-const MEDIUM_LABEL = { soil: "Soil", coco: "Coco", hydro: "Hydro", other: "Other medium" };
-const CONTAINER_LABEL = { fabric: "Fabric pots", plastic: "Plastic pots", ground: "In-ground", other: "Other containers" };
-const WATERING_LABEL = { hand: "Hand watered", drip: "Drip / automated" };
+const MEDIUM_LABEL = {
+  soil: "Soil", coco: "Coco", hydro: "Hydro", other: "Other medium",
+  cvg: "CVG", manure: "Manure sub", masters: "Master's mix",
+};
+const CONTAINER_LABEL = {
+  fabric: "Fabric pots", plastic: "Plastic pots", ground: "In-ground", other: "Other containers",
+  monotub: "Monotub", shoebox: "Shoebox", bag: "Grow bag",
+};
+const WATERING_LABEL = {
+  hand: "Hand watered", drip: "Drip / automated",
+  mist: "Misted by hand", perlite: "Perlite layer", humidifier: "Humidifier",
+};
 
 // One-line summary chips describing the space.
 export function envSetupChips(survey) {
   if (!survey) return [];
+  const w = words(cropOf(survey));
+  const mushrooms = cropOf(survey) === "mushrooms";
   const light = [survey.lightSchedule, survey.lightType, survey.lightWatts ? `${survey.lightWatts}W` : null]
     .filter(Boolean).join(" · ");
+  // A pot is measured in gallons and a tub in quarts, and the same number in
+  // the wrong unit is worse than no number.
+  const size = survey.containerType === "ground"
+    ? CONTAINER_LABEL.ground
+    : survey.containerGallons
+      ? `${survey.containerGallons} ${mushrooms ? "qt" : "gal"} ${CONTAINER_LABEL[survey.containerType] ?? ""}`.trim()
+      : null;
   return [
     survey.envSize ? { icon: Ruler, text: survey.envSize } : null,
-    survey.envCapacity ? { icon: Sprout, text: `${survey.envCapacity} plant${survey.envCapacity === 1 ? "" : "s"}` } : null,
+    survey.envCapacity ? { icon: Sprout, text: `${survey.envCapacity} ${survey.envCapacity === 1 ? w.unit : w.units}` } : null,
     light ? { icon: Sun, text: light } : null,
     survey.medium ? {
       icon: Droplets,
       text: [
         MEDIUM_LABEL[survey.medium] ?? survey.medium,
-        survey.containerType === "ground"
-          ? CONTAINER_LABEL.ground
-          : survey.containerGallons ? `${survey.containerGallons} gal` : null,
+        size,
         WATERING_LABEL[survey.wateringMethod] ?? null,
       ].filter(Boolean).join(" · "),
     } : null,
@@ -256,7 +272,7 @@ export default function EnvironmentDetail({
 
         {/* Measured conditions */}
         <SectionTitle>Conditions</SectionTitle>
-        <EnvConditions growId={growId} indoorish={survey?.environment !== "outdoor"} />
+        <EnvConditions growId={growId} indoorish={survey?.environment !== "outdoor"} mushrooms={crop === "mushrooms"} />
 
       </div>
 

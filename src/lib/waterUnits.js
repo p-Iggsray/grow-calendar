@@ -188,18 +188,29 @@ export function sumGallons(rows) {
 // ── The unit to offer next time ──────────────────────────────────────────────
 // Whatever you last watered in is what the next row starts as, and what totals
 // are shown in. Mirrors how the choice fields remember a custom value.
+// Remembered per crop, because they are not remotely the same measurement: a
+// plant takes gallons or litres from a can, a tub takes millilitres from a
+// mister. One remembered unit across both would have every monotub open in
+// gallons for anyone who also grows in a tent.
 const STORAGE_KEY = "waterUnit";
+const CROP_DEFAULT = { cannabis: "gal", mushrooms: "ml" };
 
-export function loadWaterUnit() {
+function storageKey(crop) {
+  // Cannabis keeps the original key, so nobody's remembered unit is lost.
+  return crop === "mushrooms" ? `${STORAGE_KEY}:mushrooms` : STORAGE_KEY;
+}
+
+export function loadWaterUnit(crop) {
+  const fallback = CROP_DEFAULT[crop] ?? DEFAULT_WATER_UNIT;
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return isWaterUnit(saved) ? saved : DEFAULT_WATER_UNIT;
+    const saved = localStorage.getItem(storageKey(crop));
+    return isWaterUnit(saved) ? saved : fallback;
   } catch {
-    return DEFAULT_WATER_UNIT;
+    return fallback;
   }
 }
 
-export function rememberWaterUnit(unit) {
+export function rememberWaterUnit(unit, crop) {
   if (!isWaterUnit(unit)) return;
-  try { localStorage.setItem(STORAGE_KEY, unit); } catch { /* storage unavailable */ }
+  try { localStorage.setItem(storageKey(crop), unit); } catch { /* storage unavailable */ }
 }

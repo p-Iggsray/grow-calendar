@@ -141,7 +141,7 @@ export function PlantSelect({ value, onChange, plants = [], unitWord = "plant" }
   );
 }
 
-export function WaterEntry({ entry, onChangeField, onRemove, hidePlant, plants = [], unitWord = "plant" }) {
+export function WaterEntry({ entry, onChangeField, onRemove, hidePlant, plants = [], unitWord = "plant", crop }) {
   const { amount, unit } = rowDisplay(entry);
 
   // Changing either the number or the unit rewrites the whole row, so the
@@ -149,7 +149,7 @@ export function WaterEntry({ entry, onChangeField, onRemove, hidePlant, plants =
   // keeps the number you typed - 2 gal becomes 2 L, not 7.57 L - because you
   // are correcting the unit, not converting the measurement.
   const setAmount = (v) => onChangeField("__row", waterRow(entry, v, unit));
-  const setUnit = (v) => { rememberWaterUnit(v); onChangeField("__row", waterRow(entry, amount ?? "", v)); };
+  const setUnit = (v) => { rememberWaterUnit(v, cropOf(crop)); onChangeField("__row", waterRow(entry, amount ?? "", v)); };
 
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "flex-end", marginBottom: 8 }}>
@@ -198,12 +198,12 @@ export function WaterEntry({ entry, onChangeField, onRemove, hidePlant, plants =
 // once here and every plant gets its own row at that amount, which is what the
 // day, the report and each plant's own history then read back - a total on its
 // own never says which plant got what.
-export function WaterAllPlants({ count, title = "Water every plant", unitWord = "plant", onAdd }) {
+export function WaterAllPlants({ count, title = "Water every plant", unitWord = "plant", crop, onAdd }) {
   const [amount, setAmount] = useState("");
-  const [unit, setUnit] = useState(loadWaterUnit);
+  const [unit, setUnit] = useState(() => loadWaterUnit(cropOf(crop)));
 
   function submit() {
-    rememberWaterUnit(unit);
+    rememberWaterUnit(unit, cropOf(crop));
     onAdd(amount, unit);
     setAmount("");
   }

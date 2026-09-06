@@ -52,7 +52,7 @@ function Reading({ label, unit, name, entry, setField, min, max, autoFocus }) {
   );
 }
 
-export default function ConditionsCard({ date, growId, environment, active = true }) {
+export default function ConditionsCard({ date, growId, environment, crop, active = true }) {
   const { entry, setField, status } = useGrowLog(date, active, growId);
 
   return (
@@ -80,7 +80,7 @@ export default function ConditionsCard({ date, growId, environment, active = tru
       </div>
 
       <div style={{ fontFamily: UI, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 9, lineHeight: 1.55 }}>
-        {climateHint(environment)}
+        {climateHint(environment, crop)}
       </div>
     </div>
   );

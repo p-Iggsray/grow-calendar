@@ -12,6 +12,7 @@ import { partitionPlants } from "./PlantsTab/constants.js";
 import { useToast } from "../lib/useToast.jsx";
 import { api } from "../lib/api.js";
 import { loadWaterUnit } from "../lib/waterUnits.js";
+import { cropOf } from "../lib/crops.js";
 import { loadSaveToRoll, rememberSaveToRoll } from "../lib/savePhoto.js";
 import { tapHaptic } from "../lib/haptics.js";
 
@@ -152,7 +153,7 @@ export default function SettingsScreen({
     if (!activeGrowId || reportBusy) return;
     setReportBusy(true);
     try {
-      const html = await api.getGrowReport(activeGrowId, loadWaterUnit());
+      const html = await api.getGrowReport(activeGrowId, loadWaterUnit(cropOf(activeGrow?.survey)));
       const blob = new Blob([html], { type: "text/html" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");

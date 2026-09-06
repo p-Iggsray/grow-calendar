@@ -31,7 +31,7 @@ function fmtTime(ts) {
   return `${h}:${String(mm).padStart(2, "0")}${ampm}`;
 }
 
-export default function EnvConditions({ growId, indoorish }) {
+export default function EnvConditions({ growId, indoorish, mushrooms = false }) {
   const { addToast } = useToast();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -130,7 +130,7 @@ export default function EnvConditions({ growId, indoorish }) {
         </button>
         <div style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--c-text-ghost)", marginTop: 10, lineHeight: 1.6 }}>
           {indoorish
-            ? "Import the CSV export from this space's controller (VIVOSUN style) and its temp, humidity, and VPD fill in automatically, including each day's log."
+            ? `Import the CSV export from this space's controller (VIVOSUN style) and its temp, humidity, and VPD fill in automatically, including each day's log.${mushrooms ? " Fruiting wants 72-75F and high humidity, so these are the numbers worth watching." : ""}`
             : "Outdoor space: each day's high, low and humidity are already pulled from this grow's location, so there is nothing to log by hand. Import a sensor CSV here if you run your own instrument outside."}
           {" "}Re-importing the same period just updates it - minutes are never double-counted.
         </div>

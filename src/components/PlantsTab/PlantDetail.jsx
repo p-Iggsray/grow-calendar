@@ -9,7 +9,7 @@ import {
   MONO, SERIF, typeLabel, HEALTH_MAP, stageOrder, stageLabel, nextStage,
   logKinds, kindLabel, summarizeEntry, fmtDateKey, plantHistoryStats,
 } from "./constants.js";
-import { defaultStage, flushTotals, words } from "../../lib/crops.js";
+import { cropOf, defaultStage, flushTotals, words } from "../../lib/crops.js";
 import LogEntryForm from "./LogEntryForm.jsx";
 import AddPlantSheet from "./AddPlantSheet.jsx";
 import StageTimeline from "./StageTimeline.jsx";
@@ -60,6 +60,7 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
   }, [growId, plant.id, entries.length]);
 
   const w = words(crop);
+  const mushrooms = cropOf(crop) === "mushrooms";
   const combined = [...entries.map((e) => ({ ...e, source: "log" })), ...daily]
     .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   const presentKinds = logKinds(crop).filter((k) => combined.some((e) => (e.kind || "note") === k.value));
@@ -150,9 +151,9 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
 
       <div style={{ padding: 16 }}>
         <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-muted)" }}>
-          {plant.photo === false ? "Auto" : "Photo"}
-          {plant.flowerWeeks ? ` · ${plant.flowerWeeks}wk flower` : ""}
-          {plant.potSize ? ` · ${plant.potSize} gal` : ""}
+          {mushrooms ? typeLabel(plant.type, crop) : (plant.photo === false ? "Auto" : "Photo")}
+          {plant.flowerWeeks ? ` · ${plant.flowerWeeks}wk ${mushrooms ? "to flush" : "flower"}` : ""}
+          {!mushrooms && plant.potSize ? ` · ${plant.potSize} gal` : ""}
         </div>
 
         {editing && (
@@ -210,8 +211,8 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
           )}
         </div>
 
-        {/* Photos of this plant */}
-        <PlantPhotos growId={growId} plantId={plant.id} />
+        {/* Photos of this plant or tub */}
+        <PlantPhotos growId={growId} plantId={plant.id} unitWord={w.unit} />
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 28, marginBottom: 12 }}>
           <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>History</span>

@@ -1,4 +1,5 @@
 // @ts-check
+import { words } from "../src/lib/crops.js";
 import { json, error, safeJsonBounded } from "./util.js";
 import { logError } from "./log.js";
 import { geocode } from "./geocode.js";
@@ -441,7 +442,7 @@ export async function setupGrow(request, env, user, growId) {
   // version - including a stale cached PWA bundle - produces a valid roster.
   survey = ensurePlantIds(resolveSurveyForSetup(survey)).survey;
   if (!Array.isArray(survey.strains) || survey.strains.length === 0)
-    return error(400, "Add at least one strain before finishing setup.");
+    return error(400, `Add at least one ${words(survey).variety} before finishing setup.`);
 
   // Resolve coordinates for weather/frost if the GPS button didn't already
   // provide them. Best-effort; a failure just means no weather until it's set.

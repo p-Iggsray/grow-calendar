@@ -55,10 +55,18 @@ export function climateLabel(environment) {
     : "Conditions";
 }
 
-/** Pure: the one line explaining where a space's numbers come from. */
-export function climateHint(environment) {
+/**
+ * Pure: the one line explaining where a space's numbers come from.
+ *
+ * `crop` only changes the words, never the rule: a monotub is an indoor space
+ * like any other, it is just not a tent and does not have a thermometer hung
+ * among leaves.
+ */
+export function climateHint(environment, crop) {
   if (environment === "indoor") {
-    return "Your tent has its own weather. Type what your thermometer and hygrometer read today.";
+    return crop === "mushrooms"
+      ? "A tub makes its own climate. Type what the thermometer and hygrometer on it read today."
+      : "Your tent has its own weather. Type what your thermometer and hygrometer read today.";
   }
   if (environment === "greenhouse") {
     return "Outside drives a greenhouse, but only your instruments know what it is like in there.";

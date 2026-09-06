@@ -9,7 +9,7 @@ import { tapHaptic } from "../../lib/haptics.js";
 // One plant's photo timeline: newest first, uploaded from the plant's page.
 // Each photo is dated today and shows up on that day's journal page too,
 // labeled with this plant.
-export default function PlantPhotos({ growId, plantId }) {
+export default function PlantPhotos({ growId, plantId, unitWord = "plant" }) {
   const cameraRef = useRef(null);
   const libraryRef = useRef(null);
   const [photos, setPhotos] = useState([]);
@@ -108,7 +108,7 @@ export default function PlantPhotos({ growId, plantId }) {
 
       {photos.length === 0 && !busy && (
         <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-ghost)", padding: "4px 0" }}>
-          No photos of this plant yet.
+          No photos of this {unitWord} yet.
         </div>
       )}
 

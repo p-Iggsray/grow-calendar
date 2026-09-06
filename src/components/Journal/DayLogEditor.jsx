@@ -8,7 +8,7 @@ import {
 } from "./logEntries.jsx";
 import EnvSensorCard from "./EnvSensorCard.jsx";
 import ChoiceField from "../ChoiceField.jsx";
-import { NUTRIENT_PRODUCTS } from "../../lib/choices.js";
+import { NUTRIENT_PRODUCTS, TUB_CONDITIONS } from "../../lib/choices.js";
 import { displayUnit, fanOutWater, formatWater, loadWaterUnit, waterRow } from "../../lib/waterUnits.js";
 import { cropOf, words } from "../../lib/crops.js";
 import { readsOwnClimate } from "../../lib/growEnvironment.js";
@@ -51,7 +51,7 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
   function setWater(a) { setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
   // A fresh row starts in the unit you last watered in, so a litre grow never
   // has to correct the unit on every row it adds.
-  function addWater()           { setWater([...(logEntry.water_plants ?? []), newRow({ amount: "", unit: loadWaterUnit(), gal: "" })]); }
+  function addWater()           { setWater([...(logEntry.water_plants ?? []), newRow({ amount: "", unit: loadWaterUnit(crop), gal: "" })]); }
   // "All plants got 3 L" is several waterings, and it is recorded as several:
   // one row per plant, each holding the amount that plant actually received.
   function addWaterForAll(amount, unit) {
@@ -163,18 +163,19 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
               hidePlant={scoped}
               plants={logPlants}
               unitWord={w.unit}
+              crop={crop}
               onChangeField={(k, v) => updateWater(i, k, v)}
               onRemove={() => removeWater(i)}
             />
           ))}
         {!scoped && logPlants.length > 0 && (
-          <WaterAllPlants count={logPlants.length} title={w.waterAllTitle} unitWord={w.unit} onAdd={addWaterForAll} />
+          <WaterAllPlants count={logPlants.length} title={w.waterAllTitle} unitWord={w.unit} crop={crop} onAdd={addWaterForAll} />
         )}
         <AddEntryButton
           onClick={addWater}
           label={scoped
-            ? `ADD ${w.waterField.toUpperCase()} FOR ${(selPlant?.name || w.Unit).toUpperCase()}`
-            : `ADD ONE ${w.Unit.toUpperCase()}'S ${w.waterField.toUpperCase()}`}
+            ? `ADD ${w.waterNoun.toUpperCase()} FOR ${(selPlant?.name || w.Unit).toUpperCase()}`
+            : `ADD ONE ${w.Unit.toUpperCase()}'S ${w.waterNoun.toUpperCase()}`}
         />
         {sumWater(logEntry.water_plants) && (
           <div style={{
@@ -184,7 +185,7 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
           }}>
             {/* Read out in the unit the day was actually logged in, never in
                 whatever unit happens to be remembered. */}
-            Total: {formatWater(sumWater(logEntry.water_plants), displayUnit(logEntry.water_plants, loadWaterUnit()))}
+            Total: {formatWater(sumWater(logEntry.water_plants), displayUnit(logEntry.water_plants, loadWaterUnit(crop)))}
           </div>
         )}
         <div style={{ marginTop: 14 }}>
@@ -194,9 +195,9 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
           <ChoiceField
             value={logEntry.feed ?? ""}
             onChange={(v) => setLogField("feed", v)}
-            presets={mushrooms ? [] : NUTRIENT_PRODUCTS}
+            presets={mushrooms ? TUB_CONDITIONS : NUTRIENT_PRODUCTS}
             fieldKey={mushrooms ? "tub-conditions" : "nutrient-mix"}
-            placeholder={mushrooms ? "e.g. fanned 3x, misted walls" : "Choose what you fed"}
+            placeholder={mushrooms ? "What you did for the tub today" : "Choose what you fed"}
             searchLabel={mushrooms ? "Search notes" : "Search nutrients"}
           />
         </div>

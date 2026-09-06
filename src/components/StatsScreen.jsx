@@ -8,6 +8,7 @@ import { ymd } from "../lib/api.js";
 import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../lib/stageTimeline.js";
 import { distinctStrains, growLocation } from "../lib/growProfile.js";
 import { formatWater, isWaterUnit, loadWaterUnit } from "../lib/waterUnits.js";
+import { cropOf } from "../lib/crops.js";
 
 const MONO  = "var(--font-ui)";
 const SERIF = "var(--font-ui)";
@@ -198,7 +199,7 @@ export default function StatsScreen({ today, onClose }) {
         }}>
           <StatRow icon={CalendarDays} label="Stage changes recorded" value={events.length} iconColor="#c084fc" />
           {/* Read out in the unit this grow was watered in, not the one in hand. */}
-          <StatRow icon={Droplets} label="Total water logged" value={formatWater(stats.log.totalWater, isWaterUnit(stats.log.waterUnit) ? stats.log.waterUnit : loadWaterUnit())} />
+          <StatRow icon={Droplets} label="Total water logged" value={formatWater(stats.log.totalWater, isWaterUnit(stats.log.waterUnit) ? stats.log.waterUnit : loadWaterUnit(cropOf(survey)))} />
           <StatRow icon={Thermometer} label="Temp range logged" value={tempVal} iconColor="#60a5fa" />
           <StatRow icon={BookOpen} label="Journal entries" value={stats.notes.count} iconColor="#f59e0b" />
         </div>

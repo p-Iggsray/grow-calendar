@@ -149,7 +149,7 @@ export default function DaySpread({
   );
   // The day's total reads in the unit the day was logged in, and each row in
   // the unit that row was logged in.
-  const waterUnit = displayUnit(log?.water_plants, loadWaterUnit());
+  const waterUnit = displayUnit(log?.water_plants, loadWaterUnit(crop));
   const waterAmount = (row) => {
     const { amount, unit } = rowDisplay(row);
     return amount == null || amount === "" ? "" : ` ${amount} ${unitLabel(unit)}`;
@@ -347,7 +347,7 @@ export default function DaySpread({
             {/* A space with its own climate gets read off its own instruments,
                 every day, right here rather than buried in the daily log. */}
             {readsOwnClimate(environment) && (
-              <ConditionsCard date={date} growId={growId} environment={environment} active={active} />
+              <ConditionsCard date={date} growId={growId} environment={environment} crop={crop} active={active} />
             )}
 
             {/* Never fail silently: say WHY there is no weather card. Only
@@ -468,7 +468,7 @@ export default function DaySpread({
             )}
 
             {groups.length > 0 && (
-              <Card title="Plant journal" icon={<Sprout size={13} strokeWidth={2} style={{ color: "#c084fc" }} />}>
+              <Card title={`${w.Unit} journal`} icon={<Sprout size={13} strokeWidth={2} style={{ color: "#c084fc" }} />}>
                 {groups.map((g, gi) => (
                   <div key={g.name + gi} style={{ marginTop: gi === 0 ? 0 : 13 }}>
                     <button

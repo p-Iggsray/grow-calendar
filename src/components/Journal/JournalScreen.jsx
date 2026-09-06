@@ -9,7 +9,7 @@ import DaySpread from "./DaySpread.jsx";
 // into its page.
 export default function JournalScreen({
   today, date, onChangeDate, stageEvents = [], firstDate = null, growId, onOpenPlant, onExit,
-  plants = [], environment = "outdoor", active = true,
+  plants = [], environment = "outdoor", crop, active = true,
 }) {
   const [mode, setMode] = useState("day");
   const [focusSignal, setFocusSignal] = useState(0);
@@ -37,6 +37,7 @@ export default function JournalScreen({
       onExit={onExit}
       plants={plants}
       environment={environment}
+      crop={crop}
       onZoomOut={() => setMode("timeline")}
       focusSignal={focusSignal}
       active={active}

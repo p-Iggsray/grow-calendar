@@ -166,3 +166,14 @@ export function filterOptions(options, query) {
   if (!q) return options;
   return options.filter((o) => String(o).toLowerCase().includes(q));
 }
+
+// What a monotub grower does to a tub on a given day. Fresh air and surface
+// moisture are the whole job once it is in fruiting conditions.
+export const TUB_CONDITIONS = [
+  "Fanned and misted",
+  "Fanned only",
+  "Misted the walls",
+  "Dunked / rehydrated",
+  "Opened for a full air exchange",
+  "Left alone",
+];

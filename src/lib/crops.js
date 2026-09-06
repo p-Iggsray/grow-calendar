@@ -171,6 +171,7 @@ const WORDS = {
     // The day's log.
     waterSection: "Watering & Nutrients",
     waterField: "Water",
+    waterNoun: "watering",
     waterVerb: "watered",
     waterAllTitle: "Water every plant",
     healthSection: "Plant Health",
@@ -194,6 +195,7 @@ const WORDS = {
     addUnit: "Add tub",
     waterSection: "Misting & Hydration",
     waterField: "Misted",
+    waterNoun: "misting",
     waterVerb: "misted",
     waterAllTitle: "Mist every tub",
     healthSection: "Tub Health",

@@ -42,7 +42,7 @@ export default function LogEntryForm({ initial, environment, crop, nextFlush = 1
     if (kind === "watering") {
       // Canonical gallons for anything that sums, plus what was actually typed
       // so the entry reads back in the unit it was logged in.
-      const unit = isWaterUnit(d.unit) ? d.unit : loadWaterUnit();
+      const unit = isWaterUnit(d.unit) ? d.unit : loadWaterUnit(crop);
       const gal = toGallons(d.amount, unit);
       obj = {
         amount: num(d.amount), unit,
@@ -101,7 +101,7 @@ export default function LogEntryForm({ initial, environment, crop, nextFlush = 1
             <Label>{w.waterField}</Label>
             <Input
               type="number"
-              step={UNIT_STEP[isWaterUnit(d.unit) ? d.unit : loadWaterUnit()] ?? 0.25}
+              step={UNIT_STEP[isWaterUnit(d.unit) ? d.unit : loadWaterUnit(crop)] ?? 0.25}
               value={d.amount ?? ""}
               onChange={(v) => sd("amount", v)}
               placeholder="0"
@@ -110,8 +110,8 @@ export default function LogEntryForm({ initial, environment, crop, nextFlush = 1
           <div style={{ width: 92 }}>
             <Label>Unit</Label>
             <select
-              value={isWaterUnit(d.unit) ? d.unit : loadWaterUnit()}
-              onChange={(e) => { rememberWaterUnit(e.target.value); sd("unit", e.target.value); }}
+              value={isWaterUnit(d.unit) ? d.unit : loadWaterUnit(crop)}
+              onChange={(e) => { rememberWaterUnit(e.target.value, crop); sd("unit", e.target.value); }}
               aria-label="Water unit"
               style={{
                 width: "100%", boxSizing: "border-box", padding: "12px 14px",

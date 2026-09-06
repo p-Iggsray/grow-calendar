@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { MONO, SERIF, typeLabel, HEALTH_MAP, stageLabel, relDayLabel } from "./constants.js";
+import { cropOf, words } from "../../lib/crops.js";
 import { dayOfGrow } from "../../lib/stageTimeline.js";
 import { ymd } from "../../lib/api.js";
 import StageTimeline from "./StageTimeline.jsx";
@@ -7,6 +8,8 @@ import StageTimeline from "./StageTimeline.jsx";
 export default function PlantCard({ plant, metrics, crop, today, firstDate, onOpen }) {
   // A plant counts from the day IT was added, not from the space's day 0.
   // Older plants predate that stamp, so they fall back to the space.
+  const w = words(crop);
+  const mushrooms = cropOf(crop) === "mushrooms";
   const health = metrics?.health ? HEALTH_MAP[metrics.health] : null;
   const age = today ? dayOfGrow(plant.createdAt ?? firstDate, ymd(today)) : null;
   const lastLog = metrics?.date ? relDayLabel(metrics.date, today) : null;
@@ -29,7 +32,7 @@ export default function PlantCard({ plant, metrics, crop, today, firstDate, onOp
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
         <div style={{ fontSize: 17, fontWeight: 700, fontFamily: SERIF, color: "var(--c-text)", lineHeight: 1.2 }}>
-          {plant.name || "Unnamed plant"}
+          {plant.name || `Unnamed ${w.unit}`}
         </div>
         {health && (
           <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: health.color, textTransform: "uppercase", flexShrink: 0 }}>
@@ -39,15 +42,17 @@ export default function PlantCard({ plant, metrics, crop, today, firstDate, onOp
       </div>
       <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)", marginTop: 6, letterSpacing: 0.3 }}>
         {typeLabel(plant.type, crop) || plant.type}
-        {plant.photo === false ? " · Auto" : " · Photo"}
-        {plant.flowerWeeks ? ` · ${plant.flowerWeeks}wk flower` : ""}
-        {plant.potSize ? ` · ${plant.potSize} gal` : ""}
+        {/* Photoperiod is a light-cycle question, and a pot size is a pot: a tub
+            has an answer to neither. */}
+        {mushrooms ? "" : (plant.photo === false ? " · Auto" : " · Photo")}
+        {plant.flowerWeeks ? ` · ${plant.flowerWeeks}wk ${mushrooms ? "to flush" : "flower"}` : ""}
+        {!mushrooms && plant.potSize ? ` · ${plant.potSize} gal` : ""}
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>
         <span>Stage: {stageLabel(plant.stage)}</span>
       </div>
       <div style={{ marginTop: 8 }}>
-        <StageTimeline stage={plant.stage} height={5} />
+        <StageTimeline stage={plant.stage} crop={crop} height={5} />
       </div>
       {activityBits.length > 0 && (
         <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginTop: 6 }}>
