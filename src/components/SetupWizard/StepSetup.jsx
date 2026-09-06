@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api } from "../../lib/api.js";
 import { MONO, SERIF, Label, RadioGroup } from "./styleHelpers.jsx";
+import { cropOf } from "../../lib/crops.js";
 import PlacePicker from "../PlacePicker.jsx";
 
 export function StepSetup({ survey, update }) {
@@ -28,8 +29,14 @@ export function StepSetup({ survey, update }) {
     );
   }
 
+  const crop = cropOf(survey);
+  const mushrooms = crop === "mushrooms";
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* A location is what weather and frost dates are read from, and a tub
+          indoors is not touched by either. */}
+      {!mushrooms && (
       <div>
         <Label>Location / region</Label>
         {/* Pick a real place: its coordinates come with it, so weather and
@@ -73,6 +80,7 @@ export function StepSetup({ survey, update }) {
           Used to tailor weather, frost timing, and threats to your area.
         </div>
       </div>
+      )}
       <div>
         <Label>Experience level</Label>
         <RadioGroup
@@ -86,11 +94,15 @@ export function StepSetup({ survey, update }) {
         />
       </div>
       <div>
-        <Label>Watering method</Label>
+        <Label>{mushrooms ? "How you keep it humid" : "Watering method"}</Label>
         <RadioGroup
           value={survey.wateringMethod}
           onChange={v => update("wateringMethod", v)}
-          options={[
+          options={mushrooms ? [
+            { value: "mist",     label: "Misting by hand" },
+            { value: "perlite",  label: "Perlite / water layer" },
+            { value: "humidifier", label: "Humidifier" },
+          ] : [
             { value: "hand", label: "Hand watering" },
             { value: "drip", label: "Drip / automated" },
           ]}
@@ -101,7 +113,9 @@ export function StepSetup({ survey, update }) {
         <textarea
           value={survey.extraNotes}
           onChange={e => update("extraNotes", e.target.value)}
-          placeholder="e.g. Fully outdoor in containers, hot and dry summers. I'm away for a week in August, so I need low-maintenance stretches."
+          placeholder={mushrooms
+            ? "e.g. Two 54-qt tubs in a spare room, passive FAE, room sits at 72F. First time with this species."
+            : "e.g. Fully outdoor in containers, hot and dry summers. I'm away for a week in August, so I need low-maintenance stretches."}
           rows={5}
           style={{
             width: "100%", boxSizing: "border-box", resize: "vertical",

@@ -10,6 +10,7 @@ import EnvSensorCard from "./EnvSensorCard.jsx";
 import ChoiceField from "../ChoiceField.jsx";
 import { NUTRIENT_PRODUCTS } from "../../lib/choices.js";
 import { displayUnit, fanOutWater, formatWater, loadWaterUnit, waterRow } from "../../lib/waterUnits.js";
+import { cropOf, words } from "../../lib/crops.js";
 import { readsOwnClimate } from "../../lib/growEnvironment.js";
 
 // The structured daily log, edited in place on the journal page: environment
@@ -22,7 +23,9 @@ const fieldNameStyle = {
   letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase",
 };
 
-export default function DayLogEditor({ date, growId, plants = [], environment = "outdoor", hasWeatherLocation = true, active = true }) {
+export default function DayLogEditor({ date, growId, plants = [], environment = "outdoor", crop, hasWeatherLocation = true, active = true }) {
+  const w = words(crop);
+  const mushrooms = cropOf(crop) === "mushrooms";
   const { entry: logEntry, setField: setLogField, setFields: setLogFields, status: logStatus } = useGrowLog(date, active, growId);
 
   // Which plant the per-plant sections are scoped to ("all" or a plant id).
@@ -125,7 +128,7 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
         <div style={{ margin: "16px 0" }}>
           <div style={{ ...fieldNameStyle, marginBottom: 8 }}>Log entries for</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {[{ key: "all", label: "All plants" }, ...logPlants.map(p => ({ key: p.id, label: p.name || "Unnamed" }))].map(opt => {
+            {[{ key: "all", label: `All ${w.units}` }, ...logPlants.map(p => ({ key: p.id, label: p.name || "Unnamed" }))].map(opt => {
               const isOn = logPlant === opt.key;
               return (
                 <button
@@ -150,7 +153,7 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
       )}
 
       {/* ── Watering & Nutrients ── */}
-      <LogSection label="Watering & Nutrients">
+      <LogSection label={w.waterSection}>
         {(logEntry.water_plants ?? []).map((w, i) => ({ w, i }))
           .filter(({ w }) => matches(w))
           .map(({ w, i }) => (
@@ -159,14 +162,20 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
               entry={w}
               hidePlant={scoped}
               plants={logPlants}
+              unitWord={w.unit}
               onChangeField={(k, v) => updateWater(i, k, v)}
               onRemove={() => removeWater(i)}
             />
           ))}
         {!scoped && logPlants.length > 0 && (
-          <WaterAllPlants count={logPlants.length} onAdd={addWaterForAll} />
+          <WaterAllPlants count={logPlants.length} title={w.waterAllTitle} unitWord={w.unit} onAdd={addWaterForAll} />
         )}
-        <AddEntryButton onClick={addWater} label={scoped ? `ADD WATERING FOR ${(selPlant?.name || "PLANT").toUpperCase()}` : "ADD ONE PLANT'S WATERING"} />
+        <AddEntryButton
+          onClick={addWater}
+          label={scoped
+            ? `ADD ${w.waterField.toUpperCase()} FOR ${(selPlant?.name || w.Unit).toUpperCase()}`
+            : `ADD ONE ${w.Unit.toUpperCase()}'S ${w.waterField.toUpperCase()}`}
+        />
         {sumWater(logEntry.water_plants) && (
           <div style={{
             marginTop: 10, textAlign: "right",
@@ -179,19 +188,22 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
           </div>
         )}
         <div style={{ marginTop: 14 }}>
-          <span style={{ ...fieldNameStyle, display: "block", marginBottom: 5 }}>Feed / Nutrients</span>
+          <span style={{ ...fieldNameStyle, display: "block", marginBottom: 5 }}>
+            {mushrooms ? "Fresh air / conditions note" : "Feed / Nutrients"}
+          </span>
           <ChoiceField
             value={logEntry.feed ?? ""}
             onChange={(v) => setLogField("feed", v)}
-            presets={NUTRIENT_PRODUCTS}
-            fieldKey="nutrient-mix"
-            placeholder="Choose what you fed"
-            searchLabel="Search nutrients"
+            presets={mushrooms ? [] : NUTRIENT_PRODUCTS}
+            fieldKey={mushrooms ? "tub-conditions" : "nutrient-mix"}
+            placeholder={mushrooms ? "e.g. fanned 3x, misted walls" : "Choose what you fed"}
+            searchLabel={mushrooms ? "Search notes" : "Search nutrients"}
           />
         </div>
       </LogSection>
 
-      {/* ── Plant Training ── */}
+      {/* ── Training: a tub is not shaped, so there is nothing to record ── */}
+      {!mushrooms && (
       <LogSection label="Plant Training">
         {(logEntry.training ?? []).map((t, i) => ({ t, i }))
           .filter(({ t }) => matches(t))
@@ -207,22 +219,24 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
           ))}
         <AddEntryButton onClick={addTraining} label={scoped ? `ADD TRAINING FOR ${(selPlant?.name || "PLANT").toUpperCase()}` : "ADD TRAINING ENTRY"} />
       </LogSection>
+      )}
 
-      {/* ── Plant Health ── */}
-      <LogSection label="Plant Health">
+      {/* ── Health ── */}
+      <LogSection label={w.healthSection}>
         {(logEntry.plant_health ?? []).map((h, i) => ({ h, i }))
           .filter(({ h }) => matches(h))
           .map(({ h, i }) => (
             <PlantHealthEntry
               key={i}
               entry={h}
+              crop={crop}
               hidePlant={scoped}
               plants={logPlants}
               onChangeField={(k, v) => updateHealth(i, k, v)}
               onRemove={() => removeHealth(i)}
             />
           ))}
-        <AddEntryButton onClick={addHealth} label={scoped ? `ADD HEALTH FOR ${(selPlant?.name || "PLANT").toUpperCase()}` : "ADD HEALTH OBSERVATION"} />
+        <AddEntryButton onClick={addHealth} label={scoped ? `ADD HEALTH FOR ${(selPlant?.name || w.Unit).toUpperCase()}` : "ADD HEALTH OBSERVATION"} />
       </LogSection>
     </div>
   );

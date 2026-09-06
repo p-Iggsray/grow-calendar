@@ -1,29 +1,35 @@
 import { MONO, SERIF } from "./styleHelpers.jsx";
-import { WIZARD_STAGES } from "./StepTimeline.jsx";
-
-const STAGE_LABEL = Object.fromEntries(WIZARD_STAGES.map(s => [s.value, s.label]));
+import { STAGE_LABEL, cropOf, defaultStage, words } from "../../lib/crops.js";
 
 export function StepReview({ survey }) {
+  const crop = cropOf(survey);
+  const w = words(crop);
+  const mushrooms = crop === "mushrooms";
   const have = Object.values(survey.supplies).filter(v => v === "have").length;
   const need = Object.values(survey.supplies).filter(v => v === "need_to_order").length;
   const totalPlants = survey.strains.reduce((n, s) => n + (Number(s.count) || 1), 0);
 
-  // One row per strain: "Blue Dream  ×3 · hybrid".
+  // One row per variety: "Blue Dream  ×3 · hybrid".
   const strainRows = survey.strains.map((s, i) => [
-    i === 0 ? "Strains" : "",
+    i === 0 ? w.Varieties : "",
     `${s.name || "(unnamed)"}  ×${Number(s.count) || 1} · ${s.type}`,
   ]);
 
+  const container = mushrooms
+    ? `${survey.containerGallons}-qt ${survey.containerType}`
+    : (survey.containerType !== "ground" ? `${survey.containerGallons}-gal` : "in-ground");
+
   const rows = [
-    ["Grow", survey.growName || "(unnamed)"],
-    ["Environment", survey.environment],
-    ["Medium", survey.medium],
-    ["Plants", `${totalPlants} × ${survey.containerType !== "ground" ? `${survey.containerGallons}-gal` : "in-ground"}`],
+    ["Space", survey.growName || "(unnamed)"],
+    ["Growing", w.cropLabel],
+    mushrooms ? null : ["Environment", survey.environment],
+    [mushrooms ? "Substrate" : "Medium", survey.medium],
+    [w.Units, `${totalPlants} × ${container}`],
     ...strainRows,
-    ["Current stage", STAGE_LABEL[survey.currentStage] || "Seedling"],
-    ["Location", survey.location || "(not set)"],
+    ["Current stage", STAGE_LABEL[survey.currentStage] ?? STAGE_LABEL[defaultStage(crop)]],
+    mushrooms ? null : ["Location", survey.location || "(not set)"],
     ["Experience", survey.experienceLevel],
-    ["Watering", survey.wateringMethod],
+    [mushrooms ? "Hydration" : "Watering", survey.wateringMethod],
     ["Supplies", `${have} have · ${need} to order`],
   ].filter(Boolean);
 

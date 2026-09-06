@@ -2,18 +2,30 @@ import { useState, useEffect } from "react";
 import { Plus, X } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { MONO, Label, RadioGroup, NumStepper } from "./styleHelpers.jsx";
+import {
+  MUSHROOM_SPECIES, cropOf, defaultVarietyType, varietyTypes, words,
+} from "../../lib/crops.js";
 
-function emptyStrain() {
-  return { name: "", type: "hybrid", photo: true, flowerWeeks: 9, count: 1 };
+function emptyStrain(crop) {
+  return {
+    name: "", type: defaultVarietyType(crop), photo: true,
+    flowerWeeks: words(crop).lengthDefault, count: 1,
+  };
 }
 
 export function StepStrains({ survey, update }) {
-  const [catalog, setCatalog] = useState([]);
+  const crop = cropOf(survey);
+  const w = words(crop);
+  const mushrooms = crop === "mushrooms";
+  // Cannabis strains come from what every grower here has logged; the mushroom
+  // species are the app's own list, because there is no shared catalogue yet.
+  const [catalog, setCatalog] = useState(() => (mushrooms ? MUSHROOM_SPECIES : []));
   useEffect(() => {
+    if (mushrooms) return;
     let alive = true;
     api.getStrains().then(list => { if (alive) setCatalog(Array.isArray(list) ? list : []); }).catch(() => {});
     return () => { alive = false; };
-  }, []);
+  }, [mushrooms]);
 
   const strains = survey.strains;
 
@@ -21,7 +33,7 @@ export function StepStrains({ survey, update }) {
     update("strains", strains.map((s, idx) => idx === i ? { ...s, ...patch } : s));
   }
   function addStrain() {
-    update("strains", [...strains, emptyStrain()]);
+    update("strains", [...strains, emptyStrain(crop)]);
   }
   function removeStrain(i) {
     update("strains", strains.filter((_, idx) => idx !== i));
@@ -32,8 +44,10 @@ export function StepStrains({ survey, update }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", lineHeight: 1.6 }}>
-        Add each strain in your grow and how many plants of it you have. Start typing to autofill
-        strains other growers have logged.
+        Add each {w.variety} in this space and how many {w.units} of it you have.
+        {mushrooms
+          ? " Start typing to pick from the common monotub species."
+          : " Start typing to autofill strains other growers have logged."}
       </div>
 
       {strains.map((strain, i) => (
@@ -41,6 +55,7 @@ export function StepStrains({ survey, update }) {
           key={i}
           index={i}
           strain={strain}
+          crop={crop}
           catalog={catalog}
           canRemove={strains.length > 1}
           onChange={patch => updateStrain(i, patch)}
@@ -57,17 +72,19 @@ export function StepStrains({ survey, update }) {
           background: "var(--c-surface-1)", border: "1px dashed var(--c-border-strong)",
           color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 12.5, letterSpacing: 0.5, cursor: "pointer",
         }}>
-        <Plus size={15} strokeWidth={2.2} /> Add another strain
+        <Plus size={15} strokeWidth={2.2} /> Add another {w.variety}
       </button>
 
       <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-faint)", textAlign: "center" }}>
-        {strains.length} strain{strains.length === 1 ? "" : "s"} · {totalPlants} plant{totalPlants === 1 ? "" : "s"} total
+        {strains.length} {strains.length === 1 ? w.variety : w.varieties} · {totalPlants} {totalPlants === 1 ? w.unit : w.units} total
       </div>
     </div>
   );
 }
 
-function StrainRow({ index, strain, catalog, canRemove, onChange, onRemove }) {
+function StrainRow({ index, strain, crop, catalog, canRemove, onChange, onRemove }) {
+  const w = words(crop);
+  const mushrooms = cropOf(crop) === "mushrooms";
   const [focused, setFocused] = useState(false);
   const q = strain.name.trim().toLowerCase();
   const suggestions = focused && q.length >= 1
@@ -88,10 +105,10 @@ function StrainRow({ index, strain, catalog, canRemove, onChange, onRemove }) {
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-faint)" }}>
-          Strain {index + 1}
+          {w.Variety} {index + 1}
         </div>
         {canRemove && (
-          <button type="button" onClick={onRemove} aria-label="Remove strain" style={{
+          <button type="button" onClick={onRemove} aria-label={`Remove ${w.variety}`} style={{
             background: "none", border: "none", color: "var(--c-text-ghost)", cursor: "pointer",
             display: "flex", alignItems: "center", padding: 4,
           }}>
@@ -102,13 +119,13 @@ function StrainRow({ index, strain, catalog, canRemove, onChange, onRemove }) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ position: "relative" }}>
-          <Label>Strain name</Label>
+          <Label>{w.Variety} name</Label>
           <input
             value={strain.name}
             onChange={e => onChange({ name: e.target.value })}
             onFocus={() => setFocused(true)}
             onBlur={() => setTimeout(() => setFocused(false), 150)}
-            placeholder={index === 0 ? "e.g. Blue Dream" : "e.g. OG Kush"}
+            placeholder={index === 0 ? w.varietyPlaceholder : w.varietyPlaceholderAlt}
             style={{
               width: "100%", boxSizing: "border-box",
               background: "var(--c-surface-1)", color: "var(--c-text)",
@@ -135,7 +152,7 @@ function StrainRow({ index, strain, catalog, canRemove, onChange, onRemove }) {
                   }}>
                   <span>{c.name}</span>
                   <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", textTransform: "uppercase", flexShrink: 0 }}>
-                    {c.type} · {c.flowerWeeks}w
+                    {c.type}{c.flowerWeeks ? ` · ${c.flowerWeeks}w` : ""}
                   </span>
                 </button>
               ))}
@@ -148,31 +165,29 @@ function StrainRow({ index, strain, catalog, canRemove, onChange, onRemove }) {
           <RadioGroup
             value={strain.type}
             onChange={v => onChange({ type: v })}
-            options={[
-              { value: "indica", label: "Indica" },
-              { value: "sativa", label: "Sativa" },
-              { value: "hybrid", label: "Hybrid" },
-            ]}
+            options={varietyTypes(crop)}
           />
         </div>
+        {!mushrooms && (
+          <div>
+            <Label>Photoperiod or autoflower?</Label>
+            <RadioGroup
+              value={strain.photo ? "photo" : "auto"}
+              onChange={v => onChange({ photo: v === "photo" })}
+              options={[
+                { value: "photo", label: "Photoperiod" },
+                { value: "auto", label: "Autoflower" },
+              ]}
+            />
+          </div>
+        )}
         <div>
-          <Label>Photoperiod or autoflower?</Label>
-          <RadioGroup
-            value={strain.photo ? "photo" : "auto"}
-            onChange={v => onChange({ photo: v === "photo" })}
-            options={[
-              { value: "photo", label: "Photoperiod" },
-              { value: "auto", label: "Autoflower" },
-            ]}
-          />
+          <Label>{w.lengthLabel}</Label>
+          <NumStepper value={strain.flowerWeeks} onChange={v => onChange({ flowerWeeks: v })} min={w.lengthMin} max={w.lengthMax} label={w.lengthUnit} />
         </div>
         <div>
-          <Label>Expected flower time</Label>
-          <NumStepper value={strain.flowerWeeks} onChange={v => onChange({ flowerWeeks: v })} min={6} max={16} label="weeks" />
-        </div>
-        <div>
-          <Label>How many plants of this strain?</Label>
-          <NumStepper value={Number(strain.count) || 1} onChange={v => onChange({ count: v })} min={1} max={12} label="plants" />
+          <Label>{w.countLabel}</Label>
+          <NumStepper value={Number(strain.count) || 1} onChange={v => onChange({ count: v })} min={1} max={12} label={w.units} />
         </div>
       </div>
     </div>

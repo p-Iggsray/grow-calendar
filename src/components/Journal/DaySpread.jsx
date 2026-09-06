@@ -17,6 +17,7 @@ import RemindersCard from "./RemindersCard.jsx";
 import ConditionsCard from "./ConditionsCard.jsx";
 import DayLogEditor from "./DayLogEditor.jsx";
 import { readsOwnClimate } from "../../lib/growEnvironment.js";
+import { words } from "../../lib/crops.js";
 
 const UI = "var(--font-ui)";
 const NUM = "var(--font-num)";
@@ -99,8 +100,9 @@ function PlantRow({ name, children }) {
 // here.
 export default function DaySpread({
   today, date, onChangeDate, stageEvents = [], firstDate = null, growId, onOpenPlant, onZoomOut, onExit,
-  plants = [], environment = "outdoor", focusSignal = 0, active = true,
+  plants = [], environment = "outdoor", crop, focusSignal = 0, active = true,
 }) {
+  const w = words(crop);
   const dateKey = ymd(date);
   const monthKey = dateKey.slice(0, 7);
   const { day, loading } = useJournalDay(dateKey, active, growId);
@@ -143,13 +145,13 @@ export default function DaySpread({
   // plant, which is a whole-grow watering rather than nothing at all. A total
   // on its own does not say which plant got what.
   const waterPlants = (log?.water_plants ?? []).filter(
-    w => w && (w.plant || w.plantId || rowDisplay(w).amount != null)
+    row => row && (row.plant || row.plantId || rowDisplay(row).amount != null)
   );
   // The day's total reads in the unit the day was logged in, and each row in
   // the unit that row was logged in.
   const waterUnit = displayUnit(log?.water_plants, loadWaterUnit());
-  const waterAmount = (w) => {
-    const { amount, unit } = rowDisplay(w);
+  const waterAmount = (row) => {
+    const { amount, unit } = rowDisplay(row);
     return amount == null || amount === "" ? "" : ` ${amount} ${unitLabel(unit)}`;
   };
   const trainingRows = (log?.training ?? []).filter(t => t && (t.action ?? "").trim());
@@ -381,6 +383,7 @@ export default function DaySpread({
                   growId={growId}
                   plants={plants}
                   environment={environment}
+                  crop={crop}
                   hasWeatherLocation={day.hasWeatherLocation}
                   active={active}
                 />
@@ -397,7 +400,7 @@ export default function DaySpread({
                   cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 }}>
                 <Droplets size={13} strokeWidth={2} />
-                Log this day: water, feed, training, health
+                {`Log this day: ${w.waterField.toLowerCase()}, conditions, health`}
               </button>
             ) : null}
 
@@ -438,9 +441,9 @@ export default function DaySpread({
                 )}
                 {waterPlants.length > 0 && (
                   <div style={{ marginTop: 11 }}>
-                    {waterPlants.map((w, i) => (
-                      <PlantRow key={i} name={w.plant || "All plants"}>
-                        watered{waterAmount(w)}
+                    {waterPlants.map((row, i) => (
+                      <PlantRow key={i} name={row.plant || `All ${w.units}`}>
+                        {w.waterVerb}{waterAmount(row)}
                       </PlantRow>
                     ))}
                   </div>
@@ -493,7 +496,7 @@ export default function DaySpread({
                               color: e.kind === "health" && e.health ? (HEALTH_MAP[e.health]?.color ?? "var(--c-text-muted)") : "var(--c-text-muted)",
                               flexShrink: 0,
                             }}>
-                              {kindLabel(e.kind)}
+                              {kindLabel(e.kind, crop)}
                             </span>
                             {summary && (
                               <span style={{ fontFamily: UI, fontSize: 12.5, color: "var(--c-text-dim)" }}>{summary}</span>

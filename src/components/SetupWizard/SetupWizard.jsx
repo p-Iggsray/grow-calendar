@@ -5,7 +5,9 @@ import { loadWizardDraft, saveWizardDraft, clearWizardDraft } from "../../lib/wi
 import ConfirmModal from "../ConfirmModal.jsx";
 import ScreenHeader from "../ScreenHeader.jsx";
 import { defaultSurvey } from "./defaultSurvey.js";
+import { cropOf, words } from "../../lib/crops.js";
 import { MONO, SERIF } from "./styleHelpers.jsx";
+import { StepCrop } from "./StepCrop.jsx";
 import { StepBasics } from "./StepBasics.jsx";
 import { StepStrains } from "./StepStrains.jsx";
 import { StepTimeline } from "./StepTimeline.jsx";
@@ -16,26 +18,36 @@ import { GeneratingScreen } from "./GeneratingScreen.jsx";
 
 // ─── Wizard shell ────────────────────────────────────────────────────────────
 
-const STEPS = [
-  { id: "basics",   title: "Space Basics" },
-  { id: "strains",  title: "Your Strains" },
-  { id: "timeline", title: "Where You're At" },
-  { id: "setup",    title: "Your Setup" },
-  { id: "supplies", title: "Supplies" },
-  { id: "review",   title: "Review & Create" },
-];
+// The crop comes first because every step after it is asked in that crop's
+// words - "Your Strains" for a tent, "Your Species" for a monotub.
+function stepsFor(crop) {
+  const w = words(crop);
+  return [
+    { id: "crop",     title: "What You Grow" },
+    { id: "basics",   title: "Space Basics" },
+    { id: "strains",  title: `Your ${w.Varieties}` },
+    { id: "timeline", title: "Where You're At" },
+    { id: "setup",    title: "Your Setup" },
+    { id: "supplies", title: "Supplies" },
+    { id: "review",   title: "Review & Create" },
+  ];
+}
+const STEP_COUNT = 7;
 
 export default function SetupWizard({ onComplete, onCancel, initialSurvey, growId }) {
   // Restore any autosaved draft for this grow so backing out of setup (or the
   // app closing mid-wizard) never loses progress. Draft answers win over
   // initialSurvey because they are the user's most recent input.
-  const [draft] = useState(() => loadWizardDraft(growId, STEPS.length));
+  const [draft] = useState(() => loadWizardDraft(growId, STEP_COUNT));
   const [step, setStep] = useState(draft ? draft.step : 0);
   const [survey, setSurvey] = useState(() => ({
-    ...defaultSurvey(),
+    ...defaultSurvey(cropOf(draft?.survey ?? initialSurvey)),
     ...(initialSurvey || {}),
     ...(draft?.survey || {}),
   }));
+  const crop = cropOf(survey);
+  const w = words(crop);
+  const STEPS = stepsFor(crop);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState("");
   const [confirmExit, setConfirmExit] = useState(false);
@@ -47,14 +59,22 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
   }, [growId, survey, step, generating]);
 
   function update(field, value) {
+    // Changing the crop is not editing one answer, it is starting a different
+    // interview: the medium, the container, the stage and the supply list all
+    // mean something else now, and carrying them over would leave a monotub
+    // holding a pot size in gallons. The name is the one thing worth keeping.
+    if (field === "crop") {
+      setSurvey(s => (cropOf(s) === value ? s : { ...defaultSurvey(value), growName: s.growName }));
+      return;
+    }
     setSurvey(s => ({ ...s, [field]: value }));
   }
 
   // Returns null when the step is complete, or a short hint explaining what is
   // still needed - shown next to the Next button instead of a dead disabled state.
   function advanceHint() {
-    if (step === 1 && !survey.strains.every(s => s.name.trim().length > 0)) {
-      return "Name each strain to continue";
+    if (STEPS[step].id === "strains" && !survey.strains.every(s => s.name.trim().length > 0)) {
+      return `Name each ${w.variety} to continue`;
     }
     return null;
   }
@@ -127,12 +147,13 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
           <GeneratingScreen />
         ) : (
           <>
-            {step === 0 && <StepBasics survey={survey} update={update} />}
-            {step === 1 && <StepStrains survey={survey} update={update} />}
-            {step === 2 && <StepTimeline survey={survey} update={update} />}
-            {step === 3 && <StepSetup survey={survey} update={update} />}
-            {step === 4 && <StepSupplies survey={survey} update={update} />}
-            {step === 5 && <StepReview survey={survey} />}
+            {STEPS[step].id === "crop"     && <StepCrop survey={survey} update={update} />}
+            {STEPS[step].id === "basics"   && <StepBasics survey={survey} update={update} />}
+            {STEPS[step].id === "strains"  && <StepStrains survey={survey} update={update} />}
+            {STEPS[step].id === "timeline" && <StepTimeline survey={survey} update={update} />}
+            {STEPS[step].id === "setup"    && <StepSetup survey={survey} update={update} />}
+            {STEPS[step].id === "supplies" && <StepSupplies survey={survey} update={update} />}
+            {STEPS[step].id === "review"   && <StepReview survey={survey} />}
 
             {genError && (
               <div style={{

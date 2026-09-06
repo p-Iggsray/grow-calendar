@@ -1,3 +1,5 @@
+import { cropOf, defaultStage } from "./crops.js";
+
 // Turns the wizard's "which stage are you in" answer into the roster the app
 // stores. There are no dates here at all: the space's clock starts the day it
 // is created, and every stage date after that comes from the grower switching a
@@ -8,7 +10,8 @@
 // (the grower can advance individual plants later on the Plants tab) and
 // stamped with today as its day 0.
 export function resolveSurveyForSetup(survey, todayIso = new Date().toISOString().slice(0, 10)) {
-  const currentStage = survey.currentStage || "seedling";
+  const crop = cropOf(survey);
+  const currentStage = survey.currentStage || defaultStage(crop);
 
   // Expand each strain into `count` roster entries (same strain name - they're
   // the same strain, just different plants, distinguished by id). Keeping the
@@ -24,6 +27,7 @@ export function resolveSurveyForSetup(survey, todayIso = new Date().toISOString(
 
   return {
     ...survey,
+    crop,
     currentStage,
     plantCount: strains.length,
     strains,

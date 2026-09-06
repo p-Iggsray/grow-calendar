@@ -10,6 +10,7 @@ import { useOnlineStatus } from "./lib/useOnlineStatus.js";
 import { useTheme } from "./lib/useTheme.js";
 import { hasGrowLocation } from "./lib/growProfile.js";
 import { tracksOutdoorWeather } from "./lib/growEnvironment.js";
+import { cropOf } from "./lib/crops.js";
 import { currentStageOf, dayOfGrow, stageLabel } from "./lib/stageTimeline.js";
 import { getLifecyclePhase, phaseMeta } from "./lib/lifecycle.js";
 
@@ -422,6 +423,7 @@ export default function App() {
                   onExit={exitJournal}
                   plants={survey?.strains ?? []}
                   environment={survey?.environment ?? "outdoor"}
+                  crop={cropOf(survey)}
                 />
               ) : (
                 <Calendar

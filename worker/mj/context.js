@@ -1,6 +1,8 @@
 // @ts-check
 // System-prompt context builders: grow log, weather, stats, supplies, grows list.
 import { displayUnit, formatWater, rowDisplay, unitLabel } from "../../src/lib/waterUnits.js";
+import { supplyLabel } from "../../src/components/SetupWizard/supplyChecklist.js";
+import { cropOf, words } from "../../src/lib/crops.js";
 
 function tryParseArr(s) {
   if (!s) return [];
@@ -149,24 +151,19 @@ export async function buildEnvContext(env, userId, growId) {
 export function buildRosterContext(survey) {
   const plants = Array.isArray(survey?.strains) ? survey.strains.filter(p => (p.status ?? "growing") === "growing") : [];
   if (plants.length === 0) return "";
+  const w = words(cropOf(survey));
   const parts = plants.slice(0, 12).map(p => `${p.name || "Unnamed"}${p.stage ? ` [${p.stage}]` : ""}`);
-  return `ROSTER: ${parts.join(", ")}${plants.length > 12 ? ` and ${plants.length - 12} more` : ""}.`;
+  return `${w.Units.toUpperCase()} IN THIS SPACE: ${parts.join(", ")}${plants.length > 12 ? ` and ${plants.length - 12} more` : ""}.`;
 }
 
 export function buildSupplyContext(survey) {
   if (!survey?.supplies) return "";
-  const LABELS = {
-    soil: "potting mix", perlite: "perlite", containers: "containers/pots",
-    calmag: "Cal-Mag", veg_nutes: "veg nutrients", bloom_nutes: "bloom nutrients",
-    bloom_boost: "bloom booster", ph_kit: "pH kit", tds_meter: "TDS/EC meter",
-    support: "stakes/trellis", ties: "plant ties", watering: "watering can/irrigation",
-    loupe: "jeweler's loupe", humidity: "hygrometer", drying: "drying space",
-    jars: "mason jars", neem: "pest preventative",
-  };
   const have = [];
   const need = [];
   for (const [id, status] of Object.entries(survey.supplies)) {
-    const label = LABELS[id] || id;
+    // The checklist differs by crop, so the label comes from whichever list
+    // the item is actually on.
+    const label = supplyLabel(id);
     if (status === "have") have.push(label);
     else if (status === "need_to_order") need.push(label);
   }

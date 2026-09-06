@@ -5,6 +5,7 @@ import { TRAINING_ACTIONS } from "../../lib/choices.js";
 import {
   WATER_UNITS, UNIT_STEP, rowDisplay, waterRow, rememberWaterUnit, loadWaterUnit,
 } from "../../lib/waterUnits.js";
+import { cropOf } from "../../lib/crops.js";
 
 // ── Log tab helpers ────────────────────────────────────────────────────────
 
@@ -122,7 +123,7 @@ const _selectInput = {
 // The plants of this environment as a dropdown. A row saved before the plant
 // existed (or typed by hand long ago) keeps its value as an extra option, so
 // switching to a picker never silently erases what was recorded.
-export function PlantSelect({ value, onChange, plants = [] }) {
+export function PlantSelect({ value, onChange, plants = [], unitWord = "plant" }) {
   const names = plants.map((p) => (p?.name || "").trim()).filter(Boolean);
   const current = String(value ?? "").trim();
   const options = current && !names.some((n) => n.toLowerCase() === current.toLowerCase())
@@ -133,14 +134,14 @@ export function PlantSelect({ value, onChange, plants = [] }) {
       value={current}
       onChange={(e) => onChange(e.target.value)}
       style={_selectInput}
-      aria-label="Plant">
-      <option value="">All plants</option>
+      aria-label={unitWord === "plant" ? "Plant" : "Tub"}>
+      <option value="">{`All ${unitWord}s`}</option>
       {options.map((n) => <option key={n} value={n}>{n}</option>)}
     </select>
   );
 }
 
-export function WaterEntry({ entry, onChangeField, onRemove, hidePlant, plants = [] }) {
+export function WaterEntry({ entry, onChangeField, onRemove, hidePlant, plants = [], unitWord = "plant" }) {
   const { amount, unit } = rowDisplay(entry);
 
   // Changing either the number or the unit rewrites the whole row, so the
@@ -154,12 +155,12 @@ export function WaterEntry({ entry, onChangeField, onRemove, hidePlant, plants =
     <div style={{ display: "flex", gap: 8, alignItems: "flex-end", marginBottom: 8 }}>
       {!hidePlant && (
       <label style={{ flex: 2, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <span style={_entryLabel}>Plant</span>
-        <PlantSelect value={entry.plant} onChange={(v) => onChangeField("plant", v)} plants={plants} />
+        <span style={_entryLabel}>{unitWord === "plant" ? "Plant" : "Tub"}</span>
+        <PlantSelect value={entry.plant} onChange={(v) => onChangeField("plant", v)} plants={plants} unitWord={unitWord} />
       </label>
       )}
       <label style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <span style={_entryLabel}>Water</span>
+        <span style={_entryLabel}>{unitWord === "plant" ? "Water" : "Misted"}</span>
         <input
           type="number"
           inputMode="decimal"
@@ -186,7 +187,7 @@ export function WaterEntry({ entry, onChangeField, onRemove, hidePlant, plants =
         className="touch-target"
         onClick={onRemove}
         style={{ ..._entryRemove, height: 38, minHeight: 38 }}
-        aria-label="Remove plant watering">
+        aria-label={`Remove ${unitWord} watering`}>
         <X size={12} strokeWidth={2} />
       </button>
     </div>
@@ -197,7 +198,7 @@ export function WaterEntry({ entry, onChangeField, onRemove, hidePlant, plants =
 // once here and every plant gets its own row at that amount, which is what the
 // day, the report and each plant's own history then read back - a total on its
 // own never says which plant got what.
-export function WaterAllPlants({ count, onAdd }) {
+export function WaterAllPlants({ count, title = "Water every plant", unitWord = "plant", onAdd }) {
   const [amount, setAmount] = useState("");
   const [unit, setUnit] = useState(loadWaterUnit);
 
@@ -212,10 +213,10 @@ export function WaterAllPlants({ count, onAdd }) {
       border: "1px dashed var(--c-border-strong)", borderRadius: 10,
       padding: "11px 11px 12px", marginTop: 6,
     }}>
-      <span style={{ ..._entryLabel, marginBottom: 8 }}>Water every plant</span>
+      <span style={{ ..._entryLabel, marginBottom: 8 }}>{title}</span>
       <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
         <label style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-          <span style={{ ..._entryLabel, fontSize: 10 }}>Each plant got</span>
+          <span style={{ ..._entryLabel, fontSize: 10 }}>{`Each ${unitWord} got`}</span>
           <input
             type="number"
             inputMode="decimal"
@@ -251,7 +252,7 @@ export function WaterAllPlants({ count, onAdd }) {
           display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
         }}>
         <Droplets size={11} strokeWidth={2.5} />
-        {`LOG THIS FOR ALL ${count} ${count === 1 ? "PLANT" : "PLANTS"}`}
+        {`LOG THIS FOR ALL ${count} ${unitWord.toUpperCase()}${count === 1 ? "" : "S"}`}
       </button>
     </div>
   );
@@ -289,15 +290,39 @@ export function TrainingEntry({ entry, onChangeField, onRemove, hidePlant, plant
   );
 }
 
-const LEAF_COLORS = ["Dark Green", "Green", "Light Green", "Yellow-Green", "Yellow", "Rust / Brown", "Spotted", "Purple"];
-const TRICHOME_STAGES = [
-  { value: "",       label: " -  not checked  - " },
-  { value: "clear",  label: "Clear (too early)" },
-  { value: "cloudy", label: "Cloudy / Milky (peak THC)" },
-  { value: "mixed",  label: "Mixed Cloudy + Amber" },
-  { value: "amber",  label: "Mostly Amber (max CBN)" },
-];
-export function PlantHealthEntry({ entry, onChangeField, onRemove, hidePlant, plants = [] }) {
+// What you actually look at, and it is not the same thing twice. On a plant it
+// is leaf colour and trichomes under a loupe; in a tub it is what the surface
+// looks like and whether anything is growing that should not be.
+const HEALTH_LOOK = {
+  cannabis: {
+    colorLabel: "Leaf Color",
+    colors: ["Dark Green", "Green", "Light Green", "Yellow-Green", "Yellow", "Rust / Brown", "Spotted", "Purple"],
+    checkLabel: "Trichomes",
+    checks: [
+      { value: "",       label: " -  not checked  - " },
+      { value: "clear",  label: "Clear (too early)" },
+      { value: "cloudy", label: "Cloudy / Milky (peak THC)" },
+      { value: "mixed",  label: "Mixed Cloudy + Amber" },
+      { value: "amber",  label: "Mostly Amber (max CBN)" },
+    ],
+  },
+  mushrooms: {
+    colorLabel: "Surface",
+    colors: ["White / healthy", "Knitting over", "Pinning", "Fruiting", "Patchy", "Yellowing", "Wet / overhydrated", "Drying out"],
+    checkLabel: "Contamination check",
+    checks: [
+      { value: "",        label: " -  not checked  - " },
+      { value: "clean",   label: "Clean, no signs" },
+      { value: "suspect", label: "Something suspect, watching it" },
+      { value: "green",   label: "Green mould (Trichoderma)" },
+      { value: "cobweb",  label: "Cobweb mould" },
+      { value: "bacterial", label: "Wet spot / bacterial" },
+    ],
+  },
+};
+
+export function PlantHealthEntry({ entry, crop, onChangeField, onRemove, hidePlant, plants = [] }) {
+  const look = HEALTH_LOOK[cropOf(crop)];
   return (
     <div style={_entryCard}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -314,17 +339,17 @@ export function PlantHealthEntry({ entry, onChangeField, onRemove, hidePlant, pl
         </div>
         )}
         <div>
-          <span style={_entryLabel}>Leaf Color</span>
+          <span style={_entryLabel}>{look.colorLabel}</span>
           <select value={entry.color ?? ""} onChange={e => onChangeField("color", e.target.value)} style={_selectInput}>
             <option value=""> - </option>
-            {LEAF_COLORS.map(c => <option key={c} value={c}>{c}</option>)}
+            {look.colors.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
       </div>
       <div style={{ marginBottom: 8 }}>
-        <span style={_entryLabel}>Trichomes</span>
+        <span style={_entryLabel}>{look.checkLabel}</span>
         <select value={entry.trichomes ?? ""} onChange={e => onChangeField("trichomes", e.target.value)} style={_selectInput}>
-          {TRICHOME_STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+          {look.checks.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
       </div>
       <div>

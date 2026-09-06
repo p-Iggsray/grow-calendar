@@ -56,13 +56,13 @@ export function RadioGroup({ options, value, onChange }) {
   );
 }
 
-export function NumStepper({ value, onChange, min = 1, max = 10, label }) {
+export function NumStepper({ value, onChange, min = 1, max = 10, step = 1, label }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
       <button
         type="button"
         className="touch-target"
-        onClick={() => onChange(Math.max(min, value - 1))}
+        onClick={() => onChange(Math.max(min, value - step))}
         disabled={value <= min}
         style={{
           width: 40, height: 40, borderRadius: 10, border: "1px solid var(--c-border-strong)",
@@ -78,7 +78,7 @@ export function NumStepper({ value, onChange, min = 1, max = 10, label }) {
       <button
         type="button"
         className="touch-target"
-        onClick={() => onChange(Math.min(max, value + 1))}
+        onClick={() => onChange(Math.min(max, value + step))}
         disabled={value >= max}
         style={{
           width: 40, height: 40, borderRadius: 10, border: "1px solid var(--c-border-strong)",

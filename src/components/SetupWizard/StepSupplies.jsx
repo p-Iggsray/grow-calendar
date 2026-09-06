@@ -19,7 +19,7 @@ export function StepSupplies({ survey, update }) {
         <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-warn)" }}>⏳ {need} need</div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {SUPPLY_ITEMS.map(item => {
+        {SUPPLY_ITEMS(survey.crop).map(item => {
           const status = survey.supplies[item.id] || "need_to_order";
           return (
             <div key={item.id} style={{
