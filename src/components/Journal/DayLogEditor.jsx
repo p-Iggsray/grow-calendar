@@ -3,7 +3,7 @@ import { ymd } from "../../lib/api.js";
 import { useGrowLog } from "../../lib/useGrowLog.js";
 import { useEnvDay } from "../../lib/useEnvDay.js";
 import {
-  LogSection, LogField, AddEntryButton, sumWater,
+  LogSection, AddEntryButton, sumWater,
   WaterEntry, WaterAllPlants, TrainingEntry, PlantHealthEntry,
 } from "./logEntries.jsx";
 import EnvSensorCard from "./EnvSensorCard.jsx";
@@ -22,7 +22,7 @@ const fieldNameStyle = {
   letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase",
 };
 
-export default function DayLogEditor({ date, growId, plants = [], environment = "outdoor", active = true }) {
+export default function DayLogEditor({ date, growId, plants = [], environment = "outdoor", hasWeatherLocation = true, active = true }) {
   const { entry: logEntry, setField: setLogField, setFields: setLogFields, status: logStatus } = useGrowLog(date, active, growId);
 
   // Which plant the per-plant sections are scoped to ("all" or a plant id).
@@ -83,29 +83,42 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
       </div>
 
       {/* ── Environment ──
-          A space with its own climate types these three numbers into the
-          Conditions card at the top of the day instead, so the only thing
-          left for this section is a controller import, when there is one. */}
-      {(!ownClimate || envDay) && (
+          Nobody types a climate number here any more. A space with its own
+          climate reads its instruments into the Conditions card at the top of
+          the day; a space under the sky has its high, low and humidity pulled
+          from its location. So all that is left for this section is a
+          controller import, when there is one, and a line saying where an
+          outdoor grow's numbers come from. */}
+      {sensorGrow && envDay ? (
         <LogSection label="Environment" first>
-          {sensorGrow && envDay ? (
-            <EnvSensorCard day={envDay} logEntry={logEntry} onFill={setLogFields} />
-          ) : (
-            <>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-                <LogField label="Temp High (°F)" name="temp_high" entry={logEntry} setField={setLogField} step={1} min={0} max={130} inputMode="numeric" />
-                <LogField label="Temp Low (°F)"  name="temp_low"  entry={logEntry} setField={setLogField} step={1} min={0} max={130} inputMode="numeric" />
-              </div>
-              <div style={{ maxWidth: "50%", paddingRight: 5 }}>
-                <LogField label="Humidity (%)" name="humidity" entry={logEntry} setField={setLogField} step={1} min={0} max={100} inputMode="numeric" />
-              </div>
-              <div style={{ fontSize: 11, color: "var(--c-text-ghost)", marginTop: 8, lineHeight: 1.6 }}>
-                Outdoor grow: the day&rsquo;s weather logs itself once this grow has a location.
-              </div>
-            </>
-          )}
+          <EnvSensorCard day={envDay} logEntry={logEntry} onFill={setLogFields} />
         </LogSection>
-      )}
+      ) : !ownClimate ? (
+        <LogSection label="Weather" first>
+          <div style={{
+            border: "1px solid var(--c-border)", borderRadius: 10,
+            padding: "11px 12px", fontSize: 11.5, lineHeight: 1.6,
+            color: "var(--c-text-ghost)",
+          }}>
+            <span style={{ display: "block", color: "var(--c-text-muted)", marginBottom: 3 }}>
+              Nothing to type here.
+            </span>
+            {hasWeatherLocation ? (
+              <>
+                This grow is outdoors, so the day&rsquo;s high, low and humidity are its
+                location&rsquo;s weather. They are pulled in and logged for you, and shown
+                in the Weather card on this day.
+              </>
+            ) : (
+              <>
+                This grow is outdoors, so its high, low and humidity are the weather
+                where it grows rather than anything to type. Add the grow&rsquo;s location
+                (the banner on the Calendar page) and every day logs its own.
+              </>
+            )}
+          </div>
+        </LogSection>
+      ) : null}
 
       {/* ── Plant selector for the per-plant sections below ── */}
       {logPlants.length > 0 && (

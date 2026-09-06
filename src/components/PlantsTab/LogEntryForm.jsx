@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ymd } from "../../lib/api.js";
 import { Label, Input, RadioGroup, MONO, SERIF } from "../SetupWizard/styleHelpers.jsx";
 import { HEALTH_OPTIONS, FORM_KINDS } from "./constants.js";
+import { autoLogsWeather } from "../../lib/growEnvironment.js";
 import ChoiceField from "../ChoiceField.jsx";
 import { NUTRIENT_PRODUCTS, NUTRIENT_DOSES, TRAINING_ACTIONS } from "../../lib/choices.js";
 import {
@@ -19,9 +20,15 @@ function btn(kind, disabled) {
 const num = (v) => (v === "" || v == null ? undefined : Number(v));
 const str = (v) => { const s = String(v ?? "").trim(); return s || undefined; };
 
-export default function LogEntryForm({ initial, onSave, onCancel, saving }) {
+export default function LogEntryForm({ initial, environment, onSave, onCancel, saving }) {
   const today = ymd(new Date()); // local calendar day, not UTC
   const [kind, setKind] = useState(initial?.kind ?? "note");
+  // Nothing outdoors gets its temperature typed in: that day's high, low and
+  // humidity are its location's weather, pulled in and logged on the day
+  // itself. So the category is not even offered for a plant living outside.
+  const kinds = FORM_KINDS.filter(
+    (k) => k.value !== "environment" || !autoLogsWeather(environment)
+  );
   const [date, setDate] = useState(initial?.date ?? today);
   const [body, setBody] = useState(initial?.body ?? "");
   const [health, setHealth] = useState(initial?.health ?? "");
@@ -63,7 +70,7 @@ export default function LogEntryForm({ initial, onSave, onCancel, saving }) {
       <div>
         <Label>Type</Label>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {FORM_KINDS.map((k) => {
+          {kinds.map((k) => {
             const active = kind === k.value;
             return (
               <button key={k.value} type="button" onClick={() => setKind(k.value)}

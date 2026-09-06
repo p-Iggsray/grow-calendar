@@ -279,6 +279,7 @@ export default function EnvironmentDetail({
             key={selectedPlant.id}
             growId={growId}
             plant={selectedPlant}
+            environment={survey?.environment}
             today={today}
             firstDate={firstDate}
             onOpenJournalDay={onOpenJournalDay}

@@ -4,11 +4,11 @@ import { ensureGrowLogSchema, isLogFilled, rowToEntry } from "./growLog.js";
 import { readNote } from "./notes.js";
 import { ownedGrowRow, parseSurvey, ensurePlantLogSchema } from "./plants.js";
 import { htmlToPlainText } from "../src/lib/richText.js";
-import { getWeatherForDay, coordsFromSurvey, locKey } from "./weatherDays.js";
+import { getWeatherForDay, coordsFromSurvey, locKey, fillAutoWeather } from "./weatherDays.js";
 import { resolveGrowCoords } from "./weather.js";
 import { eventsForDay, eventCountsForMonth } from "./events.js";
 import { photosForDay, photoCountsForMonth, photoCountsForDates } from "./photos.js";
-import { tracksOutdoorWeather } from "../src/lib/growEnvironment.js";
+import { tracksOutdoorWeather, autoLogsWeather } from "../src/lib/growEnvironment.js";
 import { displayUnit } from "../src/lib/waterUnits.js";
 
 // A grow "has a location" when it carries coordinates OR a geocodable place
@@ -107,14 +107,28 @@ export async function getJournalDay(env, user, growId, date) {
   ]);
   const photos = await photosForDay(env, user.id, growId, date).catch(() => []);
 
+  // An outdoor grow's climate is not something anyone types: whatever the sky
+  // did that day is written into the day's log the first time the day is
+  // opened, filling only what is blank. The nightly sweep only ever looks at
+  // yesterday and today, so this is what gets the weather onto every other day
+  // the grower actually visits - including days from before this grow had a
+  // location. A row created this way is flagged auto_weather, so it still does
+  // not count as a day the grower logged.
+  const weather = await weatherPromise;
+  let logged = logRow;
+  if (weather && autoLogsWeather(survey?.environment)) {
+    const filled = await fillAutoWeather(env, user.id, growId, date, logRow, weather).catch(() => null);
+    if (filled) logged = { ...(logRow ?? { date, auto_weather: 1 }), ...filled };
+  }
+
   return json({
     date,
-    log: logRow && isLogFilled(logRow) ? rowToEntry(logRow) : null,
+    log: logged && isLogFilled(logged) ? rowToEntry(logged) : null,
     note: note || "",
     plantEntries: (plantRes.results ?? []).map((r) => journalPlantEntry(r, names)),
     events,
     photos,
-    weather: await weatherPromise,
+    weather,
     hasWeatherLocation: hasLocation,
   });
 }

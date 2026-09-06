@@ -30,6 +30,22 @@ export function readsOwnClimate(environment) {
 }
 
 /**
+ * Pure: does the app record this space's climate for the grower?
+ *
+ * The exact complement of readsOwnClimate, and deliberately so: every space
+ * either has its high, low and humidity written for it from its location, or
+ * has them typed in from its own instruments. Never both - a number pulled
+ * from the sky and a number read off a hygrometer in a tent are different
+ * claims, and letting them share the same three fields makes each unreadable.
+ *
+ * So wherever this is true there is nothing to type, and every surface that
+ * would have offered a field asks here first.
+ */
+export function autoLogsWeather(environment) {
+  return !readsOwnClimate(environment);
+}
+
+/**
  * Pure: what to call the day's numbers on screen. Inside a tent they are
  * readings you took; outside they are the weather that happened to you.
  */

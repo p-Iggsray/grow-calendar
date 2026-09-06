@@ -10,6 +10,7 @@
 import { logError } from "./log.js";
 import { ensureGrowLogSchema } from "./growLog.js";
 import { geocode } from "./geocode.js";
+import { autoLogsWeather } from "../src/lib/growEnvironment.js";
 
 const PAST_DAYS = 7; // each fetch backfills up to a week of gaps
 
@@ -146,11 +147,40 @@ export function mergeAutoWeather(row, wx) {
   return Object.keys(fields).length ? fields : null;
 }
 
-// Nightly/daily sweep: for every active outdoor/greenhouse grow with a
-// location, write yesterday's and today's observed weather into the daily log
-// wherever the grower left those fields blank. Rows CREATED by this sweep are
-// flagged auto_weather=1 so they never count as "day logged" (the green ring
-// and journal timeline stay meaningful); any manual edit clears the flag.
+/**
+ * Write one day's observed weather into a grow's daily log, filling only what
+ * is blank. Returns the fields written, or null when there was nothing to add.
+ *
+ * This is the single place an outdoor grow's climate numbers are recorded -
+ * the nightly sweep calls it for yesterday and today, and opening a day calls
+ * it for that day, so a grow that has been outdoors all along ends up with the
+ * weather on every day the grower actually looks at, not just the two the cron
+ * happened to catch. A row CREATED here is flagged auto_weather=1 so it never
+ * counts as "day logged"; any manual edit to the row clears that flag.
+ */
+export async function fillAutoWeather(env, userId, growId, date, row, wx) {
+  const fields = mergeAutoWeather(row, wx);
+  if (!fields) return null;
+  if (row) {
+    const sets = Object.keys(fields).map(k => `${k} = ?`).join(", ");
+    await env.DB.prepare(
+      `UPDATE grow_log SET ${sets}, updated_at = datetime('now') WHERE user_id = ? AND grow_id = ? AND date = ?`
+    ).bind(...Object.values(fields), userId, growId, date).run();
+  } else {
+    await env.DB.prepare(`
+      INSERT INTO grow_log (user_id, grow_id, date, temp_high, temp_low, humidity, auto_weather, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'))
+    `).bind(userId, growId, date, fields.temp_high ?? null, fields.temp_low ?? null, fields.humidity ?? null).run();
+  }
+  return fields;
+}
+
+// Nightly/daily sweep: for every active outdoor grow with a location, write
+// yesterday's and today's observed weather into the daily log wherever those
+// fields are blank. A space that reads its own thermometer is skipped: indoors
+// the sky is irrelevant, and in a greenhouse the grower's own readings are what
+// those fields hold, so pouring the city's weather into them would pass an
+// outside number off as a measurement taken inside.
 export async function autoLogWeather(env) {
   await ensureGrowLogSchema(env);
   const { results } = await env.DB.prepare(
@@ -166,7 +196,7 @@ export async function autoLogWeather(env) {
   for (const g of results ?? []) {
     let survey;
     try { survey = g.survey ? JSON.parse(g.survey) : null; } catch { survey = null; }
-    if (!survey || survey.environment === "indoor") continue;
+    if (!survey || !autoLogsWeather(survey.environment)) continue;
     let coords = coordsFromSurvey(survey);
     // A typed place name without coordinates geocodes once, then persists.
     if (!coords && (survey.location ?? "").trim()) {
@@ -189,21 +219,7 @@ export async function autoLogWeather(env) {
       const row = await env.DB.prepare(
         "SELECT temp_high, temp_low, humidity FROM grow_log WHERE user_id = ? AND grow_id = ? AND date = ?"
       ).bind(g.user_id, g.id, date).first();
-      const fields = mergeAutoWeather(row, wx);
-      if (!fields) continue;
-
-      if (row) {
-        const sets = Object.keys(fields).map(k => `${k} = ?`).join(", ");
-        await env.DB.prepare(
-          `UPDATE grow_log SET ${sets}, updated_at = datetime('now') WHERE user_id = ? AND grow_id = ? AND date = ?`
-        ).bind(...Object.values(fields), g.user_id, g.id, date).run();
-      } else {
-        await env.DB.prepare(`
-          INSERT INTO grow_log (user_id, grow_id, date, temp_high, temp_low, humidity, auto_weather, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'))
-        `).bind(g.user_id, g.id, date, fields.temp_high ?? null, fields.temp_low ?? null, fields.humidity ?? null).run();
-      }
-      written++;
+      if (await fillAutoWeather(env, g.user_id, g.id, date, row, wx)) written++;
     }
   }
   return written;

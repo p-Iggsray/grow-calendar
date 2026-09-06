@@ -131,7 +131,7 @@ export default function EnvConditions({ growId, indoorish }) {
         <div style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--c-text-ghost)", marginTop: 10, lineHeight: 1.6 }}>
           {indoorish
             ? "Import the CSV export from this space's controller (VIVOSUN style) and its temp, humidity, and VPD fill in automatically, including each day's log."
-            : "Outdoor space: conditions are usually logged by hand on each day, but you can still import a sensor CSV here if you run one outside."}
+            : "Outdoor space: each day's high, low and humidity are already pulled from this grow's location, so there is nothing to log by hand. Import a sensor CSV here if you run your own instrument outside."}
           {" "}Re-importing the same period just updates it - minutes are never double-counted.
         </div>
       </div>

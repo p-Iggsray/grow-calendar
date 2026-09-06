@@ -35,7 +35,7 @@ function keyToDate(key) {
   return y && m && d ? new Date(y, m - 1, d) : null;
 }
 
-export default function PlantDetail({ growId, plant, today, firstDate, onOpenJournalDay, onClose, onArchive, onDelete, onLogChange, onChanged }) {
+export default function PlantDetail({ growId, plant, environment, today, firstDate, onOpenJournalDay, onClose, onArchive, onDelete, onLogChange, onChanged }) {
   const { entries, loading: logLoading, addEntry, removeEntry } = usePlantLog(growId, plant.id, true);
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -212,7 +212,7 @@ export default function PlantDetail({ growId, plant, today, firstDate, onOpenJou
 
         {adding && (
           <div style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 14, marginBottom: 16 }}>
-            <LogEntryForm onSave={handleSave} onCancel={() => setAdding(false)} saving={saving} />
+            <LogEntryForm environment={environment} onSave={handleSave} onCancel={() => setAdding(false)} saving={saving} />
           </div>
         )}
 

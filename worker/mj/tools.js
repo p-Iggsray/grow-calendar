@@ -18,6 +18,7 @@ import { ensurePlantLogSchema } from "../plants.js";
 import { geocode } from "../geocode.js";
 import { logError } from "../log.js";
 import { DATE_RE } from "./constants.js";
+import { autoLogsWeather } from "../../src/lib/growEnvironment.js";
 import {
   isWaterUnit, toGallons, unitLabel, fanOutWater, mergeWaterRows, sumGallons,
   describeWater,
@@ -270,10 +271,24 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
         const gal = toGallons(amount, unit);
         if (gal != null) water_gal = Math.round(gal * 10000) / 10000;
       }
-      const temp_high = toNum(input.temp_high);
-      const temp_low  = toNum(input.temp_low);
-      const humidity  = toNum(input.humidity);
-      const feed      = toStr(input.feed);
+      let temp_high = toNum(input.temp_high);
+      let temp_low  = toNum(input.temp_low);
+      let humidity  = toNum(input.humidity);
+      const feed    = toStr(input.feed);
+
+      // A grow under the sky does not get told what its weather was. Its high,
+      // low and humidity are pulled from its location, so a number typed into
+      // chat here would only overwrite an observation with a recollection.
+      let climateRefused = null;
+      if (temp_high != null || temp_low != null || humidity != null) {
+        const survey = await readSurvey(env, userId, dayGrowId);
+        if (autoLogsWeather(survey?.environment)) {
+          climateRefused = "This grow is outdoors, so its high, low and humidity are logged automatically from its location. Those numbers were not written - tell the grower the weather is already on the day for them, and log the rest.";
+          temp_high = null;
+          temp_low = null;
+          humidity = null;
+        }
+      }
 
       await ensureGrowLogSchema(env);
 
@@ -332,6 +347,7 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
         ...(watered ? {
           watered: watered.map((w) => ({ plant: w.plant, amount: w.amount, unit: unitLabel(w.unit) })),
         } : {}),
+        ...(climateRefused ? { climate_not_logged: climateRefused } : {}),
       };
     }
 

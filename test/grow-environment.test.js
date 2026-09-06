@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   climateHint, climateLabel, ENVIRONMENTS, readsOwnClimate, tracksOutdoorWeather,
+  autoLogsWeather,
 } from "../src/lib/growEnvironment.js";
 
 // Three screens and one worker route all ask these two questions, so the
@@ -29,6 +30,29 @@ test("a space that never said what it is keeps the weather it always had", () =>
     assert.equal(tracksOutdoorWeather(unknown), true, `for ${JSON.stringify(unknown)}`);
     assert.equal(readsOwnClimate(unknown), false, `for ${JSON.stringify(unknown)}`);
   }
+});
+
+// ── Who records the climate ──────────────────────────────────────────────────
+test("a space either has its climate written for it or types it, never both", () => {
+  // This is the whole rule: one source per space. Two would mean an outside
+  // reading and a hygrometer in a tent sharing the same three fields, and then
+  // neither number means anything.
+  for (const kind of [...ENVIRONMENTS, undefined, null, "", "balcony"]) {
+    assert.notEqual(
+      autoLogsWeather(kind), readsOwnClimate(kind),
+      `${JSON.stringify(kind)} has two sources or none`,
+    );
+  }
+});
+
+test("only a space under the sky gets its numbers logged for it", () => {
+  assert.equal(autoLogsWeather("outdoor"), true);
+  assert.equal(autoLogsWeather("indoor"), false);
+  // A greenhouse is driven by the weather but measured by hand, so the sweep
+  // leaves its log alone: those fields hold the grower's own readings.
+  assert.equal(autoLogsWeather("greenhouse"), false);
+  // A space that never said what it is has always been treated as outdoors.
+  assert.equal(autoLogsWeather(undefined), true);
 });
 
 test("every kind the app offers gets at least one source of numbers", () => {

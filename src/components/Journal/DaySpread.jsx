@@ -154,12 +154,18 @@ export default function DaySpread({
   };
   const trainingRows = (log?.training ?? []).filter(t => t && (t.action ?? "").trim());
   const healthRows = (log?.plant_health ?? []).filter(h => h && (h.plant || h.plantId || h.color || h.trichomes || h.notes));
-  // A space that reads its own thermometer shows those numbers in the
-  // Conditions card, so the daily log below stops repeating them.
+  // Where a day's climate numbers are shown, and therefore where they are NOT
+  // repeated: a space with its own thermometer has the Conditions card, and a
+  // space under the sky has the Weather card. The daily log carries them only
+  // as a fallback, for an outdoor day whose weather never got cached.
   const ownClimate = readsOwnClimate(environment);
+  const weatherShown = Boolean(
+    day.weather && (day.weather.high != null || day.weather.low != null || day.weather.humidity != null)
+  );
+  const showLogClimate = !ownClimate && !weatherShown;
   const hasStats = log && (
     log.water_gal != null || log.feed
-    || (!ownClimate && (log.temp_high != null || log.temp_low != null || log.humidity != null))
+    || (showLogClimate && (log.temp_high != null || log.temp_low != null || log.humidity != null))
   );
 
   // Group plant entries by plant for a tidy per-plant read.
@@ -375,6 +381,7 @@ export default function DaySpread({
                   growId={growId}
                   plants={plants}
                   environment={environment}
+                  hasWeatherLocation={day.hasWeatherLocation}
                   active={active}
                 />
               </Card>
@@ -415,12 +422,12 @@ export default function DaySpread({
                 {hasStats && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
                     {log.water_gal != null && <Stat label="Water" value={fromGallons(log.water_gal, waterUnit)} unit={unitLabel(waterUnit)} />}
-                    {/* The climate numbers belong to the Conditions card above
-                        wherever there is one; repeating them here would just be
-                        the same three readings twice on one page. */}
-                    {!ownClimate && log.temp_high != null && <Stat label="Temp high" value={log.temp_high} unit="F" />}
-                    {!ownClimate && log.temp_low != null && <Stat label="Temp low" value={log.temp_low} unit="F" />}
-                    {!ownClimate && log.humidity != null && <Stat label="Humidity" value={log.humidity} unit="%" />}
+                    {/* The climate numbers belong to the Conditions or Weather
+                        card above wherever there is one; repeating them here
+                        would just be the same three readings twice on a page. */}
+                    {showLogClimate && log.temp_high != null && <Stat label="Temp high" value={log.temp_high} unit="F" />}
+                    {showLogClimate && log.temp_low != null && <Stat label="Temp low" value={log.temp_low} unit="F" />}
+                    {showLogClimate && log.humidity != null && <Stat label="Humidity" value={log.humidity} unit="%" />}
                   </div>
                 )}
                 {log.feed && (
