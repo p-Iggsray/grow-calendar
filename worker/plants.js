@@ -4,16 +4,12 @@ import { logError } from "./log.js";
 import {
   ensurePlantIds, validatePlantFields, addPlantToSurvey,
   updatePlantInSurvey, removePlantFromSurvey, normalizeLogEntry,
-  PLANT_STAGES, STAGE_SET, DEFAULT_STAGE, todayKey,
+  stageSet, todayKey,
 } from "./plantsRoster.js";
 
-const STAGE_LABELS = {
-  germination: "Germination", seedling: "Seedling", vegetative: "Vegetative",
-  flowering: "Flowering", flushing: "Flushing", harvest: "Harvest",
-  drying: "Drying", curing: "Curing", done: "Done",
-};
 import { ensureGrowLogSchema } from "./growLog.js";
 import { isWaterUnit } from "../src/lib/waterUnits.js";
+import { STAGE_LABEL, cropOf, defaultStage, stagesFor, words } from "../src/lib/crops.js";
 
 function parseSurvey(raw) {
   if (!raw) return null;
@@ -75,7 +71,10 @@ export async function ensurePlantLogSchema(env) {
 // they set the space up. Every later stage date comes from a manual switch.
 export async function seedStageEntries(env, userId, growId, survey) {
   const date = todayKey();
-  const plants = (survey?.strains ?? []).filter((p) => p?.id && STAGE_SET.has(p.stage ?? DEFAULT_STAGE));
+  const crop = cropOf(survey);
+  const allowed = stageSet(crop);
+  const fallback = defaultStage(crop);
+  const plants = (survey?.strains ?? []).filter((p) => p?.id && allowed.has(p.stage ?? fallback));
   if (plants.length === 0) return;
   try {
     await ensurePlantLogSchema(env);
@@ -90,11 +89,11 @@ export async function seedStageEntries(env, userId, growId, survey) {
        VALUES (?, ?, ?, ?, 'stage', ?, ?, NULL, NULL, NULL, ?, ?)`
     );
     await env.DB.batch(plants.map((p) => {
-      const stage = p.stage ?? DEFAULT_STAGE;
+      const stage = p.stage ?? fallback;
       return stmt.bind(
         userId, growId, p.id, date,
         JSON.stringify({ stage }),
-        `Stage → ${STAGE_LABELS[stage]}`,
+        `Stage → ${STAGE_LABEL[stage]}`,
         now, now,
       );
     }));
@@ -111,19 +110,21 @@ export async function addPlant(request, env, user, growId) {
   let body;
   { const p = await safeJsonBounded(request, 8192); if (!p.ok) return error(p.status, p.error); body = p.data; }
 
-  const v = validatePlantFields(body ?? {}, false);
+  const survey = parseSurvey(row.survey) ?? {};
+  const crop = cropOf(survey);
+
+  const v = validatePlantFields(body ?? {}, false, crop);
   if (!v.ok) return error(400, v.error);
 
   // A plant can join at ANY stage, but its clock always starts today: the app
   // never backdates a stage it was not around to see.
   const createdAt = todayKey();
 
-  const survey = parseSurvey(row.survey) ?? {};
   const { survey: nextSurvey, plant } = addPlantToSurvey(survey, v.value, undefined, createdAt);
   await saveSurvey(env, user.id, growId, nextSurvey);
 
-  const stage = plant.stage ?? DEFAULT_STAGE;
-  if (STAGE_SET.has(stage)) {
+  const stage = plant.stage ?? defaultStage(crop);
+  if (stageSet(crop).has(stage)) {
     try {
       await ensurePlantLogSchema(env);
       const now = new Date().toISOString();
@@ -134,7 +135,7 @@ export async function addPlant(request, env, user, growId) {
       ).bind(
         user.id, growId, plant.id, createdAt,
         JSON.stringify({ stage }),
-        `Stage → ${STAGE_LABELS[stage]}`,
+        `Stage → ${STAGE_LABEL[stage]}`,
         now, now,
       ).run();
     } catch (err) {
@@ -153,20 +154,22 @@ export async function patchPlant(request, env, user, growId, plantId) {
   let body;
   { const p = await safeJsonBounded(request, 8192); if (!p.ok) return error(p.status, p.error); body = p.data; }
 
-  const v = validatePlantFields(body ?? {}, true);
+  const ensured = ensurePlantIds(parseSurvey(row.survey) ?? {});
+  const crop = cropOf(ensured.survey);
+  const ladder = stagesFor(crop);
+
+  const v = validatePlantFields(body ?? {}, true, crop);
   if (!v.ok) return error(400, v.error);
   if (Object.keys(v.value).length === 0) return error(400, "no valid fields");
-
-  const ensured = ensurePlantIds(parseSurvey(row.survey) ?? {});
 
   // Stage changes are one-way: a plant only ever moves forward through its
   // lifecycle. Same stage is a harmless no-op; backward is rejected.
   if (v.value.stage !== undefined) {
     const current = (ensured.survey.strains ?? []).find((s) => s.id === plantId);
     if (current) {
-      const from = PLANT_STAGES.indexOf(current.stage ?? DEFAULT_STAGE);
-      const to = PLANT_STAGES.indexOf(v.value.stage);
-      if (to < from) return error(400, "stage changes are one-way - a plant cannot move back to an earlier stage");
+      const from = ladder.indexOf(current.stage ?? defaultStage(crop));
+      const to = ladder.indexOf(v.value.stage);
+      if (to < from) return error(400, `stage changes are one-way - a ${words(crop).unit} cannot move back to an earlier stage`);
       if (to === from) delete v.value.stage;
     }
     if (Object.keys(v.value).length === 0) return json({ ok: true, plant: (ensured.survey.strains ?? []).find((s) => s.id === plantId) });

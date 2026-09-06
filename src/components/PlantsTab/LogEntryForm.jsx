@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { ymd } from "../../lib/api.js";
 import { Label, Input, RadioGroup, MONO, SERIF } from "../SetupWizard/styleHelpers.jsx";
-import { HEALTH_OPTIONS, FORM_KINDS } from "./constants.js";
+import { HEALTH_OPTIONS, formKinds } from "./constants.js";
 import { autoLogsWeather } from "../../lib/growEnvironment.js";
+import { words } from "../../lib/crops.js";
 import ChoiceField from "../ChoiceField.jsx";
 import { NUTRIENT_PRODUCTS, NUTRIENT_DOSES, TRAINING_ACTIONS } from "../../lib/choices.js";
 import {
@@ -20,13 +21,14 @@ function btn(kind, disabled) {
 const num = (v) => (v === "" || v == null ? undefined : Number(v));
 const str = (v) => { const s = String(v ?? "").trim(); return s || undefined; };
 
-export default function LogEntryForm({ initial, environment, onSave, onCancel, saving }) {
+export default function LogEntryForm({ initial, environment, crop, nextFlush = 1, onSave, onCancel, saving }) {
   const today = ymd(new Date()); // local calendar day, not UTC
+  const w = words(crop);
   const [kind, setKind] = useState(initial?.kind ?? "note");
   // Nothing outdoors gets its temperature typed in: that day's high, low and
   // humidity are its location's weather, pulled in and logged on the day
   // itself. So the category is not even offered for a plant living outside.
-  const kinds = FORM_KINDS.filter(
+  const kinds = formKinds(crop).filter(
     (k) => k.value !== "environment" || !autoLogsWeather(environment)
   );
   const [date, setDate] = useState(initial?.date ?? today);
@@ -48,6 +50,9 @@ export default function LogEntryForm({ initial, environment, onSave, onCancel, s
         ec_in: num(d.ec_in), ec_out: num(d.ec_out),
       };
     }
+    // A flush is the tub's harvest, and it happens again and again: which one
+    // this is, what it weighed off the tub, and what it weighed once dry.
+    else if (kind === "flush") obj = { flush: num(d.flush ?? nextFlush), wetG: num(d.wetG), dryG: num(d.dryG) };
     else if (kind === "nutrients") obj = { mix: str(d.mix), dose: str(d.dose) };
     else if (kind === "training") obj = { action: str(d.action) };
     else if (kind === "environment") obj = { temp_high: num(d.temp_high), temp_low: num(d.temp_low), humidity: num(d.humidity) };
@@ -93,7 +98,7 @@ export default function LogEntryForm({ initial, environment, onSave, onCancel, s
       {kind === "watering" && (
         <div style={{ display: "flex", gap: 10 }}>
           <div style={{ flex: 1 }}>
-            <Label>Water</Label>
+            <Label>{w.waterField}</Label>
             <Input
               type="number"
               step={UNIT_STEP[isWaterUnit(d.unit) ? d.unit : loadWaterUnit()] ?? 0.25}
@@ -119,6 +124,17 @@ export default function LogEntryForm({ initial, environment, onSave, onCancel, s
           </div>
           <div style={{ flex: 1 }}><Label>EC in</Label><Input type="number" value={d.ec_in ?? ""} onChange={(v) => sd("ec_in", v)} placeholder="-" /></div>
           <div style={{ flex: 1 }}><Label>EC out</Label><Input type="number" value={d.ec_out ?? ""} onChange={(v) => sd("ec_out", v)} placeholder="-" /></div>
+        </div>
+      )}
+
+      {kind === "flush" && (
+        <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ width: 92 }}>
+            <Label>Flush #</Label>
+            <Input type="number" value={d.flush ?? String(nextFlush)} onChange={(v) => sd("flush", v)} placeholder={String(nextFlush)} />
+          </div>
+          <div style={{ flex: 1 }}><Label>Wet weight</Label><Input type="number" value={d.wetG ?? ""} onChange={(v) => sd("wetG", v)} placeholder="g" /></div>
+          <div style={{ flex: 1 }}><Label>Dry weight</Label><Input type="number" value={d.dryG ?? ""} onChange={(v) => sd("dryG", v)} placeholder="g" /></div>
         </div>
       )}
 

@@ -6,9 +6,10 @@ import { api } from "../../lib/api.js";
 import { dayOfGrow } from "../../lib/stageTimeline.js";
 import { ymd } from "../../lib/api.js";
 import {
-  MONO, SERIF, TYPE_LABEL, HEALTH_MAP, STAGE_ORDER, stageLabel, nextStage,
-  LOG_KINDS, kindLabel, summarizeEntry, fmtDateKey, plantHistoryStats,
+  MONO, SERIF, typeLabel, HEALTH_MAP, stageOrder, stageLabel, nextStage,
+  logKinds, kindLabel, summarizeEntry, fmtDateKey, plantHistoryStats,
 } from "./constants.js";
+import { defaultStage, flushTotals, words } from "../../lib/crops.js";
 import LogEntryForm from "./LogEntryForm.jsx";
 import AddPlantSheet from "./AddPlantSheet.jsx";
 import StageTimeline from "./StageTimeline.jsx";
@@ -35,7 +36,7 @@ function keyToDate(key) {
   return y && m && d ? new Date(y, m - 1, d) : null;
 }
 
-export default function PlantDetail({ growId, plant, environment, today, firstDate, onOpenJournalDay, onClose, onArchive, onDelete, onLogChange, onChanged }) {
+export default function PlantDetail({ growId, plant, environment, crop, today, firstDate, onOpenJournalDay, onClose, onArchive, onDelete, onLogChange, onChanged }) {
   const { entries, loading: logLoading, addEntry, removeEntry } = usePlantLog(growId, plant.id, true);
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -58,14 +59,19 @@ export default function PlantDetail({ growId, plant, environment, today, firstDa
     return () => { cancelled = true; };
   }, [growId, plant.id, entries.length]);
 
+  const w = words(crop);
   const combined = [...entries.map((e) => ({ ...e, source: "log" })), ...daily]
     .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
-  const presentKinds = LOG_KINDS.filter((k) => combined.some((e) => (e.kind || "note") === k.value));
+  const presentKinds = logKinds(crop).filter((k) => combined.some((e) => (e.kind || "note") === k.value));
   const shownEntries = histFilter === "all" ? combined : combined.filter((e) => (e.kind || "note") === histFilter);
 
-  const stage = plant.stage || "seedling";
-  const stageIdx = STAGE_ORDER.indexOf(stage);
-  const upcoming = stageIdx < STAGE_ORDER.length - 1 ? nextStage(stage) : null;
+  const ladder = stageOrder(crop);
+  const stage = plant.stage || defaultStage(crop);
+  const stageIdx = ladder.indexOf(stage);
+  const upcoming = stageIdx < ladder.length - 1 ? nextStage(stage, crop) : null;
+  // What this tub has actually given so far. Cannabis harvests once, so the
+  // running total only means something where flushes are logged.
+  const yields = flushTotals(combined);
 
   // At-a-glance numbers derived from the history + grow timeline.
   // Day 0 is the day this plant was added, whatever stage it joined at.
@@ -121,22 +127,22 @@ export default function PlantDetail({ growId, plant, environment, today, firstDa
       style={{ position: "fixed", inset: 0, zIndex: 40, background: "var(--c-bg)", overflowY: "auto", paddingBottom: 40 }}
     >
       <ScreenHeader
-        eyebrow={TYPE_LABEL[plant.type] ?? plant.type}
+        eyebrow={typeLabel(plant.type, crop) || plant.type}
         title={plant.name || "Unnamed plant"}
         onBack={onClose}
         backLabel="Back to the environment"
         right={(
           <HeaderMenu
-            title="Plant settings"
+            title={`${w.Unit} settings`}
             items={[
-              { icon: Pencil, label: "Edit plant", detail: "Name, type, flower time, pot size", onClick: () => setEditing(true) },
+              { icon: Pencil, label: `Edit ${w.unit}`, detail: `Name, type, ${w.lengthLabel.toLowerCase()}`, onClick: () => setEditing(true) },
               {
                 icon: Archive,
-                label: plant.status === "growing" ? "Archive plant" : "Unarchive plant",
+                label: plant.status === "growing" ? `Archive ${w.unit}` : `Unarchive ${w.unit}`,
                 detail: plant.status === "growing" ? "Keeps its log, hides it from the list" : null,
                 onClick: () => onArchive(plant),
               },
-              { icon: Trash2, label: "Delete plant", tone: "destructive", onClick: () => onDelete(plant) },
+              { icon: Trash2, label: `Delete ${w.unit}`, tone: "destructive", onClick: () => onDelete(plant) },
             ]}
           />
         )}
@@ -152,6 +158,7 @@ export default function PlantDetail({ growId, plant, environment, today, firstDa
         {editing && (
           <div style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 14, marginTop: 14 }}>
             <AddPlantSheet
+              crop={crop}
               initial={{ name: plant.name, type: plant.type, photo: plant.photo, flowerWeeks: plant.flowerWeeks, potSize: plant.potSize }}
               onSave={handleEditSave}
               onCancel={() => setEditing(false)}
@@ -166,7 +173,7 @@ export default function PlantDetail({ growId, plant, environment, today, firstDa
             and it asks first - there is no going back. */}
         <div style={{ marginTop: 20 }}>
           <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 6 }}>Stage</div>
-          <StageTimeline stage={stage} height={10} />
+          <StageTimeline stage={stage} crop={crop} height={10} />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 10 }}>
             <div style={{ fontFamily: MONO, fontSize: 14, letterSpacing: 1, color: "var(--c-accent)" }}>
               {stageLabel(stage)}
@@ -196,6 +203,11 @@ export default function PlantDetail({ growId, plant, environment, today, firstDa
           {age != null && <Meta label="Age" value={`Day ${age}`} />}
           <Meta label="In stage" value={stageDays != null ? `${stageDays}d` : "-"} />
           {healthInfo && <Meta label="Health" value={healthInfo.label} accent={healthInfo.color} />}
+          {/* A tub keeps giving, so what it has given so far is a number worth
+              having next to its age. */}
+          {yields.flushes > 0 && (
+            <Meta label={`${yields.flushes} flush${yields.flushes === 1 ? "" : "es"}`} value={`${yields.dryG || yields.wetG} g${yields.dryG ? " dry" : " wet"}`} />
+          )}
         </div>
 
         {/* Photos of this plant */}
@@ -212,7 +224,14 @@ export default function PlantDetail({ growId, plant, environment, today, firstDa
 
         {adding && (
           <div style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 14, marginBottom: 16 }}>
-            <LogEntryForm environment={environment} onSave={handleSave} onCancel={() => setAdding(false)} saving={saving} />
+            <LogEntryForm
+              environment={environment}
+              crop={crop}
+              nextFlush={yields.flushes + 1}
+              onSave={handleSave}
+              onCancel={() => setAdding(false)}
+              saving={saving}
+            />
           </div>
         )}
 
@@ -257,7 +276,7 @@ export default function PlantDetail({ growId, plant, environment, today, firstDa
               <div key={e.id} style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border-faint)", borderRadius: 12, padding: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "var(--c-text-faint)", textTransform: "uppercase", background: "var(--c-surface-2)", borderRadius: 5, padding: "2px 6px" }}>{kindLabel(kind)}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: "var(--c-text-faint)", textTransform: "uppercase", background: "var(--c-surface-2)", borderRadius: 5, padding: "2px 6px" }}>{kindLabel(kind, crop)}</span>
                     {/* The date links into that day's journal page. */}
                     <button
                       type="button"

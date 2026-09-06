@@ -1,13 +1,15 @@
-import { STAGE_ORDER, stageLabel } from "./constants.js";
+import { stageOrder, stageLabel } from "./constants.js";
 
-// Visual Seedling→…→Done progress bar. Segments up to (and including) the
-// current stage are filled. When onPick is given, each segment is tappable to
-// jump straight to that stage.
-export default function StageTimeline({ stage, onPick, height = 8 }) {
-  const idx = Math.max(0, STAGE_ORDER.indexOf(stage));
+// Visual start→…→finish progress bar along this crop's own ladder: seedling to
+// done for a plant, inoculation to dried for a tub. Segments up to (and
+// including) the current stage are filled. When onPick is given, each segment
+// is tappable to jump straight to that stage.
+export default function StageTimeline({ stage, crop, onPick, height = 8 }) {
+  const ladder = stageOrder(crop);
+  const idx = Math.max(0, ladder.indexOf(stage));
   return (
     <div style={{ display: "flex", gap: 4 }}>
-      {STAGE_ORDER.map((s, i) => {
+      {ladder.map((s, i) => {
         const done = i <= idx;
         const seg = (
           <div style={{

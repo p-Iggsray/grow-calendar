@@ -1,42 +1,20 @@
 // The grow's timeline, derived from what actually happened.
 //
-// There are no predicted dates anymore. Every time a grower moves a plant to
-// its next stage, that switch is recorded with the day it happened, and the
-// calendar, the day counter and every phase label are read back out of those
-// records. The timeline is a history, not a forecast.
+// There are no predicted dates anymore. Every time a grower moves a plant (or a
+// tub) to its next stage, that switch is recorded with the day it happened, and
+// the calendar, the day counter and every phase label are read back out of
+// those records. The timeline is a history, not a forecast.
+//
+// Nothing here knows or asks what a space grows. Stage ids are unique across
+// crops and sit in one global ladder (see crops.js), so a stage says which crop
+// it belongs to, and ordering within a crop is the only thing ever compared.
+import { ALL_STAGES, STAGE_LABEL, STAGE_GROUP, stagesFor } from "./crops.js";
 
-// Ordered plant stages (mirrors PLANT_STAGES in worker/plantsRoster.js).
-export const STAGE_ORDER = [
-  "germination", "seedling", "vegetative", "flowering", "flushing",
-  "harvest", "drying", "curing", "done",
-];
+export { STAGE_LABEL, stagesFor };
 
-export const STAGE_LABEL = {
-  germination: "Germination",
-  seedling: "Seedling",
-  vegetative: "Vegetative",
-  flowering: "Flowering",
-  flushing: "Flushing",
-  harvest: "Harvest",
-  drying: "Drying",
-  curing: "Curing",
-  done: "Done",
-};
-
-// One colour per group of stages, so the calendar reads as a few clear
-// seasons rather than a nine-colour quilt. Values match the old phase
-// families, so the app's palette is unchanged.
-const STAGE_GROUP = {
-  germination: { key: "setup",   label: "Setup",   color: "#5b8dee" },
-  seedling:    { key: "setup",   label: "Setup",   color: "#5b8dee" },
-  vegetative:  { key: "veg",     label: "Veg",     color: "#22c55e" },
-  flowering:   { key: "flower",  label: "Flower",  color: "#f97316" },
-  flushing:    { key: "flush",   label: "Flush",   color: "#0ea5e9" },
-  harvest:     { key: "harvest", label: "Harvest", color: "#d97706" },
-  drying:      { key: "harvest", label: "Harvest", color: "#d97706" },
-  curing:      { key: "harvest", label: "Harvest", color: "#d97706" },
-  done:        { key: "harvest", label: "Harvest", color: "#d97706" },
-};
+// Every stage of every crop, in one order. A grow only ever holds one crop's
+// stages, so an index comparison never mixes the two.
+export const STAGE_ORDER = ALL_STAGES;
 
 export function stageGroup(stage) {
   return STAGE_GROUP[stage] ?? null;

@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
-import { MONO, SERIF, TYPE_LABEL, HEALTH_MAP, stageLabel, relDayLabel } from "./constants.js";
+import { MONO, SERIF, typeLabel, HEALTH_MAP, stageLabel, relDayLabel } from "./constants.js";
 import { dayOfGrow } from "../../lib/stageTimeline.js";
 import { ymd } from "../../lib/api.js";
 import StageTimeline from "./StageTimeline.jsx";
 
-export default function PlantCard({ plant, metrics, today, firstDate, onOpen }) {
+export default function PlantCard({ plant, metrics, crop, today, firstDate, onOpen }) {
   // A plant counts from the day IT was added, not from the space's day 0.
   // Older plants predate that stamp, so they fall back to the space.
   const health = metrics?.health ? HEALTH_MAP[metrics.health] : null;
@@ -38,7 +38,7 @@ export default function PlantCard({ plant, metrics, today, firstDate, onOpen }) 
         )}
       </div>
       <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)", marginTop: 6, letterSpacing: 0.3 }}>
-        {TYPE_LABEL[plant.type] ?? plant.type}
+        {typeLabel(plant.type, crop) || plant.type}
         {plant.photo === false ? " · Auto" : " · Photo"}
         {plant.flowerWeeks ? ` · ${plant.flowerWeeks}wk flower` : ""}
         {plant.potSize ? ` · ${plant.potSize} gal` : ""}

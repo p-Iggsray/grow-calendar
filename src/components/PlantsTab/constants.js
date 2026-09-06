@@ -1,34 +1,36 @@
 import { rowDisplay, unitLabel } from "../../lib/waterUnits.js";
+import { STAGE_LABEL, cropOf, stagesFor, varietyTypes } from "../../lib/crops.js";
 export const MONO = "var(--font-ui)";
 export const SERIF = "var(--font-ui)";
 
-export const TYPE_LABEL = { indica: "Indica", sativa: "Sativa", hybrid: "Hybrid" };
-
-// Manual per-plant lifecycle stages (mirror of worker/plantsRoster.js PLANT_STAGES).
-export const STAGE_OPTIONS = [
-  { value: "germination", label: "Germination" },
-  { value: "seedling",   label: "Seedling" },
-  { value: "vegetative", label: "Vegetative" },
-  { value: "flowering",  label: "Flowering" },
-  { value: "flushing",   label: "Flushing" },
-  { value: "harvest",    label: "Harvest" },
-  { value: "drying",     label: "Drying" },
-  { value: "curing",     label: "Curing" },
-  { value: "done",       label: "Done" },
-];
-export const STAGE_ORDER = STAGE_OPTIONS.map((o) => o.value);
-export function stageLabel(stage) {
-  return STAGE_OPTIONS.find((s) => s.value === stage)?.label ?? "Seedling";
+/** Label for a roster entry's type, in the words of its crop. */
+export function typeLabel(type, crop) {
+  return varietyTypes(crop).find((t) => t.value === type)?.label ?? "";
 }
-function stageIndex(stage) {
-  const i = STAGE_ORDER.indexOf(stage);
+
+// Manual per-entry stages, in the order this crop's ladder runs. A cannabis
+// plant germinates and cures; a tub is inoculated and dried. Same machinery,
+// different rungs - see src/lib/crops.js.
+export function stageOptions(crop) {
+  return stagesFor(crop).map((value) => ({ value, label: STAGE_LABEL[value] }));
+}
+export function stageOrder(crop) {
+  return stagesFor(crop);
+}
+export function stageLabel(stage) {
+  return STAGE_LABEL[stage] ?? "";
+}
+function stageIndexIn(ladder, stage) {
+  const i = ladder.indexOf(stage);
   return i < 0 ? 0 : i;
 }
-export function nextStage(stage) {
-  return STAGE_ORDER[Math.min(STAGE_ORDER.length - 1, stageIndex(stage) + 1)];
+export function nextStage(stage, crop) {
+  const ladder = stagesFor(crop);
+  return ladder[Math.min(ladder.length - 1, stageIndexIn(ladder, stage) + 1)];
 }
-export function prevStage(stage) {
-  return STAGE_ORDER[Math.max(0, stageIndex(stage) - 1)];
+export function prevStage(stage, crop) {
+  const ladder = stagesFor(crop);
+  return ladder[Math.max(0, stageIndexIn(ladder, stage) - 1)];
 }
 
 export const HEALTH_OPTIONS = [
@@ -39,10 +41,14 @@ export const HEALTH_OPTIONS = [
 ];
 export const HEALTH_MAP = Object.fromEntries(HEALTH_OPTIONS.map((o) => [o.value, o]));
 
-// Per-plant history categories. Order drives the filter row. "stage" is
+// Per-entry history categories. Order drives the filter row. "stage" is
 // produced by the stage control, not the entry form; "measurement" is legacy
 // (height tracking was removed) and only renders old entries.
-export const LOG_KINDS = [
+//
+// A tub keeps the categories that mean something in a monotub and gains the one
+// that only exists there: a flush, which is a harvest the tub has again and
+// again without ever leaving Fruiting.
+const CANNABIS_KINDS = [
   { value: "note",        label: "Note" },
   { value: "measurement", label: "Measurement" },
   { value: "watering",    label: "Watering" },
@@ -53,9 +59,28 @@ export const LOG_KINDS = [
   { value: "health",      label: "Health" },
   { value: "stage",       label: "Stage" },
 ];
-export const FORM_KINDS = LOG_KINDS.filter((k) => k.value !== "stage" && k.value !== "measurement");
-export const KIND_LABEL = Object.fromEntries(LOG_KINDS.map((k) => [k.value, k.label]));
-export function kindLabel(kind) { return KIND_LABEL[kind] ?? "Note"; }
+const MUSHROOM_KINDS = [
+  { value: "note",        label: "Note" },
+  { value: "flush",       label: "Flush" },
+  { value: "watering",    label: "Misting" },
+  { value: "environment", label: "Environment" },
+  { value: "health",      label: "Health" },
+  { value: "stage",       label: "Stage" },
+];
+export function logKinds(crop) {
+  return cropOf(crop) === "mushrooms" ? MUSHROOM_KINDS : CANNABIS_KINDS;
+}
+export function formKinds(crop) {
+  return logKinds(crop).filter((k) => k.value !== "stage" && k.value !== "measurement");
+}
+// Every label the app might have to render, whichever crop wrote the entry.
+const KIND_LABEL = Object.fromEntries(
+  [...CANNABIS_KINDS, ...MUSHROOM_KINDS].map((k) => [k.value, k.label])
+);
+export function kindLabel(kind, crop) {
+  const own = logKinds(crop).find((k) => k.value === kind);
+  return own?.label ?? KIND_LABEL[kind] ?? "Note";
+}
 
 // One-line summary of an entry's category-specific detail, for the history list.
 export function summarizeEntry(e) {
@@ -70,6 +95,15 @@ export function summarizeEntry(e) {
       if (amount) parts.push(`${amount} ${unitLabel(unit)}`);
       if (d.ec_in) parts.push(`EC in ${d.ec_in}`);
       if (d.ec_out) parts.push(`EC out ${d.ec_out}`);
+      return parts.join(" · ");
+    }
+    case "flush": {
+      // What came off the tub this time, in the order it happens: picked wet,
+      // weighed again once it is dry.
+      const parts = [];
+      if (d.flush) parts.push(`Flush ${d.flush}`);
+      if (d.wetG) parts.push(`${d.wetG} g wet`);
+      if (d.dryG) parts.push(`${d.dryG} g dry`);
       return parts.join(" · ");
     }
     case "nutrients": return [d.mix, d.dose].filter(Boolean).join(" - ");

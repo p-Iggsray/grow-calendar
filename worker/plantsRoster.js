@@ -2,18 +2,24 @@
 // Pure helpers for the per-plant roster (stored in a grow's survey.strains[])
 // and for validating log-entry input. No DB access, so these are unit-testable
 // in isolation with node --test.
+import {
+  ALL_STAGES, cropOf, defaultStage, defaultVarietyType, isVarietyType, stagesFor, words,
+} from "../src/lib/crops.js";
 
-export const PLANT_TYPES = new Set(["indica", "sativa", "hybrid"]);
+// A roster entry is a cannabis plant or a mushroom tub, and which one decides
+// its stages and its type. The crop travels on the survey, so every function
+// here that judges a stage or a type takes the survey (or a crop) with it.
 export const PLANT_STATUSES = new Set(["growing", "harvested", "dead"]);
 export const HEALTH_VALUES = new Set(["thriving", "healthy", "stressed", "sick"]);
 export const HEIGHT_UNITS = new Set(["in", "cm"]);
-// Ordered per-plant lifecycle stages (manual; the grower advances them).
-export const PLANT_STAGES = [
-  "germination", "seedling", "vegetative", "flowering", "flushing",
-  "harvest", "drying", "curing", "done",
-];
-export const STAGE_SET = new Set(PLANT_STAGES);
-export const DEFAULT_STAGE = "seedling";
+// Every stage of every crop: what an id is allowed to be at all. Whether a
+// given stage belongs on a given roster is a question for the grow's crop.
+export const ALL_STAGE_SET = new Set(ALL_STAGES);
+
+/** The stages a roster of this crop may use. */
+export function stageSet(crop) {
+  return new Set(stagesFor(crop));
+}
 
 const NAME_MAX = 60;
 
@@ -25,19 +31,27 @@ export function newPlantId() {
 // Returns { survey, changed }. Never mutates the input.
 export function ensurePlantIds(survey) {
   if (!survey || !Array.isArray(survey.strains)) return { survey, changed: false };
+  const crop = cropOf(survey);
+  const allowed = stageSet(crop);
+  const fallback = defaultStage(crop);
   let changed = false;
   const strains = survey.strains.map((s) => {
     const next = { ...s };
     if (!next.id) { next.id = newPlantId(); changed = true; }
     if (!PLANT_STATUSES.has(next.status)) { next.status = "growing"; changed = true; }
-    if (!STAGE_SET.has(next.stage)) { next.stage = DEFAULT_STAGE; changed = true; }
+    // A stage from the other crop can only mean the space was switched over,
+    // so the entry starts again at the beginning of the ladder it is on now.
+    if (!allowed.has(next.stage)) { next.stage = fallback; changed = true; }
     return next;
   });
   return changed ? { survey: { ...survey, strains }, changed: true } : { survey, changed: false };
 }
 
-// Validates + normalizes plant roster fields. partial=true allows a subset (PATCH).
-export function validatePlantFields(fields, partial = false) {
+// Validates + normalizes plant roster fields. partial=true allows a subset
+// (PATCH). `crop` decides which stages and which variety types are legal, so a
+// monotub cannot be told one of its tubs is flowering.
+export function validatePlantFields(fields, partial = false, crop = undefined) {
+  const kind = cropOf(crop);
   const out = {};
   const has = (k) => fields[k] !== undefined;
 
@@ -63,16 +77,17 @@ export function validatePlantFields(fields, partial = false) {
     else out.strain = fields.strain.trim().slice(0, NAME_MAX);
   }
   if (has("type") || !partial) {
-    const type = String(fields.type ?? "hybrid");
-    if (!PLANT_TYPES.has(type)) return { ok: false, error: "invalid type" };
+    const type = String(fields.type ?? defaultVarietyType(kind));
+    if (!isVarietyType(kind, type)) return { ok: false, error: "invalid type" };
     out.type = type;
   }
   if (has("photo") || !partial) {
     out.photo = Boolean(fields.photo ?? true);
   }
   if (has("flowerWeeks") || !partial) {
-    const fw = Number(fields.flowerWeeks ?? 9);
-    if (!Number.isFinite(fw) || fw < 4 || fw > 20) return { ok: false, error: "flowerWeeks out of range" };
+    const w = words(kind);
+    const fw = Number(fields.flowerWeeks ?? w.lengthDefault);
+    if (!Number.isFinite(fw) || fw < 1 || fw > 20) return { ok: false, error: "flowerWeeks out of range" };
     out.flowerWeeks = Math.round(fw);
   }
   if (has("potSize")) {
@@ -85,8 +100,8 @@ export function validatePlantFields(fields, partial = false) {
     }
   }
   if (has("stage") || !partial) {
-    const stage = String(fields.stage ?? DEFAULT_STAGE);
-    if (!STAGE_SET.has(stage)) return { ok: false, error: "invalid stage" };
+    const stage = String(fields.stage ?? defaultStage(kind));
+    if (!stageSet(kind).has(stage)) return { ok: false, error: "invalid stage" };
     out.stage = stage;
   }
   if (has("status")) {
@@ -106,6 +121,8 @@ export function backfillStrainsFromPlan(survey, generatedPlan, idGen = newPlantI
   const existing = survey && Array.isArray(survey.strains) ? survey.strains : [];
   if (existing.length > 0) return { survey, changed: false };
 
+  const crop = cropOf(survey);
+  const w = words(crop);
   const planStrains = Array.isArray(generatedPlan?.strains) ? generatedPlan.strains : [];
   const strains = planStrains
     .filter((s) => s && String(s.name ?? "").trim())
@@ -114,9 +131,9 @@ export function backfillStrainsFromPlan(survey, generatedPlan, idGen = newPlantI
       return {
         id: idGen(),
         name: String(s.name).trim().slice(0, NAME_MAX),
-        type: PLANT_TYPES.has(s.type) ? s.type : "hybrid",
+        type: isVarietyType(crop, s.type) ? s.type : defaultVarietyType(crop),
         photo: s.photo !== undefined ? Boolean(s.photo) : true,
-        flowerWeeks: Number.isFinite(fw) ? Math.min(20, Math.max(4, Math.round(fw))) : 9,
+        flowerWeeks: Number.isFinite(fw) ? Math.min(20, Math.max(4, Math.round(fw))) : w.lengthDefault,
         status: "growing",
       };
     });

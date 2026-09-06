@@ -7,6 +7,7 @@ import { tapHaptic } from "../../lib/haptics.js";
 import { getLifecyclePhase } from "../../lib/lifecycle.js";
 import { MONO, partitionPlants } from "../PlantsTab/constants.js";
 import PlantCard from "../PlantsTab/PlantCard.jsx";
+import { cropOf, words } from "../../lib/crops.js";
 import PlantDetail from "../PlantsTab/PlantDetail.jsx";
 import AddPlantSheet from "../PlantsTab/AddPlantSheet.jsx";
 import EnvConditions from "../Environment/EnvConditions.jsx";
@@ -99,7 +100,10 @@ export default function EnvironmentDetail({
 
   const { active, archived } = partitionPlants(survey);
   const chips = envSetupChips(survey);
-  const kindLabel = ENV_KIND_LABEL[survey?.environment] ?? "Space";
+  // What this space grows decides what the things in it are called.
+  const crop = cropOf(survey);
+  const w = words(crop);
+  const kindLabel = [w.cropLabel, ENV_KIND_LABEL[survey?.environment]].filter(Boolean).join(" · ") || "Space";
   const selectedPlant = [...active, ...archived].find((p) => p.id === selectedId) || null;
 
   async function handleSaveSetup(fields) {
@@ -214,24 +218,24 @@ export default function EnvironmentDetail({
           </div>
         )}
 
-        {/* Plants living here */}
+        {/* What lives here: plants in a tent, tubs in a monotub */}
         <SectionTitle
           action={(
             <button type="button" onClick={() => setAdding(true)} style={pillBtn("var(--c-accent)", "rgba(74,222,128,0.1)", "rgba(74,222,128,0.3)")}>
-              <Plus size={13} /> Add plant
+              <Plus size={13} /> {w.addUnit}
             </button>
           )}>
-          Plants{active.length > 0 ? ` (${active.length})` : ""}
+          {w.Units}{active.length > 0 ? ` (${active.length})` : ""}
         </SectionTitle>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {active.length === 0 && (
             <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-ghost)" }}>
-              No plants in this space yet.
+              {w.rosterEmpty} in this space.
             </div>
           )}
           {active.map((p) => (
-            <PlantCard key={p.id} plant={p} metrics={summary[p.id]} today={today} firstDate={firstDate} onOpen={() => setSelectedId(p.id)} />
+            <PlantCard key={p.id} plant={p} metrics={summary[p.id]} crop={crop} today={today} firstDate={firstDate} onOpen={() => setSelectedId(p.id)} />
           ))}
 
           {archived.length > 0 && (
@@ -242,7 +246,7 @@ export default function EnvironmentDetail({
               {showArchived && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8, opacity: 0.7 }}>
                   {archived.map((p) => (
-                    <PlantCard key={p.id} plant={p} metrics={summary[p.id]} today={today} firstDate={firstDate} onOpen={() => setSelectedId(p.id)} />
+                    <PlantCard key={p.id} plant={p} metrics={summary[p.id]} crop={crop} today={today} firstDate={firstDate} onOpen={() => setSelectedId(p.id)} />
                   ))}
                 </div>
               )}
@@ -263,9 +267,9 @@ export default function EnvironmentDetail({
           <div style={{ position: "fixed", inset: 0, zIndex: 45, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end" }} onClick={() => !savingPlant && setAdding(false)}>
             <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", background: "var(--c-panel-bg)", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: "calc(20px + env(safe-area-inset-bottom, 0px))", maxHeight: "88vh", overflowY: "auto" }}>
               <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 16 }}>
-                Add a plant to {grow.displayName || "this space"}
+                {w.addUnit} to {grow.displayName || "this space"}
               </div>
-              <AddPlantSheet onSave={handleAddPlant} onCancel={() => setAdding(false)} saving={savingPlant} />
+              <AddPlantSheet crop={crop} onSave={handleAddPlant} onCancel={() => setAdding(false)} saving={savingPlant} />
             </div>
           </div>
           </Portal>
@@ -280,6 +284,7 @@ export default function EnvironmentDetail({
             growId={growId}
             plant={selectedPlant}
             environment={survey?.environment}
+            crop={crop}
             today={today}
             firstDate={firstDate}
             onOpenJournalDay={onOpenJournalDay}
