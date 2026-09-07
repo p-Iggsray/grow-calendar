@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useToday } from "./lib/dates.js";
 import { useAuth } from "./lib/auth.jsx";
 import { usePlan } from "./lib/usePlan.jsx";
-import { useJournalMonth, useStageTimeline } from "./lib/useJournal.js";
+import { useJournalMonth, useRecentJournal, useStageTimeline } from "./lib/useJournal.js";
 import { api, ymd } from "./lib/api.js";
 import { buildSuggestions } from "./lib/mjSuggestions.js";
 import { useOnlineStatus } from "./lib/useOnlineStatus.js";
@@ -13,8 +13,10 @@ import { tracksOutdoorWeather } from "./lib/growEnvironment.js";
 import { cropOf } from "./lib/crops.js";
 import { currentStageOf, dayOfGrow, stageLabel } from "./lib/stageTimeline.js";
 import { getLifecyclePhase, phaseMeta } from "./lib/lifecycle.js";
+import { spaceSubtitle } from "./lib/homeStatus.js";
 
 import TopBar from "./components/TopBar.jsx";
+import HomeStatus from "./components/HomeStatus.jsx";
 import Calendar from "./components/Calendar.jsx";
 import TabBar from "./components/TabBar.jsx";
 import SettingsScreen from "./components/SettingsScreen.jsx";
@@ -98,6 +100,8 @@ export default function App() {
   const journalMonthDays = useJournalMonth(monthKey, Boolean(user) && Boolean(activeGrowId), activeGrowId);
   // The grow's real timeline: every stage switch the grower recorded.
   const { events: stageEvents, firstDate: growStart } = useStageTimeline(activeGrowId, Boolean(user));
+  // The last fortnight of entries, for the status card's recorded facts.
+  const { days: recentDays } = useRecentJournal(activeGrowId, Boolean(user) && Boolean(activeGrowId));
 
   // From anywhere in the app (a calendar day, plant history, MJ, a shared
   // link) straight to a day's journal page. push=false for browser-driven
@@ -248,6 +252,14 @@ export default function App() {
   const todayStyle = todayStage ? { label: stageLabel(todayStage) } : null;
   const todayDayNum = dayOfGrow(growStart, ymd(today));
 
+  // The header line. On the grid the status card below already says the stage
+  // and the day, so the eyebrow names what the space grows instead; the journal
+  // has no such card, so there it still carries the stage.
+  const homeEyebrow = mainView === "calendar" && survey
+    ? spaceSubtitle(survey)
+    : [todayStyle?.label ?? "Off season", todayDayNum != null ? `Day ${todayDayNum}` : null]
+        .filter(Boolean).join(" · ");
+
   const suggestions = buildSuggestions({
     contextDate: chatContext,
     today,
@@ -385,8 +397,7 @@ export default function App() {
             >
               <TopBar
                 today={today}
-                todayStyle={todayStyle}
-                dayNum={todayDayNum}
+                eyebrow={homeEyebrow}
                 view={mainView}
                 onNewEnvironment={handleNewEnvironment}
                 onChangeView={(v) => {
@@ -395,6 +406,20 @@ export default function App() {
                   setMainView(v);
                 }}
               />
+              {/* Where the grow is and what it is doing, before anything else.
+                  The month underneath answers "when"; this answers "what now",
+                  which is the question the app is actually opened to ask. Only
+                  on the grid: the journal page is already a day's own answer. */}
+              {mainView === "calendar" && survey && (
+                <HomeStatus
+                  today={today}
+                  survey={survey}
+                  crop={cropOf(survey)}
+                  stageEvents={stageEvents}
+                  firstDate={growStart}
+                  days={recentDays}
+                />
+              )}
               {/* Drying entry point - offered once a plant actually reaches
                   harvest. Starting earlier lives behind the environment gear. */}
               {todayStage === "harvest" && (

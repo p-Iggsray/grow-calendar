@@ -98,6 +98,21 @@ export function dayOfGrow(anchorDate, dateKey) {
   return Math.round((b - a) / 86400000);
 }
 
+// Pure: the day the stage a space is in now was actually switched to.
+//
+// It is the same walk `stageOnDate` does, kept to the recorded window in the
+// same way, but it hands back the date rather than the stage - which is what
+// "8 days in flowering" needs. Null when nothing has been recorded yet.
+export function stageStartedOn(events, dateKey) {
+  if (!Array.isArray(events) || !dateKey) return null;
+  let started = null;
+  for (const e of events) {
+    if (!e?.date || e.date > dateKey) break;
+    started = e.date;
+  }
+  return started;
+}
+
 // Pure: the furthest stage the plants are in right now. Used for labels when
 // a plant has a stage but no recorded switch yet (older grows).
 export function currentStageOf(plants) {

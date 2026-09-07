@@ -123,6 +123,32 @@ export function useJournalTimeline(enabled, growId) {
   return { days, totalDays, hasMore, loading, loadingMore, loadMore };
 }
 
+// The last couple of weeks of the journal, for the home screen's status card.
+//
+// It reads the same feed the Journal tab does, asked a shorter question: a
+// fortnight is enough to find the last watering and the last climate reading
+// in almost every space, and cheap enough to fetch on the screen the app opens
+// on. Nothing older is worth a home card anyway - "watered five weeks ago" and
+// "never watered" mean the same thing to a grower.
+export function useRecentJournal(growId, enabled, limit = 14) {
+  const [days, setDays] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const tick = useMutationTick();
+
+  useEffect(() => {
+    if (!growId || !enabled) { setDays([]); setLoading(false); return; }
+    let cancelled = false;
+    setLoading(true);
+    api.getJournalTimeline("", limit, growId)
+      .then((d) => { if (!cancelled) setDays(d.days ?? []); })
+      .catch(() => { if (!cancelled) setDays([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [growId, enabled, limit, tick]);
+
+  return { days, loading };
+}
+
 // The environment's stage history: every recorded stage switch, plus the day
 // its clock starts. Refetches when journal content changes, because advancing
 // a stage writes a log entry.

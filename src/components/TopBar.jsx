@@ -5,20 +5,19 @@ import GrowSwitcher from "./GrowSwitcher.jsx";
 
 // The main screen's top strip. Same header every other window wears - it just
 // has no back button, because the calendar is a root tab. The title is the grow
-// switcher, so any space is one tap away from here; today's stage is the
-// eyebrow, and the Calendar | Journal switch sits in the right slot.
+// switcher, so any space is one tap away from here, and the Calendar | Journal
+// switch sits in the right slot.
+//
+// The eyebrow comes in from outside rather than being built here: what belongs
+// on that line depends on what else is on screen, which is the caller's business
+// to know, not this strip's.
 
 const VIEWS = [
   { id: "calendar", label: "Calendar", Icon: CalendarDays },
   { id: "journal",  label: "Journal",  Icon: BookOpen },
 ];
 
-export default function TopBar({ today, todayStyle, dayNum, view, onChangeView, onNewEnvironment }) {
-  const eyebrow = [
-    todayStyle?.label ?? "Off season",
-    dayNum != null ? `Day ${dayNum}` : null,
-  ].filter(Boolean).join(" · ");
-
+export default function TopBar({ today, eyebrow, view, onChangeView, onNewEnvironment }) {
   return (
     <ScreenHeader
       eyebrow={eyebrow}
