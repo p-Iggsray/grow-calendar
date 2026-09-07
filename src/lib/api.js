@@ -52,6 +52,12 @@ export const api = {
 
   getMonthGrowLog: (month, growId) => request(withGrow(`/api/grow-log/month?month=${month}`, growId)),
   getJournalDay: (date, growId) => request(withGrow(`/api/journal/${date}`, growId)),
+  // Read a day's written entry into that day's log. Never throws for the
+  // caller's sake: this rides on top of a log that still works by hand, so a
+  // reading that cannot happen must not interrupt the writing.
+  readJournalEntry: (date, growId) =>
+    request(withGrow(`/api/journal/${date}/read`, growId), { method: "POST" })
+      .catch(() => ({ read: {}, found: false, reason: "unavailable" })),
   getJournalMonth: (month, growId) => request(withGrow(`/api/journal/month?month=${month}`, growId)),
   getJournalWeather: (date, growId) => request(withGrow(`/api/journal/weather/${date}`, growId)),
   getJournalTimeline: (before, limit, growId) =>

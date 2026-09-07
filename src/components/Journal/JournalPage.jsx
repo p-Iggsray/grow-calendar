@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Pencil, Check } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Pencil, Check, Sparkles } from "lucide-react";
 import { MONTH_NAMES } from "../../lib/dates.js";
 import { noteToHtml } from "../../lib/richText.js";
 import { recordRows } from "../../lib/dayRecord.js";
@@ -34,8 +34,19 @@ function RecordRow({ row }) {
         fontFamily: UI, fontSize: 9.5, fontWeight: 700, letterSpacing: 1.1,
         textTransform: "uppercase", color: "var(--c-text-muted)",
         width: 62, flexShrink: 0, paddingTop: 1,
+        display: "inline-flex", alignItems: "baseline", gap: 3,
       }}>
         {row.label}
+        {/* Read out of the writing rather than typed. Marked because a value
+            that filled itself in should never look like one you entered. */}
+        {row.read && (
+          <Sparkles
+            size={9}
+            strokeWidth={2.4}
+            aria-label="read from your entry"
+            style={{ color: "var(--c-accent)", flexShrink: 0, alignSelf: "center" }}
+          />
+        )}
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>
         {row.items
@@ -71,13 +82,27 @@ function RecordRow({ row }) {
 
 export default function JournalPage({
   date, isToday, stage, growDay, note, setNote, noteStatus,
-  log, weather, crop, focusSignal = 0, onEditRecord,
+  log, weather, crop, focusSignal = 0, onEditRecord, onFinishWriting,
 }) {
   const [editing, setEditing] = useState(false);
+  // What was last sent to be read. Finishing without having changed a word
+  // costs nothing: there is nothing new to read.
+  const lastRead = useRef(null);
+  const [reading, setReading] = useState(false);
+
+  async function finishWriting() {
+    setEditing(false);
+    const text = String(note ?? "");
+    if (!onFinishWriting || !text.trim() || text === lastRead.current) return;
+    lastRead.current = text;
+    setReading(true);
+    try { await onFinishWriting(); } finally { setReading(false); }
+  }
+
   // A page turn ends editing: the next day is a different page, and leaving an
   // editor open on it would put the caret somewhere nobody asked for.
   const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-  useEffect(() => { setEditing(false); }, [dateKey]);
+  useEffect(() => { setEditing(false); lastRead.current = null; }, [dateKey]);
   // A tap on the calendar's "write about today" arrives as a focus signal.
   useEffect(() => { if (focusSignal > 0) setEditing(true); }, [focusSignal]);
 
@@ -122,6 +147,15 @@ export default function JournalPage({
 
       {/* The day's record, set at the head of the page where it can be read
           without wading through the writing. */}
+      {reading && rows.length === 0 && (
+        <div style={{
+          marginTop: 12, padding: "9px 11px", borderRadius: 10,
+          background: "var(--c-surface-2)", borderLeft: "3px solid var(--c-border-strong)",
+          fontFamily: UI, fontSize: 11.5, color: "var(--c-text-muted)",
+        }}>
+          Reading your entry for what to log…
+        </div>
+      )}
       {rows.length > 0 && (
         <section
           aria-label="What was logged on this day"
@@ -175,7 +209,7 @@ export default function JournalPage({
               </span>
               <button
                 type="button"
-                onClick={() => { tapHaptic(); setEditing(false); }}
+                onClick={() => { tapHaptic(); finishWriting(); }}
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 4,
                   background: "none", border: "1px solid var(--c-border-strong)",

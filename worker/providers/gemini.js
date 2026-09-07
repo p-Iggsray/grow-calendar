@@ -35,6 +35,59 @@ export function buildGeminiBody({ systemSegments, tools, contents }) {
   };
 }
 
+/**
+ * One question, one JSON answer, no tools and no streaming.
+ *
+ * The chat path is a tool loop because a conversation goes back and forth.
+ * Reading a journal entry does not: there is one piece of text, one shape of
+ * answer, and nothing to negotiate. Gemini is held to the schema by the API
+ * itself, and temperature sits at zero because this is extraction, not advice
+ * - the same sentence read twice should come back the same way.
+ *
+ * Returns the parsed object, or null when the model answered with something
+ * that is not the object we asked for. Null is a real answer here: it means
+ * nothing was found, which is exactly what an entry with no numbers in it
+ * should produce.
+ */
+export async function askGeminiForJson({ apiKey, model, instruction, text, schema, gatewayBase, userId }) {
+  const body = {
+    systemInstruction: { parts: [{ text: instruction }] },
+    contents: [{ role: "user", parts: [{ text }] }],
+    generationConfig: {
+      temperature: 0,
+      responseMimeType: "application/json",
+      responseSchema: schema,
+    },
+  };
+  let res;
+  try {
+    res = await fetch(`${geminiBase(gatewayBase)}/${model}:generateContent`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-goog-api-key": apiKey,
+        ...(userId ? { "cf-aig-metadata": JSON.stringify({ userId: String(userId) }) } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new ProviderError("unreachable");
+  }
+  if (!res.ok) {
+    throw new ProviderError(res.status === 429 ? "rate_limited" : "upstream", res.status);
+  }
+  let data;
+  try { data = await res.json(); } catch { throw new ProviderError("upstream"); }
+  const out = parseGeminiResponse(data).text;
+  if (!out) return null;
+  try {
+    const parsed = JSON.parse(out);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 export function parseGeminiResponse(data) {
   const parts = data?.candidates?.[0]?.content?.parts || [];
   // Do NOT trim here - trimming per streaming chunk strips leading/trailing spaces

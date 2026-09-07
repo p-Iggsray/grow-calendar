@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Droplets, Sprout, LayoutGrid, CloudSun } from "lucide-react";
-import { ymd } from "../../lib/api.js";
+import { api, ymd } from "../../lib/api.js";
 import { sameDay } from "../../lib/dates.js";
 import { useJournalDay, useJournalMonth } from "../../lib/useJournal.js";
 import { useDayNote } from "../../lib/useDayNote.js";
@@ -89,7 +89,7 @@ export default function DaySpread({
   const monthKey = dateKey.slice(0, 7);
   const { day, loading } = useJournalDay(dateKey, active, growId);
   const monthDays = useJournalMonth(monthKey, active, growId);
-  const { note, setNote, status: noteStatus } = useDayNote(date, active, growId);
+  const { note, setNote, status: noteStatus, flush: flushNote } = useDayNote(date, active, growId);
   const dateInputRef = useRef(null);
   const [dir, setDir] = useState(0); // -1 back, 1 forward: drives the page-turn slide
   // The structured log opens for editing in place; collapses on page turn.
@@ -261,6 +261,15 @@ export default function DaySpread({
           crop={crop}
           focusSignal={focusSignal}
           onEditRecord={() => setEditingLog(true)}
+          onFinishWriting={async () => {
+            // The note has to be on the server before it can be read there, so
+            // the pending autosave is flushed rather than raced.
+            await flushNote();
+            const res = await api.readJournalEntry(dateKey, growId);
+            // Anything found lands in this day's log, so the page and every
+            // other journal surface refetch.
+            if (res?.found) window.dispatchEvent(new CustomEvent("growlog-mutated"));
+          }}
         />
 
         {/* The day's photos + the journal's add-a-photo action. */}

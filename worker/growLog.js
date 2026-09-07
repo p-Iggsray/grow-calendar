@@ -16,8 +16,14 @@ function tryParseArray(s) {
   try { const v = JSON.parse(s); return Array.isArray(v) ? v : []; } catch { return []; }
 }
 
+export function tryParseObject(s) {
+  if (!s) return {};
+  try { const v = JSON.parse(s); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch { return {}; }
+}
+
 export function rowToEntry(row) {
   return {
+    read_from:    tryParseObject(row.read_from),
     water_gal:    row.water_gal    ?? null,
     feed:         row.feed         ?? null,
     temp_high:    row.temp_high    ?? null,
@@ -75,6 +81,11 @@ export async function ensureGrowLogSchema(env) {
     "ALTER TABLE grow_log ADD COLUMN water_plants TEXT",
     // 1 = row created by the weather auto-logger with no grower input yet.
     "ALTER TABLE grow_log ADD COLUMN auto_weather INTEGER",
+    // Which of this row's fields were read out of the day's written entry
+    // rather than typed into the log, as {"water":true,"feed":true}. It is what
+    // lets the record say where each number came from, and what stops a re-read
+    // from overwriting a correction made by hand.
+    "ALTER TABLE grow_log ADD COLUMN read_from TEXT",
   ];
   for (const sql of cols) {
     try { await env.DB.prepare(sql).run(); } catch { /* column exists */ }
@@ -134,9 +145,15 @@ export async function putGrowLog(request, env, user, growId, date) {
 
   // auto_weather resets to 0: the grower touched this row, so it now counts
   // as a real logged day even if some values started as auto-filled weather.
+  //
+  // read_from clears for the same reason. Whatever a reading of the day's
+  // writing put here, the grower has now had the form open and saved it, so
+  // every value in it is theirs. That is also what stops the next reading from
+  // undoing a correction: nothing is marked as read any more, so nothing is
+  // open to being overwritten.
   await env.DB.prepare(`
-    INSERT INTO grow_log (user_id, grow_id, date, water_gal, feed, temp_high, temp_low, humidity, water_plants, training, plant_health, auto_weather, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, datetime('now'))
+    INSERT INTO grow_log (user_id, grow_id, date, water_gal, feed, temp_high, temp_low, humidity, water_plants, training, plant_health, read_from, auto_weather, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 0, datetime('now'))
     ON CONFLICT(user_id, grow_id, date) DO UPDATE SET
       water_gal    = excluded.water_gal,
       feed         = excluded.feed,
@@ -146,6 +163,7 @@ export async function putGrowLog(request, env, user, growId, date) {
       water_plants = excluded.water_plants,
       training     = excluded.training,
       plant_health = excluded.plant_health,
+      read_from    = NULL,
       auto_weather = 0,
       updated_at   = excluded.updated_at
   `).bind(

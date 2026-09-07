@@ -10,3 +10,6 @@
 export const GEMINI_DAILY_LIMIT     = 1500; // global flash (gemini-2.5-flash) calls/day
 export const GEMINI_PRO_DAILY_LIMIT = 25;   // global gemini-2.5-pro calls/day
 export const PER_USER_DAILY_CAP     = 50;   // MJ chat messages per user/day
+// Journal entries read into the day's log, per user/day. Its own allowance, so
+// a day spent writing never leaves you with no MJ to ask a question with.
+export const READ_ENTRY_DAILY_CAP   = 60;

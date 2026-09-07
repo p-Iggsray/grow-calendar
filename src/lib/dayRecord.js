@@ -63,12 +63,18 @@ export function climateLine(log, weather) {
 export function recordRows({ log, weather, crop } = {}) {
   const w = words(crop);
   const rows = [];
+  // Which of these values were read out of the day's writing rather than typed
+  // into the log form. The page says so on each one: a number that filled
+  // itself in should never be indistinguishable from one you entered.
+  const readFrom = log?.read_from ?? {};
+  const wasRead = (...keys) => keys.some((k) => readFrom[k] === true);
 
   const watered = keptWaterRows(log);
   if (watered.length > 0) {
     rows.push({
       key: "water",
       label: w.waterField,
+      read: wasRead("water"),
       items: watered.map((r) => {
         const { amount, unit } = rowDisplay(r);
         return {
@@ -84,18 +90,20 @@ export function recordRows({ log, weather, crop } = {}) {
     rows.push({
       key: "water",
       label: w.waterField,
+      read: wasRead("water"),
       items: [{ name: `All ${w.units}`, amount: `${fromGallons(log.water_gal, unit)} ${unitLabel(unit)}` }],
     });
   }
 
   const feed = String(log?.feed ?? "").trim();
-  if (feed) rows.push({ key: "feed", label: "Feed", text: feed });
+  if (feed) rows.push({ key: "feed", label: "Feed", text: feed, read: wasRead("feed") });
 
   const trained = (log?.training ?? []).filter((t) => t && String(t.action ?? "").trim());
   if (trained.length > 0) {
     rows.push({
       key: "training",
       label: "Training",
+      read: wasRead("training"),
       items: trained.map((t) => ({
         name: String(t.plant ?? "").trim() || `All ${w.units}`,
         detail: String(t.action).trim(),
@@ -110,6 +118,7 @@ export function recordRows({ log, weather, crop } = {}) {
     rows.push({
       key: "health",
       label: "Health",
+      read: wasRead("plant_health"),
       items: checked.map((h) => ({
         name: String(h.plant ?? "").trim() || w.Unit,
         detail: [
@@ -122,7 +131,10 @@ export function recordRows({ log, weather, crop } = {}) {
   }
 
   const climate = climateLine(log, weather);
-  if (climate) rows.push({ key: "climate", label: "Climate", text: climate.text, source: climate.source });
+  if (climate) rows.push({
+      key: "climate", label: "Climate", text: climate.text, source: climate.source,
+      read: climate.source === "logged" && wasRead("temp_high", "temp_low", "humidity"),
+    });
 
   return rows;
 }
