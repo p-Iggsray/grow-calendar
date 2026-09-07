@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, Thermometer, Droplets, Gauge, CalendarCheck, Home, Trees, Warehouse, Sprout } from "lucide-react";
+import { Plus, Thermometer, Droplets, Gauge, CalendarCheck, Home, Trees, Warehouse, Sprout, Pencil, Trash2 } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { usePlan } from "../../lib/usePlan.jsx";
 import { useToday } from "../../lib/dates.js";
@@ -10,6 +10,7 @@ import { MONO, partitionPlants } from "../PlantsTab/constants.js";
 import { cropOf, words } from "../../lib/crops.js";
 import EnvironmentDetail, { ENV_KIND_LABEL } from "./EnvironmentDetail.jsx";
 import DeleteGrowConfirm from "../DeleteGrowConfirm.jsx";
+import SwipeRow from "../SwipeRow.jsx";
 import ConfirmModal from "../ConfirmModal.jsx";
 import ScreenHeader from "../ScreenHeader.jsx";
 
@@ -117,6 +118,8 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [resumeGrow, setResumeGrow] = useState(null);
+  // One row's actions at a time: opening another closes the last.
+  const [swipedId, setSwipedId] = useState(null);
 
   // Live conditions for every space, so the list reads like a dashboard.
   useEffect(() => {
@@ -149,6 +152,7 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
   }
 
   function handleOpen(id) {
+    setSwipedId(null);
     const grow = grows.find((g) => g.id === id);
     // A space that never finished setup has no calendar to show - offer to
     // finish it rather than opening a hollow page.
@@ -185,14 +189,36 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
             No environments yet. Create your first grow space.
           </div>
         )}
+        {/* Each row can be pushed aside to get at renaming or deleting it.
+            Both live in the space's own settings too, so the swipe is a
+            shortcut rather than the only way to reach them. */}
         {grows.map((g) => (
-          <EnvironmentCard
+          <SwipeRow
             key={g.id}
-            grow={g}
-            isActive={g.id === activeGrowId}
-            conditions={conditions[g.id]}
-            onOpen={handleOpen}
-          />
+            open={swipedId === g.id}
+            onOpenChange={(next) => setSwipedId(next ? g.id : null)}
+            actions={[
+              {
+                label: "Edit",
+                ariaLabel: `Edit ${g.displayName || "this environment"}`,
+                icon: <Pencil size={16} strokeWidth={2} />,
+                onClick: () => onOpenSettings(g.id),
+              },
+              {
+                label: "Delete",
+                ariaLabel: `Delete ${g.displayName || "this environment"}`,
+                icon: <Trash2 size={16} strokeWidth={2} />,
+                tone: "destructive",
+                onClick: () => setDeleting(g),
+              },
+            ]}>
+            <EnvironmentCard
+              grow={g}
+              isActive={g.id === activeGrowId}
+              conditions={conditions[g.id]}
+              onOpen={handleOpen}
+            />
+          </SwipeRow>
         ))}
       </div>
 
