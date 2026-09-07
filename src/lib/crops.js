@@ -176,6 +176,13 @@ const WORDS = {
     waterAllTitle: "Water every plant",
     healthSection: "Plant Health",
     // Setup.
+    containerLabel: "Pot size",
+    containerUnit: "gal",
+    containerMax: 100,
+    capacityLabel: "Plant capacity",
+    mediumLabel: "Growing medium",
+    containersLabel: "Containers",
+    wateringLabel: "Watering",
     lengthLabel: "Expected flower time",
     lengthUnit: "weeks",
     lengthMin: 6, lengthMax: 16, lengthDefault: 9,
@@ -199,6 +206,13 @@ const WORDS = {
     waterVerb: "misted",
     waterAllTitle: "Mist every tub",
     healthSection: "Tub Health",
+    containerLabel: "Tub size",
+    containerUnit: "qt",
+    containerMax: 200,
+    capacityLabel: "Tub capacity",
+    mediumLabel: "Bulk substrate",
+    containersLabel: "Container",
+    wateringLabel: "How you keep it humid",
     lengthLabel: "Expected time to first flush",
     lengthUnit: "weeks",
     lengthMin: 1, lengthMax: 12, lengthDefault: 4,
@@ -210,6 +224,66 @@ const WORDS = {
 /** The words this crop uses. Never index WORDS directly. */
 export function words(crop) {
   return WORDS[cropOf(crop)];
+}
+
+
+// ── What the space is made of ────────────────────────────────────────────────
+// The setup fields whose ANSWERS differ per crop. Both the wizard and the
+// space's own setup form read these, so the two can never drift into offering
+// different options for the same field.
+const FIELD_OPTIONS = {
+  cannabis: {
+    medium: [
+      { value: "soil",  label: "Soil / potting mix" },
+      { value: "coco",  label: "Coco coir" },
+      { value: "hydro", label: "Hydro" },
+      { value: "other", label: "Other" },
+    ],
+    container: [
+      { value: "fabric",  label: "Fabric pots" },
+      { value: "plastic", label: "Plastic pots" },
+      { value: "ground",  label: "In-ground" },
+      { value: "other",   label: "Other" },
+    ],
+    watering: [
+      { value: "hand", label: "Hand watering" },
+      { value: "drip", label: "Drip / automated" },
+    ],
+  },
+  mushrooms: {
+    medium: [
+      { value: "cvg",     label: "CVG (coco, verm, gypsum)" },
+      { value: "manure",  label: "Manure based" },
+      { value: "masters", label: "Master's mix" },
+      { value: "other",   label: "Other" },
+    ],
+    container: [
+      { value: "monotub", label: "Monotub" },
+      { value: "shoebox", label: "Shoebox / shotgun" },
+      { value: "bag",     label: "Grow bag" },
+      { value: "other",   label: "Other" },
+    ],
+    watering: [
+      { value: "mist",       label: "Misting by hand" },
+      { value: "perlite",    label: "Perlite / water layer" },
+      { value: "humidifier", label: "Humidifier" },
+    ],
+  },
+};
+
+export function mediumOptions(crop)    { return FIELD_OPTIONS[cropOf(crop)].medium; }
+export function containerOptions(crop) { return FIELD_OPTIONS[cropOf(crop)].container; }
+export function wateringOptions(crop)  { return FIELD_OPTIONS[cropOf(crop)].watering; }
+
+/** The setup answers that mean something else under a different crop. */
+export function cropDefaults(crop) {
+  const kind = cropOf(crop);
+  return {
+    crop: kind,
+    medium: mediumOptions(kind)[0].value,
+    containerType: containerOptions(kind)[0].value,
+    wateringMethod: wateringOptions(kind)[0].value,
+  };
 }
 
 // ── Varieties ────────────────────────────────────────────────────────────────

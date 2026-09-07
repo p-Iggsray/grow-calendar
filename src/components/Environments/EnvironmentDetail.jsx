@@ -166,7 +166,7 @@ export default function EnvironmentDetail({
           <HeaderMenu
             title="Environment settings"
             items={[
-              { icon: Pencil, label: "Edit the space", detail: "Size, lighting, medium, watering", onClick: () => setEditingSetup(true) },
+              { icon: Pencil, label: "Edit the space", detail: `What it grows, size, ${crop === "mushrooms" ? "substrate, tub size" : "lighting, medium, watering"}`, onClick: () => setEditingSetup(true) },
               { icon: SlidersHorizontal, label: "Rename environment", onClick: () => onOpenSettings(growId) },
               isActive && growing && {
                 icon: Wind, label: "Start drying early",
@@ -217,7 +217,7 @@ export default function EnvironmentDetail({
 
         {editingSetup ? (
           <div className="card" style={{ padding: 14 }}>
-            <EnvSetupForm survey={survey} onSave={handleSaveSetup} onCancel={() => setEditingSetup(false)} saving={savingSetup} />
+            <EnvSetupForm survey={survey} plantCount={active.length + archived.length} onSave={handleSaveSetup} onCancel={() => setEditingSetup(false)} saving={savingSetup} />
           </div>
         ) : chips.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

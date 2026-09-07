@@ -1,5 +1,5 @@
 // @ts-check
-import { words } from "../src/lib/crops.js";
+import { cropOf, isCrop, words } from "../src/lib/crops.js";
 import { json, error, safeJsonBounded } from "./util.js";
 import { logError } from "./log.js";
 import { geocode } from "./geocode.js";
@@ -38,6 +38,11 @@ export function sanitizeEnvFields(input) {
 
   if (typeof input.environment === "string" && ENV_KINDS.has(input.environment)) {
     out.environment = input.environment;
+  }
+  // What the space grows. Whether it is ALLOWED to change is a question about
+  // the roster, not about the value, and is decided by the caller.
+  if (typeof input.crop === "string" && isCrop(input.crop)) {
+    out.crop = input.crop;
   }
   for (const [key, max] of Object.entries(ENV_TEXT_FIELDS)) {
     if (typeof input[key] === "string") out[key] = input[key].trim().slice(0, max);
@@ -293,7 +298,19 @@ export async function patchGrow(request, env, user, growId) {
       if (!hasCoords) { delete survey.lat; delete survey.lon; }
     }
     if (hasCoords) { survey.lat = lat; survey.lon = lon; }
-    if (hasEnvFields) Object.assign(survey, envFields);
+    if (hasEnvFields) {
+      // A space that already holds plants or tubs keeps the crop it has. Their
+      // stages, types and recorded history are all written in that crop's
+      // terms, so switching would strand every one of them on a ladder they
+      // are not on. The UI locks it too; this is what makes the rule real.
+      if (envFields.crop && cropOf(survey) !== envFields.crop
+          && Array.isArray(survey.strains) && survey.strains.length > 0) {
+        const n = survey.strains.length;
+        const w = words(survey);
+        return error(409, `This space already holds ${n} ${n === 1 ? w.unit : w.units}, so what it grows cannot change. Empty it first.`);
+      }
+      Object.assign(survey, envFields);
+    }
     fields.push("survey = ?");
     binds.push(JSON.stringify(survey));
   }

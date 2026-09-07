@@ -1,33 +1,10 @@
 import { Label, Input, RadioGroup, NumStepper } from "./styleHelpers.jsx";
-import { cropOf, words } from "../../lib/crops.js";
+import { containerOptions, cropOf, mediumOptions, words } from "../../lib/crops.js";
 
-// The space itself. What it is made of is a different question per crop: a tent
-// asks about medium and pot size, a monotub asks about substrate and tub size,
-// and neither list means anything to the other.
-const CANNABIS_MEDIA = [
-  { value: "soil",  label: "Soil / potting mix" },
-  { value: "coco",  label: "Coco coir" },
-  { value: "hydro", label: "Hydro" },
-  { value: "other", label: "Other" },
-];
-const MUSHROOM_MEDIA = [
-  { value: "cvg",     label: "CVG (coco, verm, gypsum)" },
-  { value: "manure",  label: "Manure based" },
-  { value: "masters", label: "Master's mix" },
-  { value: "other",   label: "Other" },
-];
-const CANNABIS_CONTAINERS = [
-  { value: "fabric",  label: "Fabric pots" },
-  { value: "plastic", label: "Plastic pots" },
-  { value: "ground",  label: "In-ground" },
-  { value: "other",   label: "Other" },
-];
-const MUSHROOM_CONTAINERS = [
-  { value: "monotub",  label: "Monotub" },
-  { value: "shoebox",  label: "Shoebox / shotgun" },
-  { value: "bag",      label: "Grow bag" },
-  { value: "other",    label: "Other" },
-];
+// The space itself. What it is made of is a different question per crop - a
+// tent asks about medium and pot size, a monotub about substrate and tub size -
+// and both lists live in crops.js so this and the space's own setup form can
+// never drift apart.
 
 export function StepBasics({ survey, update }) {
   const crop = cropOf(survey);
@@ -64,19 +41,19 @@ export function StepBasics({ survey, update }) {
         </div>
       )}
       <div>
-        <Label>{mushrooms ? "Bulk substrate" : "Growing medium"}</Label>
+        <Label>{w.mediumLabel}</Label>
         <RadioGroup
           value={survey.medium}
           onChange={v => update("medium", v)}
-          options={mushrooms ? MUSHROOM_MEDIA : CANNABIS_MEDIA}
+          options={mediumOptions(crop)}
         />
       </div>
       <div>
-        <Label>{mushrooms ? "Container" : "Container type"}</Label>
+        <Label>{w.containersLabel}</Label>
         <RadioGroup
           value={survey.containerType}
           onChange={v => update("containerType", v)}
-          options={mushrooms ? MUSHROOM_CONTAINERS : CANNABIS_CONTAINERS}
+          options={containerOptions(crop)}
         />
       </div>
       {mushrooms ? (

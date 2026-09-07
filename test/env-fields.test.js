@@ -35,3 +35,21 @@ test("unknown keys are dropped and garbage input is safe", () => {
   assert.deepEqual(sanitizeEnvFields(null), {});
   assert.deepEqual(sanitizeEnvFields("nope"), {});
 });
+
+// ── What the space grows ─────────────────────────────────────────────────────
+test("the crop is an environment field, and only a real crop", () => {
+  assert.deepEqual(sanitizeEnvFields({ crop: "mushrooms" }), { crop: "mushrooms" });
+  assert.deepEqual(sanitizeEnvFields({ crop: "cannabis" }), { crop: "cannabis" });
+  // Junk is dropped rather than written into the survey, same as every other
+  // field here. Whether a change is ALLOWED is the caller's question: a space
+  // that already holds plants keeps the crop it has.
+  assert.deepEqual(sanitizeEnvFields({ crop: "tomatoes" }), {});
+  assert.deepEqual(sanitizeEnvFields({ crop: 7 }), {});
+});
+
+test("a monotub's substrate and container survive the whitelist", () => {
+  assert.deepEqual(
+    sanitizeEnvFields({ crop: "mushrooms", medium: "cvg", containerType: "monotub", wateringMethod: "mist", containerGallons: 6 }),
+    { crop: "mushrooms", medium: "cvg", containerType: "monotub", wateringMethod: "mist", containerGallons: 6 },
+  );
+});

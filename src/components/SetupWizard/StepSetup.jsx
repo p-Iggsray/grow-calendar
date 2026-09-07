@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "../../lib/api.js";
 import { MONO, SERIF, Label, RadioGroup } from "./styleHelpers.jsx";
-import { cropOf } from "../../lib/crops.js";
+import { cropOf, wateringOptions, words } from "../../lib/crops.js";
 import PlacePicker from "../PlacePicker.jsx";
 
 export function StepSetup({ survey, update }) {
@@ -94,18 +94,11 @@ export function StepSetup({ survey, update }) {
         />
       </div>
       <div>
-        <Label>{mushrooms ? "How you keep it humid" : "Watering method"}</Label>
+        <Label>{words(crop).wateringLabel}</Label>
         <RadioGroup
           value={survey.wateringMethod}
           onChange={v => update("wateringMethod", v)}
-          options={mushrooms ? [
-            { value: "mist",     label: "Misting by hand" },
-            { value: "perlite",  label: "Perlite / water layer" },
-            { value: "humidifier", label: "Humidifier" },
-          ] : [
-            { value: "hand", label: "Hand watering" },
-            { value: "drip", label: "Drip / automated" },
-          ]}
+          options={wateringOptions(crop)}
         />
       </div>
       <div>
