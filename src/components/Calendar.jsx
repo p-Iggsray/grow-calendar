@@ -44,6 +44,13 @@ function MonthArrow({ onClick, label, children }) {
 // Colour comes from what actually happened: the grow is tinted from the day
 // you moved a plant into each stage onward, and the switch days themselves are
 // marked. Nothing here is predicted.
+//
+// That last sentence is load-bearing, so the fill stops at today. A day the
+// grow has not reached yet has no record to read, and filling it with today's
+// stage would read as a forecast the rest of the app is careful never to make.
+// Marking those days some other way is the same claim in a quieter voice - a
+// running grow makes every remaining day of every remaining month "ahead", so
+// October would come out fully marked too. Days ahead get nothing.
 export default function Calendar({
   today, year, month, onChangeMonth, stageEvents = [], firstDate = null,
   journalDays, onPickDay,
@@ -64,6 +71,9 @@ export default function Calendar({
 
   // The days a stage actually changed, so those get a marker.
   const switchByDay = Object.fromEntries((stageEvents ?? []).map((e) => [e.date, e.stage]));
+
+  // Keys are ISO, so a string compare is a date compare.
+  const todayKey = ymdKey(today);
 
   function go(delta) {
     tapHaptic();
@@ -174,7 +184,9 @@ export default function Calendar({
           if (!date) return <div key={`e${i}`} />;
           const key = ymdKey(date);
           // The stage the grow was in on this day, read from real switches.
-          const stage = firstDate && key >= firstDate ? stageOnDate(stageEvents, key) : null;
+          // Nothing past today: there is no record to read there.
+          const inGrow = Boolean(firstDate) && key >= firstDate && key <= todayKey;
+          const stage = inGrow ? stageOnDate(stageEvents, key) : null;
           const group = stage ? stageGroup(stage) : null;
           const famColor = group?.color ?? null;
           const pStyle = group ? { label: stageLabel(stage) } : null;
