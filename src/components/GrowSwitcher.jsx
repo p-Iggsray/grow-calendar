@@ -65,11 +65,23 @@ export default function GrowSwitcher({ today, onNewEnvironment }) {
         aria-label={canSwitch ? `${activeGrow?.displayName || "This space"}, switch space` : undefined}
         disabled={!canSwitch}
         style={{
-          display: "flex", alignItems: "center", gap: 5,
-          background: "none", border: "none", padding: 0, margin: 0,
+          display: "inline-flex", alignItems: "center", gap: 6,
           font: "inherit", color: "inherit", textAlign: "left",
           minWidth: 0, maxWidth: "100%",
           cursor: canSwitch ? "pointer" : "default",
+          // A switchable title has to look like a control, not a heading. The
+          // chip earns that; the negative margin keeps its text on the same
+          // left edge as the eyebrow above it, so the header still reads as a
+          // stack rather than an indented box.
+          ...(canSwitch ? {
+            background: "var(--c-surface-1)",
+            border: "1px solid var(--c-border-faint)",
+            borderRadius: 10,
+            padding: "1px 9px 2px 8px",
+            margin: "0 0 0 -9px",
+          } : {
+            background: "none", border: "none", padding: 0, margin: 0,
+          }),
         }}>
         <span style={{
           fontSize: 19, fontWeight: 700, letterSpacing: -0.4, color: "var(--c-text)",
@@ -78,7 +90,7 @@ export default function GrowSwitcher({ today, onNewEnvironment }) {
           {activeGrow?.displayName || "Grow Calendar"}
         </span>
         {canSwitch && (
-          <ChevronDown size={16} strokeWidth={2.4} aria-hidden="true" style={{ color: "var(--c-text-ghost)", flexShrink: 0 }} />
+          <ChevronDown size={16} strokeWidth={2.6} aria-hidden="true" style={{ color: "var(--c-text-muted)", flexShrink: 0 }} />
         )}
       </button>
 
