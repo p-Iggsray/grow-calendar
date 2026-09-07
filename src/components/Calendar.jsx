@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { MONTH_NAMES, DOW_SHORT, sameDay, daysBetween } from "../lib/dates.js";
 import { stageGroup, stageLabel, stageOnDate } from "../lib/stageTimeline.js";
 import { tapHaptic } from "../lib/haptics.js";
@@ -17,6 +17,38 @@ function ymdKey(date) {
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
+
+// What each mark on a day means, in the order you meet them.
+const LEGEND = [
+  {
+    label: "Today",
+    swatch: <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: 4, border: "2px solid var(--c-accent)", flexShrink: 0 }} />,
+  },
+  {
+    label: "Stage change",
+    swatch: <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: 4, border: "2px dashed var(--c-text-muted)", flexShrink: 0 }} />,
+  },
+  {
+    label: "Done",
+    swatch: (
+      <span aria-hidden="true" style={{
+        width: 10, height: 10, borderRadius: 4, flexShrink: 0,
+        background: "var(--c-surface-2)",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <Check size={7} strokeWidth={3.5} style={{ color: "var(--c-text-muted)" }} />
+      </span>
+    ),
+  },
+  {
+    label: "Journaled",
+    swatch: <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: 3, background: "var(--c-accent)", flexShrink: 0 }} />,
+  },
+  {
+    label: "Reminder",
+    swatch: <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: 3, background: "#a855f7", flexShrink: 0 }} />,
+  },
+];
 
 function MonthArrow({ onClick, label, children }) {
   return (
@@ -58,6 +90,7 @@ export default function Calendar({
   const touchStart = useRef(null);
   const suppressTap = useRef(false);
   const [dir, setDir] = useState(0); // -1 prev, 1 next: drives the grid slide
+  const [showKey, setShowKey] = useState(false);
 
   const firstDow = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -302,40 +335,46 @@ export default function Calendar({
         })}
       </motion.div>
 
-      {/* Legend with real swatches instead of a prose sentence */}
-      <div
-        aria-hidden="true"
-        style={{
-          display: "flex", justifyContent: "center", alignItems: "center",
-          gap: 12, flexWrap: "wrap", padding: "7px 0 4px",
-          fontFamily: "var(--font-ui)", fontSize: 10, color: "var(--c-text-ghost)",
-        }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          <span style={{ width: 10, height: 10, borderRadius: 4, border: "2px solid var(--c-accent)", flexShrink: 0 }} />
-          Today
-        </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          <span style={{ width: 10, height: 10, borderRadius: 4, border: "2px dashed var(--c-text-muted)", flexShrink: 0 }} />
-          Stage change
-        </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          <span style={{
-            width: 10, height: 10, borderRadius: 4, flexShrink: 0,
-            background: "var(--c-surface-2)",
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
+      {/* The key, folded away. A legend on screen every day spends permanent
+          space teaching the same five things to someone who learned them in
+          the first week. It stays one tap from the month it explains. */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "5px 2px 2px" }}>
+        <button
+          type="button"
+          onClick={() => { tapHaptic(); setShowKey((v) => !v); }}
+          aria-expanded={showKey}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 3,
+            background: "none", border: "none", cursor: "pointer", padding: "2px 4px",
+            fontFamily: "var(--font-ui)", fontSize: 10.5, fontWeight: 600, letterSpacing: 0.4,
+            color: "var(--c-text-ghost)",
           }}>
-            <Check size={7} strokeWidth={3.5} style={{ color: "var(--c-text-muted)" }} />
-          </span>
-          Done
-        </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          <span style={{ width: 6, height: 6, borderRadius: 3, background: "var(--c-accent)", flexShrink: 0 }} />
-          Journaled
-        </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          <span style={{ width: 6, height: 6, borderRadius: 3, background: "#a855f7", flexShrink: 0 }} />
-          Reminder
-        </span>
+          Key
+          <ChevronDown
+            size={12}
+            strokeWidth={2.4}
+            aria-hidden="true"
+            style={{ transform: showKey ? "rotate(180deg)" : "none", transition: "transform 0.16s" }}
+          />
+        </button>
+        {showKey && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.14, ease: "easeOut" }}
+            style={{
+              display: "flex", justifyContent: "center", alignItems: "center",
+              gap: 12, flexWrap: "wrap", padding: "5px 0 3px", width: "100%",
+              fontFamily: "var(--font-ui)", fontSize: 10, color: "var(--c-text-ghost)",
+            }}>
+            {LEGEND.map(({ label, swatch }) => (
+              <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                {swatch}
+                {label}
+              </span>
+            ))}
+          </motion.div>
+        )}
       </div>
     </div>
   );
