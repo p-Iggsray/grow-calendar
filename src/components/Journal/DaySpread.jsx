@@ -1,16 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, PenLine, Droplets, Sprout, LayoutGrid, CloudSun, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, Droplets, Sprout, LayoutGrid, CloudSun } from "lucide-react";
 import { ymd } from "../../lib/api.js";
-import { sameDay, MONTH_NAMES } from "../../lib/dates.js";
+import { sameDay } from "../../lib/dates.js";
 import { useJournalDay, useJournalMonth } from "../../lib/useJournal.js";
 import { useDayNote } from "../../lib/useDayNote.js";
-import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../../lib/stageTimeline.js";
+import { dayOfGrow, stageOnDate } from "../../lib/stageTimeline.js";
 import { kindLabel, summarizeEntry, HEALTH_MAP } from "../PlantsTab/constants.js";
-import { displayUnit, fromGallons, loadWaterUnit, rowDisplay, unitLabel } from "../../lib/waterUnits.js";
 import { Skeleton } from "../Skeleton.jsx";
 import { tapHaptic } from "../../lib/haptics.js";
-import RichEntryEditor from "./RichEntryEditor.jsx";
+import JournalPage from "./JournalPage.jsx";
 import ScreenHeader from "../ScreenHeader.jsx";
 import PhotosCard from "./PhotosCard.jsx";
 import RemindersCard from "./RemindersCard.jsx";
@@ -22,7 +21,6 @@ import { words } from "../../lib/crops.js";
 const UI = "var(--font-ui)";
 const NUM = "var(--font-num)";
 const BOOK = "var(--font-journal)";
-const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 function NavButton({ onClick, children, label }) {
   return (
@@ -77,22 +75,6 @@ function Stat({ label, value, unit }) {
   );
 }
 
-function PlantRow({ name, children }) {
-  return (
-    <div style={{
-      display: "flex", alignItems: "baseline", gap: 8, padding: "7px 0",
-      borderTop: "1px solid var(--c-border-faint)",
-    }}>
-      <span style={{ fontFamily: UI, fontSize: 13, fontWeight: 650, color: "var(--c-text)", flexShrink: 0 }}>
-        {name}
-      </span>
-      <span style={{ fontFamily: UI, fontSize: 12.5, color: "var(--c-text-dim)", lineHeight: 1.55 }}>
-        {children}
-      </span>
-    </div>
-  );
-}
-
 // A single day's page: the written entry edited in place, the day's reminders,
 // the daily log (edited right here), and every plant's entries. Swipe (or use
 // the arrows) to turn the page; the LayoutGrid button zooms out to the
@@ -116,7 +98,6 @@ export default function DaySpread({
 
   // The stage this day was in, read back out of the recorded switches.
   const stage = firstDate && dateKey >= firstDate ? stageOnDate(stageEvents, dateKey) : null;
-  const famColor = stage ? stageGroup(stage)?.color : null;
   const isToday = sameDay(date, today);
   const growDay = dayOfGrow(firstDate, dateKey);
 
@@ -141,34 +122,9 @@ export default function DaySpread({
 
   const entryDays = Object.keys(monthDays).sort();
   const log = day.log;
-  // Every watering is listed, one line each - including a row that names no
-  // plant, which is a whole-grow watering rather than nothing at all. A total
-  // on its own does not say which plant got what.
-  const waterPlants = (log?.water_plants ?? []).filter(
-    row => row && (row.plant || row.plantId || rowDisplay(row).amount != null)
-  );
-  // The day's total reads in the unit the day was logged in, and each row in
-  // the unit that row was logged in.
-  const waterUnit = displayUnit(log?.water_plants, loadWaterUnit(crop));
-  const waterAmount = (row) => {
-    const { amount, unit } = rowDisplay(row);
-    return amount == null || amount === "" ? "" : ` ${amount} ${unitLabel(unit)}`;
-  };
-  const trainingRows = (log?.training ?? []).filter(t => t && (t.action ?? "").trim());
-  const healthRows = (log?.plant_health ?? []).filter(h => h && (h.plant || h.plantId || h.color || h.trichomes || h.notes));
-  // Where a day's climate numbers are shown, and therefore where they are NOT
-  // repeated: a space with its own thermometer has the Conditions card, and a
-  // space under the sky has the Weather card. The daily log carries them only
-  // as a fallback, for an outdoor day whose weather never got cached.
-  const ownClimate = readsOwnClimate(environment);
-  const weatherShown = Boolean(
-    day.weather && (day.weather.high != null || day.weather.low != null || day.weather.humidity != null)
-  );
-  const showLogClimate = !ownClimate && !weatherShown;
-  const hasStats = log && (
-    log.water_gal != null || log.feed
-    || (showLogClimate && (log.temp_high != null || log.temp_low != null || log.humidity != null))
-  );
+  // What was logged is read out at the head of the page now, by the record
+  // panel, so none of the folding that used to happen here belongs here any
+  // more - it lives in dayRecord.js, where it is tested.
 
   // Group plant entries by plant for a tidy per-plant read.
   const groups = [];
@@ -209,29 +165,20 @@ export default function DaySpread({
         <NavButton label="Previous day" onClick={() => go(-1)}>
           <ChevronLeft size={19} strokeWidth={2} />
         </NavButton>
+        {/* Navigation only. The page below carries its own dateline, stage and
+            day count, so repeating them here would print the same header
+            twice, one above the other. */}
         <button
           type="button"
           onClick={openPicker}
+          aria-label="Jump to another day"
           style={{
             flex: 1, background: "none", border: "none", cursor: "pointer",
-            padding: "4px 0", textAlign: "center", color: "var(--c-text)",
+            padding: "6px 0", textAlign: "center",
+            fontFamily: UI, fontSize: 11.5, fontWeight: 600, letterSpacing: 0.3,
+            color: "var(--c-text-muted)",
           }}>
-          <div style={{ fontFamily: UI, fontSize: 10.5, letterSpacing: 2, textTransform: "uppercase", color: isToday ? "var(--c-accent)" : "var(--c-text-muted)" }}>
-            {isToday ? "Today" : WEEKDAYS[date.getDay()]}
-          </div>
-          <div style={{ fontFamily: UI, fontSize: 19, fontWeight: 800, letterSpacing: -0.3, marginTop: 1 }}>
-            {MONTH_NAMES[date.getMonth()]} {date.getDate()}, {date.getFullYear()}
-          </div>
-          <div style={{ fontFamily: UI, fontSize: 10.5, color: "var(--c-text-ghost)", marginTop: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-            {stage && (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                {famColor && <span style={{ width: 6, height: 6, borderRadius: 3, background: famColor, display: "inline-block" }} />}
-                {stageLabel(stage)}
-              </span>
-            )}
-            {growDay != null && <span style={{ fontFamily: NUM }}>Day {growDay}</span>}
-            <span>Tap to jump</span>
-          </div>
+          Jump to a day
         </button>
         <NavButton label="Next day" onClick={() => go(1)}>
           <ChevronRight size={19} strokeWidth={2} />
@@ -299,23 +246,22 @@ export default function DaySpread({
         {/* First thing on the page: what you meant to do today. */}
         <RemindersCard date={date} growId={growId} events={day.events} today={today} />
 
-        {/* The written entry, edited in place like a real journal page. */}
-        <Card
-          title="Entry"
-          icon={<PenLine size={13} strokeWidth={2} style={{ color: "#60a5fa" }} />}
-          action={
-            <span style={{ fontFamily: UI, fontSize: 10, letterSpacing: 1, color: noteStatus === "error" ? "var(--c-danger-soft)" : "var(--c-text-ghost)" }}>
-              {noteStatus === "saving" ? "Saving…" : noteStatus === "saved" ? "Saved" : noteStatus === "error" ? "Save failed" : ""}
-            </span>
-          }>
-          <RichEntryEditor
-            value={note}
-            onChange={setNote}
-            placeholder={isToday ? "Write about today in the garden…" : "Write about this day…"}
-            focusSignal={focusSignal}
-            minHeight={88}
-          />
-        </Card>
+        {/* The day, set as a page: its dateline, the record of what was logged,
+            and the writing. Read as prose until you ask to edit it. */}
+        <JournalPage
+          date={date}
+          isToday={isToday}
+          stage={stage}
+          growDay={growDay}
+          note={note}
+          setNote={setNote}
+          noteStatus={noteStatus}
+          log={log}
+          weather={day.weather}
+          crop={crop}
+          focusSignal={focusSignal}
+          onEditRecord={() => setEditingLog(true)}
+        />
 
         {/* The day's photos + the journal's add-a-photo action. */}
         <PhotosCard date={date} growId={growId} photos={day.photos} plants={plants} />
@@ -404,68 +350,9 @@ export default function DaySpread({
               </button>
             ) : null}
 
-            {log && !editingLog && (
-              <Card
-                title="Daily log"
-                icon={<Droplets size={13} strokeWidth={2} style={{ color: "var(--c-accent)" }} />}
-                action={
-                  <button
-                    type="button"
-                    onClick={() => { tapHaptic(); setEditingLog(true); }}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 5,
-                      background: "none", border: "1px solid var(--c-border-strong)",
-                      borderRadius: 12, padding: "5px 11px", cursor: "pointer",
-                      color: "var(--c-text-dim)", fontFamily: UI, fontSize: 11, fontWeight: 600,
-                    }}>
-                    <Pencil size={11} strokeWidth={2} />
-                    Edit
-                  </button>
-                }>
-                {hasStats && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-                    {log.water_gal != null && <Stat label="Water" value={fromGallons(log.water_gal, waterUnit)} unit={unitLabel(waterUnit)} />}
-                    {/* The climate numbers belong to the Conditions or Weather
-                        card above wherever there is one; repeating them here
-                        would just be the same three readings twice on a page. */}
-                    {showLogClimate && log.temp_high != null && <Stat label="Temp high" value={log.temp_high} unit="F" />}
-                    {showLogClimate && log.temp_low != null && <Stat label="Temp low" value={log.temp_low} unit="F" />}
-                    {showLogClimate && log.humidity != null && <Stat label="Humidity" value={log.humidity} unit="%" />}
-                  </div>
-                )}
-                {log.feed && (
-                  <div style={{ fontFamily: UI, fontSize: 12.5, color: "var(--c-text-dim)", marginTop: hasStats ? 10 : 0, lineHeight: 1.6 }}>
-                    <span style={{ color: "var(--c-text-muted)", textTransform: "uppercase", fontSize: 10.5, letterSpacing: 1.2, marginRight: 6 }}>Feed</span>
-                    {log.feed}
-                  </div>
-                )}
-                {waterPlants.length > 0 && (
-                  <div style={{ marginTop: 11 }}>
-                    {waterPlants.map((row, i) => (
-                      <PlantRow key={i} name={row.plant || `All ${w.units}`}>
-                        {w.waterVerb}{waterAmount(row)}
-                      </PlantRow>
-                    ))}
-                  </div>
-                )}
-                {trainingRows.length > 0 && (
-                  <div style={{ marginTop: waterPlants.length ? 0 : 11 }}>
-                    {trainingRows.map((t, i) => (
-                      <PlantRow key={i} name={t.plant || "Plant"}>{t.action}</PlantRow>
-                    ))}
-                  </div>
-                )}
-                {healthRows.length > 0 && (
-                  <div style={{ marginTop: waterPlants.length || trainingRows.length ? 0 : 11 }}>
-                    {healthRows.map((h, i) => (
-                      <PlantRow key={i} name={h.plant || "Plant"}>
-                        {[h.color, h.trichomes ? `${h.trichomes} trichomes` : null, h.notes].filter(Boolean).join(" · ") || "health check"}
-                      </PlantRow>
-                    ))}
-                  </div>
-                )}
-              </Card>
-            )}
+            {/* No read-only log card here any more. What was logged is set at
+                the head of the page, in the record panel, and its Edit control
+                opens the editor above. One day, one account of it. */}
 
             {groups.length > 0 && (
               <Card title={`${w.Unit} journal`} icon={<Sprout size={13} strokeWidth={2} style={{ color: "#c084fc" }} />}>
