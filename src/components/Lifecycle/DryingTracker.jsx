@@ -65,6 +65,7 @@ export default function DryingTracker({ today }) {
         <Eyebrow color={DRY_ACCENT}>Drying · {guide.window}</Eyebrow>
         <DayHero
           dayNum={prog?.dayNum ?? 1}
+          elapsed={prog?.elapsed}
           accent={DRY_ACCENT}
           caption={prog?.estReadyDate ? `Target ready around ${fmtL(prog.estReadyDate)}` : "Hanging to dry"}
         />

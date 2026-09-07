@@ -2,6 +2,7 @@
 // done). Mobile-first: single column, big touch targets, safe-area padding.
 import { useCallback, useState } from "react";
 import { api } from "../../lib/api.js";
+import { weeksAndDays } from "../../lib/dates-core.js";
 import ScreenHeader from "../ScreenHeader.jsx";
 import { usePlan } from "../../lib/usePlan.jsx";
 import { useToast } from "../../lib/useToast.jsx";
@@ -86,7 +87,11 @@ export function Eyebrow({ children, color }) {
 }
 
 // The hero counter: a big day number + caption.
-export function DayHero({ dayNum, caption, accent = "var(--c-accent)" }) {
+//
+// `elapsed` adds the same span said in weeks, because a drying window is read
+// in days but a cure is read in weeks, and "Day 24" alone makes you divide.
+export function DayHero({ dayNum, elapsed, caption, accent = "var(--c-accent)" }) {
+  const span = elapsed == null ? "" : weeksAndDays(elapsed);
   return (
     <div style={{ textAlign: "center", padding: "6px 0 2px" }}>
       <div style={{ fontFamily: MONO, fontSize: 13, letterSpacing: 2, color: "var(--c-text-faint)", textTransform: "uppercase" }}>
@@ -95,7 +100,12 @@ export function DayHero({ dayNum, caption, accent = "var(--c-accent)" }) {
       <div style={{ fontSize: 64, fontWeight: 800, lineHeight: 1, color: accent, letterSpacing: -2 }}>
         {dayNum}
       </div>
-      <div style={{ fontSize: 13.5, color: "var(--c-text-dim)", marginTop: 6 }}>{caption}</div>
+      {span && (
+        <div style={{ fontFamily: MONO, fontSize: 11.5, letterSpacing: 0.4, color: "var(--c-text-faint)", marginTop: 6 }}>
+          {span} in
+        </div>
+      )}
+      {caption && <div style={{ fontSize: 13.5, color: "var(--c-text-dim)", marginTop: 6 }}>{caption}</div>}
     </div>
   );
 }

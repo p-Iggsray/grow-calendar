@@ -1,5 +1,6 @@
 import { Droplets, Thermometer, Sprout } from "lucide-react";
 import { ymd } from "../lib/api.js";
+import { weeksAndDays } from "../lib/dates-core.js";
 import {
   currentStageOf, dayOfGrow, stageGroup, stageLabel, stageOnDate, stageStartedOn,
 } from "../lib/stageTimeline.js";
@@ -117,7 +118,7 @@ export default function HomeStatus({ today, survey, crop, stageEvents, firstDate
 
       {inStage != null && (
         <div style={{ fontFamily: UI, fontSize: 11.5, color: "var(--c-text-faint)", marginTop: 1 }}>
-          {inStage === 0 ? "Switched today" : `${inStage} day${inStage === 1 ? "" : "s"} in this stage`}
+          {inStage === 0 ? "Switched today" : `${weeksAndDays(inStage)} in this stage`}
         </div>
       )}
 

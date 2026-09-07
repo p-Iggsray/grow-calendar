@@ -47,6 +47,7 @@ export default function CuringTracker({ today }) {
         <Eyebrow color={CURE_ACCENT}>Curing · {CURE_MIN}d min · {CURE_GOOD}d great</Eyebrow>
         <DayHero
           dayNum={prog?.dayNum ?? 1}
+          elapsed={prog?.elapsed}
           accent={CURE_ACCENT}
           caption={prog?.cureStartedAt ? "" : "Curing in jars"}
         />
