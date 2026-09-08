@@ -9,7 +9,11 @@
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    // The strain page is served by the worker, not the SPA. Without this the
+    // asset router answers navigation requests first and hands back index.html,
+    // so a scanned label would land on the login screen.
+    "run_worker_first": ["/s/*", "/api/*"]
   },
   "d1_databases": [
     {

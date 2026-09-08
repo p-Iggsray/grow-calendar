@@ -5,6 +5,7 @@ import { qrMatrix } from "../lib/qr.js";
 import { drawLabel, labelDraft, labelFields, LABEL_W, LABEL_H } from "../lib/growLabel.js";
 import { photoFileFrom, savePhotoFile, saveOutcomeMessage } from "../lib/savePhoto.js";
 import { ymd } from "../lib/api.js";
+import { strainPagePath } from "../lib/strainPage.js";
 import { tapHaptic } from "../lib/haptics.js";
 
 // A print label for the jar a plant ends up in.
@@ -14,9 +15,12 @@ import { tapHaptic } from "../lib/haptics.js";
 // the way, because a label is a claim about one specific jar and only the
 // person holding it knows the weight, the potency or the day it was packed.
 //
-// The code points at ONE plant, not at the strain, which is why there is a
-// picker whenever a strain has been grown more than once. Scanning a jar should
-// open the record of what is in that jar.
+// The code opens a public page about the strain itself - what the variety is,
+// how it grows, what it tastes of - and nothing about you. Hand somebody a jar
+// and they can read about the plant; they cannot read your grow.
+//
+// The picker below chooses which harvest this jar came from, which decides the
+// space named on the label. It no longer steers the code.
 //
 // What you see is exactly what is saved: the preview is the same canvas the
 // file comes from. The file is built as you type rather than when you tap,
@@ -87,18 +91,18 @@ export default function StrainLabel({ strain, onClose }) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const spec = labelFields(draft);
-    // One plant, in its own space. Without the space a plant id means nothing,
-    // so both travel in the link.
-    const link = plant?.id
-      ? `${window.location.origin}/?plant=${encodeURIComponent(plant.id)}&grow=${encodeURIComponent(plant.growId ?? "")}`
-      : `${window.location.origin}/?strain=${encodeURIComponent(draft.name ?? "")}`;
+    // The code opens a public page about the strain itself: what the variety
+    // is, how it grows, what it tastes of. Not this jar, and not your records -
+    // hand somebody a jar and they can read about the plant, not about you.
+    const slug = strainPagePath(draft.name);
+    const link = slug ? `${window.location.origin}${slug}` : window.location.origin;
     drawLabel(canvas, spec, qrMatrix(link));
     setFile(null);
     canvas.toBlob((blob) => {
       if (!blob) return;
       photoFileFrom(blob, filename).then(setFile).catch(() => setFile(null));
     }, "image/png");
-  }, [draft, plant, filename]);
+  }, [draft, filename]);
 
   useEffect(() => {
     const t = setTimeout(render, 180);
@@ -173,7 +177,7 @@ export default function StrainLabel({ strain, onClose }) {
           {/* Which plant this jar holds. The code follows this choice. */}
           {roster.length > 1 && (
             <div style={{ marginTop: 14 }}>
-              <span style={{ ...labelStyle, display: "block", marginBottom: 6 }}>This jar came from</span>
+              <span style={{ ...labelStyle, display: "block", marginBottom: 6 }}>Which harvest this jar came from</span>
               <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
                 {roster.map((p) => {
                   const on = p.id === plantId;

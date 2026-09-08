@@ -6,6 +6,7 @@ import { ensurePerDayGrowScope, resolveGrowId } from "./perDayScope.js";
 import { getNote, putNote } from "./notes.js";
 import { getJournalDay, getJournalMonth, getJournalTimeline, searchJournal, getJournalWeather } from "./journal.js";
 import { readEntryIntoLog } from "./readEntry.js";
+import { getStrainPage } from "./strainPage.js";
 import { autoLogWeather } from "./weatherDays.js";
 import { getGrowLog, putGrowLog, exportGrowLogCsv , getMonthGrowLog } from "./growLog.js";
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
@@ -31,6 +32,19 @@ export default {
   async fetch(request, env, _ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
+
+    // A label's code opens this: a public page about one strain, with no
+    // session and no user data on it. It sits above the asset handler because
+    // the SPA's not-found rule would otherwise swallow the path.
+    const strainPageMatch = path.match(/^\/s\/([^/]{1,120})\/?$/);
+    if (strainPageMatch && request.method === "GET") {
+      try {
+        return await getStrainPage(env, strainPageMatch[1]);
+      } catch (err) {
+        logError("strain-page-uncaught", { path, message: String(err?.message ?? err) });
+        return new Response("Something went wrong.", { status: 500, headers: { "content-type": "text/plain" } });
+      }
+    }
 
     if (!path.startsWith("/api/")) {
       // Service worker file must never be cached by the browser so new deploys

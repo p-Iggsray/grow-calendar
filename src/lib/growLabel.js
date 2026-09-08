@@ -222,8 +222,8 @@ export function drawLabel(canvas, spec, matrix) {
     drawQr(ctx, matrix, qrX, PAD + 90, qrBox);
     ctx.font = `600 22px ${UI}`;
     ctx.textAlign = "center";
-    ctx.fillText("SCAN FOR THIS", qrX + qrBox / 2, PAD + 90 + qrBox + 40);
-    ctx.fillText("PLANT\u2019S RECORD", qrX + qrBox / 2, PAD + 90 + qrBox + 70);
+    ctx.fillText("SCAN TO READ ABOUT", qrX + qrBox / 2, PAD + 90 + qrBox + 40);
+    ctx.fillText("THIS STRAIN", qrX + qrBox / 2, PAD + 90 + qrBox + 70);
     ctx.textAlign = "left";
   }
 
