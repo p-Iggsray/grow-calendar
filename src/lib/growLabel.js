@@ -13,7 +13,6 @@ import { words } from "./crops.js";
 // 6in x 4in at 300dpi. Fixed, so what is saved is what prints.
 export const LABEL_W = 1800;
 export const LABEL_H = 1200;
-export const LABEL_DPI = 300;
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -177,8 +176,6 @@ export function drawLabel(canvas, spec, matrix) {
     for (let i = 0; i < 5; i++) star(ctx, PAD + 20 + i * 54, y - 8, 22, i < spec.rating);
   }
 
-  // The specification table. Label above value, in two columns, so a long value
-  // never collides with its own label.
   // The table stretches to fill whatever is left between the head and the
   // foot, rather than sitting at a fixed pitch and leaving a quarter of the
   // stock blank underneath. Two columns, label above value, so a long value

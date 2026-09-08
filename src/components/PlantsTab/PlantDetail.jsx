@@ -129,7 +129,7 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
     >
       <ScreenHeader
         eyebrow={typeLabel(plant.type, crop) || plant.type}
-        title={plant.name || "Unnamed plant"}
+        title={plant.name || `Unnamed ${w.unit}`}
         onBack={onClose}
         backLabel="Back to the environment"
         right={(
@@ -323,7 +323,7 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
       <ConfirmModal
         open={confirmStage}
         title={upcoming ? `Move to ${stageLabel(upcoming)}?` : ""}
-        message={upcoming ? `${plant.name || "This plant"} moves from ${stageLabel(stage)} to ${stageLabel(upcoming)}. Stage changes are one-way - there is no going back.` : ""}
+        message={upcoming ? `${plant.name || `This ${w.unit}`} moves from ${stageLabel(stage)} to ${stageLabel(upcoming)}. Stage changes are one-way - there is no going back.` : ""}
         confirmLabel={upcoming ? `Move to ${stageLabel(upcoming)}` : "Move"}
         cancelLabel="Not yet"
         onConfirm={advanceStage}

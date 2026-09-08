@@ -16,7 +16,7 @@
 //
 // Pure - no network, no React - so it is tested directly.
 
-import { fanOutWater, isWaterUnit, sumGallons, toGallons, waterRow } from "./waterUnits.js";
+import { fanOutWater, isWaterUnit, sumGallons, waterRow } from "./waterUnits.js";
 import { words } from "./crops.js";
 
 // Ranges a real reading falls in. A model that hands back 850°F has misread a
@@ -182,9 +182,4 @@ export function mergeReading(existing, patch, previouslyRead) {
     if (empty || wasRead[readKey(field)] === true) out[field] = value;
   }
   return out;
-}
-
-/** Canonical gallons for a typed amount, for callers that only have the pair. */
-export function gallonsOf(amount, unit) {
-  return toGallons(amount, isWaterUnit(unit) ? unit : "gal");
 }

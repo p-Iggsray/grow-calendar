@@ -4,6 +4,7 @@ import { ensureGrowLogSchema, isLogFilled, rowToEntry } from "./growLog.js";
 import { readNote } from "./notes.js";
 import { ownedGrowRow, parseSurvey, ensurePlantLogSchema } from "./plants.js";
 import { htmlToPlainText } from "../src/lib/richText.js";
+import { words } from "../src/lib/crops.js";
 import { getWeatherForDay, coordsFromSurvey, locKey, fillAutoWeather } from "./weatherDays.js";
 import { resolveGrowCoords } from "./weather.js";
 import { eventsForDay, eventCountsForMonth } from "./events.js";
@@ -30,7 +31,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 function plantNameMap(survey) {
   const map = {};
   for (const p of survey?.strains ?? []) {
-    if (p?.id) map[p.id] = p.name || "Plant";
+    if (p?.id) map[p.id] = p.name || words(survey).Unit;
   }
   return map;
 }

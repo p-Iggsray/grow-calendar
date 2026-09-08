@@ -327,7 +327,7 @@ export default function EnvironmentDetail({
         open={!!confirmDeletePlant}
         tone="destructive"
         title="Delete plant?"
-        message={confirmDeletePlant ? `This permanently deletes "${confirmDeletePlant.name || "this plant"}" and its entire log.` : ""}
+        message={confirmDeletePlant ? `This permanently deletes "${confirmDeletePlant.name || `this ${w.unit}`}" and its entire log.` : ""}
         confirmLabel="Delete"
         onConfirm={() => confirmDeletePlant && handleDeletePlant(confirmDeletePlant)}
         onCancel={() => setConfirmDeletePlant(null)}

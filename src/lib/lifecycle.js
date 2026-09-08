@@ -73,12 +73,7 @@ export function phaseAfterDrying(crop) {
 
 // Kept for the cannabis screens that read them directly.
 export const DRY_MIN = DRY_GUIDE.cannabis.min;
-export const DRY_TARGET = DRY_GUIDE.cannabis.target;
 export const DRY_MAX = DRY_GUIDE.cannabis.max;
-export const DRY_IDEAL_TEMP_F = DRY_GUIDE.cannabis.idealTempF;
-export const DRY_IDEAL_RH = DRY_GUIDE.cannabis.idealRh;
-export const DRY_CHECKLIST = DRY_GUIDE.cannabis.checklist;
-
 // Curing guidance: jars at ~62% RH, burp regularly. Min 2 weeks, good at 4,
 // premium past 8. Cannabis only - nothing cures a mushroom.
 export const CURE_MIN = 14;

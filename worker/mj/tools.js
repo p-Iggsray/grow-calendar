@@ -298,9 +298,14 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
       // A grow under the sky does not get told what its weather was. Its high,
       // low and humidity are pulled from its location, so a number typed into
       // chat here would only overwrite an observation with a recollection.
+      // One read of the space serves all three things below: whether it is told
+      // its own weather, the roster to fan a watering across, and the words it
+      // uses for what grows in it.
+      const survey = await readSurvey(env, userId, dayGrowId);
+      const w = words(survey);
+
       let climateRefused = null;
       if (temp_high != null || temp_low != null || humidity != null) {
-        const survey = await readSurvey(env, userId, dayGrowId);
         if (autoLogsWeather(survey?.environment)) {
           climateRefused = "This grow is outdoors, so its high, low and humidity are logged automatically from its location. Those numbers were not written - tell the grower the weather is already on the day for them, and log the rest.";
           temp_high = null;
@@ -318,7 +323,6 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
       let watered = null;
       let waterPlantsJson = null;
       if (amount != null && input.water_per_plant === true) {
-        const survey = await readSurvey(env, userId, dayGrowId);
         const roster = (survey?.strains ?? []).filter(
           (p) => p && p.status !== "harvested" && p.status !== "dead"
         );
@@ -347,7 +351,7 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
       `).bind(userId, dayGrowId, date, water_gal, feed, temp_high, temp_low, humidity, waterPlantsJson).run();
 
       const waterText = watered
-        ? `${amount} ${unitLabel(unit)} to each of ${watered.length} ${watered.length === 1 ? "plant" : "plants"}`
+        ? `${amount} ${unitLabel(unit)} to each of ${watered.length} ${watered.length === 1 ? w.unit : w.units}`
         : (amount != null ? `${amount} ${unitLabel(unit)} water` : (water_gal != null ? `${water_gal} gal water` : null));
 
       actions.push({

@@ -47,28 +47,6 @@ export const TRAINING_ACTIONS = [
   "Bent branches",
 ];
 
-export const LEAF_COLORS = [
-  "Healthy green",
-  "Deep green",
-  "Light green",
-  "Yellowing lower leaves",
-  "Yellowing overall",
-  "Purple stems",
-  "Brown spots",
-  "Burnt tips",
-  "Curling / clawing",
-  "Wilting",
-];
-
-export const TRICHOME_STATES = [
-  "Clear",
-  "Mostly clear",
-  "Cloudy",
-  "Mostly cloudy",
-  "Cloudy with some amber",
-  "Mostly amber",
-];
-
 export const LIGHT_SCHEDULES = ["18/6", "20/4", "24/0", "16/8", "12/12", "Sunlight"];
 
 export const LIGHT_TYPES = [
@@ -125,14 +103,6 @@ export function rememberValue(fieldKey, value) {
       .slice(0, MAX_REMEMBERED);
     localStorage.setItem(STORE_PREFIX + fieldKey, JSON.stringify(next));
   } catch { /* storage unavailable: the picker still works, just forgets */ }
-}
-
-export function forgetValue(fieldKey, value) {
-  if (!fieldKey) return;
-  try {
-    const next = loadRemembered(fieldKey).filter((v) => !sameChoice(v, value));
-    localStorage.setItem(STORE_PREFIX + fieldKey, JSON.stringify(next));
-  } catch { /* storage unavailable */ }
 }
 
 // Pure: two choices match when they differ only by case or padding.

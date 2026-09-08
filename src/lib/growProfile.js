@@ -46,12 +46,3 @@ export function strainSummary(survey) {
   }
   return order.map(n => `${counts.get(n)}× ${n}`).join(" · ");
 }
-
-// Compact label for a strain, e.g. "Strawberry Haze" → "SH", "Gelato" → "GEL".
-// Multi-word names use first letters (up to 3); single words use first 3 chars.
-export function strainShortLabel(name) {
-  const words = (name || "").trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "?";
-  if (words.length === 1) return words[0].slice(0, 3).toUpperCase();
-  return words.slice(0, 3).map(w => w[0]).join("").toUpperCase();
-}

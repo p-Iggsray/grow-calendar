@@ -28,11 +28,6 @@ export function nextStage(stage, crop) {
   const ladder = stagesFor(crop);
   return ladder[Math.min(ladder.length - 1, stageIndexIn(ladder, stage) + 1)];
 }
-export function prevStage(stage, crop) {
-  const ladder = stagesFor(crop);
-  return ladder[Math.max(0, stageIndexIn(ladder, stage) - 1)];
-}
-
 export const HEALTH_OPTIONS = [
   { value: "thriving", label: "Thriving", color: "var(--c-accent)" },
   { value: "healthy",  label: "Healthy",  color: "var(--c-text-dim)" },

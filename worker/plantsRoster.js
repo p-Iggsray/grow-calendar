@@ -3,7 +3,7 @@
 // and for validating log-entry input. No DB access, so these are unit-testable
 // in isolation with node --test.
 import {
-  ALL_STAGES, cropOf, defaultStage, defaultVarietyType, isVarietyType, stagesFor, words,
+  cropOf, defaultStage, defaultVarietyType, isVarietyType, stagesFor, words,
 } from "../src/lib/crops.js";
 
 // A roster entry is a cannabis plant or a mushroom tub, and which one decides
@@ -12,10 +12,6 @@ import {
 export const PLANT_STATUSES = new Set(["growing", "harvested", "dead"]);
 export const HEALTH_VALUES = new Set(["thriving", "healthy", "stressed", "sick"]);
 export const HEIGHT_UNITS = new Set(["in", "cm"]);
-// Every stage of every crop: what an id is allowed to be at all. Whether a
-// given stage belongs on a given roster is a question for the grow's crop.
-export const ALL_STAGE_SET = new Set(ALL_STAGES);
-
 /** The stages a roster of this crop may use. */
 export function stageSet(crop) {
   return new Set(stagesFor(crop));

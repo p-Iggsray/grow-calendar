@@ -26,34 +26,6 @@ export function LogSection({ label, first = false, children }) {
   );
 }
 
-export function LogField({ label, name, entry, setField, step, min, max, placeholder = "-", inputMode = "decimal" }) {
-  return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase" }}>
-        {label}
-      </span>
-      <input
-        type="number"
-        inputMode={inputMode}
-        step={step}
-        min={min}
-        max={max}
-        value={entry[name] ?? ""}
-        onChange={e => setField(name, e.target.value)}
-        placeholder={placeholder}
-        style={{
-          background: "var(--c-surface-1)", color: "var(--c-text)",
-          border: "1px solid var(--c-border-strong)", borderRadius: 8,
-          padding: "10px 12px", fontSize: 16, outline: "none",
-          fontFamily: "var(--font-ui)",
-          WebkitAppearance: "none", MozAppearance: "textfield",
-          width: "100%", boxSizing: "border-box",
-        }}
-      />
-    </label>
-  );
-}
-
 export function AddEntryButton({ onClick, label }) {
   return (
     <button
