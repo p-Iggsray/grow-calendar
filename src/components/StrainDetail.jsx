@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Heart, Pencil, Trash2 } from "lucide-react";
+import { Heart, Pencil, Trash2, Tag } from "lucide-react";
 import Portal from "./Portal.jsx";
 import ScreenHeader from "./ScreenHeader.jsx";
 import StrainStars from "./StrainStars.jsx";
 import ConfirmModal from "./ConfirmModal.jsx";
 import PhotoViewer from "./PhotoViewer.jsx";
+import StrainLabel from "./StrainLabel.jsx";
 import { tapHaptic } from "../lib/haptics.js";
 import {
   FLOWER_WEEKS_MAX, FLOWER_WEEKS_MIN, NOTE_MAX, STRAIN_TYPES, strainTraits,
@@ -56,6 +57,7 @@ export default function StrainDetail({ strain, onClose, onSave, onDelete, onRena
   const [draftName, setDraftName] = useState(strain.name);
   const [busy, setBusy] = useState(false);
   const [viewIndex, setViewIndex] = useState(null);
+  const [labelling, setLabelling] = useState(false);
   const savedNote = useRef(strain.note ?? "");
 
   // What a delete would actually cost, spelled out before it happens.
@@ -292,6 +294,22 @@ export default function StrainDetail({ strain, onClose, onSave, onDelete, onRena
             ))}
           </div>
 
+          {/* Its own row above the destructive pair: making a label is the one
+              thing here you might do every week. */}
+          <button
+            type="button"
+            className="touch-target"
+            onClick={() => { tapHaptic(); setLabelling(true); }}
+            style={{
+              width: "100%", padding: "12px", borderRadius: 11, marginBottom: 8,
+              background: "var(--c-surface-2)", border: "1px solid var(--c-border-strong)",
+              color: "var(--c-text)", fontFamily: UI, fontSize: 13, fontWeight: 700,
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            }}>
+            <Tag size={14} strokeWidth={2.2} />
+            Save print label
+          </button>
+
           {/* Renaming reaches every plant that carries the name, so it sits
               next to deleting rather than pretending to be a small edit. */}
           <div style={{ display: "flex", gap: 8 }}>
@@ -394,6 +412,8 @@ export default function StrainDetail({ strain, onClose, onSave, onDelete, onRena
             onClose={() => setViewIndex(null)}
           />
         )}
+
+        {labelling && <StrainLabel strain={strain} onClose={() => setLabelling(false)} />}
       </motion.div>
     </Portal>
   );
