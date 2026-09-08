@@ -18,8 +18,8 @@ function Chip({ label, active, onClick }) {
       aria-pressed={active}
       style={{
         padding: "8px 13px", borderRadius: 16, cursor: "pointer",
-        background: active ? "rgba(74,222,128,0.16)" : "rgba(255,255,255,0.05)",
-        border: active ? "1px solid rgba(74,222,128,0.5)" : "1px solid var(--c-border-strong)",
+        background: active ? "rgba(var(--c-accent-rgb), 0.16)" : "rgba(255,255,255,0.05)",
+        border: active ? "1px solid rgba(var(--c-accent-rgb), 0.5)" : "1px solid var(--c-border-strong)",
         color: active ? "var(--c-accent)" : "var(--c-text-muted)",
         fontFamily: UI, fontSize: 12.5, letterSpacing: 0.2,
         whiteSpace: "nowrap",
@@ -98,7 +98,7 @@ export default function ChoiceField({
         onClick={saveCustom}
         style={{
           flexShrink: 0, padding: "11px 15px", borderRadius: 10,
-          background: "rgba(74,222,128,0.16)", border: "1px solid rgba(74,222,128,0.45)",
+          background: "rgba(var(--c-accent-rgb), 0.16)", border: "1px solid rgba(var(--c-accent-rgb), 0.45)",
           color: "var(--c-accent)", fontFamily: UI, fontSize: 12.5, fontWeight: 700, cursor: "pointer",
         }}>
         Use

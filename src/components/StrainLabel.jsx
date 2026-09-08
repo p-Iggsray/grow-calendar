@@ -189,8 +189,8 @@ export default function StrainLabel({ strain, onClose }) {
                       aria-pressed={on}
                       style={{
                         padding: "8px 12px", borderRadius: 14, cursor: "pointer",
-                        background: on ? "rgba(74,222,128,0.16)" : "var(--c-surface-1)",
-                        border: `1px solid ${on ? "rgba(74,222,128,0.5)" : "var(--c-border-strong)"}`,
+                        background: on ? "rgba(var(--c-accent-rgb), 0.16)" : "var(--c-surface-1)",
+                        border: `1px solid ${on ? "rgba(var(--c-accent-rgb), 0.5)" : "var(--c-border-strong)"}`,
                         color: on ? "var(--c-accent)" : "var(--c-text-muted)",
                         fontFamily: UI, fontSize: 12, fontWeight: on ? 700 : 500,
                       }}>

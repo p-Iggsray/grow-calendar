@@ -1,4 +1,5 @@
 import { Component } from "react";
+import CatMark from "./CatMark.jsx";
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -29,7 +30,7 @@ export default class ErrorBoundary extends Component {
         textAlign: "center",
         gap: 20,
       }}>
-        <div style={{ fontSize: 36 }}>🌿</div>
+        <CatMark size={64} />
         <div style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", letterSpacing: 1 }}>
           Something went wrong
         </div>
@@ -40,8 +41,8 @@ export default class ErrorBoundary extends Component {
           onClick={() => window.location.reload()}
           className="touch-target"
           style={{
-            background: "rgba(34,197,94,0.15)",
-            border: "1px solid rgba(34,197,94,0.35)",
+            background: "rgba(var(--c-accent-rgb), 0.15)",
+            border: "1px solid rgba(var(--c-accent-rgb), 0.35)",
             borderRadius: 10, padding: "10px 24px",
             color: "var(--c-accent)", fontSize: 12,
             letterSpacing: 1, cursor: "pointer",

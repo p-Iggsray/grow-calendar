@@ -59,7 +59,7 @@ export function StepSetup({ survey, update }) {
             style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               padding: "8px 14px", borderRadius: 10,
-              background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.3)",
+              background: "rgba(var(--c-accent-rgb), 0.10)", border: "1px solid rgba(var(--c-accent-rgb), 0.3)",
               color: "var(--c-accent)", fontFamily: MONO, fontSize: 11, letterSpacing: 0.5,
               cursor: geoStatus === "locating" ? "default" : "pointer",
             }}

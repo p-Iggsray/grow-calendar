@@ -81,7 +81,7 @@ export async function getSharedView(env, token) {
   // notes) - a buddy link gets only the phase and its dates.
   const lc = grow.lifecycle;
   return json({
-    growName: grow.displayName || "Grow Calendar",
+    growName: grow.displayName || "Black Cat Botanicals",
     status: grow.status,
     stageEvents: events,
     firstDate,

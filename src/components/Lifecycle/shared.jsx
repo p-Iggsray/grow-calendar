@@ -119,7 +119,7 @@ export function ProgressBar({ pct, accent = "var(--c-accent)" }) {
 }
 
 const STATUS_TONE = {
-  ready:  { bg: "rgba(34,197,94,0.14)",  border: "rgba(34,197,94,0.4)",  color: "var(--c-accent)" },
+  ready:  { bg: "rgba(var(--c-accent-rgb), 0.14)",  border: "rgba(var(--c-accent-rgb), 0.4)",  color: "var(--c-accent)" },
   window: { bg: "rgba(245,158,11,0.14)", border: "rgba(245,158,11,0.4)", color: "#f59e0b" },
   early:  { bg: "var(--c-surface-2)",    border: "var(--c-border)",      color: "var(--c-text-faint)" },
 };
@@ -147,7 +147,7 @@ export function CTAButton({ onClick, disabled, emphasized, children }) {
       disabled={disabled}
       style={{
         width: "100%", padding: "15px 16px", borderRadius: 14,
-        background: emphasized ? "#22c55e" : "var(--c-surface-2)",
+        background: emphasized ? "var(--c-accent)" : "var(--c-surface-2)",
         border: emphasized ? "none" : "1px solid var(--c-border)",
         color: emphasized ? "var(--c-bg)" : "var(--c-text-dim)",
         fontFamily: MONO, fontSize: 15, fontWeight: 600, letterSpacing: 0.2,

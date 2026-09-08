@@ -9,6 +9,7 @@ import { parseDate } from "../src/lib/dates-core.js";
 import { loadStageTimeline } from "./stages.js";
 import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../src/lib/stageTimeline.js";
 import { growLocation, strainSummary } from "../src/lib/growProfile.js";
+import { catMarkSvg } from "../src/lib/catMark.js";
 import { displayUnit, formatWater, isWaterUnit } from "../src/lib/waterUnits.js";
 import { cropOf, flushTotals, words } from "../src/lib/crops.js";
 import { ensureGrowEventsSchema } from "./events.js";
@@ -483,7 +484,7 @@ function renderReport(ctx) {
 </div>
 <main>
   <header class="cover">
-    <div class="eyebrow">The Grow Calendar · Grow Report</div>
+    <div class="brandline">${catMarkSvg({ width: 34, ink: "#111", eye: "#fff", pupil: "#111", fill: "#111" })}<span class="eyebrow">Black Cat Botanicals · Grow Report</span></div>
     <h1>${esc(name)}</h1>
     <div class="sub">
       <span class="badge badge-${esc(status)}">${esc(status)}</span>
@@ -514,7 +515,7 @@ function renderReport(ctx) {
   ${platesSection}
   ${statsSection}
   <footer class="foot">
-    Generated ${esc(generated)} · The Grow Calendar. For educational and personal
+    Generated ${esc(generated)} · Black Cat Botanicals. For educational and personal
     record-keeping only - not medical, legal, or professional cultivation advice.
   </footer>
 </main>
@@ -526,24 +527,27 @@ function section(title, inner) {
 }
 
 const CSS = `
-:root{--g:#2f8f4e;--gd:#14532d;--ink:#1b2a1f;--mut:#6b7a6e;--line:#e2e8df;--bg:#f6f8f4;--card:#fff;}
+:root{--g:#b06a1e;--gd:#1a1512;--ink:#1c1917;--mut:#7a6f63;--line:#e6e0d8;--bg:#f7f5f1;--card:#fff;}
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
 body{font-family:Georgia,'Times New Roman',serif;color:var(--ink);background:var(--bg);line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 .mono,.eyebrow,.stat-l,.def-l,.m-l,.chip,.badge,.tb-name,.tl-label{font-family:'Courier New',monospace;}
 .toolbar{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:12px 20px;background:var(--gd);color:#eafff0;}
+  padding:12px 20px;background:var(--gd);color:#f6efe4;}
 .tb-name{font-size:13px;letter-spacing:1px;}
 .tb-btn{font-family:'Courier New',monospace;font-size:13px;letter-spacing:1px;cursor:pointer;
-  background:#eafff0;color:var(--gd);border:none;border-radius:8px;padding:9px 16px;font-weight:700;}
+  background:#f6efe4;color:var(--gd);border:none;border-radius:8px;padding:9px 16px;font-weight:700;}
 .tb-btn:hover{background:#fff;}
 main{max-width:820px;margin:0 auto;padding:24px 20px 60px;}
 .cover{padding:8px 0 4px;}
 .eyebrow{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mut);margin-bottom:6px;}
+.brandline{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.brandline svg{display:block;flex:none;}
+.brandline .eyebrow{margin-bottom:0;}
 h1{font-size:34px;line-height:1.1;margin:0 0 10px;color:var(--gd);letter-spacing:-0.5px;}
 .sub{display:flex;flex-wrap:wrap;gap:10px;align-items:center;color:var(--mut);font-size:15px;margin-bottom:18px;}
-.badge{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;padding:3px 9px;border-radius:999px;border:1px solid var(--g);color:var(--gd);background:#e9f7ee;}
-.badge-harvested{border-color:#b45309;color:#7c3a00;background:#fef3c7;}
+.badge{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;padding:3px 9px;border-radius:999px;border:1px solid var(--g);color:#7c4a12;background:#fdf3e7;}
+.badge-harvested{border-color:#2f8f4e;color:#14532d;background:#e9f7ee;}
 .badge-abandoned{border-color:#9ca3af;color:#4b5563;background:#f3f4f6;}
 .stripe{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 4px;}
 .stat{flex:1 1 120px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;}

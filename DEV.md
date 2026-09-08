@@ -1,6 +1,6 @@
 # Developer Notes
 
-Everything you need to run, modify, or self-host **The Grow Calendar**.
+Everything you need to run, modify, or self-host **Black Cat Botanicals**.
 
 ## Stack
 

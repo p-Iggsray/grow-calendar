@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { BarChart2, Camera, ChevronRight, FileText, Monitor, Moon, Pencil, Share2, Sprout, Sun } from "lucide-react";
+import { BarChart2, Camera, ChevronRight, FileText, Pencil, Share2, Sprout } from "lucide-react";
 import ScreenHeader from "./ScreenHeader.jsx";
 import ShareSheet from "./ShareSheet.jsx";
 import AuthFooter from "./AuthFooter.jsx";
@@ -15,12 +15,6 @@ import { loadWaterUnit } from "../lib/waterUnits.js";
 import { cropOf } from "../lib/crops.js";
 import { loadSaveToRoll, rememberSaveToRoll } from "../lib/savePhoto.js";
 import { tapHaptic } from "../lib/haptics.js";
-
-const THEME_OPTIONS = [
-  { value: "auto",  label: "Auto",  Icon: Monitor },
-  { value: "light", label: "Light", Icon: Sun },
-  { value: "dark",  label: "Dark",  Icon: Moon },
-];
 
 // The same row, but it flips a setting in place instead of pushing a screen.
 function ToggleRow({ icon: Icon, tint, label, detail, on, onToggle, last }) {
@@ -127,7 +121,7 @@ function Group({ title, footer, children }) {
 // what the space is, starting the dry) lives behind that space's gear in
 // Spaces. What is left here is the active grow's outputs and app-wide things.
 export default function SettingsScreen({
-  today, onOpenStats, onOpenStrains, onOpenGrowSettings, onNewEnvironment, onBeforeSignOut, theme, setTheme,
+  today, onOpenStats, onOpenStrains, onOpenGrowSettings, onNewEnvironment, onBeforeSignOut,
 }) {
   const { grows, activeGrowId } = usePlan();
   const [showShare, setShowShare] = useState(false);
@@ -203,7 +197,7 @@ export default function SettingsScreen({
           disabled={!activeGrowId}
         />
         <Row
-          icon={Share2} tint="#22c55e"
+          icon={Share2} tint="#2dd4bf"
           label="Share with a buddy"
           detail="A read-only link to this grow"
           onClick={() => setShowShare(true)}
@@ -223,13 +217,13 @@ export default function SettingsScreen({
         title="Yours"
         footer="Every strain and species you name, in every space, gathers here by itself.">
         <Row
-          icon={Sprout} tint="#4ade80"
+          icon={Sprout} tint="#e0913f"
           label="Strains"
           detail="Notes, ratings and favourites"
           onClick={onOpenStrains}
         />
         <ToggleRow
-          icon={Camera} tint="#fbbf24"
+          icon={Camera} tint="#f7d774"
           label="Save shots to Photos"
           detail="A photo taken in the app is not in your camera roll until your phone puts it there, so it offers straight after the shot."
           on={saveToRoll}
@@ -237,42 +231,6 @@ export default function SettingsScreen({
           last
         />
       </Group>
-
-      {/* Appearance */}
-      <div style={{ marginTop: 22 }}>
-        <div style={{
-          fontSize: 12, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase",
-          color: "var(--c-text-faint)", margin: "0 4px 7px",
-        }}>
-          Appearance
-        </div>
-        <div className="card" style={{ display: "flex", overflow: "hidden", padding: 4, gap: 4 }}>
-          {THEME_OPTIONS.map(({ value, label, Icon }) => {
-            const active = theme === value;
-            return (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setTheme(value)}
-                aria-pressed={active}
-                style={{
-                  flex: 1, padding: "10px 4px", borderRadius: 12,
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-                  background: active ? "var(--c-accent)" : "transparent",
-                  border: "none",
-                  color: active ? "var(--c-bg)" : "var(--c-text-dim)",
-                  fontSize: 12, fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "background 0.15s, color 0.15s",
-                }}
-              >
-                <Icon size={15} strokeWidth={active ? 2.2 : 1.6} />
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
       <AnimatePresence>
         {showShare && <ShareSheet key="share" onClose={() => setShowShare(false)} />}

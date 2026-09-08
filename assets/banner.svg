@@ -229,20 +229,30 @@
     <animateTransform attributeName="transform" type="translate" values="0 14; 0 0" dur="1.4s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1" keyTimes="0;1"/>
     <animate attributeName="opacity" values="0;1" dur="1.4s" begin="0s" fill="freeze"/>
 
+    <g transform="translate(604 22) scale(0.72)" fill="none" stroke="#fffbeb" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M20,32 L24,6 L44,20 C46,19 54,19 56,20 L76,6 L80,32 C84,42 84,58 78,68 C72,80 60,86 50,86 C40,86 28,80 22,68 C16,58 16,42 20,32 Z" fill="#0c0a24"/>
+      <path d="M21,60 L3,53"/><path d="M19.5,66.5 L1.5,66.5"/><path d="M21,73 L4,79"/>
+      <path d="M79,60 L97,53"/><path d="M80.5,66.5 L98.5,66.5"/><path d="M79,73 L96,79"/>
+      <path d="M26,50 Q36,39 46,50 Q36,61 26,50 Z" fill="#fde9b0" stroke="none"/>
+      <path d="M54,50 Q64,39 74,50 Q64,61 54,50 Z" fill="#fde9b0" stroke="none"/>
+      <ellipse cx="36" cy="50" rx="2.3" ry="6.2" fill="#0c0a24" stroke="none"/>
+      <ellipse cx="64" cy="50" rx="2.3" ry="6.2" fill="#0c0a24" stroke="none"/>
+      <path d="M46.5,61 L53.5,61 L50,65.5 Z" fill="#fffbeb" stroke="none"/>
+    </g>
     <text x="640" y="142" text-anchor="middle"
-          font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="900"
-          letter-spacing="-2" fill="#06040f" opacity="0.6" filter="url(#softBlur)">The Grow Calendar</text>
+          font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="900"
+          letter-spacing="-2" fill="#06040f" opacity="0.6" filter="url(#softBlur)">Black Cat Botanicals</text>
 
     <text x="640" y="142" text-anchor="middle"
-          font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="900"
+          font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="900"
           letter-spacing="-2" fill="#fff7e6" filter="url(#softBlur)">
       <animate attributeName="opacity" values="0.25;0.6;0.25" dur="7s" repeatCount="indefinite"/>
-      The Grow Calendar
+      Black Cat Botanicals
     </text>
 
     <text x="640" y="142" text-anchor="middle"
-          font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="900"
-          letter-spacing="-2" fill="#fffbeb">The Grow Calendar</text>
+          font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="900"
+          letter-spacing="-2" fill="#fffbeb">Black Cat Botanicals</text>
 
     <text x="640" y="180" text-anchor="middle"
           font-family="'Courier New', Courier, monospace" font-size="13" letter-spacing="10"

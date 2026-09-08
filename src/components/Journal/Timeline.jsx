@@ -283,7 +283,7 @@ export default function Timeline({ today, stageEvents = [], firstDate = null, gr
             }}>
             <div style={{
               width: 36, height: 36, borderRadius: 18, flexShrink: 0,
-              background: "rgba(34,197,94,0.14)", border: "1px solid rgba(34,197,94,0.35)",
+              background: "rgba(var(--c-accent-rgb), 0.14)", border: "1px solid rgba(var(--c-accent-rgb), 0.35)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               <PenLine size={15} strokeWidth={2} style={{ color: "var(--c-accent)" }} />

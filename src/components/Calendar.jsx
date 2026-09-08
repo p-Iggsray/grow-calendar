@@ -265,7 +265,7 @@ export default function Calendar({
                 // famColor + alpha only works on a hex value; an off-season
                 // today needs a real rgba, not "var(--c-accent)22".
                 background: isToday
-                  ? (famColor ? `${famColor}22` : "rgba(34,197,94,0.13)")
+                  ? (famColor ? `${famColor}22` : "rgba(var(--c-accent-rgb), 0.13)")
                   : isPast
                   ? `${famColor}0d`
                   : pStyle

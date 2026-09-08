@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Trash2, ArrowUp, Loader, Camera, X } from "lucide-react";
 import { api } from "../../lib/api.js";
+import CatMark from "../CatMark.jsx";
 import { MONO, SERIF } from "./constants.js";
 import { fmtContextDate, compressImage } from "./helpers.js";
 import ThreadStrip from "./ThreadStrip.jsx";
@@ -300,7 +301,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
         )}
         {!historyLoading && messages.length === 0 && (
           <div style={{ margin: "auto", maxWidth: 440, textAlign: "center" }}>
-            <div style={{ fontSize: 34, marginBottom: 10 }}>🌿</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><CatMark size={56} /></div>
             <div style={{ fontSize: 15, color: "var(--c-text-dim)", marginBottom: 14, lineHeight: 1.6 }}>
               Ask anything about your grow - or send a photo for a diagnosis.
               I know your full plan, grow log, and current weather.
@@ -412,8 +413,8 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
             aria-label="Attach photo"
             style={{
               flexShrink: 0, width: 34, height: 34, borderRadius: "50%",
-              background: imageData ? "rgba(74,222,128,0.15)" : "none",
-              border: imageData ? "1px solid rgba(74,222,128,0.3)" : "none",
+              background: imageData ? "rgba(var(--c-accent-rgb), 0.15)" : "none",
+              border: imageData ? "1px solid rgba(var(--c-accent-rgb), 0.3)" : "none",
               display: "flex", alignItems: "center", justifyContent: "center",
               cursor: "pointer", color: imageData ? "var(--c-accent)" : "var(--c-text-ghost)",
               transition: "background 0.15s, color 0.15s",
@@ -443,7 +444,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
             aria-label="Send"
             style={{
               flexShrink: 0, width: 38, height: 38, borderRadius: "50%",
-              background: canSend ? "#22c55e" : "rgba(34,197,94,0.1)",
+              background: canSend ? "var(--c-accent)" : "rgba(var(--c-accent-rgb), 0.12)",
               border: "none",
               display: "flex", alignItems: "center", justifyContent: "center",
               cursor: canSend ? "pointer" : "default",

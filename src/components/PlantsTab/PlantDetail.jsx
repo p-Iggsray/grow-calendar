@@ -188,7 +188,7 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
                 style={{
                   display: "flex", alignItems: "center", gap: 6,
                   padding: "9px 15px", borderRadius: 18,
-                  background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.35)",
+                  background: "rgba(var(--c-accent-rgb), 0.1)", border: "1px solid rgba(var(--c-accent-rgb), 0.35)",
                   color: "var(--c-accent)", fontFamily: MONO, fontSize: 11.5, fontWeight: 700,
                   cursor: stageBusy ? "default" : "pointer", opacity: stageBusy ? 0.6 : 1,
                 }}>
@@ -217,7 +217,7 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 28, marginBottom: 12 }}>
           <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>History</span>
           {!adding && (
-            <button type="button" onClick={() => setAdding(true)} style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 18, padding: "7px 14px", color: "var(--c-accent)", fontFamily: MONO, fontSize: 11, cursor: "pointer" }}>
+            <button type="button" onClick={() => setAdding(true)} style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(var(--c-accent-rgb), 0.1)", border: "1px solid rgba(var(--c-accent-rgb), 0.3)", borderRadius: 18, padding: "7px 14px", color: "var(--c-accent)", fontFamily: MONO, fontSize: 11, cursor: "pointer" }}>
               <Plus size={13} /> Add entry
             </button>
           )}
@@ -256,8 +256,8 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
                 <button key={k.value} type="button" onClick={() => setHistFilter(k.value)}
                   style={{
                     padding: "6px 11px", borderRadius: 13,
-                    background: active ? "rgba(74,222,128,0.16)" : "rgba(255,255,255,0.05)",
-                    border: active ? "1px solid rgba(74,222,128,0.5)" : "1px solid var(--c-border-strong)",
+                    background: active ? "rgba(var(--c-accent-rgb), 0.16)" : "rgba(255,255,255,0.05)",
+                    border: active ? "1px solid rgba(var(--c-accent-rgb), 0.5)" : "1px solid var(--c-border-strong)",
                     color: active ? "var(--c-accent)" : "var(--c-text-muted)",
                     fontFamily: MONO, fontSize: 10, letterSpacing: 0.5, cursor: "pointer",
                   }}>

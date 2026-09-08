@@ -75,7 +75,7 @@ export default function GrowSettings({ growId, onClose, onSaved, onDeleted }) {
             style={{
               display: "flex", alignItems: "center", gap: 5, flexShrink: 0,
               padding: "9px 16px", borderRadius: 20,
-              background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.4)",
+              background: "rgba(var(--c-accent-rgb), 0.12)", border: "1px solid rgba(var(--c-accent-rgb), 0.4)",
               color: (saving || loading) ? "var(--c-text-ghost)" : "var(--c-accent)",
               fontFamily: MONO, fontSize: 12, letterSpacing: 0.5,
               cursor: (saving || loading) ? "default" : "pointer", opacity: (saving || loading) ? 0.6 : 1,

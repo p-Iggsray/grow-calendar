@@ -84,8 +84,8 @@ export default function TabBar({ activeTab, onTab, firstTab }) {
               <div style={{
                 width: 50, height: 28,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                background: active ? "rgba(34,197,94,0.18)" : "rgba(34,197,94,0.07)",
-                border: `1px solid ${active ? "rgba(34,197,94,0.5)" : "rgba(34,197,94,0.18)"}`,
+                background: active ? "rgba(var(--c-accent-rgb), 0.18)" : "rgba(var(--c-accent-rgb), 0.07)",
+                border: `1px solid ${active ? "rgba(var(--c-accent-rgb), 0.5)" : "rgba(var(--c-accent-rgb), 0.18)"}`,
                 borderRadius: 14,
                 transition: "all 0.18s",
               }}>

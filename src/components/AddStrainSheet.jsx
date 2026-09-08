@@ -201,7 +201,7 @@ export default function AddStrainSheet({ onAdd, onClose, existingKeys = [] }) {
               disabled={!key || busy || duplicate}
               style={{
                 flex: 2, padding: "12px", borderRadius: 11,
-                background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.4)",
+                background: "rgba(var(--c-accent-rgb), 0.12)", border: "1px solid rgba(var(--c-accent-rgb), 0.4)",
                 color: "var(--c-accent)", fontFamily: UI, fontSize: 13.5, fontWeight: 700,
                 cursor: !key || busy || duplicate ? "default" : "pointer",
                 opacity: !key || busy || duplicate ? 0.45 : 1,

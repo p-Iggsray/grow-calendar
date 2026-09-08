@@ -132,7 +132,7 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
         <div style={{ height: 3, background: "var(--c-surface-2)" }}>
           <div style={{
             height: "100%",
-            background: "linear-gradient(90deg, #22c55e, var(--c-accent))",
+            background: "linear-gradient(90deg, var(--c-harvest), var(--c-accent))",
             width: `${((step + 1) / STEPS.length) * 100}%`,
             transition: "width 0.3s ease",
           }} />
@@ -191,10 +191,10 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
             style={{
               flex: 1, padding: "14px", borderRadius: 12,
               background: canAdvance()
-                ? (isLast ? "rgba(34,197,94,0.25)" : "rgba(34,197,94,0.18)")
+                ? (isLast ? "rgba(var(--c-accent-rgb), 0.25)" : "rgba(var(--c-accent-rgb), 0.18)")
                 : "rgba(255,255,255,0.05)",
               border: canAdvance()
-                ? (isLast ? "1.5px solid rgba(34,197,94,0.6)" : "1.5px solid rgba(34,197,94,0.4)")
+                ? (isLast ? "1.5px solid rgba(var(--c-accent-rgb), 0.6)" : "1.5px solid rgba(var(--c-accent-rgb), 0.4)")
                 : "1px solid var(--c-surface-2)",
               color: canAdvance() ? "var(--c-accent)" : "var(--c-text-ghost)",
               fontFamily: MONO, fontSize: 13, letterSpacing: 1,

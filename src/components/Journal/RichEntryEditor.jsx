@@ -21,8 +21,8 @@ function ToolButton({ onPress, label, children, active = false }) {
       onClick={onPress}
       style={{
         width: 34, height: 30, borderRadius: 8, flexShrink: 0,
-        background: active ? "rgba(34,197,94,0.16)" : "none",
-        border: `1px solid ${active ? "rgba(34,197,94,0.5)" : "transparent"}`,
+        background: active ? "rgba(var(--c-accent-rgb), 0.16)" : "none",
+        border: `1px solid ${active ? "rgba(var(--c-accent-rgb), 0.5)" : "transparent"}`,
         color: active ? "var(--c-accent)" : "var(--c-text-dim)",
         cursor: "pointer",
         display: "flex", alignItems: "center", justifyContent: "center",
@@ -152,8 +152,8 @@ export default function RichEntryEditor({ value, onChange, onBlur, placeholder =
                   onClick={() => { exec("fontSize", s.value); setSizeMenu(false); }}
                   style={{
                     padding: "5px 12px", borderRadius: 8, cursor: "pointer",
-                    background: active ? "rgba(34,197,94,0.16)" : "var(--c-surface-2)",
-                    border: `1px solid ${active ? "rgba(34,197,94,0.5)" : "var(--c-border-strong)"}`,
+                    background: active ? "rgba(var(--c-accent-rgb), 0.16)" : "var(--c-surface-2)",
+                    border: `1px solid ${active ? "rgba(var(--c-accent-rgb), 0.5)" : "var(--c-border-strong)"}`,
                     color: active ? "var(--c-accent)" : "var(--c-text-dim)",
                     fontFamily: "var(--font-ui)",
                     fontWeight: active ? 700 : 400,

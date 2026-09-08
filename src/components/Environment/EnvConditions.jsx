@@ -119,7 +119,7 @@ export default function EnvConditions({ growId, indoorish, mushrooms = false }) 
         <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} style={{ display: "none" }} />
         <button type="button" onClick={() => fileRef.current?.click()} disabled={importing} style={{
           width: "100%", padding: "13px", borderRadius: 12, minHeight: 48,
-          background: "rgba(34,197,94,0.16)", border: "1px solid rgba(34,197,94,0.45)",
+          background: "rgba(var(--c-accent-rgb), 0.16)", border: "1px solid rgba(var(--c-accent-rgb), 0.45)",
           color: "var(--c-accent)", fontFamily: MONO, fontSize: 12.5, letterSpacing: 0.5,
           cursor: importing ? "default" : "pointer",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 9,

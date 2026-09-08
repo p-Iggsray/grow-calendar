@@ -13,7 +13,7 @@ import {
 function btn(kind, disabled) {
   const base = { flex: 1, padding: "12px 14px", borderRadius: 10, fontFamily: MONO, fontSize: 12, letterSpacing: 1, cursor: disabled ? "default" : "pointer" };
   if (kind === "primary") {
-    return { ...base, background: "rgba(74,222,128,0.15)", border: "1px solid rgba(74,222,128,0.4)", color: disabled ? "var(--c-text-ghost)" : "var(--c-accent)", opacity: disabled ? 0.6 : 1 };
+    return { ...base, background: "rgba(var(--c-accent-rgb), 0.15)", border: "1px solid rgba(var(--c-accent-rgb), 0.4)", color: disabled ? "var(--c-text-ghost)" : "var(--c-accent)", opacity: disabled ? 0.6 : 1 };
   }
   return { ...base, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-muted)" };
 }
@@ -81,8 +81,8 @@ export default function LogEntryForm({ initial, environment, crop, nextFlush = 1
               <button key={k.value} type="button" onClick={() => setKind(k.value)}
                 style={{
                   padding: "7px 12px", borderRadius: 14,
-                  background: active ? "rgba(74,222,128,0.16)" : "rgba(255,255,255,0.05)",
-                  border: active ? "1px solid rgba(74,222,128,0.5)" : "1px solid var(--c-border-strong)",
+                  background: active ? "rgba(var(--c-accent-rgb), 0.16)" : "rgba(255,255,255,0.05)",
+                  border: active ? "1px solid rgba(var(--c-accent-rgb), 0.5)" : "1px solid var(--c-border-strong)",
                   color: active ? "var(--c-accent)" : "var(--c-text-muted)",
                   fontFamily: MONO, fontSize: 11, letterSpacing: 0.5, cursor: "pointer",
                 }}>

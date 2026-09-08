@@ -9,6 +9,9 @@
 // takes a canvas and is judged by looking at it.
 
 import { words } from "./crops.js";
+import {
+  CAT_HEAD, CAT_EYE_L, CAT_EYE_R, CAT_PUPILS, CAT_NOSE, CAT_WHISKERS,
+} from "./catMark.js";
 
 // 6in x 4in at 300dpi. Fixed, so what is saved is what prints.
 export const LABEL_W = 1800;
@@ -130,6 +133,44 @@ function drawQr(ctx, matrix, x, y, box) {
   return { side, quiet };
 }
 
+/**
+ * The brand mark in one ink: a solid black head with the eyes knocked out
+ * white, which is the only way an all-black cat reads on paper.
+ *
+ * `x`, `y` is the top-left of the drawn mark; it comes out `w * 0.97` wide and
+ * `w * 0.80` tall.
+ */
+function drawCatMark(ctx, x, y, w) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  ctx.translate(-1.5, -6);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.fillStyle = BLACK;
+  ctx.strokeStyle = BLACK;
+  ctx.fill(new Path2D(CAT_HEAD));
+  ctx.lineWidth = 3;
+  for (const [x1, y1, x2, y2] of CAT_WHISKERS) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "#fff";
+  ctx.fill(new Path2D(CAT_EYE_L));
+  ctx.fill(new Path2D(CAT_EYE_R));
+  ctx.fillStyle = BLACK;
+  for (const p of CAT_PUPILS) {
+    ctx.beginPath();
+    ctx.ellipse(p.cx, p.cy, p.rx, p.ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fill(new Path2D(CAT_NOSE));
+  ctx.restore();
+}
+
 // Shrink a line until it fits the width it is given, rather than letting a long
 // strain name run off the edge of the stock.
 function fitText(ctx, text, maxWidth, startPx, family, weight, minPx = 24) {
@@ -237,10 +278,15 @@ export function drawLabel(canvas, spec, matrix) {
     if (line !== spec.note) line = line.slice(0, -1) + "…";
     ctx.fillText(line, PAD, footRule - 26);
   }
+  // The signature: the mark and the wordmark locked up bottom-left, the legal
+  // line bottom-right, the way a package carries its maker.
   ctx.fillRect(PAD, footRule, LABEL_W - PAD * 2, 3);
+  const markW = 96;
+  drawCatMark(ctx, PAD, footRule + 18, markW);
+  ctx.font = `800 28px ${UI}`;
+  ctx.fillText("BLACK CAT BOTANICALS", PAD + markW + 24, footRule + 64);
   ctx.font = `600 22px ${UI}`;
-  ctx.fillText("THE GROW CALENDAR", PAD, footRule + 40);
   ctx.textAlign = "right";
-  ctx.fillText("KEEP OUT OF REACH OF CHILDREN", LABEL_W - PAD, footRule + 40);
+  ctx.fillText("KEEP OUT OF REACH OF CHILDREN", LABEL_W - PAD, footRule + 64);
   ctx.textAlign = "left";
 }

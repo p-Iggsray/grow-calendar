@@ -27,8 +27,8 @@ export function StepCrop({ survey, update }) {
                 onClick={() => update("crop", crop)}
                 style={{
                   textAlign: "left", cursor: "pointer", padding: "15px 14px", borderRadius: 14,
-                  background: sel ? "rgba(34,197,94,0.16)" : "var(--c-surface-1)",
-                  border: `1.5px solid ${sel ? "rgba(34,197,94,0.6)" : "var(--c-surface-2)"}`,
+                  background: sel ? "rgba(var(--c-accent-rgb), 0.16)" : "var(--c-surface-1)",
+                  border: `1.5px solid ${sel ? "rgba(var(--c-accent-rgb), 0.6)" : "var(--c-surface-2)"}`,
                   display: "flex", flexDirection: "column", gap: 5, minHeight: 96,
                 }}>
                 <div style={{ fontSize: 24, lineHeight: 1 }}>{CROP_ICON[crop]}</div>

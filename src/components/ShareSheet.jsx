@@ -118,8 +118,8 @@ export default function ShareSheet({ onClose }) {
                 onClick={copy}
                 style={{
                   display: "flex", alignItems: "center", gap: 5,
-                  background: copied ? "rgba(74,222,128,0.15)" : "var(--c-surface-2)",
-                  border: `1px solid ${copied ? "rgba(74,222,128,0.4)" : "var(--c-border)"}`,
+                  background: copied ? "rgba(var(--c-accent-rgb), 0.15)" : "var(--c-surface-2)",
+                  border: `1px solid ${copied ? "rgba(var(--c-accent-rgb), 0.4)" : "var(--c-border)"}`,
                   borderRadius: 7, padding: "6px 10px",
                   color: copied ? "var(--c-accent)" : "var(--c-text-dim)",
                   fontFamily: MONO, fontSize: 11, letterSpacing: 1, cursor: "pointer",
@@ -180,7 +180,7 @@ export default function ShareSheet({ onClose }) {
             style={{
               width: "100%", padding: "14px", borderRadius: 12,
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              background: "rgba(74,222,128,0.12)", border: "1.5px solid rgba(74,222,128,0.35)",
+              background: "rgba(var(--c-accent-rgb), 0.12)", border: "1.5px solid rgba(var(--c-accent-rgb), 0.35)",
               color: "var(--c-accent)", fontFamily: MONO, fontSize: 12, letterSpacing: 1,
               cursor: busy ? "default" : "pointer", opacity: busy ? 0.7 : 1,
               marginBottom: 12,

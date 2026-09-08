@@ -87,7 +87,7 @@ export default function GrowSwitcher({ today, onNewEnvironment }) {
           fontSize: 19, fontWeight: 700, letterSpacing: -0.4, color: "var(--c-text)",
           whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
         }}>
-          {activeGrow?.displayName || "Grow Calendar"}
+          {activeGrow?.displayName || "Black Cat Botanicals"}
         </span>
         {canSwitch && (
           <ChevronDown size={16} strokeWidth={2.6} aria-hidden="true" style={{ color: "var(--c-text-muted)", flexShrink: 0 }} />
@@ -149,7 +149,7 @@ export default function GrowSwitcher({ today, onNewEnvironment }) {
                       style={{
                         display: "flex", alignItems: "center", gap: 12,
                         width: "100%", padding: "12px 18px", minHeight: 58,
-                        background: isActive ? "rgba(74,222,128,0.08)" : "none",
+                        background: isActive ? "rgba(var(--c-accent-rgb), 0.08)" : "none",
                         border: "none", borderLeft: `3px solid ${isActive ? "var(--c-accent)" : "transparent"}`,
                         font: "inherit", textAlign: "left", cursor: "pointer",
                       }}>

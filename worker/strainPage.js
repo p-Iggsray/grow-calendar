@@ -19,6 +19,7 @@
 // So the worst an attacker can do is read pages that already exist.
 
 import { strainNameKey } from "../src/lib/strainLibrary.js";
+import { catMarkSvg } from "../src/lib/catMark.js";
 import { askGeminiForJson } from "./providers/gemini.js";
 import { GEMINI_MODEL } from "./mj/constants.js";
 import { bumpModelUsage, readMjModelUsage, todayInET } from "./mj/usage.js";
@@ -130,13 +131,17 @@ export function renderStrainPage(catalog, profile) {
 <meta name="robots" content="noindex">
 <title>${esc(name)}</title>
 <style>
-:root{color-scheme:light dark;--bg:#faf7f2;--fg:#1a2e1a;--mut:#4a6a4a;--line:rgba(0,0,0,0.12);--card:#fff;}
-@media(prefers-color-scheme:dark){:root{--bg:#0e1a12;--fg:#e8f5e3;--mut:#a0d0a0;--line:rgba(255,255,255,0.12);--card:#141f16;}}
+:root{color-scheme:dark;--bg:#0c0b0a;--fg:#f5f0e8;--mut:#a0917c;--acc:#e0913f;
+  --line:rgba(255,244,228,0.12);--card:#171512;}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);
   font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
 main{max-width:640px;margin:0 auto;padding:28px 20px 60px;}
-.eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);}
+.brand{display:flex;align-items:center;gap:9px;margin:0 0 20px;}
+.brand svg{display:block;flex:none;}
+.brand span{font-size:11px;letter-spacing:2.4px;text-transform:uppercase;
+  font-weight:700;color:var(--mut);}
+.eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--acc);}
 h1{font-size:34px;line-height:1.1;letter-spacing:-0.5px;margin:6px 0 0;}
 .lede{font-size:17px;margin:18px 0 0;}
 .lineage{margin:14px 0 0;color:var(--mut);font-size:14px;}
@@ -155,6 +160,7 @@ footer{margin:36px 0 0;padding-top:16px;border-top:1px solid var(--line);
   font-size:11.5px;color:var(--mut);line-height:1.6;}
 </style>
 </head><body><main>
+  <div class="brand">${catMarkSvg({ width: 30 })}<span>Black Cat Botanicals</span></div>
   <div class="eyebrow">Strain profile</div>
   <h1>${esc(name)}</h1>
   ${body}

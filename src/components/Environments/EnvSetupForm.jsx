@@ -33,7 +33,7 @@ const CROP_ICON = { cannabis: "🌿", mushrooms: "🍄" };
 function btn(kind, disabled) {
   const base = { flex: 1, padding: "12px 14px", borderRadius: 10, fontFamily: MONO, fontSize: 12, letterSpacing: 1, cursor: disabled ? "default" : "pointer" };
   if (kind === "primary") {
-    return { ...base, background: "rgba(74,222,128,0.15)", border: "1px solid rgba(74,222,128,0.4)", color: disabled ? "var(--c-text-ghost)" : "var(--c-accent)", opacity: disabled ? 0.6 : 1 };
+    return { ...base, background: "rgba(var(--c-accent-rgb), 0.15)", border: "1px solid rgba(var(--c-accent-rgb), 0.4)", color: disabled ? "var(--c-text-ghost)" : "var(--c-accent)", opacity: disabled ? 0.6 : 1 };
   }
   return { ...base, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-muted)" };
 }
@@ -95,8 +95,8 @@ export default function EnvSetupForm({ survey, plantCount = 0, onSave, onCancel,
                 aria-pressed={sel}
                 style={{
                   textAlign: "left", padding: "12px 13px", borderRadius: 12,
-                  background: sel ? "rgba(34,197,94,0.16)" : "var(--c-surface-1)",
-                  border: `1.5px solid ${sel ? "rgba(34,197,94,0.6)" : "var(--c-surface-2)"}`,
+                  background: sel ? "rgba(var(--c-accent-rgb), 0.16)" : "var(--c-surface-1)",
+                  border: `1.5px solid ${sel ? "rgba(var(--c-accent-rgb), 0.6)" : "var(--c-surface-2)"}`,
                   cursor: cropLocked ? "default" : "pointer",
                   opacity: dim ? 0.4 : 1,
                   display: "flex", flexDirection: "column", gap: 3,

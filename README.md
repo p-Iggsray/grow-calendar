@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/banner.svg" alt="Grow Calendar — your season, planned" width="100%" />
+<img src="assets/banner.svg" alt="Black Cat Botanicals, your season, planned" width="100%" />
 
 <br />
 
@@ -20,7 +20,7 @@
 
 ## What it is
 
-**Grow Calendar** is a full-featured grow management PWA built for outdoor and indoor cannabis growers. It gives you a living season plan — phase-aware task lists, an AI grow assistant, a daily journal, weather threat alerts, a garden map, and a buddy share link — all in one calm, offline-capable app that installs on your phone like a native app.
+**Black Cat Botanicals** is a full-featured grow management PWA built for outdoor and indoor cannabis growers. It gives you a living season plan: phase-aware task lists, an AI grow assistant, a daily journal, weather threat alerts, a garden map, and a buddy share link — all in one calm, offline-capable app that installs on your phone like a native app.
 
 The whole season lives here. Every day from transplant to harvest has its own task list, its own notes, its own phase context. Check things off in the garden on your phone. Open your laptop later. It's all there.
 
@@ -111,7 +111,7 @@ Add to your home screen on iOS, Android, or desktop. Works offline. Syncs when y
 ## Screenshots
 
 <div align="center">
-<img src="assets/screenshot.svg" alt="Grow Calendar — calendar view showing phase-colored days, milestone strip, and tab bar" width="380" />
+<img src="assets/screenshot.svg" alt="Black Cat Botanicals, calendar view showing phase-colored days, milestone strip, and tab bar" width="380" />
 </div>
 
 <img src="assets/divider.svg" alt="" width="100%" />

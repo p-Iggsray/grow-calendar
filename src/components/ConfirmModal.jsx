@@ -58,7 +58,7 @@ export default function ConfirmModal({
   const messageId = "confirm-modal-message";
   const confirmTone = tone === "destructive"
     ? { background: "rgba(220,38,38,0.18)", border: "1px solid rgba(220,38,38,0.45)", color: "var(--c-danger-soft)" }
-    : { background: "rgba(34,197,94,0.18)", border: "1px solid rgba(34,197,94,0.45)", color: "var(--c-accent)" };
+    : { background: "rgba(var(--c-accent-rgb), 0.18)", border: "1px solid rgba(var(--c-accent-rgb), 0.45)", color: "var(--c-accent)" };
 
   return (
     <AnimatePresence>

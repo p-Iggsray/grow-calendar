@@ -10,7 +10,7 @@ import {
   MONO, PhaseScreen, Card, Eyebrow, Stat, useLifecycleSave,
 } from "./shared.jsx";
 
-const DONE_ACCENT = "#22c55e";
+const DONE_ACCENT = "var(--c-accent)";
 
 function parseLocal(iso) {
   if (!iso) return null;
@@ -67,7 +67,7 @@ export default function GrowComplete({ onStartNewGrow }) {
 
   return (
     <PhaseScreen eyebrow="Harvest" title="Complete">
-      <Card style={{ borderColor: "rgba(34,197,94,0.3)", textAlign: "center" }}>
+      <Card style={{ borderColor: "rgba(var(--c-accent-rgb), 0.3)", textAlign: "center" }}>
         <div style={{ fontSize: 40, marginBottom: 6 }}>{cures ? "🌿🏆" : "🍄🏆"}</div>
         <Eyebrow color={DONE_ACCENT}>Grow complete</Eyebrow>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.4 }}>
@@ -111,8 +111,8 @@ export default function GrowComplete({ onStartNewGrow }) {
           disabled={busy || !dirty}
           style={{
             marginTop: 12, width: "100%", padding: "13px", borderRadius: 12, minHeight: 46,
-            background: dirty ? "rgba(34,197,94,0.16)" : "var(--c-surface-2)",
-            border: `1px solid ${dirty ? "rgba(34,197,94,0.4)" : "var(--c-border)"}`,
+            background: dirty ? "rgba(var(--c-accent-rgb), 0.16)" : "var(--c-surface-2)",
+            border: `1px solid ${dirty ? "rgba(var(--c-accent-rgb), 0.4)" : "var(--c-border)"}`,
             color: dirty ? "var(--c-accent)" : "var(--c-text-faint)",
             fontFamily: MONO, fontSize: 13, letterSpacing: 1,
             cursor: busy || !dirty ? "default" : "pointer",

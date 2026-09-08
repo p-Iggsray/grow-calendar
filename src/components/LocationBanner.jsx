@@ -118,7 +118,7 @@ export default function LocationBanner({ growId, onSaved }) {
                 style={{
                   display: "flex", alignItems: "center", gap: 6,
                   padding: "9px 14px", borderRadius: 10,
-                  background: "rgba(34,197,94,0.16)", border: "1px solid rgba(34,197,94,0.45)",
+                  background: "rgba(var(--c-accent-rgb), 0.16)", border: "1px solid rgba(var(--c-accent-rgb), 0.45)",
                   color: "var(--c-accent)", fontFamily: UI, fontSize: 12.5, fontWeight: 700,
                   cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1,
                 }}>

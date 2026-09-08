@@ -32,9 +32,9 @@
 
   <!-- App name -->
   <text x="80" y="210" font-family="Georgia, 'Times New Roman', serif"
-        font-size="68" font-weight="800" fill="#e8f5e3" letter-spacing="-1">The Grow</text>
+        font-size="68" font-weight="800" fill="#e8f5e3" letter-spacing="-1">Black Cat</text>
   <text x="80" y="290" font-family="Georgia, 'Times New Roman', serif"
-        font-size="68" font-weight="800" fill="#4ade80" letter-spacing="-1">Calendar.</text>
+        font-size="68" font-weight="800" fill="#4ade80" letter-spacing="-1">Botanicals.</text>
 
   <!-- Tagline -->
   <text x="80" y="346" font-size="18" fill="#7a9a7a" letter-spacing="0.5">Your grow plan, anywhere you are.</text>

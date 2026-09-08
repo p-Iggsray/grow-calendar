@@ -18,7 +18,7 @@ function blankEntry(crop) {
 function btn(kind, disabled) {
   const base = { flex: 1, padding: "12px 14px", borderRadius: 10, fontFamily: MONO, fontSize: 12, letterSpacing: 1, cursor: disabled ? "default" : "pointer" };
   if (kind === "primary") {
-    return { ...base, background: "rgba(74,222,128,0.15)", border: "1px solid rgba(74,222,128,0.4)", color: disabled ? "var(--c-text-ghost)" : "var(--c-accent)", opacity: disabled ? 0.6 : 1 };
+    return { ...base, background: "rgba(var(--c-accent-rgb), 0.15)", border: "1px solid rgba(var(--c-accent-rgb), 0.4)", color: disabled ? "var(--c-text-ghost)" : "var(--c-accent)", opacity: disabled ? 0.6 : 1 };
   }
   return { ...base, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text-muted)" };
 }

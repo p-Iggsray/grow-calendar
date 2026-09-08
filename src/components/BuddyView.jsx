@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../lib/api.js";
+import CatMark from "./CatMark.jsx";
 import { useToday, MONTH_NAMES, DOW_SHORT, sameDay, fmtL } from "../lib/dates.js";
 import { ymd } from "../lib/api.js";
 import { dayOfGrow, stageGroup, stageLabel, stageOnDate, stagesFor } from "../lib/stageTimeline.js";
@@ -209,7 +210,7 @@ export default function BuddyView({ token }) {
 
   const stageEvents = data?.stageEvents ?? [];
   const firstDate = data?.firstDate ?? null;
-  const growName = data?.growName || "Grow Calendar";
+  const growName = data?.growName || "Black Cat Botanicals";
   const crop = cropOf(data?.survey);
   const strainNames = (data?.survey?.strains ?? []).map(s => s.name).filter(Boolean);
 
@@ -220,7 +221,7 @@ export default function BuddyView({ token }) {
         alignItems: "center", justifyContent: "center",
         background: "var(--c-bg)", padding: 24, textAlign: "center",
       }}>
-        <div style={{ fontSize: 36, marginBottom: 16 }}>🌿</div>
+        <div style={{ marginBottom: 16 }}><CatMark size={64} /></div>
         <div style={{ fontSize: 15, color: "var(--c-text-dim)", fontFamily: SERIF, lineHeight: 1.7, maxWidth: 320 }}>
           {loadErr}
         </div>
@@ -250,7 +251,7 @@ export default function BuddyView({ token }) {
           Buddy view · read only
         </div>
         <div style={{ fontSize: 22, fontWeight: 900, color: "var(--c-text)", letterSpacing: -0.5, marginBottom: 2 }}>
-          🌿 {growName}
+          {growName}
         </div>
         {strainNames.length > 0 && (
           <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)", letterSpacing: 0.5 }}>

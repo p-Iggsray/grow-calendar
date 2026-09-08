@@ -30,8 +30,8 @@ export default function Bubble({ role, text, dim, imagePreview, actions, showUnd
         <div style={{
           maxWidth: "85%", whiteSpace: "pre-wrap", lineHeight: 1.65, fontSize: 15,
           padding: "11px 14px", borderRadius: 18,
-          background: isUser ? "rgba(34,197,94,0.16)" : "rgba(255,255,255,0.05)",
-          border: `1px solid ${isUser ? "rgba(34,197,94,0.3)" : "var(--c-surface-2)"}`,
+          background: isUser ? "rgba(var(--c-accent-rgb), 0.16)" : "rgba(255,255,255,0.05)",
+          border: `1px solid ${isUser ? "rgba(var(--c-accent-rgb), 0.3)" : "var(--c-surface-2)"}`,
           color: dim ? "var(--c-text-faint)" : (isUser ? "var(--c-text)" : "var(--c-text-dim)"),
           borderBottomRightRadius: isUser ? 4 : 18,
           borderBottomLeftRadius: isUser ? 18 : 4,
@@ -57,8 +57,8 @@ export default function Bubble({ role, text, dim, imagePreview, actions, showUnd
               <span key={i} style={{
                 fontSize: 11, fontFamily: MONO,
                 color: isNote ? "#fbbf24" : "var(--c-accent)",
-                background: isNote ? "rgba(251,191,36,0.1)" : "rgba(34,197,94,0.1)",
-                border: `1px solid ${isNote ? "rgba(251,191,36,0.25)" : "rgba(34,197,94,0.25)"}`,
+                background: isNote ? "rgba(251,191,36,0.1)" : "rgba(var(--c-accent-rgb), 0.1)",
+                border: `1px solid ${isNote ? "rgba(251,191,36,0.25)" : "rgba(var(--c-accent-rgb), 0.25)"}`,
                 borderRadius: 8, padding: "4px 9px",
                 display: "inline-flex", alignItems: "center", gap: 6,
               }}>

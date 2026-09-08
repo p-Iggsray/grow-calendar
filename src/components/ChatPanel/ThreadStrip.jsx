@@ -28,8 +28,8 @@ export default function ThreadStrip({ grows, threadGrowId, activeGrowId, onSelec
             style={{
               flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5,
               padding: "5px 12px", borderRadius: 20, minHeight: 34,
-              background: isSelected ? "rgba(74,222,128,0.18)" : "var(--c-surface-1)",
-              border: `1px solid ${isSelected ? "rgba(74,222,128,0.45)" : "var(--c-border)"}`,
+              background: isSelected ? "rgba(var(--c-accent-rgb), 0.18)" : "var(--c-surface-1)",
+              border: `1px solid ${isSelected ? "rgba(var(--c-accent-rgb), 0.45)" : "var(--c-border)"}`,
               color: isSelected ? "var(--c-accent)" : "var(--c-text-muted)",
               fontFamily: MONO, fontSize: 11, letterSpacing: 0.8,
               cursor: isSelected ? "default" : "pointer",

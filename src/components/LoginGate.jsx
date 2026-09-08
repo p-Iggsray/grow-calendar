@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../lib/auth.jsx";
 import { api } from "../lib/api.js";
+import CatMark from "./CatMark.jsx";
 
 const LABEL_STYLE = {
   fontSize: 11, letterSpacing: 2, color: "var(--c-text-faint)",
@@ -101,17 +102,20 @@ export default function LoginGate() {
       }}>
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 22 }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+            <CatMark size={78} />
+          </div>
           <div style={{ fontSize: 11, letterSpacing: 4, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 6, fontFamily: "var(--font-ui)" }}>
             Grow Log
           </div>
           <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: -1, color: "var(--c-text)" }}>
-            The Grow Calendar
+            Black Cat Botanicals
           </div>
         </div>
 
         {/* Success banner */}
         {successMsg && (
-          <div style={{ fontSize: 12, color: "var(--c-accent)", lineHeight: 1.5, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 8, padding: "8px 10px", marginBottom: 12 }}>
+          <div style={{ fontSize: 12, color: "var(--c-accent)", lineHeight: 1.5, background: "rgba(var(--c-accent-rgb), 0.10)", border: "1px solid rgba(var(--c-accent-rgb), 0.28)", borderRadius: 8, padding: "8px 10px", marginBottom: 12 }}>
             {successMsg}
           </div>
         )}
@@ -143,8 +147,8 @@ export default function LoginGate() {
               disabled={submitDisabled}
               style={{
                 marginTop: 4, padding: "10px 14px", minHeight: 44,
-                background: busy ? "rgba(34,197,94,0.08)" : "rgba(34,197,94,0.15)",
-                border: "1px solid rgba(34,197,94,0.35)",
+                background: busy ? "rgba(var(--c-accent-rgb), 0.08)" : "rgba(var(--c-accent-rgb), 0.15)",
+                border: "1px solid rgba(var(--c-accent-rgb), 0.35)",
                 borderRadius: 10, color: "var(--c-accent)",
                 fontSize: 13, fontFamily: "var(--font-ui)",
                 cursor: submitDisabled ? "default" : "pointer",
@@ -199,7 +203,7 @@ function Field({ label, value, onChange, type = "text", autoComplete, autoFocus 
         autoComplete={autoComplete}
         autoFocus={autoFocus}
         style={INPUT_STYLE}
-        onFocus={e => { e.target.style.borderColor = "rgba(74,222,128,0.5)"; }}
+        onFocus={e => { e.target.style.borderColor = "rgba(var(--c-accent-rgb), 0.5)"; }}
         onBlur={e => { e.target.style.borderColor = "var(--c-border)"; }}
       />
     </label>
@@ -235,7 +239,7 @@ function PasswordField({ label = "Password", value, onChange, autoComplete, auto
           autoComplete={autoComplete}
           autoFocus={autoFocus}
           style={{ ...INPUT_STYLE, paddingRight: 44 }}
-          onFocus={e => { e.target.style.borderColor = "rgba(74,222,128,0.5)"; }}
+          onFocus={e => { e.target.style.borderColor = "rgba(var(--c-accent-rgb), 0.5)"; }}
         />
         <button
           type="button"

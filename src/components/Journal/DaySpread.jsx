@@ -208,8 +208,8 @@ export default function DaySpread({
                 onClick={() => jumpTo(k)}
                 style={{
                   flexShrink: 0, minWidth: 44, padding: "7px 9px 6px", borderRadius: 11,
-                  background: isActive ? "rgba(34,197,94,0.14)" : "var(--c-surface-1)",
-                  border: isActive ? "1px solid rgba(34,197,94,0.45)" : "1px solid var(--c-border-faint)",
+                  background: isActive ? "rgba(var(--c-accent-rgb), 0.14)" : "var(--c-surface-1)",
+                  border: isActive ? "1px solid rgba(var(--c-accent-rgb), 0.45)" : "1px solid var(--c-border-faint)",
                   cursor: "pointer",
                 }}>
                 <div style={{ fontFamily: NUM, fontSize: 13.5, color: isActive ? "var(--c-accent)" : "var(--c-text-dim)" }}>

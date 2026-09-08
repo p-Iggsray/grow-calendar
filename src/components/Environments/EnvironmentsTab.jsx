@@ -63,8 +63,8 @@ function EnvironmentCard({ grow, isActive, conditions, onOpen }) {
       className="card"
       style={{
         display: "block", width: "100%", textAlign: "left", padding: 16, cursor: "pointer",
-        border: isActive ? "1.5px solid rgba(74,222,128,0.4)" : undefined,
-        background: isActive ? "rgba(74,222,128,0.06)" : undefined,
+        border: isActive ? "1.5px solid rgba(var(--c-accent-rgb), 0.4)" : undefined,
+        background: isActive ? "rgba(var(--c-accent-rgb), 0.06)" : undefined,
         opacity: grow.status === "abandoned" ? 0.7 : 1,
       }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
@@ -173,7 +173,7 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
             style={{
               display: "flex", alignItems: "center", gap: 5, flexShrink: 0,
               padding: "9px 15px", borderRadius: 20,
-              background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)",
+              background: "rgba(var(--c-accent-rgb), 0.1)", border: "1px solid rgba(var(--c-accent-rgb), 0.3)",
               color: creating ? "var(--c-text-ghost)" : "var(--c-accent)",
               fontFamily: MONO, fontSize: 11.5, letterSpacing: 0.3, fontWeight: 600,
               cursor: creating ? "default" : "pointer", opacity: creating ? 0.6 : 1,

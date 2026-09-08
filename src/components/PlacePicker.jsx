@@ -74,7 +74,7 @@ export default function PlacePicker({ value = "", onPick, onUseMyLocation, locat
           style={{
             display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8,
             padding: "8px 13px", borderRadius: 10,
-            background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.3)",
+            background: "rgba(var(--c-accent-rgb), 0.10)", border: "1px solid rgba(var(--c-accent-rgb), 0.3)",
             color: "var(--c-accent)", fontFamily: UI, fontSize: 11.5,
             cursor: locating ? "default" : "pointer", opacity: locating ? 0.6 : 1,
           }}>

@@ -24,7 +24,7 @@ function Spinner() {
   return (
     <div style={{
       width: 40, height: 40, borderRadius: "50%",
-      border: "3px solid rgba(34,197,94,0.15)",
+      border: "3px solid rgba(var(--c-accent-rgb), 0.15)",
       borderTopColor: "var(--c-accent)",
       animation: "spin 0.9s linear infinite",
     }} />

@@ -191,7 +191,7 @@ export default function EnvironmentDetail({
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 6, marginTop: 12,
             padding: "7px 12px", borderRadius: 16,
-            background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.35)",
+            background: "rgba(var(--c-accent-rgb), 0.1)", border: "1px solid rgba(var(--c-accent-rgb), 0.35)",
             fontFamily: MONO, fontSize: 11, color: "var(--c-accent)", letterSpacing: 0.5,
           }}>
             <CalendarCheck size={13} strokeWidth={2} />
@@ -202,7 +202,7 @@ export default function EnvironmentDetail({
             type="button"
             className="touch-target"
             onClick={() => { tapHaptic(); onActivate(growId); }}
-            style={{ ...pillBtn("var(--c-accent)", "rgba(74,222,128,0.1)", "rgba(74,222,128,0.35)"), marginTop: 12, fontSize: 12, padding: "9px 15px" }}>
+            style={{ ...pillBtn("var(--c-accent)", "rgba(var(--c-accent-rgb), 0.1)", "rgba(var(--c-accent-rgb), 0.35)"), marginTop: 12, fontSize: 12, padding: "9px 15px" }}>
             <CalendarCheck size={14} strokeWidth={2} />
             Show this environment on the calendar
           </button>
@@ -237,7 +237,7 @@ export default function EnvironmentDetail({
         {/* What lives here: plants in a tent, tubs in a monotub */}
         <SectionTitle
           action={(
-            <button type="button" onClick={() => setAdding(true)} style={pillBtn("var(--c-accent)", "rgba(74,222,128,0.1)", "rgba(74,222,128,0.3)")}>
+            <button type="button" onClick={() => setAdding(true)} style={pillBtn("var(--c-accent)", "rgba(var(--c-accent-rgb), 0.1)", "rgba(var(--c-accent-rgb), 0.3)")}>
               <Plus size={13} /> {w.addUnit}
             </button>
           )}>

@@ -42,8 +42,8 @@ export function RadioGroup({ options, value, onChange }) {
             onClick={() => onChange(opt.value)}
             style={{
               padding: "9px 16px", borderRadius: 10,
-              background: sel ? "rgba(34,197,94,0.18)" : "rgba(255,255,255,0.05)",
-              border: sel ? "1.5px solid rgba(34,197,94,0.5)" : "1px solid var(--c-border-strong)",
+              background: sel ? "rgba(var(--c-accent-rgb), 0.18)" : "rgba(255,255,255,0.05)",
+              border: sel ? "1.5px solid rgba(var(--c-accent-rgb), 0.5)" : "1px solid var(--c-border-strong)",
               color: sel ? "var(--c-accent)" : "#8ab89a",
               fontFamily: MONO, fontSize: 12, cursor: "pointer",
               letterSpacing: 0.5, whiteSpace: "nowrap",

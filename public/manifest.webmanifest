@@ -1,13 +1,13 @@
 {
-  "name": "The Grow Calendar",
-  "short_name": "Grow",
+  "name": "Black Cat Botanicals",
+  "short_name": "Black Cat",
   "description": "Your grow plan, anywhere you are. Day-by-day tasks, daily notes, threats, and an AI assistant for the full season.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0e1a12",
-  "theme_color": "#0e1a12",
+  "background_color": "#0c0b0a",
+  "theme_color": "#0c0b0a",
   "icons": [
     {
       "src": "/icon-180.png",

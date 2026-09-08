@@ -28,8 +28,8 @@ export function StepTimeline({ survey, update }) {
                 onClick={() => update("currentStage", s.value)}
                 style={{
                   textAlign: "left", cursor: "pointer", padding: "13px 13px", borderRadius: 14,
-                  background: sel ? "rgba(34,197,94,0.16)" : "var(--c-surface-1)",
-                  border: `1.5px solid ${sel ? "rgba(34,197,94,0.6)" : "var(--c-surface-2)"}`,
+                  background: sel ? "rgba(var(--c-accent-rgb), 0.16)" : "var(--c-surface-1)",
+                  border: `1.5px solid ${sel ? "rgba(var(--c-accent-rgb), 0.6)" : "var(--c-surface-2)"}`,
                   display: "flex", flexDirection: "column", gap: 4, minHeight: 78,
                 }}>
                 <div style={{ fontSize: 22, lineHeight: 1 }}>{s.icon}</div>

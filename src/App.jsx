@@ -7,7 +7,6 @@ import { useJournalMonth, useRecentJournal, useStageTimeline } from "./lib/useJo
 import { api, ymd } from "./lib/api.js";
 import { buildSuggestions } from "./lib/mjSuggestions.js";
 import { useOnlineStatus } from "./lib/useOnlineStatus.js";
-import { useTheme } from "./lib/useTheme.js";
 import { hasGrowLocation } from "./lib/growProfile.js";
 import { tracksOutdoorWeather } from "./lib/growEnvironment.js";
 import { cropOf } from "./lib/crops.js";
@@ -74,7 +73,6 @@ export default function App() {
   const { user } = useAuth();
   const today    = useToday();
   const online   = useOnlineStatus();
-  const { theme, setTheme } = useTheme();
   const { grows, activeGrowId, setActiveGrowId, survey, lifecycle, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
   const lifecyclePhase = getLifecyclePhase(lifecycle);
   // The month the calendar shows - real year + month, free to roam.
@@ -373,8 +371,6 @@ export default function App() {
                 onOpenStrains={() => setShowStrains(true)}
                 onOpenGrowSettings={(growId) => { setSettingsGrowId(growId); setShowSettings(true); }}
                 onNewEnvironment={handleNewEnvironment}
-                theme={theme}
-                setTheme={setTheme}
               />
             </motion.div>
           ) : tabKey === "environments" ? (
