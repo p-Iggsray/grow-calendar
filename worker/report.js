@@ -9,9 +9,13 @@ import { parseDate } from "../src/lib/dates-core.js";
 import { loadStageTimeline } from "./stages.js";
 import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../src/lib/stageTimeline.js";
 import { growLocation, strainSummary } from "../src/lib/growProfile.js";
-import { displayUnit, formatWater, isWaterUnit, rowDisplay, unitLabel } from "../src/lib/waterUnits.js";
+import { displayUnit, formatWater, isWaterUnit } from "../src/lib/waterUnits.js";
 import { cropOf, flushTotals, words } from "../src/lib/crops.js";
 import { ensureGrowEventsSchema } from "./events.js";
+import { rowToEntry } from "./growLog.js";
+import { recordRows } from "../src/lib/dayRecord.js";
+import { noteToHtml } from "../src/lib/richText.js";
+import { weeksAndDays } from "../src/lib/dates-core.js";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -168,7 +172,19 @@ export async function getGrowReport(env, user, growId, unit = "gal") {
     eventRows = r.results ?? [];
   } catch { /* grow_events unavailable */ }
 
-  const html = renderReport({ row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows, eventRows, waterUnit });
+  // Every photo of this grow, thumbnail only. The full images run to ~700KB
+  // each and would put a 300-photo grow past 200MB, which no browser would
+  // print and most would not open. A thumbnail is 480px on its long edge,
+  // which at contact-sheet size on paper is sharper than the paper is.
+  let photoRows = [];
+  try {
+    const r = await env.DB.prepare(
+      "SELECT id, date, plant_id, thumb FROM journal_photos WHERE user_id = ? AND grow_id = ? ORDER BY date, created_at",
+    ).bind(user.id, growId).all();
+    photoRows = r.results ?? [];
+  } catch { /* no photos table yet */ }
+
+  const html = renderReport({ row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows, eventRows, photoRows, waterUnit });
 
   return new Response(html, {
     headers: {
@@ -179,7 +195,7 @@ export async function getGrowReport(env, user, growId, unit = "gal") {
 }
 
 function renderReport(ctx) {
-  const { row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows, eventRows, waterUnit } = ctx;
+  const { row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows, eventRows, photoRows = [], waterUnit } = ctx;
 
   const name = row.display_name || "My Grow";
   const status = row.status || "active";
@@ -312,6 +328,16 @@ function renderReport(ctx) {
   }
 
   // ── Day-by-day journal ───────────────────────────────────────────────────
+  // Photographs, indexed by the day they were taken. Used twice: a small strip
+  // inside each journal day, and the dated plates section further down.
+  const photosByDate = new Map();
+  for (const p of photoRows) {
+    if (!p?.thumb || !p?.date) continue;
+    if (!photosByDate.has(p.date)) photosByDate.set(p.date, []);
+    photosByDate.get(p.date).push(p);
+  }
+  const plantNameById = new Map(plants.filter((p) => p?.id).map((p) => [p.id, p.name || ""]));
+
   const byDate = new Map();
   const slot = (d) => {
     if (!byDate.has(d)) byDate.set(d, { date: d, log: null, note: null, events: [] });
@@ -320,38 +346,42 @@ function renderReport(ctx) {
   for (const r of logRows) slot(r.date).log = r;
   for (const r of noteRows) slot(r.date).note = r.body;
   for (const r of eventRows) slot(r.date).events.push(r);
+  // A day you photographed is a day with a record, even if nothing was typed
+  // on it. Without this the journal skipped it entirely and the picture only
+  // survived in the plates.
+  for (const d of photosByDate.keys()) slot(d);
   const journalDates = [...byDate.keys()].sort();
 
   const journalCards = journalDates.map(d => {
     const e = byDate.get(d);
     const stage = firstDate && d >= firstDate ? stageOnDate(stageEvents, d) : null;
 
-    // Grow-log metrics
-    const metrics = [];
-    if (e.log) {
-      const L = e.log;
-      const wp = tryArr(L.water_plants);
-      // The day's total reads in the unit that day was logged in; only a day
-      // with nothing to go on falls back to the unit the report was asked for.
-      const dayUnit = displayUnit(wp, waterUnit);
-      if (num(L.water_gal) != null) metrics.push(["Water", formatWater(num(L.water_gal), dayUnit)]);
-      if (L.feed) metrics.push(["Feed", esc(L.feed)]);
-      if (num(L.temp_high) != null || num(L.temp_low) != null) metrics.push(["Temp", `${L.temp_high ?? "?"}° / ${L.temp_low ?? "?"}°F`]);
-      if (num(L.humidity) != null) metrics.push(["Humidity", `${num(L.humidity)}%`]);
-      if (num(L.ec_in) != null || num(L.ec_out) != null) metrics.push(["EC in/out", `${L.ec_in ?? "?"} / ${L.ec_out ?? "?"}`]);
-      if (wp.length) {
-        // Each row reads in the unit it was actually logged in.
-        metrics.push(["Watered", esc(wp.map((w) => {
-          const { amount, unit } = rowDisplay(w);
-          const who = w?.plant || "plant";
-          return amount ? `${who} ${amount} ${unitLabel(unit)}` : who;
-        }).join(", "))]);
-      }
-      const tr = tryArr(L.training); if (tr.length) metrics.push(["Training", esc(tr.join(", "))]);
-      const ph = tryArr(L.plant_health); if (ph.length) metrics.push(["Plant health", esc(ph.join(", "))]);
+    // What was logged, folded by the same tested code the app's own journal
+    // page uses. The report used to fold it again here and got it wrong three
+    // ways: training and health rows are objects, so joining them printed
+    // "[object Object]", and an unattributed watering was called "plant"
+    // whatever the space grew.
+    const rows = e.log ? recordRows({ log: rowToEntry(e.log), weather: null, crop }) : [];
+    const L = e.log;
+    // EC has no home in recordRows - it is a hydro reading the day's form
+    // still takes - so it is appended rather than dropped.
+    if (L && (num(L.ec_in) != null || num(L.ec_out) != null)) {
+      rows.push({ key: "ec", label: "EC in/out", text: `${L.ec_in ?? "?"} / ${L.ec_out ?? "?"}` });
     }
-    const metricsHtml = metrics.length
-      ? `<div class="metrics">${metrics.map(([l, v]) => `<div class="metric"><span class="m-l">${esc(l)}</span><span class="m-v">${v}</span></div>`).join("")}</div>`
+    const metricsHtml = rows.length
+      ? `<div class="metrics">${rows.map((r) => {
+          const body = r.items
+            ? r.items.map((it) => `<span class="m-item">${esc(it.name)}${
+                it.amount ? `<b class="m-amt">${esc(it.amount)}</b>` : ""
+              }${it.detail ? `<span class="m-det">${esc(it.detail)}</span>` : ""}</span>`).join("")
+            : `<span class="m-item">${esc(r.text ?? "")}${
+                r.source === "forecast" ? `<span class="m-det">from the sky</span>` : ""
+              }</span>`;
+          // A value read out of the day's writing says so, the same way it
+          // does on screen, so the paper record is as honest as the app.
+          const mark = r.read ? `<span class="m-read" title="read from the day's entry">&#9679;</span>` : "";
+          return `<div class="metric"><span class="m-l">${esc(r.label)}${mark}</span><span class="m-v">${body}</span></div>`;
+        }).join("")}</div>`
       : "";
 
     // Custom calendar events on this day
@@ -360,19 +390,68 @@ function renderReport(ctx) {
           `<div class="ev"><span class="ev-time">${ev.time ? esc(ev.time) : "all day"}</span><span class="ev-title">${esc(ev.title)}</span>${ev.notes ? `<span class="ev-notes">${esc(ev.notes)}</span>` : ""}</div>`).join("")}</div>`
       : "";
 
-    // Day note
-    const noteHtml = e.note ? `<p class="daynote">${esc(e.note)}</p>` : "";
+    // The day's writing. Entries carry the editor's own markup now - headings,
+    // bold, lists - so escaping it printed the tags themselves. noteToHtml is
+    // the same whitelist sanitiser the app renders with: only b/i/u/p/br/ul/
+    // ol/li/h1..h3/font survive it, and a legacy plain-text note is escaped
+    // and keeps its line breaks.
+    const noteHtml = e.note ? `<div class="daynote">${noteToHtml(e.note)}</div>` : "";
 
-    if (!metricsHtml && !eventsHtml && !noteHtml) return "";
+    // This day's photographs, small, beside the words they belong to. The same
+    // images are set larger in the plates section; embedding is by data URL, so
+    // showing one twice costs nothing.
+    const shots = photosByDate.get(d) ?? [];
+    const stripHtml = shots.length
+      ? `<div class="jshots">${shots.map((p) =>
+          `<img class="jshot" src="${esc(p.thumb)}" alt="${esc(`${fmtLong(d)} photograph`)}" loading="lazy">`).join("")}</div>`
+      : "";
+
+    const dayNum = dayOfGrow(firstDate, d);
+    if (!metricsHtml && !eventsHtml && !noteHtml && !stripHtml) return "";
     return `<div class="jday">
-      <div class="jhead"><span class="jdate">${fmtLong(d)}</span>${stage ? chip(stage) : ""}</div>
-      ${metricsHtml}${eventsHtml}${noteHtml}
+      <div class="jhead">
+        <span class="jdate">${fmtLong(d)}</span>
+        ${dayNum != null ? `<span class="jday-n">Day ${dayNum}</span>` : ""}
+        ${stage ? chip(stage) : ""}
+      </div>
+      ${metricsHtml}${eventsHtml}${noteHtml}${stripHtml}
     </div>`;
   }).filter(Boolean).join("");
 
   const journalSection = journalCards
     ? section(`Journal · ${journalDates.length} day${journalDates.length === 1 ? "" : "s"} recorded`, journalCards)
     : section("Journal", `<p class="empty">No daily entries recorded yet.</p>`);
+
+  // ── Plates: every photograph, in the order they were taken ───────────────
+  // The point of this section is to be flicked through. Each dated block is a
+  // contact sheet of that day, headed with the date, the day of the grow and
+  // the stage it was in, so growth reads down the page without hunting for
+  // context. A block is kept whole on one page where it fits.
+  const plateDates = [...photosByDate.keys()].sort();
+  const platesSection = plateDates.length
+    ? section(`Plates · ${photoRows.length} photograph${photoRows.length === 1 ? "" : "s"}`,
+      `<p class="lede">Every photograph of this grow, oldest first, grouped by the day it was taken.</p>` +
+      plateDates.map((d) => {
+        const shots = photosByDate.get(d);
+        const stage = firstDate && d >= firstDate ? stageOnDate(stageEvents, d) : null;
+        const dayNum = dayOfGrow(firstDate, d);
+        return `<div class="plate">
+          <div class="plate-head">
+            <span class="plate-date">${fmtLong(d)}</span>
+            ${dayNum != null ? `<span class="plate-day">Day ${dayNum}</span>` : ""}
+            ${stage ? chip(stage) : ""}
+            <span class="plate-n">${shots.length} photo${shots.length === 1 ? "" : "s"}</span>
+          </div>
+          <div class="sheet">${shots.map((p) => {
+            const who = p.plant_id ? plantNameById.get(p.plant_id) : "";
+            return `<figure class="frame">
+              <img src="${esc(p.thumb)}" alt="${esc(`${fmtLong(d)}${who ? ` - ${who}` : ""}`)}" loading="lazy">
+              ${who ? `<figcaption>${esc(who)}</figcaption>` : ""}
+            </figure>`;
+          }).join("")}</div>
+        </div>`;
+      }).join(""))
+    : "";
 
   // ── Stats summary ────────────────────────────────────────────────────────
   const summaryRows = [
@@ -382,7 +461,9 @@ function renderReport(ctx) {
     tempMin != null ? ["Lowest temp recorded", `${tempMin}°F`] : null,
     tempMax != null ? ["Highest temp recorded", `${tempMax}°F`] : null,
     ["Day notes written", String(noteRows.length)],
+    photoRows.length ? ["Photographs", String(photoRows.length)] : null,
     eventRows.length ? ["Calendar events", String(eventRows.length)] : null,
+    firstDate ? ["Length of record", weeksAndDays(dayOfGrow(firstDate, ymdOf(today)) ?? 0)] : null,
   ].filter(Boolean);
   const statsSection = section("Season Stats",
     `<div class="defs">${summaryRows.map(([l, v]) =>
@@ -411,11 +492,26 @@ function renderReport(ctx) {
     </div>
     ${statStrip}
   </header>
+  <nav class="toc">
+    <h2>Contents</h2>
+    <ol>
+      ${[
+        profileSection ? "Setup &amp; Profile" : null,
+        plantsSection ? `${esc(w.Units)}` : null,
+        timelineSection ? "Stage Changes" : null,
+        phasesSection ? "Time In Each Stage" : null,
+        journalCards ? "Journal, day by day" : null,
+        platesSection ? "Plates, the photographic record" : null,
+        "Season Stats",
+      ].filter(Boolean).map((t) => `<li>${t}</li>`).join("")}
+    </ol>
+  </nav>
   ${profileSection}
   ${plantsSection}
   ${timelineSection}
   ${phasesSection}
   ${journalSection}
+  ${platesSection}
   ${statsSection}
   <footer class="foot">
     Generated ${esc(generated)} · The Grow Calendar. For educational and personal
@@ -495,13 +591,63 @@ h1{font-size:34px;line-height:1.1;margin:0 0 10px;color:var(--gd);letter-spacing
 .daynote{font-size:14px;background:#fffdf3;border:1px solid #f1e9c8;border-radius:8px;padding:8px 12px;margin:8px 0;white-space:pre-wrap;}
 .empty{color:var(--mut);font-style:italic;}
 .foot{font-size:11px;color:var(--mut);text-align:center;margin-top:30px;line-height:1.6;font-family:'Courier New',monospace;}
+/* ── The photographic record ───────────────────────────────────────────── */
+.lede{font-size:13px;color:var(--mut);margin:0 0 14px;font-style:italic;}
+.plate{margin:0 0 18px;break-inside:avoid;}
+.plate-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;
+  border-bottom:1px solid #d8e0d4;padding-bottom:5px;margin-bottom:9px;}
+.plate-date{font-weight:700;font-size:14px;}
+.plate-day,.plate-n{font-family:'Courier New',monospace;font-size:11px;color:var(--mut);}
+.plate-n{margin-left:auto;}
+.sheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;}
+.frame{margin:0;break-inside:avoid;}
+.frame img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;
+  border:1px solid #d8e0d4;border-radius:4px;background:#f2f0e8;}
+.frame figcaption{font-size:10px;color:var(--mut);margin-top:3px;text-align:center;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* The strip beside a day's words. */
+.jshots{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
+.jshot{width:74px;height:74px;object-fit:cover;border:1px solid #d8e0d4;
+  border-radius:4px;background:#f2f0e8;}
+.m-item{display:block;}
+.m-amt{font-family:'Courier New',monospace;margin-left:6px;}
+.m-det{color:#3f5a45;margin-left:6px;}
+.m-read{color:#4a7c59;font-size:8px;vertical-align:super;margin-left:3px;}
+.jday-n{font-family:'Courier New',monospace;font-size:11px;color:var(--mut);}
+/* Entry markup, set as a page rather than printed as tags. */
+.daynote h1{font-size:16px;margin:.5em 0 .2em;}
+.daynote h2{font-size:14px;margin:.5em 0 .15em;}
+.daynote ul,.daynote ol{margin:.3em 0;padding-left:22px;}
+.daynote p{margin:0 0 .4em;}
+.toc{border:1px solid #d8e0d4;border-radius:10px;padding:16px 20px;margin:0 0 18px;
+  background:#fbfaf5;}
+.toc h2{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin:0 0 8px;}
+.toc ol{margin:0;padding-left:20px;font-size:14px;line-height:1.9;}
+
 @media print{
   body{background:#fff;}
   .no-print{display:none!important;}
   main{max-width:none;padding:0;}
-  .card,.jday,.phase{break-inside:avoid;box-shadow:none;}
+  .card,.jday,.phase,.plate,.frame{break-inside:avoid;box-shadow:none;}
   .card{border-color:#d8e0d4;}
-  @page{margin:14mm;}
+  /* A journal day and its photographs stay together; a heading never ends a
+     page with nothing under it. */
+  h2{break-after:avoid;}
+  .plate-head,.jhead{break-after:avoid;}
+  .toc{break-after:page;}
+  .cover{break-after:page;}
+  /* Letter, with room for the running foot. Chrome and Safari both put the
+     page number there from the @page rule. */
+  @page{
+    size:letter;
+    margin:16mm 14mm 18mm;
+    @bottom-center{content:counter(page);font-family:'Courier New',monospace;font-size:9pt;color:#6b7f6b;}
+  }
+  /* Thumbnails print at ~1.6in, which is where a 480px source stops being the
+     limiting factor and the paper does. */
+  .sheet{grid-template-columns:repeat(4,1fr);gap:6px;}
+  .jshot{width:64px;height:64px;}
+  a{text-decoration:none;color:inherit;}
 }
 @media(max-width:520px){.def{flex-direction:column;gap:2px;}.def-l{flex-basis:auto;}}
 `;
