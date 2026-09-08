@@ -12,7 +12,6 @@ import { StepBasics } from "./StepBasics.jsx";
 import { StepStrains } from "./StepStrains.jsx";
 import { StepTimeline } from "./StepTimeline.jsx";
 import { StepSetup } from "./StepSetup.jsx";
-import { StepSupplies } from "./StepSupplies.jsx";
 import { StepReview } from "./StepReview.jsx";
 import { GeneratingScreen } from "./GeneratingScreen.jsx";
 
@@ -28,11 +27,10 @@ function stepsFor(crop) {
     { id: "strains",  title: `Your ${w.Varieties}` },
     { id: "timeline", title: "Where You're At" },
     { id: "setup",    title: "Your Setup" },
-    { id: "supplies", title: "Supplies" },
     { id: "review",   title: "Review & Create" },
   ];
 }
-const STEP_COUNT = 7;
+const STEP_COUNT = 6;
 
 export default function SetupWizard({ onComplete, onCancel, initialSurvey, growId }) {
   // Restore any autosaved draft for this grow so backing out of setup (or the
@@ -152,7 +150,6 @@ export default function SetupWizard({ onComplete, onCancel, initialSurvey, growI
             {STEPS[step].id === "strains"  && <StepStrains survey={survey} update={update} />}
             {STEPS[step].id === "timeline" && <StepTimeline survey={survey} update={update} />}
             {STEPS[step].id === "setup"    && <StepSetup survey={survey} update={update} />}
-            {STEPS[step].id === "supplies" && <StepSupplies survey={survey} update={update} />}
             {STEPS[step].id === "review"   && <StepReview survey={survey} />}
 
             {genError && (

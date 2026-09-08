@@ -21,7 +21,7 @@ import {
 } from "./constants.js";
 import { todayInET, bumpUserUsage, bumpModelUsage, readMjModelUsage, readMjUsageForUser } from "./usage.js";
 import { ensureMjThreadSchema, loadHistory, saveConversation } from "./history.js";
-import { buildGrowLogContext, buildWeatherContext, buildStatsContext, buildSupplyContext, buildGrowsContext, buildEnvContext, buildRosterContext } from "./context.js";
+import { buildGrowLogContext, buildWeatherContext, buildStatsContext, buildGrowsContext, buildEnvContext, buildRosterContext } from "./context.js";
 import { executeTool } from "./tools.js";
 
 export async function postMj(request, env, user) {
@@ -112,7 +112,6 @@ export async function postMj(request, env, user) {
     buildEnvContext(env, user.id, dayGrowId),
   ]);
 
-  const supplyContext  = buildSupplyContext(raw.survey);
   const growsContext   = buildGrowsContext(grows, activeGrowId);
 
   // Per-grow profile (location + plant counts) so MJ tailors advice without
@@ -143,7 +142,7 @@ export async function postMj(request, env, user) {
   const timelineText = buildTimelineText(timeline.events, timeline.firstDate, today);
   // The crop brief sits with the persona: it is what MJ knows, not what is
   // happening today, and it changes only when the space itself does.
-  const baseBlock = [MJ_PERSONA, "", cropBrief(raw.survey), "", timelineText, "", supplyContext]
+  const baseBlock = [MJ_PERSONA, "", cropBrief(raw.survey), "", timelineText]
     .filter(s => s !== "").join("\n");
 
   const rosterContext = buildRosterContext(raw.survey);

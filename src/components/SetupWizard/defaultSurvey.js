@@ -1,4 +1,3 @@
-import { SUPPLY_ITEMS } from "./supplyChecklist.js";
 import { defaultStage, defaultVarietyType, words } from "../../lib/crops.js";
 
 // ─── Default wizard state ───────────────────────────────────────────────────
@@ -28,6 +27,5 @@ export function defaultSurvey(crop = "cannabis") {
     experienceLevel: "beginner",
     wateringMethod: mushrooms ? "mist" : "hand",
     extraNotes: "",
-    supplies: Object.fromEntries(SUPPLY_ITEMS(w.crop).map(s => [s.id, "need_to_order"])),
   };
 }

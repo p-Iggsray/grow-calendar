@@ -5,8 +5,6 @@ export function StepReview({ survey }) {
   const crop = cropOf(survey);
   const w = words(crop);
   const mushrooms = crop === "mushrooms";
-  const have = Object.values(survey.supplies).filter(v => v === "have").length;
-  const need = Object.values(survey.supplies).filter(v => v === "need_to_order").length;
   const totalPlants = survey.strains.reduce((n, s) => n + (Number(s.count) || 1), 0);
 
   // One row per variety: "Blue Dream  ×3 · hybrid".
@@ -30,7 +28,6 @@ export function StepReview({ survey }) {
     mushrooms ? null : ["Location", survey.location || "(not set)"],
     ["Experience", survey.experienceLevel],
     [mushrooms ? "Hydration" : "Watering", survey.wateringMethod],
-    ["Supplies", `${have} have · ${need} to order`],
   ].filter(Boolean);
 
   return (

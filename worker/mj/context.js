@@ -1,7 +1,6 @@
 // @ts-check
-// System-prompt context builders: grow log, weather, stats, supplies, grows list.
+// System-prompt context builders: grow log, weather, stats, grows list.
 import { displayUnit, formatWater, rowDisplay, unitLabel } from "../../src/lib/waterUnits.js";
-import { supplyLabel } from "../../src/components/SetupWizard/supplyChecklist.js";
 import { cropOf, words } from "../../src/lib/crops.js";
 
 function tryParseArr(s) {
@@ -154,24 +153,6 @@ export function buildRosterContext(survey) {
   const w = words(cropOf(survey));
   const parts = plants.slice(0, 12).map(p => `${p.name || "Unnamed"}${p.stage ? ` [${p.stage}]` : ""}`);
   return `${w.Units.toUpperCase()} IN THIS SPACE: ${parts.join(", ")}${plants.length > 12 ? ` and ${plants.length - 12} more` : ""}.`;
-}
-
-export function buildSupplyContext(survey) {
-  if (!survey?.supplies) return "";
-  const have = [];
-  const need = [];
-  for (const [id, status] of Object.entries(survey.supplies)) {
-    // The checklist differs by crop, so the label comes from whichever list
-    // the item is actually on.
-    const label = supplyLabel(id);
-    if (status === "have") have.push(label);
-    else if (status === "need_to_order") need.push(label);
-  }
-  if (have.length === 0 && need.length === 0) return "";
-  const lines = ["GROWER'S SUPPLIES:"];
-  if (have.length > 0) lines.push(`  On hand: ${have.join(", ")}`);
-  if (need.length > 0) lines.push(`  Still need to order: ${need.join(", ")}`);
-  return lines.join("\n");
 }
 
 export function buildGrowsContext(grows, activeGrowId) {
