@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { labelFields, labelDate, LABEL_W, LABEL_H } from "../src/lib/growLabel.js";
+import { labelFields, labelDraft, cleanTerpenes, labelDate, LABEL_W, LABEL_H } from "../src/lib/growLabel.js";
 
 // A label has no room for blanks, so the rule under all of this is: a field
 // with nothing behind it is left off, never printed empty.
@@ -25,85 +25,73 @@ test("dates print as a person writes them, and junk prints as nothing", () => {
   assert.equal(labelDate("2026-13-01"), null, "an impossible month is not a date");
 });
 
-test("an empty strain still yields a printable label", () => {
-  const f = labelFields({}, {}, null);
+// ── The draft: what the app prefills, and what it leaves to the grower ──────
+
+test("the draft prefills only what the app actually knows", () => {
+  const d = labelDraft(BLUE, { growName: "Tent Two", growId: "g2" }, "2026-09-08");
+  assert.equal(d.name, "Blue Dream");
+  assert.match(d.classification, /Hybrid/);
+  assert.equal(d.harvested, "6 Sep 2026");
+  assert.equal(d.packaged, "8 Sep 2026");
+  assert.equal(d.grownIn, "Tent Two", "the plant's own space, not the strain's first");
+  // The app cannot know these, so it does not pretend to.
+  assert.equal(d.netWeight, "");
+  assert.equal(d.thc, "");
+  assert.equal(d.cbd, "");
+  assert.equal(d.batch, "");
+  assert.deepEqual(d.terpenes, []);
+});
+
+test("every printed value comes from the draft, so every one can be edited", () => {
+  const f = labelFields({
+    name: "Renamed By Hand", classification: "Indica",
+    netWeight: "7 g", thc: "18%", cbd: "2%",
+    harvested: "1 Jan 2026", packaged: "2 Jan 2026",
+    grownIn: "Somewhere else", batch: "XX-1",
+  });
+  assert.equal(f.name, "Renamed By Hand");
+  assert.equal(f.subtitle, "Indica");
+  assert.deepEqual(f.rows.map((r) => r.value),
+    ["7 g", "18%  /  2%", "1 Jan 2026", "2 Jan 2026", "Somewhere else", "XX-1"]);
+});
+
+test("flower time is gone, and batch took its place", () => {
+  const f = labelFields(labelDraft(BLUE, null, "2026-09-08"));
+  assert.ok(!f.rows.some((r) => /flower/i.test(r.label)), "a package does not print flower time");
+  const g = labelFields({ batch: "BD-260908" });
+  assert.equal(g.rows.find((r) => r.label === "Batch").value, "BD-260908");
+});
+
+test("terpenes keep their order and drop the nameless", () => {
+  const t = cleanTerpenes([
+    { name: "Myrcene", pct: "0.8%" },
+    { name: "  ", pct: "9%" },
+    { name: "Limonene" },
+  ]);
+  assert.deepEqual(t, [
+    { name: "Myrcene", pct: "0.8%" },
+    { name: "Limonene", pct: null },
+  ]);
+});
+
+test("terpenes are capped at what the band can print", () => {
+  const many = Array.from({ length: 12 }, (_, i) => ({ name: `T${i}`, pct: "1%" }));
+  assert.equal(cleanTerpenes(many).length, 6);
+  assert.deepEqual(cleanTerpenes(null), []);
+  assert.deepEqual(cleanTerpenes("nope"), []);
+});
+
+test("terpenes reach the printed spec", () => {
+  const f = labelFields({ name: "X", terpenes: [{ name: "Myrcene", pct: "0.8%" }] });
+  assert.equal(f.terpenes.length, 1);
+  assert.equal(f.terpenes[0].name, "Myrcene");
+});
+
+test("an empty draft still prints something valid", () => {
+  const f = labelFields({});
   assert.equal(f.name, "Unnamed");
   assert.deepEqual(f.rows, []);
-  assert.equal(f.rating, 0);
+  assert.deepEqual(f.terpenes, []);
   assert.equal(f.note, null);
-});
-
-test("fields with nothing behind them are left off, not printed empty", () => {
-  const f = labelFields({ name: "Mystery", crop: "cannabis" }, {}, null);
-  assert.equal(f.rows.length, 0, "no weight, no potency, no dates, no rows");
-  const g = labelFields(BLUE, { netWeight: "3.5 g" }, "2026-09-08");
-  assert.ok(g.rows.some((r) => r.label === "Net weight"));
-  assert.ok(!g.rows.some((r) => r.label === "THC"), "no potency typed, so no potency row");
-});
-
-test("potency reads as one row when both are given and one when not", () => {
-  const both = labelFields(BLUE, { thc: "22.4%", cbd: "0.1%" }, null);
-  assert.equal(both.rows.find((r) => r.label === "THC / CBD").value, "22.4%  /  0.1%");
-  const thcOnly = labelFields(BLUE, { thc: "22.4%" }, null);
-  assert.equal(thcOnly.rows.find((r) => r.label === "THC").value, "22.4%");
-  const cbdOnly = labelFields(BLUE, { cbd: "8%" }, null);
-  assert.equal(cbdOnly.rows.find((r) => r.label === "CBD").value, "8%");
-});
-
-test("rows come out in the order a label is read", () => {
-  const f = labelFields(BLUE, { netWeight: "3.5 g", thc: "22%", cbd: "0.1%" }, "2026-09-08");
-  assert.deepEqual(f.rows.map((r) => r.label),
-    ["Net weight", "THC / CBD", "Harvested", "Packaged", "Grown in", "Flower time"]);
-});
-
-test("the kind line never says photoperiod twice", () => {
-  const f = labelFields({ name: "X", crop: "cannabis", type: "photo", photo: true }, {}, null);
-  assert.equal(f.subtitle.split("Photoperiod").length - 1, 1);
-});
-
-test("a tub is labelled in mushroom words and never claims a flower time", () => {
-  const f = labelFields(
-    { name: "Golden Teacher", crop: "mushrooms", type: "cube", flowerWeeks: 4, lastGrown: "2026-09-06" },
-    {}, "2026-09-08",
-  );
-  assert.match(f.subtitle, /Mushrooms/);
-  assert.ok(!f.rows.some((r) => r.label === "Flower time"), "a tub does not flower");
-  assert.match(f.subtitle, /Cubensis/);
-});
-
-test("ratings are clamped to whole stars, and zero means unrated", () => {
-  assert.equal(labelFields({ rating: 4.4 }, {}, null).rating, 4);
-  assert.equal(labelFields({ rating: 99 }, {}, null).rating, 5);
-  assert.equal(labelFields({ rating: -3 }, {}, null).rating, 0);
-  assert.equal(labelFields({ rating: null }, {}, null).rating, 0);
-});
-
-test("long values are cut rather than allowed to run off the stock", () => {
-  const f = labelFields(
-    { name: "N".repeat(200), note: "x".repeat(500), grows: [{ growName: "G".repeat(90) }] },
-    { netWeight: "w".repeat(90) }, null,
-  );
-  assert.ok(f.name.length <= 40);
-  assert.ok(f.note.length <= 150);
-  assert.ok(f.rows.find((r) => r.label === "Net weight").value.length <= 24);
-  assert.ok(f.rows.find((r) => r.label === "Grown in").value.length <= 28);
-});
-
-test("whitespace-only input counts as absent", () => {
-  const f = labelFields({ name: "  ", note: "   " }, { netWeight: "  ", thc: "\n" }, null);
-  assert.equal(f.name, "Unnamed");
-  assert.equal(f.note, null);
-  assert.deepEqual(f.rows, []);
-});
-
-test("the most recent space is the one named on the label", () => {
-  const f = labelFields(
-    { ...BLUE, grows: [{ growName: "Old Tent" }, { growName: "Tent Two" }] }, {}, null,
-  );
-  assert.equal(f.rows.find((r) => r.label === "Grown in").value, "Tent Two");
-});
-
-test("an explicit note beats the strain's own", () => {
-  assert.equal(labelFields(BLUE, { note: "Batch note" }, null).note, "Batch note");
-  assert.equal(labelFields(BLUE, {}, null).note, BLUE.note);
+  assert.deepEqual(labelFields().rows, []);
 });

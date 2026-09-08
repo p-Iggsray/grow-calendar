@@ -110,7 +110,7 @@ export function buildStrainLibrary(grows, entries) {
     let s = byKey.get(key);
     if (!s) {
       s = {
-        key, name: "", plants: [], grows: [],
+        key, name: "", plants: [], roster: [], grows: [],
         // What kind of thing this is, taken from the space that grew it. A row
         // that only exists because it was rated years ago has no space to ask,
         // and every one of those predates mushrooms.
@@ -152,6 +152,17 @@ export function buildStrainLibrary(grows, entries) {
       s.neverGrown = false;
       s.crop = growCrop;
       s.plants.push(plant);
+      // A slim roster the counting list cannot serve: it survives past the
+      // delete below, and each entry knows which space it grew in, which is
+      // what a label needs to point a code at one plant rather than a name.
+      s.roster.push({
+        id: plant.id ?? null,
+        name: plant.name ?? "",
+        stage: plant.stage ?? null,
+        status: plant.status ?? "growing",
+        growId: grow.id,
+        growName: grow.displayName || "Untitled space",
+      });
       s.plantCount += 1;
       const date = typeof plant.createdAt === "string" ? plant.createdAt.slice(0, 10) : growStart;
       if (date) {
@@ -198,7 +209,7 @@ export function buildStrainLibrary(grows, entries) {
       s.flowerWeeks = normalizeFlowerWeeks(commonest(s.plants.map((p) => p.flowerWeeks)));
     }
     s.grows.sort((a, b) => String(b.date ?? "").localeCompare(String(a.date ?? "")));
-    delete s.plants;   // the caller wants counts, not the roster
+    delete s.plants;   // the counting copy goes; s.roster is what callers get
     list.push(s);
   }
 

@@ -158,6 +158,29 @@ export default function App() {
     openJournalAt(date, { push: false });
   }, [survey, openJournalAt]);
 
+  // ?plant=<id>&grow=<growId> opens that one plant's record. This is what a
+  // print label's code points at, so scanning a jar lands on the plant inside
+  // it rather than on the app's front door. The space is switched first,
+  // because a plant id means nothing outside the space that holds it.
+  const plantLinkApplied = useRef(false);
+  useEffect(() => {
+    if (plantLinkApplied.current || !survey) return;
+    const url = new URL(window.location.href);
+    const plantId = url.searchParams.get("plant");
+    const wantGrow = url.searchParams.get("grow");
+    if (!plantId) return;
+    if (wantGrow && grows.some((g) => g.id === wantGrow)) {
+      if (wantGrow !== activeGrowId) { setActiveGrowId(wantGrow); return; }
+    }
+    plantLinkApplied.current = true;
+    setPlantsOpenId(plantId);
+    setActiveTab("environments");
+    const clean = new URL(window.location.href);
+    clean.searchParams.delete("plant");
+    clean.searchParams.delete("grow");
+    window.history.replaceState(window.history.state, "", clean.pathname + clean.search);
+  }, [survey, grows, activeGrowId, setActiveGrowId]);
+
   // Lock body scroll while chat is open.
   useEffect(() => {
     if (!chatOpen) return;

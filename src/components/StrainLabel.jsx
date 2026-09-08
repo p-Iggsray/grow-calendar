@@ -1,80 +1,104 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Download, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { X, Download, Loader2, Plus, Trash2 } from "lucide-react";
 import Portal from "./Portal.jsx";
 import { qrMatrix } from "../lib/qr.js";
-import { drawLabel, labelFields, LABEL_W, LABEL_H } from "../lib/growLabel.js";
+import { drawLabel, labelDraft, labelFields, LABEL_W, LABEL_H } from "../lib/growLabel.js";
 import { photoFileFrom, savePhotoFile, saveOutcomeMessage } from "../lib/savePhoto.js";
 import { ymd } from "../lib/api.js";
 import { tapHaptic } from "../lib/haptics.js";
 
-// A print label for a jar or a bag: six by four, landscape, black on white.
+// A print label for the jar a plant ends up in.
 //
-// What you see is exactly what is saved. The preview is the same canvas the
-// file comes from, shown small, so there is no second renderer that could
-// drift from the real one.
+// Everything on it is editable. The app fills in what it knows - the name, the
+// classification, the harvest date, the space it grew in - and then gets out of
+// the way, because a label is a claim about one specific jar and only the
+// person holding it knows the weight, the potency or the day it was packed.
 //
-// The file is built as you type rather than when you tap. The OS only opens
-// its save sheet while the tap is still counted as user activation, and a
-// single await in front of the call spends it - the same reason the photo
-// viewer prepares its file ahead of time.
+// The code points at ONE plant, not at the strain, which is why there is a
+// picker whenever a strain has been grown more than once. Scanning a jar should
+// open the record of what is in that jar.
+//
+// What you see is exactly what is saved: the preview is the same canvas the
+// file comes from. The file is built as you type rather than when you tap,
+// because the OS only opens its save sheet while the tap still counts as user
+// activation, and a single await in front of the call spends it.
 
 const UI = "var(--font-ui)";
 
-function Field({ label, value, onChange, placeholder, hint }) {
+const inputStyle = {
+  background: "var(--c-input-bg)", color: "var(--c-text)",
+  border: "1px solid var(--c-border-strong)", borderRadius: 9,
+  padding: "10px 11px", fontSize: 16, fontFamily: UI, outline: "none",
+  width: "100%", boxSizing: "border-box",
+};
+const labelStyle = {
+  fontFamily: UI, fontSize: 10.5, fontWeight: 700, letterSpacing: 1.1,
+  textTransform: "uppercase", color: "var(--c-text-muted)",
+};
+
+function Field({ label, value, onChange, placeholder, flex = 1 }) {
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1, minWidth: 0 }}>
-      <span style={{
-        fontFamily: UI, fontSize: 10.5, fontWeight: 700, letterSpacing: 1.1,
-        textTransform: "uppercase", color: "var(--c-text-muted)",
-      }}>
-        {label}
-      </span>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        style={{
-          background: "var(--c-input-bg)", color: "var(--c-text)",
-          border: "1px solid var(--c-border-strong)", borderRadius: 9,
-          padding: "10px 11px", fontSize: 16, fontFamily: UI, outline: "none",
-          width: "100%", boxSizing: "border-box",
-        }}
-      />
-      {hint && (
-        <span style={{ fontFamily: UI, fontSize: 10.5, color: "var(--c-text-ghost)" }}>{hint}</span>
-      )}
+    <label style={{ display: "flex", flexDirection: "column", gap: 5, flex, minWidth: 0 }}>
+      <span style={labelStyle}>{label}</span>
+      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={inputStyle} />
     </label>
   );
 }
 
 export default function StrainLabel({ strain, onClose }) {
   const canvasRef = useRef(null);
-  const [netWeight, setNetWeight] = useState("");
-  const [thc, setThc] = useState("");
-  const [cbd, setCbd] = useState("");
+  const roster = useMemo(
+    () => (strain?.roster ?? []).filter((p) => p?.id),
+    [strain],
+  );
+  // Which plant this jar came from. The code, and the space named on the
+  // label, both follow it.
+  const [plantId, setPlantId] = useState(() => roster[roster.length - 1]?.id ?? null);
+  const plant = roster.find((p) => p.id === plantId) ?? roster[roster.length - 1] ?? null;
+
+  const [draft, setDraft] = useState(() => labelDraft(strain, plant, ymd(new Date())));
   const [file, setFile] = useState(null);
   const [state, setState] = useState("");
   const [error, setError] = useState(null);
 
-  const filename = `${(strain?.name || "strain").replace(/[^\w-]+/g, "-").toLowerCase()}-label.png`;
+  const set = (k, v) => setDraft((d) => ({ ...d, [k]: v }));
+  const setTerp = (i, k, v) => setDraft((d) => {
+    const terpenes = [...(d.terpenes ?? [])];
+    terpenes[i] = { ...terpenes[i], [k]: v };
+    return { ...d, terpenes };
+  });
+  const addTerp = () => setDraft((d) => ({ ...d, terpenes: [...(d.terpenes ?? []), { name: "", pct: "" }] }));
+  const removeTerp = (i) => setDraft((d) => {
+    const terpenes = [...(d.terpenes ?? [])];
+    terpenes.splice(i, 1);
+    return { ...d, terpenes };
+  });
 
-  // Redraw, then build the file the save button will hand over. Debounced, so
-  // a fast typist is not encoding a 1800x1200 PNG on every keystroke.
+  // Switching plant refreshes only what the plant decides, so anything already
+  // typed by hand survives the change.
+  useEffect(() => {
+    if (!plant) return;
+    setDraft((d) => ({ ...d, grownIn: plant.growName ?? d.grownIn }));
+  }, [plant]);
+
+  const filename = `${(draft.name || "label").replace(/[^\w-]+/g, "-").toLowerCase()}-label.png`;
+
   const render = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const spec = labelFields(strain, { netWeight, thc, cbd }, ymd(new Date()));
-    // The code carries a link back to this strain, so scanning a jar opens its
-    // page. A name too long for version 10 simply gets no code rather than a
-    // broken one.
-    const url = `${window.location.origin}/?strain=${encodeURIComponent(strain?.name ?? "")}`;
-    drawLabel(canvas, spec, qrMatrix(url));
+    const spec = labelFields(draft);
+    // One plant, in its own space. Without the space a plant id means nothing,
+    // so both travel in the link.
+    const link = plant?.id
+      ? `${window.location.origin}/?plant=${encodeURIComponent(plant.id)}&grow=${encodeURIComponent(plant.growId ?? "")}`
+      : `${window.location.origin}/?strain=${encodeURIComponent(draft.name ?? "")}`;
+    drawLabel(canvas, spec, qrMatrix(link));
     setFile(null);
     canvas.toBlob((blob) => {
       if (!blob) return;
       photoFileFrom(blob, filename).then(setFile).catch(() => setFile(null));
     }, "image/png");
-  }, [strain, netWeight, thc, cbd, filename]);
+  }, [draft, plant, filename]);
 
   useEffect(() => {
     const t = setTimeout(render, 180);
@@ -93,6 +117,7 @@ export default function StrainLabel({ strain, onClose }) {
   }
 
   const message = saveOutcomeMessage(state, error);
+  const terpenes = draft.terpenes ?? [];
 
   return (
     <Portal>
@@ -111,10 +136,10 @@ export default function StrainLabel({ strain, onClose }) {
             width: "100%", maxWidth: 560, maxHeight: "92vh", overflowY: "auto",
             background: "var(--c-panel-bg)", border: "1px solid var(--c-border-strong)",
             borderTopLeftRadius: 20, borderTopRightRadius: 20,
-            padding: `14px 16px calc(18px + env(safe-area-inset-bottom, 0px))`,
+            padding: "14px 16px calc(18px + env(safe-area-inset-bottom, 0px))",
           }}>
           <div className="sheet-handle" aria-hidden="true" />
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
             <span style={{ flex: 1, fontFamily: UI, fontSize: 17, fontWeight: 750, color: "var(--c-text)" }}>
               Print label
             </span>
@@ -130,10 +155,6 @@ export default function StrainLabel({ strain, onClose }) {
               <X size={16} strokeWidth={2.2} />
             </button>
           </div>
-          <p style={{ fontFamily: UI, fontSize: 11.5, color: "var(--c-text-faint)", margin: "0 0 12px", lineHeight: 1.5 }}>
-            Six by four inches, landscape, black on white at 300dpi. Saved to your
-            photos so you can print it from there.
-          </p>
 
           {/* The preview IS the file. */}
           <div style={{
@@ -145,18 +166,121 @@ export default function StrainLabel({ strain, onClose }) {
               width={LABEL_W}
               height={LABEL_H}
               style={{ width: "100%", height: "auto", display: "block" }}
-              aria-label={`Label preview for ${strain?.name ?? "this strain"}`}
+              aria-label={`Label preview for ${draft.name || "this strain"}`}
             />
           </div>
 
-          <div style={{ display: "flex", gap: 9, marginTop: 14 }}>
-            <Field label="Net weight" value={netWeight} onChange={setNetWeight} placeholder="3.5 g" />
-            <Field label="THC" value={thc} onChange={setThc} placeholder="22.4%" />
-            <Field label="CBD" value={cbd} onChange={setCbd} placeholder="0.1%" />
+          {/* Which plant this jar holds. The code follows this choice. */}
+          {roster.length > 1 && (
+            <div style={{ marginTop: 14 }}>
+              <span style={{ ...labelStyle, display: "block", marginBottom: 6 }}>This jar came from</span>
+              <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+                {roster.map((p) => {
+                  const on = p.id === plantId;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => { tapHaptic(); setPlantId(p.id); }}
+                      aria-pressed={on}
+                      style={{
+                        padding: "8px 12px", borderRadius: 14, cursor: "pointer",
+                        background: on ? "rgba(74,222,128,0.16)" : "var(--c-surface-1)",
+                        border: `1px solid ${on ? "rgba(74,222,128,0.5)" : "var(--c-border-strong)"}`,
+                        color: on ? "var(--c-accent)" : "var(--c-text-muted)",
+                        fontFamily: UI, fontSize: 12, fontWeight: on ? 700 : 500,
+                      }}>
+                      {p.name || "Unnamed"}
+                      <span style={{ opacity: 0.7 }}>{`  ·  ${p.growName}`}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: 14 }}>
+            <Field label="Strain name" value={draft.name} onChange={(v) => set("name", v)} placeholder="Blue Dream" />
+            <Field label="Classification" value={draft.classification} onChange={(v) => set("classification", v)} placeholder="Hybrid · Photoperiod · Cannabis" />
+            <div style={{ display: "flex", gap: 9 }}>
+              <Field label="Net weight" value={draft.netWeight} onChange={(v) => set("netWeight", v)} placeholder="3.5 g" />
+              <Field label="THC" value={draft.thc} onChange={(v) => set("thc", v)} placeholder="22.4%" />
+              <Field label="CBD" value={draft.cbd} onChange={(v) => set("cbd", v)} placeholder="0.1%" />
+            </div>
+            <div style={{ display: "flex", gap: 9 }}>
+              <Field label="Harvested" value={draft.harvested} onChange={(v) => set("harvested", v)} placeholder="6 Sep 2026" />
+              <Field label="Packaged" value={draft.packaged} onChange={(v) => set("packaged", v)} placeholder="8 Sep 2026" />
+            </div>
+            <div style={{ display: "flex", gap: 9 }}>
+              <Field label="Grown in" value={draft.grownIn} onChange={(v) => set("grownIn", v)} placeholder="Tent One" />
+              <Field label="Batch / lot" value={draft.batch} onChange={(v) => set("batch", v)} placeholder="BD-260908" />
+            </div>
+
+            {/* Terpenes, as many as the label has room for. */}
+            <div>
+              <span style={{ ...labelStyle, display: "block", marginBottom: 6 }}>Terpenes</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                {terpenes.map((t, i) => (
+                  <div key={i} style={{ display: "flex", gap: 7, alignItems: "center" }}>
+                    <input
+                      value={t.name ?? ""}
+                      onChange={(e) => setTerp(i, "name", e.target.value)}
+                      placeholder="Myrcene"
+                      style={{ ...inputStyle, flex: 2 }}
+                      aria-label={`Terpene ${i + 1} name`}
+                    />
+                    <input
+                      value={t.pct ?? ""}
+                      onChange={(e) => setTerp(i, "pct", e.target.value)}
+                      placeholder="0.8%"
+                      style={{ ...inputStyle, flex: 1 }}
+                      aria-label={`Terpene ${i + 1} percentage`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeTerp(i)}
+                      aria-label={`Remove terpene ${i + 1}`}
+                      style={{
+                        background: "none", border: "1px solid var(--c-border)", borderRadius: 8,
+                        color: "var(--c-text-ghost)", cursor: "pointer", padding: 8, flexShrink: 0,
+                      }}>
+                      <Trash2 size={13} strokeWidth={2} />
+                    </button>
+                  </div>
+                ))}
+                {terpenes.length < 6 && (
+                  <button
+                    type="button"
+                    onClick={addTerp}
+                    style={{
+                      padding: "10px", borderRadius: 9, cursor: "pointer",
+                      background: "none", border: "1px dashed var(--c-border-strong)",
+                      color: "var(--c-text-ghost)", fontFamily: UI, fontSize: 11.5,
+                      fontWeight: 600, letterSpacing: 0.6,
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    }}>
+                    <Plus size={12} strokeWidth={2.5} />
+                    ADD A TERPENE
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <span style={labelStyle}>Note along the foot</span>
+              <textarea
+                value={draft.note}
+                onChange={(e) => set("note", e.target.value)}
+                rows={2}
+                placeholder="Sweet berry nose, heavy yield."
+                style={{ ...inputStyle, resize: "vertical", lineHeight: 1.5 }}
+              />
+            </label>
           </div>
-          <p style={{ fontFamily: UI, fontSize: 10.5, color: "var(--c-text-ghost)", margin: "8px 0 0", lineHeight: 1.5 }}>
-            Anything you leave blank is left off the label rather than printed empty.
-            The strain, its type, the harvest date and your rating come from the app.
+
+          <p style={{ fontFamily: UI, fontSize: 10.5, color: "var(--c-text-ghost)", margin: "10px 0 0", lineHeight: 1.5 }}>
+            Anything left blank is left off the label rather than printed empty.
+            Six by four inches, landscape, black on white at 300dpi.
           </p>
 
           <button
@@ -164,7 +288,7 @@ export default function StrainLabel({ strain, onClose }) {
             onClick={save}
             disabled={!file || state === "saving"}
             style={{
-              width: "100%", marginTop: 14, padding: "14px", borderRadius: 12,
+              width: "100%", marginTop: 13, padding: "14px", borderRadius: 12,
               background: file ? "var(--c-accent)" : "var(--c-surface-2)",
               border: "none", cursor: file ? "pointer" : "default",
               color: file ? "#04220f" : "var(--c-text-ghost)",

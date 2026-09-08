@@ -36,17 +36,15 @@ function clean(v, max = 60) {
 }
 
 /**
- * Everything the label prints, in the order it prints it.
+ * The label's fields, prefilled from what the app knows.
  *
- * A field with nothing behind it is left out rather than printed empty: a label
- * reading "THC: -" is worse than a label that does not mention THC, and on a
- * four by six there is no room to spend on blanks.
+ * This is a draft, not the finished thing: every value is a plain string the
+ * grower can edit before printing, because a label is a claim about a specific
+ * jar and only the person holding it knows the weight, the potency, or which
+ * day it actually got packed.
  */
-export function labelFields(strain, extras = {}, todayKey = null) {
+export function labelDraft(strain, plant, todayKey) {
   const w = words(strain?.crop);
-  const name = clean(strain?.name, 40) ?? "Unnamed";
-
-  // The line under the name: what kind of thing this is.
   const kind = [
     VARIETY_WORD[strain?.type] ?? null,
     strain?.crop === "mushrooms" ? null
@@ -54,33 +52,59 @@ export function labelFields(strain, extras = {}, todayKey = null) {
       : strain?.photo === true ? "Photoperiod" : null,
     w.cropLabel,
   ].filter(Boolean);
-  // "Photoperiod" can arrive from both type and the photo flag; say it once.
-  const subtitle = [...new Set(kind)].join("  ·  ");
+  return {
+    name: clean(strain?.name, 40) ?? "",
+    // "Photoperiod" can arrive from both the type and the photo flag; once is
+    // enough on a label.
+    classification: [...new Set(kind)].join("  ·  "),
+    netWeight: "",
+    thc: "",
+    cbd: "",
+    terpenes: [],
+    harvested: labelDate(plant?.harvestedOn ?? strain?.lastGrown) ?? "",
+    packaged: labelDate(todayKey) ?? "",
+    grownIn: clean(plant?.growName ?? strain?.grows?.[0]?.growName, 28) ?? "",
+    batch: "",
+    note: clean(strain?.note, 150) ?? "",
+  };
+}
 
+/** A terpene row is only worth printing once it has a name. */
+export function cleanTerpenes(list) {
+  return (Array.isArray(list) ? list : [])
+    .map((t) => ({ name: clean(t?.name, 22), pct: clean(t?.pct, 8) }))
+    .filter((t) => t.name)
+    .slice(0, 6);
+}
+
+/**
+ * The draft as the label prints it.
+ *
+ * A field with nothing behind it is left out rather than printed empty: a label
+ * reading "THC: -" is worse than one that does not mention THC, and on a four
+ * by six there is no room to spend on blanks.
+ */
+export function labelFields(draft = {}) {
   const rows = [];
   const push = (label, value) => { if (value) rows.push({ label, value }); };
 
-  push("Net weight", clean(extras.netWeight, 24));
-  const thc = clean(extras.thc, 12);
-  const cbd = clean(extras.cbd, 12);
+  push("Net weight", clean(draft.netWeight, 24));
+  const thc = clean(draft.thc, 12);
+  const cbd = clean(draft.cbd, 12);
   if (thc && cbd) push("THC / CBD", `${thc}  /  ${cbd}`);
   else if (thc) push("THC", thc);
   else if (cbd) push("CBD", cbd);
-
-  push("Harvested", labelDate(strain?.lastGrown));
-  push("Packaged", labelDate(todayKey));
-  push("Grown in", clean(strain?.grows?.[strain.grows.length - 1]?.growName, 28));
-  if (strain?.crop !== "mushrooms" && Number.isFinite(Number(strain?.flowerWeeks)) && Number(strain.flowerWeeks) > 0) {
-    push("Flower time", `${Number(strain.flowerWeeks)} weeks`);
-  }
+  push("Harvested", clean(draft.harvested, 24));
+  push("Packaged", clean(draft.packaged, 24));
+  push("Grown in", clean(draft.grownIn, 28));
+  push("Batch", clean(draft.batch, 24));
 
   return {
-    name,
-    subtitle,
+    name: clean(draft.name, 40) ?? "Unnamed",
+    subtitle: clean(draft.classification, 80) ?? "",
     rows,
-    rating: Math.max(0, Math.min(5, Math.round(Number(strain?.rating) || 0))),
-    note: clean(extras.note ?? strain?.note, 150),
-    qrText: clean(extras.qrText, 200),
+    terpenes: cleanTerpenes(draft.terpenes),
+    note: clean(draft.note, 150),
   };
 }
 
@@ -104,20 +128,6 @@ function drawQr(ctx, matrix, x, y, box) {
     }
   }
   return { side, quiet };
-}
-
-// A five-pointed star, filled or outlined, for the rating.
-function star(ctx, cx, cy, r, filled) {
-  ctx.beginPath();
-  for (let i = 0; i < 10; i++) {
-    const rad = i % 2 === 0 ? r : r * 0.45;
-    const a = (Math.PI / 5) * i - Math.PI / 2;
-    const x = cx + Math.cos(a) * rad;
-    const y = cy + Math.sin(a) * rad;
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-  if (filled) ctx.fill(); else { ctx.lineWidth = 5; ctx.stroke(); }
 }
 
 // Shrink a line until it fits the width it is given, rather than letting a long
@@ -170,20 +180,15 @@ export function drawLabel(canvas, spec, matrix) {
     ctx.fillText(spec.subtitle.toUpperCase(), PAD, y);
   }
 
-  // The rating, as stars, only when it was actually rated.
-  if (spec.rating > 0) {
-    y += 58;
-    for (let i = 0; i < 5; i++) star(ctx, PAD + 20 + i * 54, y - 8, 22, i < spec.rating);
-  }
-
   // The table stretches to fill whatever is left between the head and the
   // foot, rather than sitting at a fixed pitch and leaving a quarter of the
   // stock blank underneath. Two columns, label above value, so a long value
   // never collides with its own label.
-  const tableTop = y + 82;
+  const tableTop = y + 76;
   const colW = Math.floor(textWidth / 2);
   const noteRoom = spec.note ? 90 : 30;
-  const tableBottom = LABEL_H - PAD - 60 - noteRoom;
+  const terpRoom = spec.terpenes.length ? 108 : 0;
+  const tableBottom = LABEL_H - PAD - 60 - noteRoom - terpRoom;
   const lines = Math.max(1, Math.ceil(spec.rows.length / 2));
   const pitch = Math.max(112, Math.min(190, Math.floor((tableBottom - tableTop) / lines)));
   spec.rows.forEach((row, i) => {
@@ -197,13 +202,28 @@ export function drawLabel(canvas, spec, matrix) {
     ctx.fillRect(cx, cy + 78, colW - 40, 2);
   });
 
+  // Terpenes, in their own banded row the way a dispensary package prints
+  // them: the name, then what it measured, across one line.
+  if (spec.terpenes.length) {
+    const bandTop = tableTop + lines * pitch + 6;
+    ctx.fillRect(PAD, bandTop, textWidth - 40, 3);
+    ctx.font = `700 24px ${UI}`;
+    ctx.fillText("TERPENES", PAD, bandTop + 38);
+    const text = spec.terpenes
+      .map((t) => (t.pct ? `${t.name} ${t.pct}` : t.name))
+      .join("   ·   ");
+    const px = fitText(ctx, text, textWidth - 40, 38, MONO, 700, 18);
+    ctx.font = `700 ${px}px ${MONO}`;
+    ctx.fillText(text, PAD, bandTop + 84);
+  }
+
   // The QR, with a caption under it so nobody has to guess what it is for.
   if (matrix) {
     drawQr(ctx, matrix, qrX, PAD + 90, qrBox);
     ctx.font = `600 22px ${UI}`;
     ctx.textAlign = "center";
-    ctx.fillText("SCAN FOR THE FULL", qrX + qrBox / 2, PAD + 90 + qrBox + 40);
-    ctx.fillText("GROW RECORD", qrX + qrBox / 2, PAD + 90 + qrBox + 70);
+    ctx.fillText("SCAN FOR THIS", qrX + qrBox / 2, PAD + 90 + qrBox + 40);
+    ctx.fillText("PLANT\u2019S RECORD", qrX + qrBox / 2, PAD + 90 + qrBox + 70);
     ctx.textAlign = "left";
   }
 
