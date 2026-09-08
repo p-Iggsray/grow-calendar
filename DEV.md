@@ -62,7 +62,7 @@ All users hit `gemini-2.5-flash` via the free-tier Generative Language API, usin
 
 ### Usage tracking and the in-chat usage bar
 
-There is no per-user daily cap. Instead, each call increments the `mj_usage` D1 table and the MJ chat header shows a small usage bar that reflects today's aggregate request count against `GEMINI_DAILY_LIMIT` (defined in `worker/mj.js`, currently `1500` — the documented Gemini API free-tier RPD for `gemini-2.5-flash`). Bump the constant if Google changes the limit.
+There is no per-user daily cap. Instead, each call increments the `mj_usage` D1 table and the MJ chat header shows a small usage bar that reflects today's aggregate request count against `GEMINI_DAILY_LIMIT` (defined in `worker/limits.js`, currently `1500`, the documented Gemini API free-tier RPD for `gemini-2.5-flash`). Bump the constant if Google changes the limit.
 
 The bar is fed by:
 
@@ -207,12 +207,12 @@ npx wrangler d1 execute grow-calendar-db --remote --command="UPDATE users SET ro
 
 ```
 src/                              Frontend (React)
-  main.jsx                        Entry. AuthProvider + Root → LoginGate or App.
+  main.jsx                        Entry. AuthProvider + Root, then LoginGate or App.
   App.jsx                         Authenticated app shell. Lazy-loads heavy panels (chat, wizard, admin, stats, map).
   styles.css                      Responsive layout breakpoints + scrollbar styling.
   lib/
     dates-core.js / dates.js      Pure date helpers; dates.js adds the useToday hook.
-    growData.js                   Barrel for lib/growdata/ — PHASES, THREATS, getPhase, getDetail, milestones.
+    growData.js                   Barrel for lib/growdata/: PHASES, THREATS, getPhase, getDetail, milestones.
     growdata/                     Plan engine modules: phases, threats, phase math, milestones, detail generator.
     api.js                        fetch wrappers for /api/*.
     auth.jsx                      AuthProvider context + useAuth hook.
@@ -231,7 +231,7 @@ worker/                           Backend (Cloudflare Worker)
   checkoffs.js, notes.js,         One module per resource: GET/PUT handlers + helpers.
   growLog.js, grows.js, plan.js,
   planSetup.js, stats.js, share.js
-  mj.js                           Barrel for worker/mj/ — POST /api/mj, usage, history, undo.
+  mj.js                           Barrel for worker/mj/: POST /api/mj, usage, history, undo.
   mj/                             MJ modules: chat handler, context builders, tool executor, usage, history, undo.
   mj-logic.js                     Pure MJ helpers (merge checkoffs, append note, day view) + tool schemas.
   providers/gemini.js             Gemini API adapter (request shaping, SSE parsing).
@@ -240,10 +240,13 @@ worker/                           Backend (Cloudflare Worker)
 public/
   icon.svg                        App icon (PWA, favicon, apple-touch-icon).
   manifest.webmanifest            PWA manifest.
-  sw.js                           Service worker: runtime caching + push notifications.
+  sw.js                           Service worker: caches the app shell, passes API calls through.
+  icon-32.png, icon-180.png,
+  icon-192.png, icon-512.png      Rasterised launcher icons. Regenerate with node scripts/icons.mjs.
 assets/
   banner.svg                      Animated README hero banner.
-  divider.svg                     Animated README section divider.
+  social-preview.svg              GitHub social preview card.
+  shots/                          Real screenshots used in the README.
 
 schema.sql                        D1 schema for fresh environments. Apply with wrangler d1 execute.
 migrations/                       One-time numbered migrations for existing databases.
@@ -254,8 +257,8 @@ launch.sh                         One-click launcher: builds and runs the deploy
 ## How sync works
 
 - Each device signs in. Session cookie is set HttpOnly + Secure on the device.
-- Check off a task → frontend PUTs `/api/checkoffs/YYYY-MM-DD` with the full list of checked indexes for that day → D1 upserts.
-- Open the app on another device or refocus the tab → `useCheckoffs` refetches → latest state appears.
+- Check off a task. The frontend PUTs `/api/checkoffs/YYYY-MM-DD` with the full list of checked indexes for that day, and D1 upserts.
+- Open the app on another device or refocus the tab. `useCheckoffs` refetches and the latest state appears.
 - "Sync on focus", not WebSockets. If both devices are open simultaneously and you click on phone, the laptop sees it the next time the tab regains focus.
 
 ## Auth model
