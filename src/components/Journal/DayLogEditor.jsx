@@ -1,10 +1,10 @@
-import { useState } from "react";
 import { ymd } from "../../lib/api.js";
 import { useGrowLog } from "../../lib/useGrowLog.js";
 import { useEnvDay } from "../../lib/useEnvDay.js";
 import {
   LogSection, AddEntryButton, sumWater,
-  WaterEntry, WaterAllPlants, TrainingEntry, PlantHealthEntry,
+  WaterEntry, WaterAllPlants, TrainingEntry, TrainingAllPlants,
+  PlantHealthEntry, HealthAllPlants,
 } from "./logEntries.jsx";
 import EnvSensorCard from "./EnvSensorCard.jsx";
 import ChoiceField from "../ChoiceField.jsx";
@@ -28,16 +28,18 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
   const mushrooms = cropOf(crop) === "mushrooms";
   const { entry: logEntry, setField: setLogField, setFields: setLogFields, status: logStatus } = useGrowLog(date, active, growId);
 
-  // Which plant the per-plant sections are scoped to ("all" or a plant id).
-  const [logPlant, setLogPlant] = useState("all");
   const logPlants = (plants ?? []).filter(p => (p.status ?? "growing") === "growing");
-  const scoped = logPlant !== "all";
-  const selPlant = logPlants.find(p => p.id === logPlant) || null;
-  // Match by plant id; fall back to name for legacy rows that predate id linking.
-  const matches = (e) => !scoped || e.plantId === logPlant || (!e.plantId && (e.plant ?? "") === (selPlant?.name ?? ""));
-  // New per-plant rows carry the plant's id (when scoped) so they link to the
-  // plant's history; name is kept for display + back-compat.
-  const newRow = (extra) => ({ plant: selPlant?.name ?? "", ...(scoped ? { plantId: logPlant } : {}), ...extra });
+  // Every entry says which plant it is about, on the entry itself. There used
+  // to be one selector at the top that scoped all three sections at once, which
+  // meant the answer to "which plant?" lived somewhere other than the thing it
+  // described, and you had to remember which mode you were in.
+  const newRow = (extra) => ({ plant: "", ...extra });
+  // One row per plant, carrying the plant's id so it links to that plant's own
+  // history. This is what "for all of them" means everywhere in the log: not
+  // one shared row, but a real record against each.
+  const forEveryPlant = (extra) => logPlants.map((p) => ({
+    plant: p.name ?? "", ...(p.id ? { plantId: p.id } : {}), ...extra,
+  }));
 
   // Indoor and greenhouse grows can pull the day's environment from a
   // controller import (temp/RH/VPD); either way they read their own climate,
@@ -70,9 +72,17 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
   function removeWater(i)       { const a = [...(logEntry.water_plants ?? [])]; a.splice(i, 1); setWater(a); }
 
   function addTraining()           { setLogField("training", [...(logEntry.training ?? []), newRow({ action: "" })]); }
+  function addTrainingForAll(action) {
+    const rows = logPlants.length ? forEveryPlant({ action }) : [newRow({ action })];
+    setLogField("training", [...(logEntry.training ?? []), ...rows]);
+  }
   function updateTraining(i, k, v) { const a = [...(logEntry.training ?? [])]; a[i] = { ...a[i], [k]: v }; setLogField("training", a); }
   function removeTraining(i)       { const a = [...(logEntry.training ?? [])]; a.splice(i, 1); setLogField("training", a); }
   function addHealth()             { setLogField("plant_health", [...(logEntry.plant_health ?? []), newRow({ color: "", trichomes: "", notes: "" })]); }
+  function addHealthForAll(fields) {
+    const rows = logPlants.length ? forEveryPlant(fields) : [newRow(fields)];
+    setLogField("plant_health", [...(logEntry.plant_health ?? []), ...rows]);
+  }
   function updateHealth(i, k, v)   { const a = [...(logEntry.plant_health ?? [])]; a[i] = { ...a[i], [k]: v }; setLogField("plant_health", a); }
   function removeHealth(i)         { const a = [...(logEntry.plant_health ?? [])]; a.splice(i, 1); setLogField("plant_health", a); }
 
@@ -123,44 +133,16 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
         </LogSection>
       ) : null}
 
-      {/* ── Plant selector for the per-plant sections below ── */}
-      {logPlants.length > 0 && (
-        <div style={{ margin: "16px 0" }}>
-          <div style={{ ...fieldNameStyle, marginBottom: 8 }}>Log entries for</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {[{ key: "all", label: `All ${w.units}` }, ...logPlants.map(p => ({ key: p.id, label: p.name || "Unnamed" }))].map(opt => {
-              const isOn = logPlant === opt.key;
-              return (
-                <button
-                  key={opt.key}
-                  type="button"
-                  onClick={() => setLogPlant(opt.key)}
-                  style={{
-                    padding: "8px 14px", borderRadius: 16,
-                    background: isOn ? "rgba(74,222,128,0.16)" : "rgba(255,255,255,0.05)",
-                    border: isOn ? "1px solid rgba(74,222,128,0.5)" : "1px solid var(--c-border-strong)",
-                    color: isOn ? "var(--c-accent)" : "var(--c-text-muted)",
-                    fontFamily: "var(--font-ui)", fontSize: 12, letterSpacing: 0.5,
-                    cursor: "pointer", whiteSpace: "nowrap",
-                  }}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* ── Watering & Nutrients ── */}
       <LogSection label={w.waterSection}>
-        {(logEntry.water_plants ?? []).map((w, i) => ({ w, i }))
-          .filter(({ w }) => matches(w))
-          .map(({ w, i }) => (
+        {/* `row`, not `w`: `w` is this component's crop vocabulary, and a map
+            variable of the same name quietly handed WaterEntry the water unit
+            where the word for a plant belonged - which is why a cannabis row
+            asked about a "Tub". */}
+        {(logEntry.water_plants ?? []).map((row, i) => (
             <WaterEntry
               key={i}
-              entry={w}
-              hidePlant={scoped}
+              entry={row}
               plants={logPlants}
               unitWord={w.unit}
               crop={crop}
@@ -168,15 +150,10 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
               onRemove={() => removeWater(i)}
             />
           ))}
-        {!scoped && logPlants.length > 0 && (
+        {logPlants.length > 0 && (
           <WaterAllPlants count={logPlants.length} title={w.waterAllTitle} unitWord={w.unit} crop={crop} onAdd={addWaterForAll} />
         )}
-        <AddEntryButton
-          onClick={addWater}
-          label={scoped
-            ? `ADD ${w.waterNoun.toUpperCase()} FOR ${(selPlant?.name || w.Unit).toUpperCase()}`
-            : `ADD ONE ${w.Unit.toUpperCase()}'S ${w.waterNoun.toUpperCase()}`}
-        />
+        <AddEntryButton onClick={addWater} label={`ADD ONE ${w.Unit.toUpperCase()}'S ${w.waterNoun.toUpperCase()}`} />
         {sumWater(logEntry.water_plants) && (
           <div style={{
             marginTop: 10, textAlign: "right",
@@ -206,38 +183,38 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
       {/* ── Training: a tub is not shaped, so there is nothing to record ── */}
       {!mushrooms && (
       <LogSection label="Plant Training">
-        {(logEntry.training ?? []).map((t, i) => ({ t, i }))
-          .filter(({ t }) => matches(t))
-          .map(({ t, i }) => (
+        {(logEntry.training ?? []).map((t, i) => (
             <TrainingEntry
               key={i}
               entry={t}
-              hidePlant={scoped}
               plants={logPlants}
               onChangeField={(k, v) => updateTraining(i, k, v)}
               onRemove={() => removeTraining(i)}
             />
           ))}
-        <AddEntryButton onClick={addTraining} label={scoped ? `ADD TRAINING FOR ${(selPlant?.name || "PLANT").toUpperCase()}` : "ADD TRAINING ENTRY"} />
+        {logPlants.length > 0 && (
+          <TrainingAllPlants count={logPlants.length} unitWord={w.unit} onAdd={addTrainingForAll} />
+        )}
+        <AddEntryButton onClick={addTraining} label={`ADD ONE ${w.Unit.toUpperCase()}'S TRAINING`} />
       </LogSection>
       )}
 
       {/* ── Health ── */}
       <LogSection label={w.healthSection}>
-        {(logEntry.plant_health ?? []).map((h, i) => ({ h, i }))
-          .filter(({ h }) => matches(h))
-          .map(({ h, i }) => (
+        {(logEntry.plant_health ?? []).map((h, i) => (
             <PlantHealthEntry
               key={i}
               entry={h}
               crop={crop}
-              hidePlant={scoped}
               plants={logPlants}
               onChangeField={(k, v) => updateHealth(i, k, v)}
               onRemove={() => removeHealth(i)}
             />
           ))}
-        <AddEntryButton onClick={addHealth} label={scoped ? `ADD HEALTH FOR ${(selPlant?.name || w.Unit).toUpperCase()}` : "ADD HEALTH OBSERVATION"} />
+        {logPlants.length > 0 && (
+          <HealthAllPlants count={logPlants.length} unitWord={w.unit} crop={crop} onAdd={addHealthForAll} />
+        )}
+        <AddEntryButton onClick={addHealth} label={`ADD ONE ${w.Unit.toUpperCase()}'S HEALTH CHECK`} />
       </LogSection>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Plus, Droplets } from "lucide-react";
+import { X, Plus, Droplets, Scissors, Stethoscope } from "lucide-react";
 import ChoiceField from "../ChoiceField.jsx";
 import { TRAINING_ACTIONS } from "../../lib/choices.js";
 import {
@@ -194,10 +194,40 @@ export function WaterEntry({ entry, onChangeField, onRemove, hidePlant, plants =
   );
 }
 
-// Watering the whole tent is one action but several waterings. Type the amount
-// once here and every plant gets its own row at that amount, which is what the
-// day, the report and each plant's own history then read back - a total on its
-// own never says which plant got what.
+// Doing something to the whole tent is one action but several records, and the
+// same shell says so for every section: fill it in once, and every plant gets
+// its own row. A row per plant is what the day, the report and each plant's own
+// history read back - one shared row never says which plant it was about.
+function EveryPlantBox({ title, count, unitWord, actionWord, Icon, onSubmit, disabled, children }) {
+  return (
+    <div style={{
+      border: "1px dashed var(--c-border-strong)", borderRadius: 10,
+      padding: "11px 11px 12px", marginTop: 6,
+    }}>
+      <span style={{ ..._entryLabel, marginBottom: 8 }}>{title}</span>
+      {children}
+      <button
+        type="button"
+        className="touch-target"
+        onClick={onSubmit}
+        disabled={disabled}
+        style={{
+          width: "100%", padding: "10px", borderRadius: 10, marginTop: 9,
+          background: disabled ? "var(--c-surface-1)" : "rgba(96,165,250,0.14)",
+          border: `1px solid ${disabled ? "var(--c-border)" : "rgba(96,165,250,0.4)"}`,
+          color: disabled ? "var(--c-text-ghost)" : "#60a5fa",
+          cursor: disabled ? "default" : "pointer",
+          fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1.5,
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+        }}>
+        <Icon size={11} strokeWidth={2.5} />
+        {`${actionWord} FOR ALL ${count} ${unitWord.toUpperCase()}${count === 1 ? "" : "S"}`}
+      </button>
+    </div>
+  );
+}
+
+// Type the amount once and every plant gets its own row at that amount.
 export function WaterAllPlants({ count, title = "Water every plant", unitWord = "plant", crop, onAdd }) {
   const [amount, setAmount] = useState("");
   const [unit, setUnit] = useState(() => loadWaterUnit(cropOf(crop)));
@@ -209,11 +239,14 @@ export function WaterAllPlants({ count, title = "Water every plant", unitWord = 
   }
 
   return (
-    <div style={{
-      border: "1px dashed var(--c-border-strong)", borderRadius: 10,
-      padding: "11px 11px 12px", marginTop: 6,
-    }}>
-      <span style={{ ..._entryLabel, marginBottom: 8 }}>{title}</span>
+    <EveryPlantBox
+      title={title}
+      count={count}
+      unitWord={unitWord}
+      actionWord="LOG THIS"
+      Icon={Droplets}
+      onSubmit={submit}
+      disabled={!String(amount).trim()}>
       <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
         <label style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
           <span style={{ ..._entryLabel, fontSize: 10 }}>{`Each ${unitWord} got`}</span>
@@ -240,21 +273,81 @@ export function WaterAllPlants({ count, title = "Water every plant", unitWord = 
           </select>
         </label>
       </div>
-      <button
-        type="button"
-        className="touch-target"
-        onClick={submit}
-        style={{
-          width: "100%", padding: "10px", borderRadius: 10, marginTop: 9,
-          background: "rgba(96,165,250,0.14)", border: "1px solid rgba(96,165,250,0.4)",
-          color: "#60a5fa", cursor: "pointer",
-          fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1.5,
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-        }}>
-        <Droplets size={11} strokeWidth={2.5} />
-        {`LOG THIS FOR ALL ${count} ${unitWord.toUpperCase()}${count === 1 ? "" : "S"}`}
-      </button>
-    </div>
+    </EveryPlantBox>
+  );
+}
+
+// The same idea for training: "I defoliated everything" is one sentence and one
+// row per plant, so each plant's own history carries it.
+export function TrainingAllPlants({ count, unitWord = "plant", onAdd }) {
+  const [action, setAction] = useState("");
+  function submit() { onAdd(action); setAction(""); }
+  return (
+    <EveryPlantBox
+      title={`Train every ${unitWord}`}
+      count={count}
+      unitWord={unitWord}
+      actionWord="LOG THIS"
+      Icon={Scissors}
+      onSubmit={submit}
+      disabled={!action.trim()}>
+      <span style={{ ..._entryLabel, fontSize: 10 }}>{`What you did to each ${unitWord}`}</span>
+      <ChoiceField
+        value={action}
+        onChange={setAction}
+        presets={TRAINING_ACTIONS}
+        fieldKey="training-action"
+        placeholder="Choose what you did"
+        searchLabel="Search training"
+      />
+    </EveryPlantBox>
+  );
+}
+
+// And for a health check: looking over the whole tent and finding the same
+// thing is still an observation about each plant.
+export function HealthAllPlants({ count, unitWord = "plant", crop, onAdd }) {
+  const look = HEALTH_LOOK[cropOf(crop)];
+  const [color, setColor] = useState("");
+  const [check, setCheck] = useState("");
+  const [notes, setNotes] = useState("");
+  function submit() {
+    onAdd({ color, trichomes: check, notes });
+    setColor(""); setCheck(""); setNotes("");
+  }
+  return (
+    <EveryPlantBox
+      title={`Same observation for every ${unitWord}`}
+      count={count}
+      unitWord={unitWord}
+      actionWord="LOG THIS"
+      Icon={Stethoscope}
+      onSubmit={submit}
+      disabled={!color && !check && !notes.trim()}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+        <div>
+          <span style={{ ..._entryLabel, fontSize: 10 }}>{look.colorLabel}</span>
+          <select value={color} onChange={(e) => setColor(e.target.value)} style={_selectInput}>
+            <option value=""> - </option>
+            {look.colors.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div>
+          <span style={{ ..._entryLabel, fontSize: 10 }}>{look.checkLabel}</span>
+          <select value={check} onChange={(e) => setCheck(e.target.value)} style={_selectInput}>
+            {look.checks.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
+        </div>
+      </div>
+      <span style={{ ..._entryLabel, fontSize: 10 }}>Observations</span>
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        rows={2}
+        placeholder="What was true of all of them today…"
+        style={{ ..._entryInput, resize: "vertical", lineHeight: 1.6, fontFamily: "var(--font-ui)" }}
+      />
+    </EveryPlantBox>
   );
 }
 
