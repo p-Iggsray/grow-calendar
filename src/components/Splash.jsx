@@ -75,7 +75,7 @@ function Cat({ reduce }) {
         initial={reduce ? false : { opacity: 0, scale: 0.82 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.55, ease: "backOut" }}>
-        <CatMark size={132} />
+        <CatMark size={140} lit />
       </motion.div>
     </div>
   );

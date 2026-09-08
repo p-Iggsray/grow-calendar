@@ -10,7 +10,7 @@
 
 import { words } from "./crops.js";
 import {
-  CAT_HEAD, CAT_EYE_L, CAT_EYE_R, CAT_PUPILS, CAT_NOSE, CAT_WHISKERS,
+  CAT_HEAD, CAT_EYE_L, CAT_EYE_R, CAT_PUPILS, CAT_NOSE, CAT_MOUTH, CAT_WHISKERS,
 } from "./catMark.js";
 
 // 6in x 4in at 300dpi. Fixed, so what is saved is what prints.
@@ -134,40 +134,44 @@ function drawQr(ctx, matrix, x, y, box) {
 }
 
 /**
- * The brand mark in one ink: a solid black head with the eyes knocked out
- * white, which is the only way an all-black cat reads on paper.
+ * The brand mark in one ink.
  *
- * `x`, `y` is the top-left of the drawn mark; it comes out `w * 0.97` wide and
- * `w * 0.80` tall.
+ * A thermal head has one dot and no greys, so every bit of the face has to be
+ * cut out of the black rather than shaded onto it: the eyes, the pupils inside
+ * them, the nose and the muzzle line are all white knockouts. The whiskers are
+ * laid down first and the head painted over their roots, so each one leaves
+ * the cheek instead of crossing it.
+ *
+ * `x`, `y` is the top-left of the drawn mark; it comes out `w * 0.99` wide and
+ * `w * 0.85` tall.
  */
 function drawCatMark(ctx, x, y, w) {
   const s = w / 100;
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(s, s);
-  ctx.translate(-1.5, -6);
+  ctx.translate(-0.5, -4);
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
+
   ctx.fillStyle = BLACK;
-  ctx.strokeStyle = BLACK;
+  for (const d of CAT_WHISKERS) ctx.fill(new Path2D(d));
   ctx.fill(new Path2D(CAT_HEAD));
-  ctx.lineWidth = 3;
-  for (const [x1, y1, x2, y2] of CAT_WHISKERS) {
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-  }
+
   ctx.fillStyle = "#fff";
   ctx.fill(new Path2D(CAT_EYE_L));
   ctx.fill(new Path2D(CAT_EYE_R));
+  ctx.fill(new Path2D(CAT_NOSE));
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 1.7;
+  for (const d of CAT_MOUTH) ctx.stroke(new Path2D(d));
+
   ctx.fillStyle = BLACK;
   for (const p of CAT_PUPILS) {
     ctx.beginPath();
     ctx.ellipse(p.cx, p.cy, p.rx, p.ry, 0, 0, Math.PI * 2);
     ctx.fill();
   }
-  ctx.fill(new Path2D(CAT_NOSE));
   ctx.restore();
 }
 
@@ -281,12 +285,12 @@ export function drawLabel(canvas, spec, matrix) {
   // The signature: the mark and the wordmark locked up bottom-left, the legal
   // line bottom-right, the way a package carries its maker.
   ctx.fillRect(PAD, footRule, LABEL_W - PAD * 2, 3);
-  const markW = 96;
-  drawCatMark(ctx, PAD, footRule + 18, markW);
+  const markW = 112;
+  drawCatMark(ctx, PAD, footRule + 16, markW);
   ctx.font = `800 28px ${UI}`;
-  ctx.fillText("BLACK CAT BOTANICALS", PAD + markW + 24, footRule + 64);
+  ctx.fillText("BLACK CAT BOTANICALS", PAD + markW + 26, footRule + 72);
   ctx.font = `600 22px ${UI}`;
   ctx.textAlign = "right";
-  ctx.fillText("KEEP OUT OF REACH OF CHILDREN", LABEL_W - PAD, footRule + 64);
+  ctx.fillText("KEEP OUT OF REACH OF CHILDREN", LABEL_W - PAD, footRule + 72);
   ctx.textAlign = "left";
 }

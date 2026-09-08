@@ -30,7 +30,7 @@ export default class ErrorBoundary extends Component {
         textAlign: "center",
         gap: 20,
       }}>
-        <CatMark size={64} />
+        <CatMark size={68} lit />
         <div style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text)", letterSpacing: 1 }}>
           Something went wrong
         </div>

@@ -301,7 +301,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
         )}
         {!historyLoading && messages.length === 0 && (
           <div style={{ margin: "auto", maxWidth: 440, textAlign: "center" }}>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><CatMark size={56} /></div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><CatMark size={60} lit /></div>
             <div style={{ fontSize: 15, color: "var(--c-text-dim)", marginBottom: 14, lineHeight: 1.6 }}>
               Ask anything about your grow - or send a photo for a diagnosis.
               I know your full plan, grow log, and current weather.

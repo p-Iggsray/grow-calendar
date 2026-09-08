@@ -221,7 +221,7 @@ export default function BuddyView({ token }) {
         alignItems: "center", justifyContent: "center",
         background: "var(--c-bg)", padding: 24, textAlign: "center",
       }}>
-        <div style={{ marginBottom: 16 }}><CatMark size={64} /></div>
+        <div style={{ marginBottom: 16 }}><CatMark size={68} lit /></div>
         <div style={{ fontSize: 15, color: "var(--c-text-dim)", fontFamily: SERIF, lineHeight: 1.7, maxWidth: 320 }}>
           {loadErr}
         </div>

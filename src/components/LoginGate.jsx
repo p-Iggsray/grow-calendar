@@ -103,7 +103,7 @@ export default function LoginGate() {
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 22 }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
-            <CatMark size={78} />
+            <CatMark size={86} lit />
           </div>
           <div style={{ fontSize: 11, letterSpacing: 4, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 6, fontFamily: "var(--font-ui)" }}>
             Grow Log

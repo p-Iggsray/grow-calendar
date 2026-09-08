@@ -484,7 +484,7 @@ function renderReport(ctx) {
 </div>
 <main>
   <header class="cover">
-    <div class="brandline">${catMarkSvg({ width: 34, ink: "#111", eye: "#fff", pupil: "#111", fill: "#111" })}<span class="eyebrow">Black Cat Botanicals · Grow Report</span></div>
+    <div class="brandline">${catMarkSvg({ width: 34, ink: "#111", eye: "#fff", pupil: "#111", face: "#fff", fill: "#111" })}<span class="eyebrow">Black Cat Botanicals · Grow Report</span></div>
     <h1>${esc(name)}</h1>
     <div class="sub">
       <span class="badge badge-${esc(status)}">${esc(status)}</span>

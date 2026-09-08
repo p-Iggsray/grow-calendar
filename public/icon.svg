@@ -1,21 +1,98 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
   <title>Black Cat Botanicals</title>
-  <rect width="100" height="100" fill="#0c0b0a"/>
+  <!-- The app icon. Same cat as everywhere else (the paths are the exported
+       geometry in src/lib/catMark.js, and a test holds them to it), but lit:
+       one warm key light up and to the left, a hazel bloom behind the head,
+       and eyes that carry their own glow. Black on black needs light to have
+       a shape at all. -->
+  <defs>
+    <radialGradient id="ground" cx="0.5" cy="0.34" r="0.78">
+      <stop offset="0%" stop-color="#1c1611"/>
+      <stop offset="50%" stop-color="#0b0908"/>
+      <stop offset="100%" stop-color="#030302"/>
+    </radialGradient>
+    <radialGradient id="bloom" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#e0913f" stop-opacity="0.62"/>
+      <stop offset="100%" stop-color="#e0913f" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="coat" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0%" stop-color="#2a231d"/>
+      <stop offset="40%" stop-color="#0f0d0b"/>
+      <stop offset="100%" stop-color="#020202"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0.05" y1="0.05" x2="0.8" y2="0.95">
+      <stop offset="0%" stop-color="#ffc27a"/>
+      <stop offset="42%" stop-color="#e89a45"/>
+      <stop offset="88%" stop-color="#e0913f" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#e0913f" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="ear" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#7a4520"/>
+      <stop offset="100%" stop-color="#2a160b"/>
+    </linearGradient>
+    <radialGradient id="iris" cx="0.42" cy="0.3" r="0.85">
+      <stop offset="0%" stop-color="#ffe3a6"/>
+      <stop offset="42%" stop-color="#eda049"/>
+      <stop offset="100%" stop-color="#8f4d12"/>
+    </radialGradient>
+    <linearGradient id="whisker" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#d8ccbc" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#d8ccbc" stop-opacity="0.05"/>
+    </linearGradient>
+    <linearGradient id="whiskerR" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0%" stop-color="#d8ccbc" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#d8ccbc" stop-opacity="0.05"/>
+    </linearGradient>
+    <linearGradient id="snout" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#d99a72"/>
+      <stop offset="100%" stop-color="#7c4326"/>
+    </linearGradient>
+    <filter id="soft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="3.2"/>
+    </filter>
+    <filter id="eyeGlow" x="-160%" y="-160%" width="420%" height="420%">
+      <feGaussianBlur stdDeviation="2.6"/>
+    </filter>
+  </defs>
+
+  <rect width="100" height="100" fill="url(#ground)"/>
+
   <!-- Scaled to sit inside the maskable safe circle (radius 40 from centre),
        so a launcher that crops this to a circle keeps both whisker tips. -->
-  <g transform="translate(50 50) scale(0.74) translate(-50 -46)"
-     fill="none" stroke="#e0913f" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M20,32 L24,6 L44,20 C46,19 54,19 56,20 L76,6 L80,32 C84,42 84,58 78,68 C72,80 60,86 50,86 C40,86 28,80 22,68 C16,58 16,42 20,32 Z" fill="#000"/>
-    <path d="M21,60 L3,53"/>
-    <path d="M19.5,66.5 L1.5,66.5"/>
-    <path d="M21,73 L4,79"/>
-    <path d="M79,60 L97,53"/>
-    <path d="M80.5,66.5 L98.5,66.5"/>
-    <path d="M79,73 L96,79"/>
-    <path d="M26,50 Q36,39 46,50 Q36,61 26,50 Z" fill="#e0913f" stroke="none"/>
-    <path d="M54,50 Q64,39 74,50 Q64,61 54,50 Z" fill="#e0913f" stroke="none"/>
-    <ellipse cx="36" cy="50" rx="2.3" ry="6.2" fill="#0c0b0a" stroke="none"/>
-    <ellipse cx="64" cy="50" rx="2.3" ry="6.2" fill="#0c0b0a" stroke="none"/>
-    <path d="M46.5,61 L53.5,61 L50,65.5 Z" fill="#e0913f" stroke="none"/>
+  <g transform="translate(50 50) scale(0.72) translate(-50 -46.25)">
+    <ellipse cx="50" cy="52" rx="54" ry="50" fill="url(#bloom)" filter="url(#soft)"/>
+
+    <g>
+      <path d="M21,57.5 Q12,54 1.5,49 Q12,57.5 21,59.5 Z" fill="url(#whiskerR)"/>
+      <path d="M20,65 Q10,63.9 0.5,64.5 Q10,66.5 20,67 Z" fill="url(#whiskerR)"/>
+      <path d="M21,71.5 Q12.5,74.8 3,80 Q13,76.6 21,73.5 Z" fill="url(#whiskerR)"/>
+      <path d="M79,57.5 Q88,54 98.5,49 Q88,57.5 79,59.5 Z" fill="url(#whisker)"/>
+      <path d="M80,65 Q90,63.9 99.5,64.5 Q90,66.5 80,67 Z" fill="url(#whisker)"/>
+      <path d="M79,71.5 Q87.5,74.8 97,80 Q87,76.6 79,73.5 Z" fill="url(#whisker)"/>
+    </g>
+
+    <path d="M17,34 L21,4 L43,19 C46,16.5 54,16.5 57,19 L79,4 L83,34 C87.5,44 89,54 84.5,63 C81,76 65,88.5 50,88.5 C35,88.5 19,76 15.5,63 C11,54 12.5,44 17,34 Z"
+          fill="url(#coat)" stroke="url(#rim)" stroke-width="2.7" stroke-linejoin="round"/>
+
+    <path d="M20,29.5 L22.8,8.5 L38.2,19 Z" fill="url(#ear)" opacity="0.85"/>
+    <path d="M80,29.5 L77.2,8.5 L61.8,19 Z" fill="url(#ear)" opacity="0.85"/>
+
+    <g filter="url(#eyeGlow)" opacity="0.85">
+      <path d="M27,51 C30,42 42,40 46,47.5 C44,56 32,58.5 27,51 Z" fill="#e0913f"/>
+      <path d="M73,51 C70,42 58,40 54,47.5 C56,56 68,58.5 73,51 Z" fill="#e0913f"/>
+    </g>
+    <path d="M27,51 C30,42 42,40 46,47.5 C44,56 32,58.5 27,51 Z" fill="url(#iris)"/>
+    <path d="M73,51 C70,42 58,40 54,47.5 C56,56 68,58.5 73,51 Z" fill="url(#iris)"/>
+    <ellipse cx="36.5" cy="49.5" rx="2.5" ry="5.5" fill="#0a0806"/>
+    <ellipse cx="63.5" cy="49.5" rx="2.5" ry="5.5" fill="#0a0806"/>
+    <circle cx="32.5" cy="45.5" r="1.9" fill="#fffaf0" opacity="0.9"/>
+    <circle cx="59.5" cy="45.5" r="1.9" fill="#fffaf0" opacity="0.9"/>
+
+    <path d="M45.6,61.2 Q50,59.8 54.4,61.2 Q53.1,65.4 50,67.6 Q46.9,65.4 45.6,61.2 Z" fill="url(#snout)"/>
+    <g fill="none" stroke="#6f6053" stroke-width="1.7" stroke-linecap="round">
+      <path d="M50,67.6 L50,70.4"/>
+      <path d="M50,70.4 Q45.8,74.2 41.8,70.6"/>
+      <path d="M50,70.4 Q54.2,74.2 58.2,70.6"/>
+    </g>
   </g>
 </svg>
