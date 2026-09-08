@@ -316,7 +316,11 @@ export default function DaySpread({
               </div>
             )}
 
-            {/* The structured daily log, edited right here on the page. */}
+            {/* The structured log is a correction surface now, not a second
+                way in. Writing about the day is what fills it, so the only
+                door to this form is the record panel at the head of the page -
+                there is no "Log this day" button competing with the writing
+                for the same job. */}
             {editingLog ? (
               <Card
                 title="Daily log"
@@ -343,20 +347,6 @@ export default function DaySpread({
                   active={active}
                 />
               </Card>
-            ) : !log ? (
-              <button
-                type="button"
-                className="touch-target"
-                onClick={() => { tapHaptic(); setEditingLog(true); }}
-                style={{
-                  width: "100%", padding: "12px 14px", borderRadius: 12,
-                  background: "var(--c-surface-1)", border: "1px dashed var(--c-border-strong)",
-                  color: "var(--c-text-dim)", fontFamily: UI, fontSize: 12.5, fontWeight: 600,
-                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                }}>
-                <Droplets size={13} strokeWidth={2} />
-                {`Log this day: ${w.waterField.toLowerCase()}, conditions, health`}
-              </button>
             ) : null}
 
             {/* No read-only log card here any more. What was logged is set at
@@ -411,9 +401,11 @@ export default function DaySpread({
               </Card>
             )}
 
+            {/* The record panel at the head of the page already says a quiet
+                day is quiet, so this is only the gesture hint. */}
             {!log && !editingLog && groups.length === 0 && (
               <div style={{ fontFamily: UI, fontSize: 11.5, color: "var(--c-text-ghost)", textAlign: "center", padding: "2px 0" }}>
-                Nothing recorded on this day yet. Swipe to turn the page.
+                Swipe to turn the page.
               </div>
             )}
           </>

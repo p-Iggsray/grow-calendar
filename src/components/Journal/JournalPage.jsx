@@ -147,48 +147,50 @@ export default function JournalPage({
 
       {/* The day's record, set at the head of the page where it can be read
           without wading through the writing. */}
-      {reading && rows.length === 0 && (
-        <div style={{
-          marginTop: 12, padding: "9px 11px", borderRadius: 10,
-          background: "var(--c-surface-2)", borderLeft: "3px solid var(--c-border-strong)",
-          fontFamily: UI, fontSize: 11.5, color: "var(--c-text-muted)",
+      {/* The record. It is here whether or not anything is in it yet, because
+          it is the only place the day's log lives: writing about the day fills
+          it, and this panel's Edit is the one door to the form for fixing what
+          the reading got wrong or adding what it never mentioned. An empty one
+          says which of those it is waiting for. */}
+      <section
+        aria-label="What was logged on this day"
+        style={{
+          marginTop: 12, padding: "9px 11px 10px", borderRadius: 10,
+          background: "var(--c-surface-2)",
+          borderLeft: `3px solid ${rows.length > 0 ? "var(--c-accent)" : "var(--c-border-strong)"}`,
         }}>
-          Reading your entry for what to log…
-        </div>
-      )}
-      {rows.length > 0 && (
-        <section
-          aria-label="What was logged on this day"
-          style={{
-            marginTop: 12, padding: "9px 11px 10px", borderRadius: 10,
-            background: "var(--c-surface-2)",
-            borderLeft: "3px solid var(--c-accent)",
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: rows.length > 0 ? 4 : 0 }}>
+          <span style={{
+            flex: 1, fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: 1.6,
+            textTransform: "uppercase", color: "var(--c-text-ghost)",
           }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <span style={{
-              flex: 1, fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: 1.6,
-              textTransform: "uppercase", color: "var(--c-text-ghost)",
-            }}>
-              The record
-            </span>
-            {onEditRecord && (
-              <button
-                type="button"
-                onClick={() => { tapHaptic(); onEditRecord(); }}
-                aria-label="Edit this day's log"
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 4,
-                  background: "none", border: "none", padding: "2px 3px", cursor: "pointer",
-                  fontFamily: UI, fontSize: 10.5, fontWeight: 600, color: "var(--c-text-muted)",
-                }}>
-                <Pencil size={10} strokeWidth={2.2} aria-hidden="true" />
-                Edit
-              </button>
-            )}
-          </div>
-          {rows.map((row) => <RecordRow key={row.key} row={row} />)}
-        </section>
-      )}
+            The record
+          </span>
+          {onEditRecord && (
+            <button
+              type="button"
+              onClick={() => { tapHaptic(); onEditRecord(); }}
+              aria-label="Edit this day's log"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                background: "none", border: "none", padding: "2px 3px", cursor: "pointer",
+                fontFamily: UI, fontSize: 10.5, fontWeight: 600, color: "var(--c-text-muted)",
+              }}>
+              <Pencil size={10} strokeWidth={2.2} aria-hidden="true" />
+              {rows.length > 0 ? "Edit" : "Add by hand"}
+            </button>
+          )}
+        </div>
+        {rows.length > 0
+          ? rows.map((row) => <RecordRow key={row.key} row={row} />)
+          : (
+            <div style={{ fontFamily: UI, fontSize: 11.5, color: "var(--c-text-muted)", lineHeight: 1.5, marginTop: 3 }}>
+              {reading
+                ? "Reading your entry…"
+                : "Nothing logged yet. Write about the day below and what you mention fills in here."}
+            </div>
+          )}
+      </section>
 
       {/* The writing. Prose until you say otherwise. */}
       <div style={{ marginTop: rows.length > 0 ? 14 : 13 }}>
