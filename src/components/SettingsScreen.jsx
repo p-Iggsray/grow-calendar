@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { BarChart2, Camera, ChevronRight, FileText, Pencil, Share2, Sprout } from "lucide-react";
+import { BarChart2, Camera, ChevronRight, DatabaseBackup, FileText, Pencil, Share2, Sprout } from "lucide-react";
 import ScreenHeader from "./ScreenHeader.jsx";
 import ShareSheet from "./ShareSheet.jsx";
 import AuthFooter from "./AuthFooter.jsx";
@@ -14,6 +14,7 @@ import { api } from "../lib/api.js";
 import { loadWaterUnit } from "../lib/waterUnits.js";
 import { cropOf } from "../lib/crops.js";
 import { loadSaveToRoll, rememberSaveToRoll } from "../lib/savePhoto.js";
+import { loadLastBackup, rememberBackup, backupAge } from "../lib/backup.js";
 import { tapHaptic } from "../lib/haptics.js";
 
 // The same row, but it flips a setting in place instead of pushing a screen.
@@ -127,6 +128,8 @@ export default function SettingsScreen({
   const [showShare, setShowShare] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
   const [saveToRoll, setSaveToRoll] = useState(loadSaveToRoll);
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [lastBackup, setLastBackup] = useState(loadLastBackup);
   const { addToast } = useToast();
 
   const activeGrow = grows.find((g) => g.id === activeGrowId) ?? null;
@@ -164,6 +167,34 @@ export default function SettingsScreen({
       setReportBusy(false);
     }
   }
+
+  // The record, in one file, saved off Cloudflare. Same fetch-then-save dance
+  // as the report: a same-origin navigation gets captured by the installed PWA
+  // window and looks like the app hard-refreshing.
+  async function downloadBackup() {
+    if (backupBusy) return;
+    setBackupBusy(true);
+    try {
+      const blob = await api.getBackup();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `black-cat-backup-${ymd(new Date())}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      const now = new Date().toISOString();
+      rememberBackup(now);
+      setLastBackup(now);
+    } catch (err) {
+      addToast(`Could not back up: ${err?.message ?? "unknown error"}`);
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
+  const age = backupAge(lastBackup);
 
   return (
     <div>
@@ -208,6 +239,24 @@ export default function SettingsScreen({
           detail="Print-ready HTML of everything recorded"
           onClick={openReport}
           disabled={!activeGrowId || reportBusy}
+          last
+        />
+      </Group>
+
+      {/* The record, off Cloudflare, in a file that is yours. It sits in its
+          own group rather than beside the report because it is not an export
+          of one space: it is everything, and it is the only thing here that
+          matters if the database goes away. */}
+      <Group
+        title="Your copy"
+        footer="Every space, journal entry, log and rating in one file. Photos are listed but not included, since they are already in your camera roll.">
+        <Row
+          icon={DatabaseBackup}
+          tint={age.stale ? "#f7d774" : "#2dd4bf"}
+          label={backupBusy ? "Backing up…" : "Back up everything"}
+          detail={age.text}
+          onClick={downloadBackup}
+          disabled={backupBusy}
           last
         />
       </Group>

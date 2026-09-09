@@ -133,6 +133,14 @@ export const api = {
   // Full print-ready grow report (self-contained HTML). Fetched (not navigated
   // to) so an installed standalone PWA doesn't capture the navigation and
   // replace the running app - see SettingsScreen.openReport.
+  // The whole record as one file. A blob rather than the text, because it is
+  // the only export big enough that holding it as a string is worth avoiding.
+  getBackup: async () => {
+    const res = await fetch("/api/backup.json", { credentials: "same-origin" });
+    if (!res.ok) throw new Error(`Backup failed: ${res.status}`);
+    return res.blob();
+  },
+
   getGrowReport: async (growId, unit = "gal") => {
     const res = await fetch(`/api/grows/${encodeURIComponent(growId)}/report?unit=${encodeURIComponent(unit)}`, { credentials: "same-origin" });
     if (!res.ok) throw new Error(`Report failed: ${res.status}`);

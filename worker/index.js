@@ -9,6 +9,7 @@ import { readEntryIntoLog } from "./readEntry.js";
 import { getStrainPage } from "./strainPage.js";
 import { autoLogWeather } from "./weatherDays.js";
 import { getGrowLog, putGrowLog, exportGrowLogCsv , getMonthGrowLog } from "./growLog.js";
+import { getBackup } from "./backup.js";
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
 import { getHealth, postClientError } from "./health.js";
 import { getWeather } from "./weather.js";
@@ -266,6 +267,9 @@ async function authenticatedRoute(request, env, path, method, user) {
 
   if (path === "/api/grow-log/export.csv" && method === "GET")
     return exportGrowLogCsv(env, user, await resolveGrowId(env, user, new URL(request.url)));
+
+  // The whole record, in one file, for keeping somewhere that is not here.
+  if (path === "/api/backup.json" && method === "GET") return getBackup(env, user);
 
   const growLogMatch = path.match(/^\/api\/grow-log\/(\d{4}-\d{2}-\d{2})$/);
   if (growLogMatch) {

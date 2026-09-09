@@ -254,6 +254,45 @@ wrangler.jsonc                    Worker + D1 + assets config.
 launch.sh                         One-click launcher: builds and runs the deployed app against the production DB.
 ```
 
+## Backup and restore
+
+Settings has a **Back up everything** row. It downloads `GET /api/backup.json`:
+every space, journal entry, daily log, check-off, plan override, strain rating
+and MJ conversation, as one JSON file. It says how long it has been since the
+last one on that device, and turns amber past a month.
+
+What is deliberately not in it:
+
+- **Photo images.** The rows come out with their dates and plants, but not the
+  base64. At the documented caps that is up to 784 MB per grow, and the pictures
+  are already in the camera roll.
+- **Anything that could sign somebody in.** Sessions, reset tokens and push
+  subscriptions are left out. So are share tokens: unlike the other two those
+  are stored unhashed, and a backup file travels.
+- **The account row.** It is in the file as `account`, for reference. Its
+  password columns are NOT NULL and are not backed up, so inserting it could
+  only fail, and in wrangler one failed statement aborts the whole file.
+
+### Restoring
+
+```bash
+node scripts/restore.mjs black-cat-backup-2026-09-09.json > restore.sql
+npx wrangler d1 execute grow-calendar-db --local --file=./restore.sql
+```
+
+Drop `--local` to write the real database. Sign the account up first: the script
+does not create it, and the restored rows are keyed to a `user_id` that has to
+exist.
+
+Every statement is `INSERT OR REPLACE`, so a restore fills gaps and overwrites
+collisions and never empties a table you still wanted. Photo rows come back with
+a 1x1 transparent PNG in `data` and `thumb`, because those columns are NOT NULL:
+the journal knows a photo was taken that day and shows a blank tile.
+
+This round trip is tested, not assumed. `test/backup.test.js` runs the restore
+script and checks the placeholder, the escaping, and that it never emits a
+DELETE.
+
 ## How sync works
 
 - Each device signs in. Session cookie is set HttpOnly + Secure on the device.
