@@ -22,6 +22,17 @@
       "database_id": "f8a90390-8953-45ee-997d-bf5c17c62c1f"
     }
   ],
+  // Photo bytes. They used to live in D1 as base64 next to the journal, which
+  // capped every picture's quality at what fits a database cell and put a
+  // 600MB grow in the same 10GB budget as the record. The rows stay in D1; the
+  // pixels live here. Reads stream straight through the worker, so nothing
+  // holds an image in memory.
+  "r2_buckets": [
+    {
+      "binding": "PHOTOS",
+      "bucket_name": "grow-calendar-photos"
+    }
+  ],
   "observability": {
     "enabled": true
   },

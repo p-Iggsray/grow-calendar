@@ -19,8 +19,11 @@
 //     restoring over a live database fills gaps and overwrites collisions,
 //     and never empties a table you still wanted.
 //   * it does not bring back photo images. Those were never in the file; they
-//     are in the camera roll. The photo ROWS come back, so the journal still
-//     knows what was taken and when, with a blank tile where the picture was.
+//     are in the camera roll, and for anything taken since the move to R2 they
+//     are also still in the bucket. The photo ROWS come back either way, so the
+//     journal knows what was taken and when. A row that carries an object key
+//     shows its picture again the moment it is restored alongside a bucket that
+//     still has it; one that does not gets a blank tile.
 
 import { readFileSync } from "node:fs";
 
@@ -36,8 +39,13 @@ const BLANK_PNG =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk" +
   "YPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 
+// A row that carries object keys has its picture in the bucket, so its blob
+// columns are the empty string the app writes for exactly that case. Filling
+// those with a placeholder would make the row claim a photo it does not have,
+// and the reader checks the key first anyway.
 const FILL = {
-  journal_photos: { data: BLANK_PNG, thumb: BLANK_PNG },
+  journal_photos: (row) =>
+    row.data_key ? { data: "", thumb: "" } : { data: BLANK_PNG, thumb: BLANK_PNG },
 };
 
 const path = process.argv[2];
@@ -72,7 +80,7 @@ for (const [table, rows] of Object.entries(backup.tables ?? {})) {
   if (!Array.isArray(rows) || rows.length === 0) continue;
   lines.push(`-- ${table}: ${rows.length} rows`);
   for (const row of rows) {
-    const full = { ...(FILL[table] ?? {}), ...row };
+    const full = { ...(FILL[table]?.(row) ?? {}), ...row };
     const cols = Object.keys(full);
     if (!cols.length) continue;
     lines.push(

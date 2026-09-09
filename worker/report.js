@@ -1,10 +1,12 @@
 // @ts-check
 // Comprehensive, print-optimised HTML report for a single grow. Pulls the full
 // profile/setup, the recorded stage timeline, a day-by-day journal of
-// everything logged, and season stats into one self-contained styled document
-// that the grower can read in a tab and "Save as PDF". Nothing in it is
-// predicted: every date shown is a date the grower recorded.
+// everything logged, and season stats into one styled document that the grower
+// can read in a tab and "Save as PDF". Nothing in it is predicted: every date
+// shown is a date the grower recorded. Photographs are linked rather than
+// embedded - see the note above the photo query for why.
 import { error } from "./util.js";
+import { photoUrl } from "./photoStore.js";
 import { parseDate } from "../src/lib/dates-core.js";
 import { loadStageTimeline } from "./stages.js";
 import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../src/lib/stageTimeline.js";
@@ -173,14 +175,23 @@ export async function getGrowReport(env, user, growId, unit = "gal") {
     eventRows = r.results ?? [];
   } catch { /* grow_events unavailable */ }
 
-  // Every photo of this grow, thumbnail only. The full images run to ~700KB
-  // each and would put a 300-photo grow past 200MB, which no browser would
-  // print and most would not open. A thumbnail is 480px on its long edge,
-  // which at contact-sheet size on paper is sharper than the paper is.
+  // Every photo of this grow, by address.
+  //
+  // This used to select the `thumb` column with no LIMIT and inline each one as
+  // base64 twice, once beside its journal day and again in the plates. At the
+  // app's own cap of 800 photos that is ~40MB of rows and ~80MB of HTML built
+  // around them, in a worker with 128MB, so the report did not get slow at the
+  // top end - it died. Selecting ids instead means the document holds no image
+  // bytes at all and the browser fetches the thumbnails it is about to draw.
+  //
+  // The trade is that the HTML is no longer self-contained: saved to disk and
+  // reopened without a session, the tiles would be empty. Printing and printing
+  // to PDF are unaffected, because the browser loads the images before it
+  // paginates, and those are what this page is for.
   let photoRows = [];
   try {
     const r = await env.DB.prepare(
-      "SELECT id, date, plant_id, thumb FROM journal_photos WHERE user_id = ? AND grow_id = ? ORDER BY date, created_at",
+      "SELECT id, date, plant_id FROM journal_photos WHERE user_id = ? AND grow_id = ? ORDER BY date, created_at",
     ).bind(user.id, growId).all();
     photoRows = r.results ?? [];
   } catch { /* no photos table yet */ }
@@ -333,7 +344,7 @@ function renderReport(ctx) {
   // inside each journal day, and the dated plates section further down.
   const photosByDate = new Map();
   for (const p of photoRows) {
-    if (!p?.thumb || !p?.date) continue;
+    if (!p?.id || !p?.date) continue;
     if (!photosByDate.has(p.date)) photosByDate.set(p.date, []);
     photosByDate.get(p.date).push(p);
   }
@@ -399,12 +410,12 @@ function renderReport(ctx) {
     const noteHtml = e.note ? `<div class="daynote">${noteToHtml(e.note)}</div>` : "";
 
     // This day's photographs, small, beside the words they belong to. The same
-    // images are set larger in the plates section; embedding is by data URL, so
-    // showing one twice costs nothing.
+    // images are set larger in the plates section; both point at the same
+    // address, so the browser fetches each thumbnail once and draws it twice.
     const shots = photosByDate.get(d) ?? [];
     const stripHtml = shots.length
       ? `<div class="jshots">${shots.map((p) =>
-          `<img class="jshot" src="${esc(p.thumb)}" alt="${esc(`${fmtLong(d)} photograph`)}" loading="lazy">`).join("")}</div>`
+          `<img class="jshot" src="${esc(photoUrl(p.id, "thumb"))}" alt="${esc(`${fmtLong(d)} photograph`)}" loading="lazy">`).join("")}</div>`
       : "";
 
     const dayNum = dayOfGrow(firstDate, d);
@@ -446,7 +457,7 @@ function renderReport(ctx) {
           <div class="sheet">${shots.map((p) => {
             const who = p.plant_id ? plantNameById.get(p.plant_id) : "";
             return `<figure class="frame">
-              <img src="${esc(p.thumb)}" alt="${esc(`${fmtLong(d)}${who ? ` - ${who}` : ""}`)}" loading="lazy">
+              <img src="${esc(photoUrl(p.id, "thumb"))}" alt="${esc(`${fmtLong(d)}${who ? ` - ${who}` : ""}`)}" loading="lazy">
               ${who ? `<figcaption>${esc(who)}</figcaption>` : ""}
             </figure>`;
           }).join("")}</div>

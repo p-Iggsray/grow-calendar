@@ -38,6 +38,7 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
   // await and an await is exactly what stops the OS save sheet from opening.
   const [files, setFiles] = useState({});
   const dragged = useRef(false);
+  const objectUrls = useRef([]);
 
   const count = photos.length;
   const photo = photos[index] ?? null;
@@ -53,28 +54,38 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
     if (count > 0 && index > count - 1) setIndex(count - 1);
   }, [count, index]);
 
+  // One fetch feeds both jobs.
+  //
+  // The picture has to be on screen, and it has to already be a File by the
+  // time Save to Photos is tapped, because the OS only opens its save sheet
+  // while the tap still counts as user activation and a single await in front
+  // of navigator.share spends that. Pointing the <img> at the photo URL while
+  // separately fetching the same URL to build the File means downloading every
+  // opened photo twice, so the fetch happens once and the <img> is given an
+  // object URL for the bytes that came back.
   const fetchFull = useCallback((p) => {
-    const gid = p?.growId ?? growId;
-    if (!p || !gid) return;
+    if (!p) return;
     setFulls((prev) => {
       if (prev[p.id] !== undefined) return prev;   // already loaded or loading
-      api.getJournalPhoto(gid, p.id)
-        .then((d) => {
-          const data = d.photo?.data ?? null;
-          setFulls((cur) => ({ ...cur, [p.id]: data }));
-          // Build the File now, while nobody is waiting on it. By the time the
-          // grower taps Save to Photos it has to be ready to hand over on the
-          // spot, with no await between the tap and navigator.share.
-          if (data) {
-            photoFileFrom(data, `grow-${p.date || "photo"}.jpg`)
-              .then((file) => setFiles((cur) => ({ ...cur, [p.id]: file })))
-              .catch(() => { /* the menu item stays disabled */ });
-          }
+      photoFileFrom(api.photoSrc(p.id, "full"), `grow-${p.date || "photo"}.jpg`)
+        .then((file) => {
+          const objectUrl = URL.createObjectURL(file);
+          objectUrls.current.push(objectUrl);
+          setFiles((cur) => ({ ...cur, [p.id]: file }));
+          setFulls((cur) => ({ ...cur, [p.id]: objectUrl }));
         })
         .catch(() => setFulls((cur) => ({ ...cur, [p.id]: null })));
+      // Undefined means in flight, and the thumbnail behind the frame is what
+      // is on screen until it lands.
       return { ...prev, [p.id]: undefined };
     });
-  }, [growId]);
+  }, []);
+
+  // Every object URL pins its blob in memory until it is let go.
+  useEffect(() => () => {
+    for (const url of objectUrls.current) URL.revokeObjectURL(url);
+    objectUrls.current = [];
+  }, []);
 
   // The one you are looking at, plus its neighbours so a swipe lands on a
   // sharp picture rather than a thumbnail that sharpens a moment later.
@@ -176,8 +187,15 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
               style={{
                 width, height: "100%", flexShrink: 0,
                 display: "flex", alignItems: "center", justifyContent: "center",
+                // The thumbnail, behind the picture, so the frame never goes
+                // blank in the moment the <img> swaps from the thumbnail to
+                // the full image and decodes it. Same box, same fit, so it
+                // lines up and is simply covered.
+                backgroundImage: p.thumb ? `url("${p.thumb}")` : undefined,
+                backgroundSize: "contain",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
               }}>
-              {/* The thumbnail holds the frame until the full image arrives. */}
               <img
                 src={fulls[p.id] || p.thumb}
                 alt=""

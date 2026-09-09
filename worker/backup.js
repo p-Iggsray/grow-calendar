@@ -7,10 +7,11 @@
 // and lands on your phone.
 //
 // It is deliberately the RECORD and not the pictures. Photo rows come out with
-// their dates and captions but without their bytes, because the bytes are
-// hundreds of megabytes of base64 and they are already in the camera roll. What
-// you get instead is a list of what existed, so a restored journal still knows
-// there were four photos on the 8th.
+// their dates, their captions and the keys of their objects in the bucket, but
+// never the images themselves, because those are hundreds of megabytes and
+// they are already in the camera roll. What you get instead is a list of what
+// existed, so a restored journal still knows there were four photos on the 8th,
+// and where each of them would be if the bucket still has it.
 
 import { error } from "./util.js";
 
@@ -64,7 +65,9 @@ export const BACKUP_TABLES = [
   { table: "media", scope: "user" },
   { table: "settings", scope: "global" },
 
-  // Dates and captions, never the base64. See the note at the top.
+  // Dates, captions and object keys, never the image itself. See the note at
+  // the top. The keys are worth keeping: restored into an account whose bucket
+  // still holds the objects, the pictures come back with the rows.
   { table: "journal_photos", scope: "user", omit: ["data", "thumb"] },
 ];
 

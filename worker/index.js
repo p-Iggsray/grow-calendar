@@ -15,7 +15,7 @@ import { getHealth, postClientError } from "./health.js";
 import { getWeather } from "./weather.js";
 import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, patchGrowLifecycle, setupGrow } from "./grows.js";
 import { listGrowEvents, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./events.js";
-import { createJournalPhoto, getJournalPhoto, getPhotoImage, deleteJournalPhoto, listPlantPhotos } from "./photos.js";
+import { createJournalPhoto, getPhotoImage, deleteJournalPhoto, listPlantPhotos, backfillPhotosToR2 } from "./photos.js";
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
 import { getReverseGeocode, getGeocodeSearch } from "./geocode.js";
 import { listStrains } from "./strains.js";
@@ -193,6 +193,8 @@ async function authenticatedRoute(request, env, path, method, user) {
 
   // A stored photo as an actual image, so an <img> can lazily load and cache
   // it. Not scoped to a grow: the id already belongs to exactly one owner.
+  if (path === "/api/photos/backfill" && method === "POST") return backfillPhotosToR2(env, user);
+
   const photoImageMatch = path.match(/^\/api\/photos\/([A-Za-z0-9_]+)\/(thumb|full)$/);
   if (photoImageMatch && method === "GET") {
     return getPhotoImage(env, user, photoImageMatch[1], photoImageMatch[2]);
@@ -204,7 +206,6 @@ async function authenticatedRoute(request, env, path, method, user) {
     const gid = photosMatch[1];
     const photoId = photosMatch[2];
     if (method === "POST"   && !photoId) return createJournalPhoto(request, env, user, gid);
-    if (method === "GET"    &&  photoId) return getJournalPhoto(env, user, gid, photoId);
     if (method === "DELETE" &&  photoId) return deleteJournalPhoto(env, user, gid, photoId);
   }
 

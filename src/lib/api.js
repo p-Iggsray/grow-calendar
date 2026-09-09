@@ -173,8 +173,10 @@ export const api = {
     request(`/api/grows/${id}/setup`, { method: "POST", body: JSON.stringify({ survey }) }),
   createJournalPhoto: (id, photo) =>
     request(`/api/grows/${id}/photos`, { method: "POST", body: JSON.stringify(photo) }),
-  getJournalPhoto: (id, photoId) =>
-    request(`/api/grows/${id}/photos/${photoId}`),
+  // A photo id names one picture that will never change, so its two addresses
+  // are derivable and there is nothing to ask the server for. Both are served
+  // by /api/photos/:id/(thumb|full), which checks ownership before it reads.
+  photoSrc: (photoId, size = "full") => `/api/photos/${photoId}/${size}`,
   getStageTimeline: (id) => request(`/api/grows/${id}/stages`),
   // Reminders. `month`, `date` or `from` (+ optional `limit`) pick the window.
   listGrowEvents: (id, params) =>

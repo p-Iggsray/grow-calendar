@@ -125,7 +125,22 @@ npx wrangler d1 execute grow-calendar-db --remote --file=./schema.sql
 
 Creates all current tables on the production D1 database (`users`, `sessions`, `login_attempts`, `task_checkoffs`, `day_notes`, `plan_config`, `plan_day_overrides`, `mj_usage`).
 
-### 5. Deploy
+### 5. Create the photo bucket
+
+```bash
+npx wrangler r2 bucket create grow-calendar-photos
+```
+
+Photo bytes live in R2, not D1. `wrangler.jsonc` already binds this bucket as
+`env.PHOTOS`; the name has to match. If you skip this step the app still runs
+and still saves photos, but it puts them back in D1 the old way, so do not skip
+it. See the header of `worker/photoStore.js` for what the split buys.
+
+Nothing is needed for local development beyond adding the same `r2_buckets`
+block to your `wrangler.local.jsonc`. Wrangler simulates R2 on disk under
+`.wrangler/state/v3/r2`.
+
+### 6. Deploy
 
 ```bash
 npm run deploy
@@ -133,7 +148,7 @@ npm run deploy
 
 Runs `vite build` then `wrangler deploy`. Wrangler prints your live URL.
 
-### 6. Connect Cloudflare to GitHub for auto-deploy
+### 7. Connect Cloudflare to GitHub for auto-deploy
 
 In the Cloudflare dashboard, find your `grow-calendar` Worker, go to **Settings > Builds > Build configuration**, and:
 
@@ -173,6 +188,36 @@ npx wrangler d1 execute grow-calendar-db --remote --file=./migrations/0001_multi
 `0001_multi_tenant.sql` adds `role` and `status` to `users`, makes `plan_config` and `plan_day_overrides` per-user (keyed by `user_id`), adds the `mj_usage` table, and promotes the original owner (lowest `user_id`) to `role='admin'`, `status='approved'`.
 
 **Note on `login_attempts`:** This table was originally added to existing databases via a one-off root-level SQL file (applied in production before the migrations/ system existed; the file has since been deleted). It is now included directly in `schema.sql` so fresh environments get it automatically. Existing databases already have it.
+
+## Moving existing photos into R2
+
+A database that predates the bucket still has its photos inside it as base64.
+The rows keep working either way (a photo with no object key is read from the
+old columns), so there is no rush, but until they move they are still costing
+D1 space and still capping what the report can hold.
+
+```bash
+node scripts/backfill-photos.mjs https://your-worker.workers.dev
+```
+
+It signs in as the account whose photos are being moved and then walks batches
+until nothing is left, showing progress as it goes. The moving happens inside
+the worker, which already has both the database and the bucket; nothing is
+pulled down to your machine.
+
+Safe to stop, safe to re-run, and it deletes nothing. Rows already moved carry
+their object keys and are never picked up again, so a second run resumes rather
+than repeats. The blob columns are blanked in place, which is what frees the
+space; dates, captions and plant links are untouched.
+
+To see how far along an account is:
+
+```sql
+SELECT COUNT(*) AS total,
+       SUM(data_key IS NOT NULL) AS in_r2,
+       SUM(LENGTH(data)) AS base64_left
+FROM journal_photos;
+```
 
 ## Account management
 
