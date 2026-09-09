@@ -11,7 +11,7 @@ import { tapHaptic } from "../lib/haptics.js";
 // A print label for the jar a plant ends up in.
 //
 // Everything on it is editable. The app fills in what it knows - the name, the
-// classification, the harvest date, the space it grew in - and then gets out of
+// classification, the harvest date - and then gets out of
 // the way, because a label is a claim about one specific jar and only the
 // person holding it knows the weight, the potency or the day it was packed.
 //
@@ -82,7 +82,6 @@ export default function StrainLabel({ strain, onClose }) {
   // typed by hand survives the change.
   useEffect(() => {
     if (!plant) return;
-    setDraft((d) => ({ ...d, grownIn: plant.growName ?? d.grownIn }));
   }, [plant]);
 
   const filename = `${(draft.name || "label").replace(/[^\w-]+/g, "-").toLowerCase()}-label.png`;
@@ -205,7 +204,7 @@ export default function StrainLabel({ strain, onClose }) {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: 14 }}>
             <Field label="Strain name" value={draft.name} onChange={(v) => set("name", v)} placeholder="Blue Dream" />
-            <Field label="Classification" value={draft.classification} onChange={(v) => set("classification", v)} placeholder="Hybrid · Photoperiod · Cannabis" />
+            <Field label="Classification" value={draft.classification} onChange={(v) => set("classification", v)} placeholder="Hybrid" />
             <div style={{ display: "flex", gap: 9 }}>
               <Field label="Net weight" value={draft.netWeight} onChange={(v) => set("netWeight", v)} placeholder="3.5 g" />
               <Field label="THC" value={draft.thc} onChange={(v) => set("thc", v)} placeholder="22.4%" />
@@ -215,10 +214,7 @@ export default function StrainLabel({ strain, onClose }) {
               <Field label="Harvested" value={draft.harvested} onChange={(v) => set("harvested", v)} placeholder="6 Sep 2026" />
               <Field label="Packaged" value={draft.packaged} onChange={(v) => set("packaged", v)} placeholder="8 Sep 2026" />
             </div>
-            <div style={{ display: "flex", gap: 9 }}>
-              <Field label="Grown in" value={draft.grownIn} onChange={(v) => set("grownIn", v)} placeholder="Tent One" />
-              <Field label="Batch / lot" value={draft.batch} onChange={(v) => set("batch", v)} placeholder="BD-260908" />
-            </div>
+            <Field label="Batch / lot" value={draft.batch} onChange={(v) => set("batch", v)} placeholder="BD-260908" />
 
             {/* Terpenes, as many as the label has room for. */}
             <div>

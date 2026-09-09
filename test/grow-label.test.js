@@ -30,10 +30,9 @@ test("dates print as a person writes them, and junk prints as nothing", () => {
 test("the draft prefills only what the app actually knows", () => {
   const d = labelDraft(BLUE, { growName: "Tent Two", growId: "g2" }, "2026-09-08");
   assert.equal(d.name, "Blue Dream");
-  assert.match(d.classification, /Hybrid/);
+  assert.equal(d.classification, "Hybrid", "the variety, and not the crop or the photoperiod");
   assert.equal(d.harvested, "6 Sep 2026");
   assert.equal(d.packaged, "8 Sep 2026");
-  assert.equal(d.grownIn, "Tent Two", "the plant's own space, not the strain's first");
   // The app cannot know these, so it does not pretend to.
   assert.equal(d.netWeight, "");
   assert.equal(d.thc, "");
@@ -47,12 +46,12 @@ test("every printed value comes from the draft, so every one can be edited", () 
     name: "Renamed By Hand", classification: "Indica",
     netWeight: "7 g", thc: "18%", cbd: "2%",
     harvested: "1 Jan 2026", packaged: "2 Jan 2026",
-    grownIn: "Somewhere else", batch: "XX-1",
+    batch: "XX-1",
   });
   assert.equal(f.name, "Renamed By Hand");
-  assert.equal(f.subtitle, "Indica");
+  assert.equal(f.variety, "Indica");
   assert.deepEqual(f.rows.map((r) => r.value),
-    ["7 g", "18%  /  2%", "1 Jan 2026", "2 Jan 2026", "Somewhere else", "XX-1"]);
+    ["7 g", "18%  /  2%", "1 Jan 2026", "2 Jan 2026", "XX-1"]);
 });
 
 test("flower time is gone, and batch took its place", () => {
@@ -111,4 +110,22 @@ test("the label carries names and numbers, and no prose", () => {
 test("no more terpenes are kept than a single line could ever hold", () => {
   const many = Array.from({ length: 12 }, (_, i) => ({ name: `Terp${i}`, pct: "0.1%" }));
   assert.equal(labelFields({ name: "X", terpenes: many }).terpenes.length, 6);
+});
+
+test("the label prints the four things the jar is for, and not the grow's business", () => {
+  const f = labelFields({
+    name: "Blue Dream", classification: "Hybrid",
+    thc: "24.8%", cbd: "0.3%", harvested: "1 Aug 2026", packaged: "9 Sep 2026",
+  });
+  assert.deepEqual(f.rows.map((r) => r.label), ["THC / CBD", "Harvested", "Packaged"]);
+  assert.equal(f.variety, "Hybrid");
+  // Where it grew is the grower's record, not the buyer's, and it is off.
+  assert.ok(!f.rows.some((r) => /grown/i.test(r.label)));
+});
+
+test("the variety is the whole classification, without the crop or the photoperiod", () => {
+  const cannabis = labelDraft({ name: "X", type: "indica", crop: "cannabis", photo: true }, null, "2026-09-09");
+  assert.equal(cannabis.classification, "Indica");
+  const shrooms = labelDraft({ name: "Y", type: "cube", crop: "mushrooms" }, null, "2026-09-09");
+  assert.equal(shrooms.classification, "Cubensis");
 });

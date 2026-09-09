@@ -8,7 +8,6 @@
 // The fold from a strain to the label's rows is pure and tested. The drawing
 // takes a canvas and is judged by looking at it.
 
-import { words } from "./crops.js";
 import {
   CAT_HEAD, CAT_EYE_L, CAT_EYE_R, CAT_PUPILS, CAT_NOSE, CAT_MOUTH, CAT_WHISKERS,
 } from "./catMark.js";
@@ -47,26 +46,18 @@ function clean(v, max = 60) {
  * day it actually got packed.
  */
 export function labelDraft(strain, plant, todayKey) {
-  const w = words(strain?.crop);
-  const kind = [
-    VARIETY_WORD[strain?.type] ?? null,
-    strain?.crop === "mushrooms" ? null
-      : strain?.photo === false ? "Autoflower"
-      : strain?.photo === true ? "Photoperiod" : null,
-    w.cropLabel,
-  ].filter(Boolean);
   return {
     name: clean(strain?.name, 40) ?? "",
-    // "Photoperiod" can arrive from both the type and the photo flag; once is
-    // enough on a label.
-    classification: [...new Set(kind)].join("  ·  "),
+    // Just the variety. Whether it is a photoperiod and the fact that cannabis
+    // is cannabis are things the grower knows and the jar does not need told;
+    // indica or sativa is the one word on here that changes what you reach for.
+    classification: VARIETY_WORD[strain?.type] ?? "",
     netWeight: "",
     thc: "",
     cbd: "",
     terpenes: [],
     harvested: labelDate(plant?.harvestedOn ?? strain?.lastGrown) ?? "",
     packaged: labelDate(todayKey) ?? "",
-    grownIn: clean(plant?.growName ?? strain?.grows?.[0]?.growName, 28) ?? "",
     batch: "",
   };
 }
@@ -102,12 +93,11 @@ export function labelFields(draft = {}) {
   else if (cbd) push("CBD", cbd);
   push("Harvested", clean(draft.harvested, 24));
   push("Packaged", clean(draft.packaged, 24));
-  push("Grown in", clean(draft.grownIn, 28));
   push("Batch", clean(draft.batch, 24));
 
   return {
     name: clean(draft.name, 40) ?? "Unnamed",
-    subtitle: clean(draft.classification, 80) ?? "",
+    variety: clean(draft.classification, 24) ?? "",
     rows,
     terpenes: cleanTerpenes(draft.terpenes),
   };
@@ -127,11 +117,10 @@ const FRAME_INSET = 30;   // outer rule, in from the trim
 const INNER_INSET = 48;   // hairline inside it
 const PAD = 84;           // where content starts
 
-const BAR_H = 140;        // the reversed brand bar across the head
+const BAR_H = 170;        // the reversed masthead across the head
 const TAG_PX = 38;        // field tags: NET WEIGHT, THC / CBD
 const VALUE_PX = 78;      // the numbers themselves
 const VALUE_MIN = 44;
-const FOOT_PX = 34;
 const TERP_MIN = 32;   // the terpene line shrinks to here, then sheds names
 
 function drawQr(ctx, matrix, x, y, box) {
@@ -255,39 +244,50 @@ export function drawLabel(canvas, spec, matrix) {
   ctx.strokeRect(INNER_INSET + 1, INNER_INSET + 1,
     LABEL_W - (INNER_INSET + 1) * 2, LABEL_H - (INNER_INSET + 1) * 2);
 
-  // The brand bar: solid black across the head with the mark and the wordmark
-  // knocked out of it. One ink, no greys, and it anchors the whole label.
+  // The masthead: solid black across the head with the mark and the wordmark
+  // knocked out of it. The cat is the biggest thing on the label after the
+  // strain's own name, because the jar should say whose it is before it says
+  // anything else.
   const barTop = PAD;
   ctx.fillStyle = BLACK;
   ctx.fillRect(PAD, barTop, right - PAD, BAR_H);
 
-  const markW = 118;
-  drawCatMark(ctx, PAD + 34, barTop + 32, markW, true);
+  // The mark is centred in the bar rather than hung from its top: at this size
+  // it is taller than the bar used to be, and its chin and whiskers were
+  // spilling out below the black into white, where white ink is nothing.
+  const markW = 152;
+  const markH = markW * 0.85;
+  drawCatMark(ctx, PAD + 40, barTop + (BAR_H - markH) / 2, markW, true);
   ctx.fillStyle = WHITE;
-  ctx.font = `800 46px ${UI}`;
-  const wordX = PAD + 34 + markW + 30;
-  drawTracked(ctx, "BLACK CAT BOTANICALS", wordX, barTop + 96, 3.2);
+  ctx.font = `800 56px ${UI}`;
+  drawTracked(ctx, "BLACK CAT BOTANICALS", PAD + 40 + markW + 34, barTop + BAR_H / 2 + 20, 3.6);
   ctx.fillStyle = BLACK;
 
-  // The bar carries the maker and nothing else. What the thing IS belongs with
-  // its name, and it needs the full width to say it: beside a twenty-character
-  // wordmark, "Indica Dominant Hybrid, Photoperiod, Cannabis" has nowhere to go
-  // but down to a size nobody can read.
   const nameTop = barTop + BAR_H;
-  const namePx = fitText(ctx, spec.name, right - PAD, spec.subtitle ? 132 : 144, UI, 800, 56);
+  const namePx = fitText(ctx, spec.name, right - PAD, 148, UI, 800, 58);
   ctx.font = `800 ${namePx}px ${UI}`;
-  ctx.fillText(spec.name, PAD, nameTop + (spec.subtitle ? 112 : 120));
+  ctx.fillText(spec.name, PAD, nameTop + 138);
 
-  if (spec.subtitle) {
-    ctx.font = `700 30px ${UI}`;
-    drawTracked(ctx, spec.subtitle.toUpperCase(), PAD, nameTop + 164, 4);
+  // Indica or sativa, in its own reversed chip under the name. It is the one
+  // word here that changes what you reach for, so it gets a shape of its own
+  // rather than a line of small caps that reads as a caption.
+  let headRule = nameTop + 178;
+  if (spec.variety) {
+    ctx.font = `800 40px ${UI}`;
+    const word = spec.variety.toUpperCase();
+    const chipW = trackedWidth(ctx, word, 5) + 52;
+    const chipTop = nameTop + 186;
+    ctx.fillRect(PAD, chipTop, chipW, 68);
+    ctx.fillStyle = WHITE;
+    drawTracked(ctx, word, PAD + 26, chipTop + 48, 5);
+    ctx.fillStyle = BLACK;
+    headRule = chipTop + 96;
   }
 
-  // A heavy rule closes the head and opens the data. It clears the last
-  // baseline by enough for a descender, so a Papaya sits as well as a Blue
-  // Dream.
-  const headRule = nameTop + (spec.subtitle ? 194 : 160);
+  // A heavy rule closes the head and opens the data, with a hairline under it
+  // that echoes the frame.
   ctx.fillRect(PAD, headRule, right - PAD, 8);
+  ctx.fillRect(PAD, headRule + 16, right - PAD, 2);
 
   // The QR sits in the lower right with nothing written under it. A square of
   // code on a jar does not need to be captioned.
@@ -298,13 +298,11 @@ export function drawLabel(canvas, spec, matrix) {
   const gridW = gridRight - PAD;
   const colW = Math.floor(gridW / 2);
 
-  // The foot: the legal line, over its own rule.
-  const footRule = bottom - 62;
-  ctx.fillRect(PAD, footRule, right - PAD, 3);
-  ctx.font = `700 ${FOOT_PX}px ${UI}`;
-  drawTracked(ctx, "KEEP OUT OF REACH OF CHILDREN", PAD, footRule + 48, 2.4);
+  // Nothing sits along the foot any more, so the data runs to the bottom of
+  // the frame and gets the room the legal line used to take.
+  const footRule = bottom + 10;
 
-  // Terpenes, in a band above the foot: a black tab with the word knocked out,
+  // Terpenes, in a band at the foot: a black tab with the word knocked out,
   // then the names and what they measured on one mono line.
   let gridBottom = footRule - 28;
   if (spec.terpenes.length) {
@@ -343,15 +341,18 @@ export function drawLabel(canvas, spec, matrix) {
   // own tag. Rows are divided by one hairline across the whole grid rather than
   // a rule under each value: six short underlines in a stack read as clutter,
   // and they crowd the tag of the row underneath.
-  const blockTop = headRule + 56;
+  const blockTop = headRule + 62;
   const blockH = gridBottom - blockTop;
   const lines = Math.max(1, Math.ceil(spec.rows.length / 2));
   // Spread the rows from the top of the block to the bottom of it. Dividing the
   // space by the row count instead would leave the last row short of the floor
   // by one row's worth of slack, which reads as a hole above the terpenes.
   const ROW_H = 100;
+  // Capped well short of the room available: left to stretch, two rows drift
+  // to opposite ends of the block and stop reading as a pair. Rows keep a
+  // steady pitch and the slack goes to the margins instead.
   const pitch = lines > 1
-    ? Math.max(140, Math.min(220, Math.floor((blockH - ROW_H) / (lines - 1))))
+    ? Math.max(140, Math.min(172, Math.floor((blockH - ROW_H) / (lines - 1))))
     : 0;
   // Whatever the rows do not use is split above and below them, so a jar with
   // two facts on it looks composed rather than abandoned half way down.
