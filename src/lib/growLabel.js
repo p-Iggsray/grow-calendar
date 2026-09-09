@@ -38,6 +38,19 @@ function clean(v, max = 60) {
 }
 
 /**
+ * A potency reading, as a percentage.
+ *
+ * Potency is only ever a percentage, so typing the sign is busywork: a bare
+ * number gets one. Anything else is left exactly as written, because "< 0.1%",
+ * "ND" and "24.8 %" are all things a grower might mean on purpose and none of
+ * them are improved by a machine appending a second sign.
+ */
+function percent(v) {
+  const t = clean(v, 12);
+  return t && /^\d+(\.\d+)?$/.test(t) ? `${t}%` : t;
+}
+
+/**
  * The label's fields, prefilled from what the app knows.
  *
  * This is a draft, not the finished thing: every value is a plain string the
@@ -86,8 +99,8 @@ export function labelFields(draft = {}) {
   const push = (label, value) => { if (value) rows.push({ label, value }); };
 
   push("Net weight", clean(draft.netWeight, 24));
-  const thc = clean(draft.thc, 12);
-  const cbd = clean(draft.cbd, 12);
+  const thc = percent(draft.thc);
+  const cbd = percent(draft.cbd);
   if (thc && cbd) push("THC / CBD", `${thc}  /  ${cbd}`);
   else if (thc) push("THC", thc);
   else if (cbd) push("CBD", cbd);
@@ -367,11 +380,24 @@ export function drawLabel(canvas, spec, matrix) {
     const cx = PAD + (i % 2) * colW;
     const line = Math.floor(i / 2);
     const cy = gridTop + line * pitch;
+    const tag = row.label.toUpperCase();
+
+    // The tag and its value sit centred on each other. A date is wider than the
+    // word above it and a weight is narrower, so whichever is wider keeps the
+    // column's left edge and the other centres on it. Centring both in the cell
+    // instead would pull the whole block off the margin the chip and the
+    // terpene tab line up against.
     ctx.font = `800 ${TAG_PX}px ${UI}`;
-    drawTracked(ctx, row.label.toUpperCase(), cx, cy, 3);
+    const tagW = trackedWidth(ctx, tag, 3);
     const valuePx = fitText(ctx, row.value, colW - 48, VALUE_PX, MONO, 700, VALUE_MIN);
     ctx.font = `700 ${valuePx}px ${MONO}`;
-    ctx.fillText(row.value, cx, cy + 76);
+    const valueW = ctx.measureText(row.value).width;
+    const mid = cx + Math.max(tagW, valueW) / 2;
+
+    ctx.fillText(row.value, mid - valueW / 2, cy + 76);
+    ctx.font = `800 ${TAG_PX}px ${UI}`;
+    drawTracked(ctx, tag, mid, cy, 3, "center");
+
     if (line < lines - 1) ctx.fillRect(PAD, cy + 100, gridW, 2);
   });
 }

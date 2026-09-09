@@ -129,3 +129,18 @@ test("the variety is the whole classification, without the crop or the photoperi
   const shrooms = labelDraft({ name: "Y", type: "cube", crop: "mushrooms" }, null, "2026-09-09");
   assert.equal(shrooms.classification, "Cubensis");
 });
+
+test("a bare potency number is printed as a percentage", () => {
+  // Potency is only ever a percentage, so the sign is not worth typing.
+  assert.deepEqual(labelFields({ name: "X", thc: "24.8" }).rows, [{ label: "THC", value: "24.8%" }]);
+  assert.deepEqual(labelFields({ name: "X", thc: "21", cbd: "0.3" }).rows,
+    [{ label: "THC / CBD", value: "21%  /  0.3%" }]);
+});
+
+test("a potency that is not a bare number is left exactly as written", () => {
+  // "< 0.1%" and "ND" are things a grower means on purpose, and a second sign
+  // would not improve any of them.
+  for (const typed of ["24.8%", "< 0.1%", "ND", "24.8 %"]) {
+    assert.equal(labelFields({ name: "X", thc: typed }).rows[0].value, typed);
+  }
+});

@@ -207,8 +207,8 @@ export default function StrainLabel({ strain, onClose }) {
             <Field label="Classification" value={draft.classification} onChange={(v) => set("classification", v)} placeholder="Hybrid" />
             <div style={{ display: "flex", gap: 9 }}>
               <Field label="Net weight" value={draft.netWeight} onChange={(v) => set("netWeight", v)} placeholder="3.5 g" />
-              <Field label="THC" value={draft.thc} onChange={(v) => set("thc", v)} placeholder="22.4%" />
-              <Field label="CBD" value={draft.cbd} onChange={(v) => set("cbd", v)} placeholder="0.1%" />
+              <Field label="THC %" value={draft.thc} onChange={(v) => set("thc", v)} placeholder="22.4" />
+              <Field label="CBD %" value={draft.cbd} onChange={(v) => set("cbd", v)} placeholder="0.1" />
             </div>
             <div style={{ display: "flex", gap: 9 }}>
               <Field label="Harvested" value={draft.harvested} onChange={(v) => set("harvested", v)} placeholder="6 Sep 2026" />
