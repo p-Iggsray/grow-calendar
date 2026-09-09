@@ -92,6 +92,23 @@ test("an empty draft still prints something valid", () => {
   assert.equal(f.name, "Unnamed");
   assert.deepEqual(f.rows, []);
   assert.deepEqual(f.terpenes, []);
-  assert.equal(f.note, null);
   assert.deepEqual(labelFields().rows, []);
+});
+
+test("the label carries names and numbers, and no prose", () => {
+  // The grower asked for a label with no descriptions on it. A strain's note
+  // is the one field that could put a sentence back on the stock, so nothing
+  // the fold returns may carry one.
+  const f = labelFields({
+    ...labelDraft({ name: "Blue Dream", note: "Sweet berry nose, heavy yield." }, null, "2026-09-09"),
+    netWeight: "3.5 g",
+  });
+  assert.equal(f.note, undefined);
+  assert.ok(!JSON.stringify(f).includes("Sweet berry"));
+  assert.deepEqual(f.rows.map((r) => r.label), ["Net weight", "Packaged"]);
+});
+
+test("no more terpenes are kept than a single line could ever hold", () => {
+  const many = Array.from({ length: 12 }, (_, i) => ({ name: `Terp${i}`, pct: "0.1%" }));
+  assert.equal(labelFields({ name: "X", terpenes: many }).terpenes.length, 6);
 });

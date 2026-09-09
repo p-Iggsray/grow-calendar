@@ -68,7 +68,6 @@ export function labelDraft(strain, plant, todayKey) {
     packaged: labelDate(todayKey) ?? "",
     grownIn: clean(plant?.growName ?? strain?.grows?.[0]?.growName, 28) ?? "",
     batch: "",
-    note: clean(strain?.note, 150) ?? "",
   };
 }
 
@@ -82,6 +81,10 @@ export function cleanTerpenes(list) {
 
 /**
  * The draft as the label prints it.
+ *
+ * Only names and numbers. Every row is a short tag over a value, and there is
+ * no prose anywhere: a jar has no room for a sentence, and a sentence printed
+ * at a size that fits is a sentence nobody reads.
  *
  * A field with nothing behind it is left out rather than printed empty: a label
  * reading "THC: -" is worse than one that does not mention THC, and on a four
@@ -107,14 +110,29 @@ export function labelFields(draft = {}) {
     subtitle: clean(draft.classification, 80) ?? "",
     rows,
     terpenes: cleanTerpenes(draft.terpenes),
-    note: clean(draft.note, 150),
   };
 }
 
 // ── Drawing ─────────────────────────────────────────────────────────────────
 
-const PAD = 90;
+// Every size below is in device pixels at 300dpi, so 4.167px is one point. A
+// thermal head spreads its dots, and small type closes up into a grey smear on
+// the stock, which is what the first version of this label did wrong: its tags
+// were 5.8pt and its foot was 5.3pt. Nothing you actually read here is under
+// 9pt now, and the only thing below that is the boilerplate legal line.
 const BLACK = "#000";
+const WHITE = "#fff";
+
+const FRAME_INSET = 30;   // outer rule, in from the trim
+const INNER_INSET = 48;   // hairline inside it
+const PAD = 84;           // where content starts
+
+const BAR_H = 140;        // the reversed brand bar across the head
+const TAG_PX = 38;        // field tags: NET WEIGHT, THC / CBD
+const VALUE_PX = 78;      // the numbers themselves
+const VALUE_MIN = 44;
+const FOOT_PX = 34;
+const TERP_MIN = 32;   // the terpene line shrinks to here, then sheds names
 
 function drawQr(ctx, matrix, x, y, box) {
   const n = matrix.size;
@@ -143,9 +161,12 @@ function drawQr(ctx, matrix, x, y, box) {
  * the cheek instead of crossing it.
  *
  * `x`, `y` is the top-left of the drawn mark; it comes out `w * 0.99` wide and
- * `w * 0.85` tall.
+ * `w * 0.85` tall. `invert` swaps the two inks, for the mark sitting in the
+ * black brand bar.
  */
-function drawCatMark(ctx, x, y, w) {
+function drawCatMark(ctx, x, y, w, invert = false) {
+  const coat = invert ? WHITE : BLACK;
+  const cut = invert ? BLACK : WHITE;
   const s = w / 100;
   ctx.save();
   ctx.translate(x, y);
@@ -154,25 +175,44 @@ function drawCatMark(ctx, x, y, w) {
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
 
-  ctx.fillStyle = BLACK;
+  ctx.fillStyle = coat;
   for (const d of CAT_WHISKERS) ctx.fill(new Path2D(d));
   ctx.fill(new Path2D(CAT_HEAD));
 
-  ctx.fillStyle = "#fff";
+  ctx.fillStyle = cut;
   ctx.fill(new Path2D(CAT_EYE_L));
   ctx.fill(new Path2D(CAT_EYE_R));
   ctx.fill(new Path2D(CAT_NOSE));
-  ctx.strokeStyle = "#fff";
+  ctx.strokeStyle = cut;
   ctx.lineWidth = 1.7;
   for (const d of CAT_MOUTH) ctx.stroke(new Path2D(d));
 
-  ctx.fillStyle = BLACK;
+  ctx.fillStyle = coat;
   for (const p of CAT_PUPILS) {
     ctx.beginPath();
     ctx.ellipse(p.cx, p.cy, p.rx, p.ry, 0, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
+}
+
+// Letterspaced small caps, drawn a glyph at a time because canvas has no
+// letter-spacing. Tracking is what keeps a 40px tag from reading as a blob at
+// this size, and it is most of what makes the label look set rather than typed.
+function drawTracked(ctx, text, x, y, track, align = "left") {
+  const chars = [...text];
+  const width = chars.reduce((w, c) => w + ctx.measureText(c).width + track, -track);
+  let cx = align === "right" ? x - width : align === "center" ? x - width / 2 : x;
+  for (const c of chars) {
+    ctx.fillText(c, cx, y);
+    cx += ctx.measureText(c).width + track;
+  }
+  return width;
+}
+
+function trackedWidth(ctx, text, track) {
+  const chars = [...text];
+  return chars.reduce((w, c) => w + ctx.measureText(c).width + track, -track);
 }
 
 // Shrink a line until it fits the width it is given, rather than letting a long
@@ -196,101 +236,141 @@ const MONO = `"Courier New", Courier, monospace`;
  */
 export function drawLabel(canvas, spec, matrix) {
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#fff";
+  ctx.fillStyle = WHITE;
   ctx.fillRect(0, 0, LABEL_W, LABEL_H);
   ctx.fillStyle = BLACK;
   ctx.strokeStyle = BLACK;
   ctx.textBaseline = "alphabetic";
 
-  // A heavy rule across the head, and a hairline under it: the cheapest way to
-  // make a label look printed rather than typed.
-  ctx.fillRect(PAD, PAD, LABEL_W - PAD * 2, 14);
-  ctx.fillRect(PAD, PAD + 26, LABEL_W - PAD * 2, 3);
+  const right = LABEL_W - PAD;
+  const bottom = LABEL_H - PAD;
 
-  const qrBox = 380;
-  const qrX = LABEL_W - PAD - qrBox;
-  const textRight = matrix ? qrX - 60 : LABEL_W - PAD;
-  const textWidth = textRight - PAD;
+  // Two frames: a heavy one on the trim and a hairline just inside it. The gap
+  // between them is what reads as a printed border rather than a drawn box,
+  // and it gives the eye an edge to sit against on a white stock.
+  ctx.lineWidth = 5;
+  ctx.strokeRect(FRAME_INSET + 2.5, FRAME_INSET + 2.5,
+    LABEL_W - (FRAME_INSET + 2.5) * 2, LABEL_H - (FRAME_INSET + 2.5) * 2);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(INNER_INSET + 1, INNER_INSET + 1,
+    LABEL_W - (INNER_INSET + 1) * 2, LABEL_H - (INNER_INSET + 1) * 2);
 
-  // Name.
-  let y = PAD + 150;
-  const namePx = fitText(ctx, spec.name, textWidth, 132, UI, 800, 44);
+  // The brand bar: solid black across the head with the mark and the wordmark
+  // knocked out of it. One ink, no greys, and it anchors the whole label.
+  const barTop = PAD;
+  ctx.fillStyle = BLACK;
+  ctx.fillRect(PAD, barTop, right - PAD, BAR_H);
+
+  const markW = 118;
+  drawCatMark(ctx, PAD + 34, barTop + 32, markW, true);
+  ctx.fillStyle = WHITE;
+  ctx.font = `800 46px ${UI}`;
+  const wordX = PAD + 34 + markW + 30;
+  drawTracked(ctx, "BLACK CAT BOTANICALS", wordX, barTop + 96, 3.2);
+  ctx.fillStyle = BLACK;
+
+  // The bar carries the maker and nothing else. What the thing IS belongs with
+  // its name, and it needs the full width to say it: beside a twenty-character
+  // wordmark, "Indica Dominant Hybrid, Photoperiod, Cannabis" has nowhere to go
+  // but down to a size nobody can read.
+  const nameTop = barTop + BAR_H;
+  const namePx = fitText(ctx, spec.name, right - PAD, spec.subtitle ? 132 : 144, UI, 800, 56);
   ctx.font = `800 ${namePx}px ${UI}`;
-  ctx.fillText(spec.name, PAD, y);
+  ctx.fillText(spec.name, PAD, nameTop + (spec.subtitle ? 112 : 120));
 
-  // What kind of thing it is.
   if (spec.subtitle) {
-    y += 52;
-    ctx.font = `600 30px ${UI}`;
-    ctx.fillText(spec.subtitle.toUpperCase(), PAD, y);
+    ctx.font = `700 30px ${UI}`;
+    drawTracked(ctx, spec.subtitle.toUpperCase(), PAD, nameTop + 164, 4);
   }
 
-  // The table stretches to fill whatever is left between the head and the
-  // foot, rather than sitting at a fixed pitch and leaving a quarter of the
-  // stock blank underneath. Two columns, label above value, so a long value
-  // never collides with its own label.
-  const tableTop = y + 76;
-  const colW = Math.floor(textWidth / 2);
-  const noteRoom = spec.note ? 90 : 30;
-  const terpRoom = spec.terpenes.length ? 108 : 0;
-  const tableBottom = LABEL_H - PAD - 60 - noteRoom - terpRoom;
+  // A heavy rule closes the head and opens the data. It clears the last
+  // baseline by enough for a descender, so a Papaya sits as well as a Blue
+  // Dream.
+  const headRule = nameTop + (spec.subtitle ? 194 : 160);
+  ctx.fillRect(PAD, headRule, right - PAD, 8);
+
+  // The QR sits in the lower right with nothing written under it. A square of
+  // code on a jar does not need to be captioned.
+  const qrBox = 396;
+  const qrX = right - qrBox;
+
+  const gridRight = matrix ? qrX - 64 : right;
+  const gridW = gridRight - PAD;
+  const colW = Math.floor(gridW / 2);
+
+  // The foot: the legal line, over its own rule.
+  const footRule = bottom - 62;
+  ctx.fillRect(PAD, footRule, right - PAD, 3);
+  ctx.font = `700 ${FOOT_PX}px ${UI}`;
+  drawTracked(ctx, "KEEP OUT OF REACH OF CHILDREN", PAD, footRule + 48, 2.4);
+
+  // Terpenes, in a band above the foot: a black tab with the word knocked out,
+  // then the names and what they measured on one mono line.
+  let gridBottom = footRule - 28;
+  if (spec.terpenes.length) {
+    const bandTop = footRule - 140;
+    ctx.fillRect(PAD, bandTop, right - PAD, 3);
+
+    ctx.font = `800 ${TAG_PX}px ${UI}`;
+    const tabW = trackedWidth(ctx, "TERPENES", 3.4) + 44;
+    ctx.fillRect(PAD, bandTop + 22, tabW, 62);
+    ctx.fillStyle = WHITE;
+    drawTracked(ctx, "TERPENES", PAD + 22, bandTop + 66, 3.4);
+    ctx.fillStyle = BLACK;
+
+    // Six long terpenes do not fit on one line at a size worth printing, and
+    // fitText returns its floor whether or not the text fits, so on its own it
+    // would run the list off the edge of the stock. Shrink first, then drop
+    // from the end until what is left actually fits. The preview shows the
+    // drop, so a list that is too long is visibly too long before it prints.
+    const room = right - PAD - tabW - 34;
+    const join = (list) => list.map((t) => (t.pct ? `${t.name} ${t.pct}` : t.name)).join("   ·   ");
+    let shown = spec.terpenes;
+    let text = join(shown);
+    let px = fitText(ctx, text, room, 52, MONO, 700, TERP_MIN);
+    while (shown.length > 1 && ctx.measureText(text).width > room) {
+      shown = shown.slice(0, -1);
+      text = join(shown);
+      px = fitText(ctx, text, room, 52, MONO, 700, TERP_MIN);
+    }
+    ctx.font = `700 ${px}px ${MONO}`;
+    ctx.fillText(text, PAD + tabW + 34, bandTop + 66);
+    gridBottom = bandTop - 28;
+  }
+
+  // The rows fill whatever is left between the head rule and whatever comes
+  // next. Two columns, tag over value, so a long value never collides with its
+  // own tag. Rows are divided by one hairline across the whole grid rather than
+  // a rule under each value: six short underlines in a stack read as clutter,
+  // and they crowd the tag of the row underneath.
+  const blockTop = headRule + 56;
+  const blockH = gridBottom - blockTop;
   const lines = Math.max(1, Math.ceil(spec.rows.length / 2));
-  const pitch = Math.max(112, Math.min(190, Math.floor((tableBottom - tableTop) / lines)));
+  // Spread the rows from the top of the block to the bottom of it. Dividing the
+  // space by the row count instead would leave the last row short of the floor
+  // by one row's worth of slack, which reads as a hole above the terpenes.
+  const ROW_H = 100;
+  const pitch = lines > 1
+    ? Math.max(140, Math.min(220, Math.floor((blockH - ROW_H) / (lines - 1))))
+    : 0;
+  // Whatever the rows do not use is split above and below them, so a jar with
+  // two facts on it looks composed rather than abandoned half way down.
+  const rowsH = (lines - 1) * pitch + ROW_H;
+  const gridTop = blockTop + Math.max(0, Math.floor((blockH - rowsH) / 2));
+
+  if (matrix) {
+    drawQr(ctx, matrix, qrX, blockTop + Math.max(0, Math.floor((blockH - qrBox) / 2)), qrBox);
+  }
+
   spec.rows.forEach((row, i) => {
     const cx = PAD + (i % 2) * colW;
-    const cy = tableTop + Math.floor(i / 2) * pitch;
-    ctx.font = `700 24px ${UI}`;
-    ctx.fillText(row.label.toUpperCase(), cx, cy);
-    const valuePx = fitText(ctx, row.value, colW - 40, 52, MONO, 700, 22);
+    const line = Math.floor(i / 2);
+    const cy = gridTop + line * pitch;
+    ctx.font = `800 ${TAG_PX}px ${UI}`;
+    drawTracked(ctx, row.label.toUpperCase(), cx, cy, 3);
+    const valuePx = fitText(ctx, row.value, colW - 48, VALUE_PX, MONO, 700, VALUE_MIN);
     ctx.font = `700 ${valuePx}px ${MONO}`;
-    ctx.fillText(row.value, cx, cy + 58);
-    ctx.fillRect(cx, cy + 78, colW - 40, 2);
+    ctx.fillText(row.value, cx, cy + 76);
+    if (line < lines - 1) ctx.fillRect(PAD, cy + 100, gridW, 2);
   });
-
-  // Terpenes, in their own banded row the way a dispensary package prints
-  // them: the name, then what it measured, across one line.
-  if (spec.terpenes.length) {
-    const bandTop = tableTop + lines * pitch + 6;
-    ctx.fillRect(PAD, bandTop, textWidth - 40, 3);
-    ctx.font = `700 24px ${UI}`;
-    ctx.fillText("TERPENES", PAD, bandTop + 38);
-    const text = spec.terpenes
-      .map((t) => (t.pct ? `${t.name} ${t.pct}` : t.name))
-      .join("   ·   ");
-    const px = fitText(ctx, text, textWidth - 40, 38, MONO, 700, 18);
-    ctx.font = `700 ${px}px ${MONO}`;
-    ctx.fillText(text, PAD, bandTop + 84);
-  }
-
-  // The QR, with a caption under it so nobody has to guess what it is for.
-  if (matrix) {
-    drawQr(ctx, matrix, qrX, PAD + 90, qrBox);
-    ctx.font = `600 22px ${UI}`;
-    ctx.textAlign = "center";
-    ctx.fillText("SCAN TO READ ABOUT", qrX + qrBox / 2, PAD + 90 + qrBox + 40);
-    ctx.fillText("THIS STRAIN", qrX + qrBox / 2, PAD + 90 + qrBox + 70);
-    ctx.textAlign = "left";
-  }
-
-  // The note, along the foot, above the closing rules.
-  const footRule = LABEL_H - PAD - 60;
-  if (spec.note) {
-    ctx.font = `italic 26px ${UI}`;
-    const maxW = LABEL_W - PAD * 2;
-    let line = spec.note;
-    while (ctx.measureText(line).width > maxW && line.length > 4) line = line.slice(0, -2);
-    if (line !== spec.note) line = line.slice(0, -1) + "…";
-    ctx.fillText(line, PAD, footRule - 26);
-  }
-  // The signature: the mark and the wordmark locked up bottom-left, the legal
-  // line bottom-right, the way a package carries its maker.
-  ctx.fillRect(PAD, footRule, LABEL_W - PAD * 2, 3);
-  const markW = 112;
-  drawCatMark(ctx, PAD, footRule + 16, markW);
-  ctx.font = `800 28px ${UI}`;
-  ctx.fillText("BLACK CAT BOTANICALS", PAD + markW + 26, footRule + 72);
-  ctx.font = `600 22px ${UI}`;
-  ctx.textAlign = "right";
-  ctx.fillText("KEEP OUT OF REACH OF CHILDREN", LABEL_W - PAD, footRule + 72);
-  ctx.textAlign = "left";
 }

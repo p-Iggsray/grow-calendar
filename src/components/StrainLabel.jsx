@@ -270,21 +270,12 @@ export default function StrainLabel({ strain, onClose }) {
               </div>
             </div>
 
-            <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              <span style={labelStyle}>Note along the foot</span>
-              <textarea
-                value={draft.note}
-                onChange={(e) => set("note", e.target.value)}
-                rows={2}
-                placeholder="Sweet berry nose, heavy yield."
-                style={{ ...inputStyle, resize: "vertical", lineHeight: 1.5 }}
-              />
-            </label>
           </div>
 
           <p style={{ fontFamily: UI, fontSize: 10.5, color: "var(--c-text-ghost)", margin: "10px 0 0", lineHeight: 1.5 }}>
             Anything left blank is left off the label rather than printed empty.
-            Six by four inches, landscape, black on white at 300dpi.
+            Names and numbers only, no descriptions. Six by four inches, landscape,
+            black on white at 300dpi.
           </p>
 
           <button
