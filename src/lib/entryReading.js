@@ -34,7 +34,14 @@ const MAX_ROWS = 40;
 // total - so both answer to a single "water" provenance key. Everything else
 // is its own key.
 const READ_KEY = { water_gal: "water", water_plants: "water" };
-function readKey(field) {
+/**
+ * The provenance key a log column is marked under.
+ *
+ * Watering is recorded twice, as a total and as a row per plant, but it was
+ * read once, so both columns answer to one key. Anything that clears or sets a
+ * mark has to go through here or the two halves drift apart.
+ */
+export function readKey(field) {
   return READ_KEY[field] ?? field;
 }
 

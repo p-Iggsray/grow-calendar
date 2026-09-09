@@ -1,4 +1,5 @@
 import { json, error, safeJsonBounded } from "./util.js";
+import { readKey } from "../src/lib/entryReading.js";
 
 function toNum(v) {
   if (v === null || v === undefined || v === "") return null;
@@ -131,46 +132,77 @@ export async function getGrowLog(env, user, growId, date) {
   return json({ date, entry: row ? rowToEntry(row) : null });
 }
 
+// What a caller is allowed to write, and how each column is cast on the way
+// in. The keys are also the only strings ever interpolated into the SQL below.
+const WRITABLE = {
+  water_gal:    (v) => toNum(v),
+  feed:         (v) => toStr(v),
+  temp_high:    (v) => toNum(v),
+  temp_low:     (v) => toNum(v),
+  humidity:     (v) => toNum(v),
+  water_plants: (v) => (Array.isArray(v) ? JSON.stringify(v) : null),
+  training:     (v) => (Array.isArray(v) ? JSON.stringify(v) : null),
+  plant_health: (v) => (Array.isArray(v) ? JSON.stringify(v) : null),
+};
+
+/**
+ * Which columns a save touches, what they become, and what is left marked as
+ * read from the day's written entry afterwards.
+ *
+ * Pure, because this is where the damage used to be done. The endpoint used to
+ * replace the whole row from the body, so the Conditions card saving three
+ * numbers wrote NULL over the water, the feed and everything a reading of the
+ * entry had put there, and cleared the provenance for all of it. A day's log is
+ * edited from several places at once, so a save has to be a patch: a column
+ * absent from the body keeps whatever it already held.
+ */
+export function growLogPatch(body, existingReadFrom) {
+  const cols = Object.keys(WRITABLE).filter((k) => body && Object.hasOwn(body, k));
+
+  // A value the grower has now typed by hand is theirs, so it stops being
+  // marked as read and the next reading will not overwrite it. Only the fields
+  // in this save lose that mark: correcting the humidity says nothing about who
+  // wrote the watering.
+  const nextRead = tryParseObject(existingReadFrom);
+  for (const c of cols) delete nextRead[readKey(c)];
+
+  return {
+    cols,
+    values: cols.map((c) => WRITABLE[c](body[c])),
+    readJson: Object.keys(nextRead).length ? JSON.stringify(nextRead) : null,
+  };
+}
+
+/**
+ * Write the fields a caller actually sent, and only those.
+ *
+ * auto_weather resets to 0 either way: the grower touched this row, so it now
+ * counts as a real logged day even if some values started as auto-filled
+ * weather.
+ */
 export async function putGrowLog(request, env, user, growId, date) {
   let body;
   { const p = await safeJsonBounded(request, 16384); if (!p.ok) return error(p.status, p.error); body = p.data; }
 
   await ensureGrowLogSchema(env);
 
-  const { water_gal, feed, temp_high, temp_low, humidity, water_plants, training, plant_health } = body ?? {};
+  const existing = await env.DB.prepare(
+    "SELECT read_from FROM grow_log WHERE user_id = ? AND grow_id = ? AND date = ?",
+  ).bind(user.id, growId, date).first();
 
-  const waterPlantsJson = Array.isArray(water_plants)  ? JSON.stringify(water_plants)  : null;
-  const trainingJson    = Array.isArray(training)      ? JSON.stringify(training)      : null;
-  const plantHealthJson = Array.isArray(plant_health)  ? JSON.stringify(plant_health)  : null;
+  const { cols, values, readJson } = growLogPatch(body, existing?.read_from);
+  if (cols.length === 0) return json({ ok: true });
 
-  // auto_weather resets to 0: the grower touched this row, so it now counts
-  // as a real logged day even if some values started as auto-filled weather.
-  //
-  // read_from clears for the same reason. Whatever a reading of the day's
-  // writing put here, the grower has now had the form open and saved it, so
-  // every value in it is theirs. That is also what stops the next reading from
-  // undoing a correction: nothing is marked as read any more, so nothing is
-  // open to being overwritten.
+  const sets = cols.map((c) => `${c} = excluded.${c}`).join(",\n      ");
   await env.DB.prepare(`
-    INSERT INTO grow_log (user_id, grow_id, date, water_gal, feed, temp_high, temp_low, humidity, water_plants, training, plant_health, read_from, auto_weather, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 0, datetime('now'))
+    INSERT INTO grow_log (user_id, grow_id, date, ${cols.join(", ")}, read_from, auto_weather, updated_at)
+    VALUES (?, ?, ?, ${cols.map(() => "?").join(", ")}, ?, 0, datetime('now'))
     ON CONFLICT(user_id, grow_id, date) DO UPDATE SET
-      water_gal    = excluded.water_gal,
-      feed         = excluded.feed,
-      temp_high    = excluded.temp_high,
-      temp_low     = excluded.temp_low,
-      humidity     = excluded.humidity,
-      water_plants = excluded.water_plants,
-      training     = excluded.training,
-      plant_health = excluded.plant_health,
-      read_from    = NULL,
+      ${sets},
+      read_from    = excluded.read_from,
       auto_weather = 0,
       updated_at   = excluded.updated_at
-  `).bind(
-    user.id, growId, date,
-    toNum(water_gal), toStr(feed), toNum(temp_high), toNum(temp_low), toNum(humidity),
-    waterPlantsJson, trainingJson, plantHealthJson,
-  ).run();
+  `).bind(user.id, growId, date, ...values, readJson).run();
 
   return json({ ok: true });
 }
