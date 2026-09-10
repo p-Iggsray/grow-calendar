@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Trash2, Archive, Pencil, ArrowRight, BookOpen } from "lucide-react";
+import { Plus, Trash2, Archive, Pencil, ArrowRight, BookOpen, HeartCrack, RotateCcw } from "lucide-react";
 import { usePlantLog } from "../../lib/usePlantLog.js";
 import { api } from "../../lib/api.js";
 import { dayOfGrow } from "../../lib/stageTimeline.js";
@@ -10,8 +10,10 @@ import {
   logKinds, kindLabel, summarizeEntry, fmtDateKey, plantHistoryStats,
 } from "./constants.js";
 import { cropOf, defaultStage, flushTotals, words } from "../../lib/crops.js";
+import { reasonLabel } from "../../lib/growEnding.js";
 import LogEntryForm from "./LogEntryForm.jsx";
 import AddPlantSheet from "./AddPlantSheet.jsx";
+import MarkDeadSheet from "./MarkDeadSheet.jsx";
 import StageTimeline from "./StageTimeline.jsx";
 import PlantPhotos from "./PlantPhotos.jsx";
 import ConfirmModal from "../ConfirmModal.jsx";
@@ -48,6 +50,8 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
   // flipped a plant last Tuesday can say so.
   const [stageDate, setStageDate] = useState(() => ymd(today ?? new Date()));
   const [histFilter, setHistFilter] = useState("all");
+  const [markingDead, setMarkingDead] = useState(false);
+  const [deathBusy, setDeathBusy] = useState(false);
   const [daily, setDaily] = useState([]);
 
   // Per-plant entries logged on the daily screen (read-only here, linked by id).
@@ -104,6 +108,53 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
     } finally { setSavingEdit(false); }
   }
 
+  // Declaring this one lost, and taking it back.
+  //
+  // The loss is written into the plant's own log as well as onto the plant,
+  // because the history is where somebody scrolling back through the run will
+  // actually be looking for it.
+  async function markDead(fields) {
+    setDeathBusy(true);
+    try {
+      const why = fields.deathReason ? reasonLabel(fields.deathReason, crop) : null;
+      const created = await addEntry({
+        kind: "note",
+        date: fields.diedOn,
+        body: [`Lost${why ? ` · ${why}` : ""}`, fields.deathNote].filter(Boolean).join("\n"),
+      });
+      // The id of the entry written on the grower's behalf, so undoing this
+      // takes back exactly that one. Without it a mis-tap leaves a note in the
+      // history for good, and hunting for it by its text later could just as
+      // easily delete something they wrote themselves.
+      await api.patchPlant(growId, plant.id, {
+        status: "dead", ...fields, deathLogId: created?.id ?? null,
+      });
+      setMarkingDead(false);
+      onLogChange?.();
+      onChanged?.();
+    } finally { setDeathBusy(false); }
+  }
+
+  async function revive() {
+    setDeathBusy(true);
+    try {
+      // The note goes first: if it fails, the plant is still marked lost and
+      // still points at it, so trying again is the same operation. Done the
+      // other way round a failure would strand the note with nothing left
+      // naming it.
+      if (plant.deathLogId) {
+        await removeEntry(plant.deathLogId).catch(() => { /* already gone by hand */ });
+      }
+      // Cleared in the same patch that restores the status, so a living plant
+      // is never left carrying a date of death.
+      await api.patchPlant(growId, plant.id, {
+        status: "growing", diedOn: null, deathReason: null, deathNote: null, deathLogId: null,
+      });
+      onLogChange?.();
+      onChanged?.();
+    } finally { setDeathBusy(false); }
+  }
+
   // One-way: the only stage change offered is the NEXT one, after confirming.
   async function advanceStage() {
     if (stageBusy || !upcoming) return;
@@ -137,11 +188,26 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
             title={`${w.Unit} settings`}
             items={[
               { icon: Pencil, label: `Edit ${w.unit}`, detail: `Name, type, ${w.lengthLabel.toLowerCase()}`, onClick: () => setEditing(true) },
-              {
+              // Archiving is for one that came off. Losing one is a different
+              // fact and deserves its own word, or a plant that was taken ends
+              // up filed as harvested forever.
+              plant.status !== "dead" && {
                 icon: Archive,
                 label: plant.status === "growing" ? `Archive ${w.unit}` : `Unarchive ${w.unit}`,
                 detail: plant.status === "growing" ? "Keeps its log, hides it from the list" : null,
                 onClick: () => onArchive(plant),
+              },
+              plant.status === "dead" ? {
+                icon: RotateCcw,
+                label: "It is still alive, undo",
+                detail: "Puts it back in the growing list and clears the record",
+                onClick: revive,
+                disabled: deathBusy,
+              } : {
+                icon: HeartCrack,
+                label: "Mark as dead or lost",
+                detail: "Died or was taken before harvest",
+                onClick: () => { setMarkingDead(true); setEditing(false); },
               },
               { icon: Trash2, label: `Delete ${w.unit}`, tone: "destructive", onClick: () => onDelete(plant) },
             ]}
@@ -155,6 +221,57 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
           {plant.flowerWeeks ? ` · ${plant.flowerWeeks}wk ${mushrooms ? "to flush" : "flower"}` : ""}
           {!mushrooms && plant.potSize ? ` · ${plant.potSize} gal` : ""}
         </div>
+
+        {/* Already lost: the record of it, at the top, where the stage and the
+            next-stage button would otherwise be inviting a move that is over. */}
+        {plant.status === "dead" && !markingDead && (
+          <div
+            className="card"
+            style={{
+              marginTop: 14, padding: 13, display: "flex", flexDirection: "column", gap: 8,
+              borderColor: "rgba(247, 215, 116, 0.3)",
+            }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <HeartCrack size={14} strokeWidth={2} style={{ color: "var(--c-warn)", flexShrink: 0 }} />
+              <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "var(--c-warn)" }}>
+                Lost
+              </span>
+              <span style={{ flex: 1 }} />
+              {plant.diedOn && (
+                <span style={{ fontFamily: MONO, fontSize: 11.5, color: "var(--c-text-ghost)" }}>
+                  {fmtDateKey(plant.diedOn)}
+                </span>
+              )}
+            </div>
+            {plant.deathReason && (
+              <div style={{ fontFamily: MONO, fontSize: 13, color: "var(--c-text-dim)" }}>
+                {reasonLabel(plant.deathReason, crop)}
+              </div>
+            )}
+            {plant.deathNote && (
+              <div style={{
+                fontFamily: MONO, fontSize: 12.5, lineHeight: 1.55, color: "var(--c-text-muted)",
+                whiteSpace: "pre-wrap", borderLeft: "2px solid var(--c-border-strong)", paddingLeft: 10,
+              }}>
+                {plant.deathNote}
+              </div>
+            )}
+          </div>
+        )}
+
+        {markingDead && (
+          <div style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 14, marginTop: 14 }}>
+            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "var(--c-warn)" }}>
+              Mark this {w.unit} lost
+            </div>
+            <MarkDeadSheet
+              crop={crop}
+              onSave={markDead}
+              onCancel={() => setMarkingDead(false)}
+              saving={deathBusy}
+            />
+          </div>
+        )}
 
         {editing && (
           <div style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 14, marginTop: 14 }}>

@@ -18,9 +18,13 @@ export function usePlantLog(growId, plantId, enabled) {
 
   useEffect(() => { reload(); }, [reload]);
 
+  // Hands back what the server made, so a caller that wrote an entry on the
+  // grower's behalf can take exactly that one back again rather than guessing
+  // at it later.
   const addEntry = useCallback(async (entry) => {
-    await api.addPlantLogEntry(growId, plantId, entry);
+    const created = await api.addPlantLogEntry(growId, plantId, entry);
     reload();
+    return created;
   }, [growId, plantId, reload]);
 
   const editEntry = useCallback(async (entryId, patch) => {

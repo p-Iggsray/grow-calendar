@@ -34,11 +34,18 @@ export default function PlantCard({ plant, metrics, crop, today, firstDate, onOp
         <div style={{ fontSize: 17, fontWeight: 700, fontFamily: SERIF, color: "var(--c-text)", lineHeight: 1.2 }}>
           {plant.name || `Unnamed ${w.unit}`}
         </div>
-        {health && (
+        {/* A lost one and an archived one both sit in the same drawer, and
+            only this says which is which. It wins over the health reading,
+            which is now a reading from before it died. */}
+        {plant.status === "dead" ? (
+          <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "var(--c-warn)", textTransform: "uppercase", flexShrink: 0 }}>
+            Lost
+          </span>
+        ) : health ? (
           <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: health.color, textTransform: "uppercase", flexShrink: 0 }}>
             {health.label}
           </span>
-        )}
+        ) : null}
       </div>
       <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)", marginTop: 6, letterSpacing: 0.3 }}>
         {typeLabel(plant.type, crop) || plant.type}

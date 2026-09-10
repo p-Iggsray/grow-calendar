@@ -5,6 +5,7 @@ import {
   defaultFate, endingList, latestEnding, isRunEnded, fateCounts, endingHeadline,
 } from "../src/lib/growEnding.js";
 import { validateEnding } from "../worker/growEnding.js";
+import { validatePlantFields } from "../worker/plantsRoster.js";
 
 const ROSTER = new Set(["p1", "p2", "p3"]);
 
@@ -165,4 +166,72 @@ test("a long note is cut rather than refused", () => {
   }, "cannabis", ROSTER);
   assert.equal(v.ok, true);
   assert.equal(v.value.note.length, 2000);
+});
+
+// ── Declaring one plant dead, mid-run ───────────────────────────────────────
+//
+// Ending a whole grow is a separate act. This is the one that happens in the
+// middle, to one plant, while the rest of the space carries on.
+
+test("a plant can be marked dead with the day and the cause", () => {
+  const v = validatePlantFields(
+    { status: "dead", diedOn: "2026-09-10", deathReason: "theft", deathNote: "Gone from the bed." },
+    true, "cannabis");
+  assert.equal(v.ok, true);
+  assert.deepEqual(v.value, {
+    status: "dead", diedOn: "2026-09-10", deathReason: "theft", deathNote: "Gone from the bed.",
+  });
+});
+
+// Not knowing what got it is common and must not stop the loss being recorded.
+test("the cause is optional", () => {
+  const v = validatePlantFields({ status: "dead", diedOn: "2026-09-10" }, true, "cannabis");
+  assert.equal(v.ok, true);
+  assert.equal(v.value.status, "dead");
+  assert.equal(v.value.deathReason, undefined);
+});
+
+test("bringing a plant back clears the record in the same patch", () => {
+  const v = validatePlantFields(
+    { status: "growing", diedOn: null, deathReason: null, deathNote: null }, true, "cannabis");
+  assert.equal(v.ok, true);
+  assert.deepEqual(v.value, { status: "growing", diedOn: null, deathReason: null, deathNote: null });
+});
+
+test("a cause from the other crop is refused on a plant too", () => {
+  assert.equal(
+    validatePlantFields({ status: "dead", deathReason: "contamination" }, true, "cannabis").ok,
+    false);
+  assert.equal(
+    validatePlantFields({ status: "dead", deathReason: "hermie" }, true, "mushrooms").ok,
+    false);
+  // ...and each crop's own is fine.
+  assert.equal(
+    validatePlantFields({ status: "dead", deathReason: "contamination" }, true, "mushrooms").ok,
+    true);
+});
+
+test("a malformed date of death is refused rather than stored", () => {
+  assert.equal(validatePlantFields({ diedOn: "10/09/2026" }, true, "cannabis").ok, false);
+  assert.equal(validatePlantFields({ diedOn: 20260910 }, true, "cannabis").ok, false);
+});
+
+test("a long death note is cut rather than refused", () => {
+  const v = validatePlantFields({ deathNote: "x".repeat(2000) }, true, "cannabis");
+  assert.equal(v.ok, true);
+  assert.equal(v.value.deathNote.length, 500);
+});
+
+// The undo has to take back the note the app wrote and nothing the grower did,
+// so the entry's id is stored rather than the note being found by its text.
+test("the id of the app-written log entry rides on the plant", () => {
+  const v = validatePlantFields({ status: "dead", deathLogId: 41 }, true, "cannabis");
+  assert.equal(v.ok, true);
+  assert.equal(v.value.deathLogId, 41);
+
+  // Anything that is not a real row id becomes null rather than being trusted
+  // into a later delete.
+  for (const bad of [0, -3, 1.5, "41; DROP", null, "", NaN]) {
+    assert.equal(validatePlantFields({ deathLogId: bad }, true, "cannabis").value.deathLogId, null);
+  }
 });

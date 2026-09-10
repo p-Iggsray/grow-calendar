@@ -5,6 +5,9 @@
 import {
   cropOf, defaultStage, defaultVarietyType, isVarietyType, stagesFor, words,
 } from "../src/lib/crops.js";
+import { isEndReason } from "../src/lib/growEnding.js";
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // A roster entry is a cannabis plant or a mushroom tub, and which one decides
 // its stages and its type. The crop travels on the survey, so every function
@@ -104,6 +107,38 @@ export function validatePlantFields(fields, partial = false, crop = undefined) {
     if (!PLANT_STATUSES.has(fields.status)) return { ok: false, error: "invalid status" };
     out.status = fields.status;
   }
+
+  // What happened to one that did not make it.
+  //
+  // A status of "dead" on its own says a plant is gone and nothing about why,
+  // which is the half of the record actually worth having a year later. All
+  // three are nullable so bringing a plant back clears them in the same patch
+  // that restores its status, rather than leaving a live plant carrying a date
+  // of death.
+  if (has("diedOn")) {
+    const v = fields.diedOn;
+    if (v === null || v === "") out.diedOn = null;
+    else if (typeof v === "string" && DATE_RE.test(v)) out.diedOn = v;
+    else return { ok: false, error: "diedOn must be YYYY-MM-DD" };
+  }
+  if (has("deathReason")) {
+    const v = fields.deathReason;
+    // The same list the whole-run ending offers, so a tub cannot be recorded as
+    // having gone hermie and a plant cannot be recorded as contaminated.
+    if (!v) out.deathReason = null;
+    else if (isEndReason(v, kind)) out.deathReason = v;
+    else return { ok: false, error: "invalid deathReason" };
+  }
+  if (has("deathNote")) {
+    out.deathNote = typeof fields.deathNote === "string" ? fields.deathNote.slice(0, 500) : null;
+  }
+  // The log entry the app wrote on the grower's behalf when the loss was
+  // recorded, so undoing it removes that one and nothing they wrote themselves.
+  if (has("deathLogId")) {
+    const n = Number(fields.deathLogId);
+    out.deathLogId = Number.isSafeInteger(n) && n > 0 ? n : null;
+  }
+
   return { ok: true, value: out };
 }
 
@@ -174,7 +209,6 @@ export function removePlantFromSurvey(survey, plantId) {
   return { survey: { ...survey, strains } };
 }
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const BODY_MAX = 2000;
 const DETAIL_MAX = 2000;
 
