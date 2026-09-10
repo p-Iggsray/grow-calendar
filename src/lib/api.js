@@ -167,6 +167,11 @@ export const api = {
     request(`/api/grows/${id}`, { method: "PATCH", body: JSON.stringify({ environmentSetup }) }),
   deleteGrow: (id) =>
     request(`/api/grows/${id}`, { method: "DELETE", body: "{}" }),
+  // Record how a run ended. Leaves the space active for the next one.
+  endGrow: (id, ending) =>
+    request(`/api/grows/${id}/ending`, { method: "POST", body: JSON.stringify({ ending }) }),
+  undoGrowEnding: (id) =>
+    request(`/api/grows/${id}/ending`, { method: "DELETE" }),
   updateGrowLifecycle: (id, lifecycle) =>
     request(`/api/grows/${id}/lifecycle`, { method: "PATCH", body: JSON.stringify({ lifecycle }) }),
   setupGrow: (id, survey) =>

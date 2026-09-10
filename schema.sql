@@ -238,6 +238,8 @@ CREATE TABLE IF NOT EXISTS grows (
   generated_plan  TEXT,            -- JSON: AI-generated plan
   phase_overrides TEXT,            -- JSON: per-phase task overrides
   event_rules     TEXT,            -- JSON: recurring event rules ({window x cadence})
+  lifecycle       TEXT,            -- JSON: post-harvest phase and its trackers
+  endings         TEXT,            -- JSON: array of how each run in this space ended
   created_at      TEXT NOT NULL,
   updated_at      TEXT NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

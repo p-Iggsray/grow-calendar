@@ -14,6 +14,7 @@ import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from ".
 import { getHealth, postClientError } from "./health.js";
 import { getWeather } from "./weather.js";
 import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, patchGrowLifecycle, setupGrow } from "./grows.js";
+import { endGrow, undoGrowEnding } from "./growEnding.js";
 import { listGrowEvents, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./events.js";
 import { createJournalPhoto, getPhotoImage, deleteJournalPhoto, listPlantPhotos, backfillPhotosToR2 } from "./photos.js";
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
@@ -167,6 +168,15 @@ async function authenticatedRoute(request, env, path, method, user) {
     if (method === "PATCH")  return patchGrow(request, env, user, growId);
     if (method === "DELETE") return deleteGrow(env, user, growId);
   }
+  // Ending a run. Deliberately separate from the lifecycle route: that one
+  // finishes a grow that went to plan and closes the space with it, this one
+  // records how a run ended and leaves the space open for the next.
+  const growEndingMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/ending$/);
+  if (growEndingMatch) {
+    if (method === "POST")   return endGrow(request, env, user, growEndingMatch[1]);
+    if (method === "DELETE") return undoGrowEnding(env, user, growEndingMatch[1]);
+  }
+
   const growLifecycleMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/lifecycle$/);
   if (growLifecycleMatch && method === "PATCH") return patchGrowLifecycle(request, env, user, growLifecycleMatch[1]);
   const envImportMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/env\/import$/);

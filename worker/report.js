@@ -7,6 +7,7 @@
 // embedded - see the note above the photo query for why.
 import { error } from "./util.js";
 import { photoUrl } from "./photoStore.js";
+import { endingList, endingHeadline, reasonLabel } from "../src/lib/growEnding.js";
 import { parseDate } from "../src/lib/dates-core.js";
 import { loadStageTimeline } from "./stages.js";
 import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../src/lib/stageTimeline.js";
@@ -477,6 +478,32 @@ function renderReport(ctx) {
     eventRows.length ? ["Calendar events", String(eventRows.length)] : null,
     firstDate ? ["Length of record", weeksAndDays(dayOfGrow(firstDate, ymdOf(today)) ?? 0)] : null,
   ].filter(Boolean);
+  // ── How it ended ─────────────────────────────────────────────────────────
+  // Placed last of the narrative sections, because it is the last thing that
+  // happened. A space can hold several endings if it has been replanted, and
+  // all of them belong here: the run that was stolen in September is exactly
+  // the record somebody opens this report to read.
+  const endings = endingList(parseField(row.endings));
+  const endingsSection = endings.length
+    ? section(endings.length === 1 ? "How it ended" : "How each run ended",
+      endings.slice().reverse().map((e) => {
+        const lost = e.outcome === "lost";
+        const why = lost ? reasonLabel(e.reason, crop) : null;
+        return `<div class="ending${lost ? " ending-lost" : ""}">
+          <div class="ending-head">
+            <span class="ending-what">${lost ? "Ended short" : "Finished"}</span>
+            <span class="ending-date">${fmtNice(asDate(e.endedOn))}</span>
+          </div>
+          <div class="ending-line">${why ? `${esc(why)} · ` : ""}${esc(endingHeadline(e, crop))}</div>
+          ${e.note ? `<p class="ending-note">${esc(e.note)}</p>` : ""}
+          ${(e.plants ?? []).length ? `<div class="ending-plants">${
+            e.plants.map((p) => `<span class="fate fate-${esc(p.status)}">${
+              esc(p.name || "Unnamed")}${p.status === "dead" ? " · lost" : " · harvested"}</span>`).join("")
+          }</div>` : ""}
+        </div>`;
+      }).join(""))
+    : "";
+
   const statsSection = section("Season Stats",
     `<div class="defs">${summaryRows.map(([l, v]) =>
       `<div class="def"><div class="def-l">${esc(l)}</div><div class="def-v">${esc(v)}</div></div>`).join("")}</div>`);
@@ -514,6 +541,7 @@ function renderReport(ctx) {
         phasesSection ? "Time In Each Stage" : null,
         journalCards ? "Journal, day by day" : null,
         platesSection ? "Plates, the photographic record" : null,
+        endingsSection ? (endings.length === 1 ? "How it ended" : "How each run ended") : null,
         "Season Stats",
       ].filter(Boolean).map((t) => `<li>${t}</li>`).join("")}
     </ol>
@@ -524,6 +552,7 @@ function renderReport(ctx) {
   ${phasesSection}
   ${journalSection}
   ${platesSection}
+  ${endingsSection}
   ${statsSection}
   <footer class="foot">
     Generated ${esc(generated)} · Black Cat Botanicals. For educational and personal
@@ -605,6 +634,20 @@ h1{font-size:34px;line-height:1.1;margin:0 0 10px;color:var(--gd);letter-spacing
 .ev-notes{color:#3f5a45;font-size:13px;}
 .daynote{font-size:14px;background:#fffdf3;border:1px solid #f1e9c8;border-radius:8px;padding:8px 12px;margin:8px 0;white-space:pre-wrap;}
 .empty{color:var(--mut);font-style:italic;}
+/* ── How a run ended ────────────────────────────────────────────────────── */
+.ending{border-left:3px solid var(--g);padding:2px 0 2px 13px;margin:0 0 18px;break-inside:avoid;}
+.ending:last-child{margin-bottom:0;}
+.ending-lost{border-left-color:#b45309;}
+.ending-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:5px;}
+.ending-what{font-weight:700;font-size:14px;letter-spacing:.4px;}
+.ending-lost .ending-what{color:#b45309;}
+.ending-date{font-family:'Courier New',monospace;font-size:11px;color:var(--mut);margin-left:auto;}
+.ending-line{font-size:13.5px;color:var(--ink);}
+.ending-note{font-size:14px;margin:9px 0 0;white-space:pre-wrap;color:#3f3a34;}
+.ending-plants{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.fate{font-family:'Courier New',monospace;font-size:10.5px;padding:3px 8px;border-radius:9px;
+  border:1px solid var(--line);color:var(--mut);}
+.fate-dead{border-color:#e7c9a3;background:#fdf6ec;color:#8a5a12;}
 .foot{font-size:11px;color:var(--mut);text-align:center;margin-top:30px;line-height:1.6;font-family:'Courier New',monospace;}
 /* ── The photographic record ───────────────────────────────────────────── */
 .lede{font-size:13px;color:var(--mut);margin:0 0 14px;font-style:italic;}

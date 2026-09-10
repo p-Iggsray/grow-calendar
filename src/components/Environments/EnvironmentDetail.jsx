@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Pencil, SlidersHorizontal, CalendarCheck, Trash2, Sun, Ruler, Droplets, Sprout, Wind } from "lucide-react";
+import { Plus, Pencil, SlidersHorizontal, CalendarCheck, Trash2, Sun, Ruler, Droplets, Sprout, Wind, Flag } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { useStageTimeline } from "../../lib/useJournal.js";
 import { tapHaptic } from "../../lib/haptics.js";
 import { getLifecyclePhase } from "../../lib/lifecycle.js";
+import { latestEnding, isRunEnded } from "../../lib/growEnding.js";
+import EndGrowForm from "./EndGrowForm.jsx";
+import EndingCard from "./EndingCard.jsx";
 import { MONO, partitionPlants } from "../PlantsTab/constants.js";
 import PlantCard from "../PlantsTab/PlantCard.jsx";
 import { cropOf, words } from "../../lib/crops.js";
@@ -100,6 +103,9 @@ export default function EnvironmentDetail({
   const [showArchived, setShowArchived] = useState(false);
   const [confirmDeletePlant, setConfirmDeletePlant] = useState(null);
   const [confirmDrying, setConfirmDrying] = useState(false);
+  const [endingRun, setEndingRun] = useState(false);
+  const [savingEnding, setSavingEnding] = useState(false);
+  const [undoingEnding, setUndoingEnding] = useState(false);
   const [summary, setSummary] = useState({});
   // Drying can only be started on the environment the calendar is following,
   // which is the one the lifecycle hook writes to.
@@ -115,6 +121,10 @@ export default function EnvironmentDetail({
   useEffect(() => { loadSummary(); }, [loadSummary, grow.survey]);
 
   const { active, archived } = partitionPlants(survey);
+  // How the last lot in here ended, and whether that ending is still the
+  // current state of the space or history under a run that has since restarted.
+  const lastEnding = latestEnding(grow.endings);
+  const runEnded = isRunEnded(grow.endings, [...active, ...archived]);
   const chips = envSetupChips(survey);
   // What this space grows decides what the things in it are called.
   const crop = cropOf(survey);
@@ -139,6 +149,16 @@ export default function EnvironmentDetail({
     const next = plant.status === "growing" ? "harvested" : "growing";
     await api.patchPlant(growId, plant.id, { status: next });
     await onChanged?.();
+  }
+  async function handleEndRun(ending) {
+    setSavingEnding(true);
+    try { await api.endGrow(growId, ending); setEndingRun(false); await onChanged?.(); }
+    finally { setSavingEnding(false); }
+  }
+  async function handleUndoEnding() {
+    setUndoingEnding(true);
+    try { await api.undoGrowEnding(growId); await onChanged?.(); }
+    finally { setUndoingEnding(false); }
   }
   async function handleDeletePlant(plant) {
     await api.deletePlant(growId, plant.id);
@@ -172,6 +192,11 @@ export default function EnvironmentDetail({
                 icon: Wind, label: "Start drying early",
                 detail: "Ends the calendar and opens the dry tracker",
                 onClick: () => setConfirmDrying(true), disabled: dryingBusy,
+              },
+              survey && !runEnded && {
+                icon: Flag, label: "End this grow",
+                detail: `Records how it ended and keeps the space`,
+                onClick: () => setEndingRun(true),
               },
               { icon: Trash2, label: "Delete environment", tone: "destructive", onClick: () => onDelete(grow) },
             ]}
@@ -210,6 +235,34 @@ export default function EnvironmentDetail({
           <div style={{ fontFamily: MONO, fontSize: 11.5, color: "var(--c-warn)", marginTop: 12 }}>
             Setup is not finished, so this space has no calendar yet.
           </div>
+        )}
+
+        {/* How the last lot ended. Above the space and the roster because when
+            it is the current state it is the first thing worth knowing, and
+            once plants are growing again it stops rendering here entirely. */}
+        {endingRun ? (
+          <>
+            <SectionTitle>End this grow</SectionTitle>
+            <div className="card" style={{ padding: 14 }}>
+              <EndGrowForm
+                survey={survey}
+                plants={active}
+                onSave={handleEndRun}
+                onCancel={() => setEndingRun(false)}
+                saving={savingEnding}
+              />
+            </div>
+          </>
+        ) : runEnded && (
+          <>
+            <SectionTitle>How it ended</SectionTitle>
+            <EndingCard
+              ending={lastEnding}
+              survey={survey}
+              onUndo={handleUndoEnding}
+              undoing={undoingEnding}
+            />
+          </>
         )}
 
         {/* The space itself - editing lives behind the header gear. */}

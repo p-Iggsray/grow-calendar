@@ -81,6 +81,7 @@ async function ensureMigrated(env, userId) {
         phase_overrides TEXT,
         event_rules     TEXT,
         lifecycle       TEXT,
+        endings         TEXT,
         created_at      TEXT NOT NULL,
         updated_at      TEXT NOT NULL
       )`
@@ -99,6 +100,10 @@ async function ensureMigrated(env, userId) {
   // existed (no-op on a freshly-created table above).
   try {
     await env.DB.prepare(`ALTER TABLE grows ADD COLUMN lifecycle TEXT`).run();
+  } catch { /* column already exists */ }
+  // How past runs in this space ended. See worker/growEnding.js.
+  try {
+    await env.DB.prepare(`ALTER TABLE grows ADD COLUMN endings TEXT`).run();
   } catch { /* column already exists */ }
 
   const existing = await env.DB.prepare(
@@ -148,6 +153,7 @@ export async function loadRawGrow(env, userId, growId) {
   return {
     survey:        parseField(row.survey),
     lifecycle:     parseField(row.lifecycle),
+    endings:       parseField(row.endings),
     needsSetup:    !row.survey,
     displayName:   row.display_name,
     status:        row.status,
@@ -159,7 +165,7 @@ export async function loadRawGrow(env, userId, growId) {
 export async function loadRawGrows(env, userId) {
   await ensureMigrated(env, userId);
   const res = await env.DB.prepare(
-    `SELECT id, display_name, status, survey, lifecycle, created_at
+    `SELECT id, display_name, status, survey, lifecycle, endings, created_at
      FROM grows WHERE user_id = ? ORDER BY created_at DESC`
   ).bind(userId).all();
   return (res.results ?? []).map(r => ({
@@ -168,6 +174,7 @@ export async function loadRawGrows(env, userId) {
     status:        r.status,
     survey:        parseField(r.survey),
     lifecycle:     parseField(r.lifecycle),
+    endings:       parseField(r.endings),
     createdAt:     r.created_at,
   }));
 }
@@ -179,7 +186,7 @@ export async function listGrows(env, user) {
   let res;
   try {
     res = await env.DB.prepare(
-      `SELECT id, display_name, status, survey, created_at, updated_at
+      `SELECT id, display_name, status, survey, endings, created_at, updated_at
        FROM grows WHERE user_id = ? ORDER BY created_at DESC`
     ).bind(user.id).all();
   } catch (e) {
@@ -194,6 +201,9 @@ export async function listGrows(env, user) {
     displayName:   r.display_name,
     status:        r.status,
     survey:        parseField(r.survey),
+    // The environment screen reads this off the list rather than fetching the
+    // space again, so it has to travel with it.
+    endings:       parseField(r.endings),
     // Day 0 is the day the space was created - no query needed for it.
     firstDate:     growAnchor(r.created_at),
     createdAt:     r.created_at,
@@ -250,6 +260,7 @@ export async function getGrow(env, user, growId) {
     status:       row.status,
     survey,
     lifecycle:    parseField(row.lifecycle),
+    endings:      parseField(row.endings),
     needsSetup:   !survey,
     createdAt:    row.created_at,
     updatedAt:    row.updated_at,
