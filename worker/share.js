@@ -66,8 +66,10 @@ export async function getSharedView(env, token) {
   let grow = null;
   try {
     const grows = await loadRawGrows(env, row.user_id);
-    grow = grows.find(g => g.status === "active" && g.survey)
-        ?? grows.find(g => g.survey)
+    // An archived space is put away; a share link never lands on one.
+    const live = grows.filter(g => !g.archivedAt);
+    grow = live.find(g => g.status === "active" && g.survey)
+        ?? live.find(g => g.survey)
         ?? null;
   } catch { /* grows table unavailable */ }
 

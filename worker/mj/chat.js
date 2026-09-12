@@ -112,7 +112,9 @@ export async function postMj(request, env, user) {
     buildEnvContext(env, user.id, dayGrowId),
   ]);
 
-  const growsContext   = buildGrowsContext(grows, activeGrowId);
+  // Archived spaces are not what the grower is working in, so MJ is not told
+  // about them and cannot act on one by mistake.
+  const growsContext   = buildGrowsContext(grows.filter(g => !g.archivedAt), activeGrowId);
 
   // Per-grow profile (location + plant counts) so MJ tailors advice without
   // a tool call. Replaces the old hardcoded location in the persona.

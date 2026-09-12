@@ -29,7 +29,9 @@ function growLine(grow, todayKey) {
 // keep so you can jump between them from anywhere in the app, rather than
 // digging into Spaces and re-activating one.
 export default function GrowSwitcher({ today, onNewEnvironment }) {
-  const { grows, activeGrowId, setActiveGrowId } = usePlan();
+  // Archived spaces are put away, so the switcher never offers one. They are
+  // still reachable, and restorable, from the environments list.
+  const { liveGrows: grows, activeGrowId, setActiveGrowId } = usePlan();
   const [open, setOpen] = useState(false);
   const todayKey = ymd(today ?? new Date());
 

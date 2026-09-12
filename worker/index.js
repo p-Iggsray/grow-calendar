@@ -13,7 +13,8 @@ import { getBackup } from "./backup.js";
 import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
 import { getHealth, postClientError } from "./health.js";
 import { getWeather } from "./weather.js";
-import { listGrows, createGrow, getGrow, patchGrow, deleteGrow, patchGrowLifecycle, setupGrow } from "./grows.js";
+import { listGrows, createGrow, getGrow, patchGrow, patchGrowLifecycle, setupGrow } from "./grows.js";
+import { getArchive, archiveGrow, unarchiveGrow } from "./archive.js";
 import { listGrowEvents, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./events.js";
 import { createJournalPhoto, getJournalPhoto, getPhotoImage, deleteJournalPhoto, listPlantPhotos } from "./photos.js";
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
@@ -165,7 +166,15 @@ async function authenticatedRoute(request, env, path, method, user) {
     const growId = growMatch[1];
     if (method === "GET")    return getGrow(env, user, growId);
     if (method === "PATCH")  return patchGrow(request, env, user, growId);
-    if (method === "DELETE") return deleteGrow(env, user, growId);
+    // No DELETE. A space is retired by archiving it, which keeps everything.
+  }
+  // The archive: what is in it, and putting a space in or taking it back out.
+  if (path === "/api/archive" && method === "GET") return getArchive(env, user);
+  const growArchiveMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/(archive|unarchive)$/);
+  if (growArchiveMatch && method === "POST") {
+    return growArchiveMatch[2] === "archive"
+      ? archiveGrow(request, env, user, growArchiveMatch[1])
+      : unarchiveGrow(env, user, growArchiveMatch[1]);
   }
   const growLifecycleMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/lifecycle$/);
   if (growLifecycleMatch && method === "PATCH") return patchGrowLifecycle(request, env, user, growLifecycleMatch[1]);

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Pencil, SlidersHorizontal, CalendarCheck, Trash2, Sun, Ruler, Droplets, Sprout, Wind } from "lucide-react";
+import { Plus, Pencil, SlidersHorizontal, CalendarCheck, Archive, ArchiveRestore, Sun, Ruler, Droplets, Sprout, Wind } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { useStageTimeline } from "../../lib/useJournal.js";
 import { tapHaptic } from "../../lib/haptics.js";
@@ -84,7 +84,7 @@ function pillBtn(color = "var(--c-text-dim)", bg = "var(--c-surface-1)", border 
 // in it, and its measured conditions. This is where a grower works day to day
 // outside the calendar.
 export default function EnvironmentDetail({
-  grow, isActive, today, onClose, onActivate, onOpenSettings, onDelete, onChanged, onOpenJournalDay,
+  grow, isActive, today, onClose, onActivate, onOpenSettings, onArchive, onUnarchive, onChanged, onOpenJournalDay,
 }) {
   const growId = grow.id;
   const survey = grow.survey ?? null;
@@ -105,6 +105,7 @@ export default function EnvironmentDetail({
   // which is the one the lifecycle hook writes to.
   const { save: saveLifecycle, busy: dryingBusy } = useLifecycleSave();
   const growing = getLifecyclePhase(grow.lifecycle) === "growing";
+  const isArchived = Boolean(grow.archivedAt);
 
   const loadSummary = useCallback(() => {
     if (!growId) { setSummary({}); return; }
@@ -173,7 +174,15 @@ export default function EnvironmentDetail({
                 detail: "Ends the calendar and opens the dry tracker",
                 onClick: () => setConfirmDrying(true), disabled: dryingBusy,
               },
-              { icon: Trash2, label: "Delete environment", tone: "destructive", onClick: () => onDelete(grow) },
+              isArchived ? {
+                icon: ArchiveRestore, label: "Restore from the archive",
+                detail: "Puts it back on the list and the calendar switcher",
+                onClick: () => onUnarchive(grow),
+              } : {
+                icon: Archive, label: "Archive environment",
+                detail: "Keeps everything, takes it off the list",
+                onClick: () => onArchive(grow),
+              },
             ]}
           />
         )}
@@ -186,8 +195,22 @@ export default function EnvironmentDetail({
           </div>
         )}
 
+        {/* Archived spaces are read-only in spirit: everything they recorded
+            is here to look at, but they are not the one being grown in. */}
+        {isArchived && (
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 6, marginTop: 12,
+            padding: "7px 12px", borderRadius: 16,
+            background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
+            fontFamily: MONO, fontSize: 11, color: "var(--c-text-muted)", letterSpacing: 0.5,
+          }}>
+            <Archive size={13} strokeWidth={2} />
+            Archived. Everything in it was kept.
+          </div>
+        )}
+
         {/* Calendar activation */}
-        {isActive ? (
+        {isArchived ? null : isActive ? (
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 6, marginTop: 12,
             padding: "7px 12px", borderRadius: 16,

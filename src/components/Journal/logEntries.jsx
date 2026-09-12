@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { X, Plus, Droplets, Scissors, Stethoscope } from "lucide-react";
+import { X, Droplets, Scissors, Stethoscope } from "lucide-react";
 import ChoiceField from "../ChoiceField.jsx";
 import { TRAINING_ACTIONS } from "../../lib/choices.js";
 import {
   WATER_UNITS, UNIT_STEP, rowDisplay, waterRow, rememberWaterUnit, loadWaterUnit,
 } from "../../lib/waterUnits.js";
+import { plantRef } from "../../lib/plantRows.js";
 import { cropOf } from "../../lib/crops.js";
 
 // ── Log tab helpers ────────────────────────────────────────────────────────
@@ -23,26 +24,6 @@ export function LogSection({ label, first = false, children }) {
       </div>
       {children}
     </div>
-  );
-}
-
-export function AddEntryButton({ onClick, label }) {
-  return (
-    <button
-      type="button"
-      className="touch-target"
-      onClick={onClick}
-      style={{
-        width: "100%", padding: "11px", borderRadius: 10, marginTop: 6,
-        background: "none", border: "1px dashed var(--c-border)",
-        color: "var(--c-text-ghost)", cursor: "pointer",
-        fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1.5,
-        display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-        transition: "border-color 0.15s, color 0.15s",
-      }}>
-      <Plus size={11} strokeWidth={2.5} />
-      {label}
-    </button>
   );
 }
 
@@ -92,23 +73,36 @@ const _selectInput = {
 };
 
 
-// The plants of this environment as a dropdown. A row saved before the plant
-// existed (or typed by hand long ago) keeps its value as an extra option, so
-// switching to a picker never silently erases what was recorded.
-export function PlantSelect({ value, onChange, plants = [], unitWord = "plant" }) {
-  const names = plants.map((p) => (p?.name || "").trim()).filter(Boolean);
+// The plants of this environment as a dropdown.
+//
+// The empty option is not "all of them". A row that names no plant is a row
+// nothing can read back: it does not show in any plant's history and no report
+// can attribute it. Watering the whole tent is several waterings and is logged
+// as one row each, which is what the "every plant" box below is for.
+//
+// A row saved before the plant existed (or typed by hand long ago) keeps its
+// value as an extra option, so switching to a picker never silently erases what
+// was recorded. Hands the caller the roster entry it picked, so the row can
+// carry the plant's id and not just its name.
+export function PlantSelect({ value, onPick, plants = [], unitWord = "plant" }) {
   const current = String(value ?? "").trim();
-  const options = current && !names.some((n) => n.toLowerCase() === current.toLowerCase())
-    ? [...names, current]
-    : names;
+  const known = (plants ?? []).filter((p) => String(p?.name ?? "").trim());
+  const nameOf = (p) => String(p.name).trim();
+  const legacy = current && !known.some((p) => nameOf(p).toLowerCase() === current.toLowerCase())
+    ? current
+    : null;
   return (
     <select
       value={current}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => {
+        const picked = e.target.value;
+        onPick(known.find((p) => nameOf(p) === picked) ?? (picked ? { name: picked } : null));
+      }}
       style={_selectInput}
       aria-label={unitWord === "plant" ? "Plant" : "Tub"}>
-      <option value="">{`All ${unitWord}s`}</option>
-      {options.map((n) => <option key={n} value={n}>{n}</option>)}
+      <option value="">{`Which ${unitWord}?`}</option>
+      {known.map((p) => <option key={p.id ?? nameOf(p)} value={nameOf(p)}>{nameOf(p)}</option>)}
+      {legacy && <option value={legacy}>{legacy}</option>}
     </select>
   );
 }
@@ -128,7 +122,7 @@ export function WaterEntry({ entry, onChangeField, onRemove, hidePlant, plants =
       {!hidePlant && (
       <label style={{ flex: 2, display: "flex", flexDirection: "column", minWidth: 0 }}>
         <span style={_entryLabel}>{unitWord === "plant" ? "Plant" : "Tub"}</span>
-        <PlantSelect value={entry.plant} onChange={(v) => onChangeField("plant", v)} plants={plants} unitWord={unitWord} />
+        <PlantSelect value={entry.plant} onPick={(p) => onChangeField("__plant", plantRef(p))} plants={plants} unitWord={unitWord} />
       </label>
       )}
       <label style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
@@ -166,15 +160,18 @@ export function WaterEntry({ entry, onChangeField, onRemove, hidePlant, plants =
   );
 }
 
-// Doing something to the whole tent is one action but several records, and the
-// same shell says so for every section: fill it in once, and every plant gets
-// its own row. A row per plant is what the day, the report and each plant's own
-// history read back - one shared row never says which plant it was about.
-function EveryPlantBox({ title, count, unitWord, actionWord, Icon, onSubmit, disabled, children }) {
+// Every add in the day's log is one filled-in box, never a blank row you go
+// back and correct. Two shapes share this shell: one plant, or all of them.
+// Fill it in, press the button, and a complete row is written.
+function LogBox({ title, Icon, actionLabel, accent, onSubmit, disabled, children }) {
+  // The single-plant box wears the app's accent and the every-plant box a
+  // separate blue, so the two paths never read as the same button twice.
+  const ink = accent === "all" ? "#60a5fa" : "var(--c-accent)";
+  const rgba = (a) => (accent === "all" ? `rgba(96,165,250, ${a})` : `rgba(var(--c-accent-rgb), ${a})`);
   return (
     <div style={{
-      border: "1px dashed var(--c-border-strong)", borderRadius: 10,
-      padding: "11px 11px 12px", marginTop: 6,
+      border: `1px dashed ${disabled ? "var(--c-border-strong)" : rgba(0.35)}`,
+      borderRadius: 10, padding: "11px 11px 12px", marginTop: 6,
     }}>
       <span style={{ ..._entryLabel, marginBottom: 8 }}>{title}</span>
       {children}
@@ -185,17 +182,121 @@ function EveryPlantBox({ title, count, unitWord, actionWord, Icon, onSubmit, dis
         disabled={disabled}
         style={{
           width: "100%", padding: "10px", borderRadius: 10, marginTop: 9,
-          background: disabled ? "var(--c-surface-1)" : "rgba(96,165,250,0.14)",
-          border: `1px solid ${disabled ? "var(--c-border)" : "rgba(96,165,250,0.4)"}`,
-          color: disabled ? "var(--c-text-ghost)" : "#60a5fa",
+          background: disabled ? "var(--c-surface-1)" : rgba(0.14),
+          border: `1px solid ${disabled ? "var(--c-border)" : rgba(0.4)}`,
+          color: disabled ? "var(--c-text-ghost)" : ink,
           cursor: disabled ? "default" : "pointer",
           fontFamily: "var(--font-ui)", fontSize: 11, letterSpacing: 1.5,
           display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
         }}>
         <Icon size={11} strokeWidth={2.5} />
-        {`${actionWord} FOR ALL ${count} ${unitWord.toUpperCase()}${count === 1 ? "" : "S"}`}
+        {actionLabel}
       </button>
     </div>
+  );
+}
+
+// One plant, one entry. This is the ordinary case: you watered the one that
+// looked dry, or topped the tall one, and the record should say so without
+// first writing a row for every other plant and then correcting them.
+function OnePlantBox({ title, plant, onPlant, plants, unitWord, verb, Icon, onSubmit, disabled, children }) {
+  const name = String(plant?.name ?? "").trim();
+  return (
+    <LogBox
+      title={title}
+      Icon={Icon}
+      actionLabel={name ? `${verb} ${name.toUpperCase()}` : `${verb} ONE ${unitWord.toUpperCase()}`}
+      onSubmit={onSubmit}
+      disabled={disabled}>
+      <div style={{ marginBottom: 8 }}>
+        <span style={{ ..._entryLabel, fontSize: 10 }}>{unitWord === "plant" ? "Plant" : "Tub"}</span>
+        <PlantSelect value={name} onPick={onPlant} plants={plants} unitWord={unitWord} />
+      </div>
+      {children}
+    </LogBox>
+  );
+}
+
+// Doing something to the whole tent is one action but several records, and the
+// same shell says so for every section: fill it in once, and every plant gets
+// its own row. A row per plant is what the day, the report and each plant's own
+// history read back - one shared row never says which plant it was about.
+function EveryPlantBox({ title, count, unitWord, Icon, onSubmit, disabled, children }) {
+  return (
+    <LogBox
+      title={title}
+      Icon={Icon}
+      accent="all"
+      actionLabel={`LOG THIS FOR ALL ${count} ${unitWord.toUpperCase()}${count === 1 ? "" : "S"}`}
+      onSubmit={onSubmit}
+      disabled={disabled}>
+      {children}
+    </LogBox>
+  );
+}
+
+// Shared by both watering boxes: the amount, and the unit it was measured in.
+function WaterAmount({ label, amount, setAmount, unit, setUnit, onEnter }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+      <label style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <span style={{ ..._entryLabel, fontSize: 10 }}>{label}</span>
+        <input
+          type="number"
+          inputMode="decimal"
+          step={UNIT_STEP[unit] ?? 0.25}
+          min={0}
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onEnter(); } }}
+          placeholder="0"
+          style={{ ..._entryInput, WebkitAppearance: "none", MozAppearance: "textfield" }}
+        />
+      </label>
+      <label style={{ flexShrink: 0, display: "flex", flexDirection: "column", width: 74 }}>
+        <span style={{ ..._entryLabel, fontSize: 10 }}>Unit</span>
+        <select value={unit} onChange={(e) => setUnit(e.target.value)} style={_selectInput} aria-label="Water unit">
+          {WATER_UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+        </select>
+      </label>
+    </div>
+  );
+}
+
+// Pick the plant, type what it got, and that is the whole entry.
+export function WaterOnePlant({ title = "Water one plant", plants, unitWord = "plant", crop, onAdd }) {
+  const [plant, setPlant] = useState(null);
+  const [amount, setAmount] = useState("");
+  const [unit, setUnit] = useState(() => loadWaterUnit(cropOf(crop)));
+
+  function submit() {
+    if (!plant || !String(amount).trim()) return;
+    rememberWaterUnit(unit, cropOf(crop));
+    onAdd(plant, amount, unit);
+    setPlant(null);
+    setAmount("");
+  }
+
+  return (
+    <OnePlantBox
+      title={title}
+      plant={plant}
+      onPlant={setPlant}
+      plants={plants}
+      unitWord={unitWord}
+      verb="LOG THIS FOR"
+      Icon={Droplets}
+      onSubmit={submit}
+      disabled={!plant || !String(amount).trim()}>
+      <WaterAmount
+        label={`This ${unitWord} got`}
+        amount={amount}
+        setAmount={setAmount}
+        unit={unit}
+        setUnit={setUnit}
+        onEnter={submit}
+      />
+    </OnePlantBox>
   );
 }
 
@@ -205,6 +306,7 @@ export function WaterAllPlants({ count, title = "Water every plant", unitWord = 
   const [unit, setUnit] = useState(() => loadWaterUnit(cropOf(crop)));
 
   function submit() {
+    if (!String(amount).trim()) return;
     rememberWaterUnit(unit, cropOf(crop));
     onAdd(amount, unit);
     setAmount("");
@@ -215,37 +317,52 @@ export function WaterAllPlants({ count, title = "Water every plant", unitWord = 
       title={title}
       count={count}
       unitWord={unitWord}
-      actionWord="LOG THIS"
       Icon={Droplets}
       onSubmit={submit}
       disabled={!String(amount).trim()}>
-      <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-        <label style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-          <span style={{ ..._entryLabel, fontSize: 10 }}>{`Each ${unitWord} got`}</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            step={UNIT_STEP[unit] ?? 0.25}
-            min={0}
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } }}
-            placeholder="0"
-            style={{ ..._entryInput, WebkitAppearance: "none", MozAppearance: "textfield" }}
-          />
-        </label>
-        <label style={{ flexShrink: 0, display: "flex", flexDirection: "column", width: 74 }}>
-          <span style={{ ..._entryLabel, fontSize: 10 }}>Unit</span>
-          <select
-            value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-            style={_selectInput}
-            aria-label="Water unit for every plant">
-            {WATER_UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
-          </select>
-        </label>
-      </div>
+      <WaterAmount
+        label={`Each ${unitWord} got`}
+        amount={amount}
+        setAmount={setAmount}
+        unit={unit}
+        setUnit={setUnit}
+        onEnter={submit}
+      />
     </EveryPlantBox>
+  );
+}
+
+// Training one plant: topping the tall one is about that plant, not the tent.
+export function TrainingOnePlant({ plants, unitWord = "plant", onAdd }) {
+  const [plant, setPlant] = useState(null);
+  const [action, setAction] = useState("");
+  function submit() {
+    if (!plant || !action.trim()) return;
+    onAdd(plant, action);
+    setPlant(null);
+    setAction("");
+  }
+  return (
+    <OnePlantBox
+      title={`Train one ${unitWord}`}
+      plant={plant}
+      onPlant={setPlant}
+      plants={plants}
+      unitWord={unitWord}
+      verb="LOG THIS FOR"
+      Icon={Scissors}
+      onSubmit={submit}
+      disabled={!plant || !action.trim()}>
+      <span style={{ ..._entryLabel, fontSize: 10 }}>{`What you did to this ${unitWord}`}</span>
+      <ChoiceField
+        value={action}
+        onChange={setAction}
+        presets={TRAINING_ACTIONS}
+        fieldKey="training-action"
+        placeholder="Choose what you did"
+        searchLabel="Search training"
+      />
+    </OnePlantBox>
   );
 }
 
@@ -253,13 +370,16 @@ export function WaterAllPlants({ count, title = "Water every plant", unitWord = 
 // row per plant, so each plant's own history carries it.
 export function TrainingAllPlants({ count, unitWord = "plant", onAdd }) {
   const [action, setAction] = useState("");
-  function submit() { onAdd(action); setAction(""); }
+  function submit() {
+    if (!action.trim()) return;
+    onAdd(action);
+    setAction("");
+  }
   return (
     <EveryPlantBox
       title={`Train every ${unitWord}`}
       count={count}
       unitWord={unitWord}
-      actionWord="LOG THIS"
       Icon={Scissors}
       onSubmit={submit}
       disabled={!action.trim()}>
@@ -276,26 +396,10 @@ export function TrainingAllPlants({ count, unitWord = "plant", onAdd }) {
   );
 }
 
-// And for a health check: looking over the whole tent and finding the same
-// thing is still an observation about each plant.
-export function HealthAllPlants({ count, unitWord = "plant", crop, onAdd }) {
-  const look = HEALTH_LOOK[cropOf(crop)];
-  const [color, setColor] = useState("");
-  const [check, setCheck] = useState("");
-  const [notes, setNotes] = useState("");
-  function submit() {
-    onAdd({ color, trichomes: check, notes });
-    setColor(""); setCheck(""); setNotes("");
-  }
+// The health fields, shared by the one-plant and every-plant boxes.
+function HealthFields({ look, color, setColor, check, setCheck, notes, setNotes, placeholder }) {
   return (
-    <EveryPlantBox
-      title={`Same observation for every ${unitWord}`}
-      count={count}
-      unitWord={unitWord}
-      actionWord="LOG THIS"
-      Icon={Stethoscope}
-      onSubmit={submit}
-      disabled={!color && !check && !notes.trim()}>
+    <>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
         <div>
           <span style={{ ..._entryLabel, fontSize: 10 }}>{look.colorLabel}</span>
@@ -316,8 +420,75 @@ export function HealthAllPlants({ count, unitWord = "plant", crop, onAdd }) {
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         rows={2}
-        placeholder="What was true of all of them today…"
+        placeholder={placeholder}
         style={{ ..._entryInput, resize: "vertical", lineHeight: 1.6, fontFamily: "var(--font-ui)" }}
+      />
+    </>
+  );
+}
+
+// One plant looked off. That is an observation about that plant.
+export function HealthOnePlant({ plants, unitWord = "plant", crop, onAdd }) {
+  const look = HEALTH_LOOK[cropOf(crop)];
+  const [plant, setPlant] = useState(null);
+  const [color, setColor] = useState("");
+  const [check, setCheck] = useState("");
+  const [notes, setNotes] = useState("");
+  const empty = !color && !check && !notes.trim();
+  function submit() {
+    if (!plant || empty) return;
+    onAdd(plant, { color, trichomes: check, notes });
+    setPlant(null); setColor(""); setCheck(""); setNotes("");
+  }
+  return (
+    <OnePlantBox
+      title={`Check one ${unitWord}`}
+      plant={plant}
+      onPlant={setPlant}
+      plants={plants}
+      unitWord={unitWord}
+      verb="LOG THIS FOR"
+      Icon={Stethoscope}
+      onSubmit={submit}
+      disabled={!plant || empty}>
+      <HealthFields
+        look={look}
+        color={color} setColor={setColor}
+        check={check} setCheck={setCheck}
+        notes={notes} setNotes={setNotes}
+        placeholder={`What was true of this ${unitWord} today…`}
+      />
+    </OnePlantBox>
+  );
+}
+
+// And for a health check: looking over the whole tent and finding the same
+// thing is still an observation about each plant.
+export function HealthAllPlants({ count, unitWord = "plant", crop, onAdd }) {
+  const look = HEALTH_LOOK[cropOf(crop)];
+  const [color, setColor] = useState("");
+  const [check, setCheck] = useState("");
+  const [notes, setNotes] = useState("");
+  const empty = !color && !check && !notes.trim();
+  function submit() {
+    if (empty) return;
+    onAdd({ color, trichomes: check, notes });
+    setColor(""); setCheck(""); setNotes("");
+  }
+  return (
+    <EveryPlantBox
+      title={`Same observation for every ${unitWord}`}
+      count={count}
+      unitWord={unitWord}
+      Icon={Stethoscope}
+      onSubmit={submit}
+      disabled={empty}>
+      <HealthFields
+        look={look}
+        color={color} setColor={setColor}
+        check={check} setCheck={setCheck}
+        notes={notes} setNotes={setNotes}
+        placeholder="What was true of all of them today…"
       />
     </EveryPlantBox>
   );
@@ -336,7 +507,7 @@ export function TrainingEntry({ entry, onChangeField, onRemove, hidePlant, plant
         {!hidePlant && (
         <div>
           <span style={_entryLabel}>Plant</span>
-          <PlantSelect value={entry.plant} onChange={(v) => onChangeField("plant", v)} plants={plants} />
+          <PlantSelect value={entry.plant} onPick={(p) => onChangeField("__plant", plantRef(p))} plants={plants} />
         </div>
         )}
         <div>
@@ -400,7 +571,7 @@ export function PlantHealthEntry({ entry, crop, onChangeField, onRemove, hidePla
         {!hidePlant && (
         <div>
           <span style={_entryLabel}>Plant</span>
-          <PlantSelect value={entry.plant} onChange={(v) => onChangeField("plant", v)} plants={plants} />
+          <PlantSelect value={entry.plant} onPick={(p) => onChangeField("__plant", plantRef(p))} plants={plants} />
         </div>
         )}
         <div>

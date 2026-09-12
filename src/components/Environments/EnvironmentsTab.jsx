@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, Thermometer, Droplets, Gauge, CalendarCheck, Home, Trees, Warehouse, Sprout, Pencil, Trash2 } from "lucide-react";
+import { Plus, Thermometer, Droplets, Gauge, CalendarCheck, Home, Trees, Warehouse, Sprout, Pencil, Archive, ArchiveRestore } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { usePlan } from "../../lib/usePlan.jsx";
 import { useToday } from "../../lib/dates.js";
@@ -9,17 +9,23 @@ import { tapHaptic } from "../../lib/haptics.js";
 import { MONO, partitionPlants } from "../PlantsTab/constants.js";
 import { cropOf, words } from "../../lib/crops.js";
 import EnvironmentDetail, { ENV_KIND_LABEL } from "./EnvironmentDetail.jsx";
-import DeleteGrowConfirm from "../DeleteGrowConfirm.jsx";
+import ArchiveGrowConfirm from "../ArchiveGrowConfirm.jsx";
 import SwipeRow from "../SwipeRow.jsx";
 import ConfirmModal from "../ConfirmModal.jsx";
 import ScreenHeader from "../ScreenHeader.jsx";
+import { formatBytes } from "../../lib/archive.js";
+import { useToast } from "../../lib/useToast.jsx";
 
 const KIND_ICON = { indoor: Home, outdoor: Trees, greenhouse: Warehouse };
 
+// The grow's own status, which is about the plants in it. Archived is not one
+// of these: a space can be archived at any status and comes back at the same
+// one, so it wears its own badge.
 const STATUS_STYLE = {
   harvested: { label: "HARVESTED", color: "var(--c-warn)", bg: "rgba(251,191,36,0.10)" },
-  abandoned: { label: "ARCHIVED", color: "var(--c-text-ghost)", bg: "rgba(255,255,255,0.04)" },
+  abandoned: { label: "STOPPED", color: "var(--c-text-ghost)", bg: "rgba(255,255,255,0.04)" },
 };
+const ARCHIVED_STYLE = { label: "ARCHIVED", color: "var(--c-text-ghost)", bg: "rgba(255,255,255,0.04)" };
 
 function Reading({ icon: Icon, color, value, unit }) {
   if (value == null) return null;
@@ -45,9 +51,11 @@ function EnvironmentCard({ grow, isActive, conditions, onOpen }) {
   // The space's stage is simply the furthest its plants have reached; there
   // are no predicted dates to read it off any more.
   const stage = currentStageOf(plants);
-  const status = !survey
-    ? { label: "IN SETUP", color: "var(--c-warn)", bg: "rgba(251,191,36,0.10)" }
-    : STATUS_STYLE[grow.status] ?? null;
+  const status = grow.archivedAt
+    ? ARCHIVED_STYLE
+    : !survey
+      ? { label: "IN SETUP", color: "var(--c-warn)", bg: "rgba(251,191,36,0.10)" }
+      : STATUS_STYLE[grow.status] ?? null;
 
   const line2 = [
     kind,
@@ -65,7 +73,7 @@ function EnvironmentCard({ grow, isActive, conditions, onOpen }) {
         display: "block", width: "100%", textAlign: "left", padding: 16, cursor: "pointer",
         border: isActive ? "1.5px solid rgba(var(--c-accent-rgb), 0.4)" : undefined,
         background: isActive ? "rgba(var(--c-accent-rgb), 0.06)" : undefined,
-        opacity: grow.status === "abandoned" ? 0.7 : 1,
+        opacity: grow.archivedAt || grow.status === "abandoned" ? 0.7 : 1,
       }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
@@ -111,13 +119,18 @@ function EnvironmentCard({ grow, isActive, conditions, onOpen }) {
 // The Environments tab: every grow space you keep, each with its own plants,
 // conditions, and calendar. Replaces the old Plants and Plan tabs.
 export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOpenJournalDay, onNewEnvironment, onOpenSettings }) {
-  const { grows, activeGrowId, setActiveGrowId, reload } = usePlan();
+  const { grows, liveGrows, archivedGrows, activeGrowId, setActiveGrowId, reload } = usePlan();
   const today = useToday();
   const [openId, setOpenId] = useState(null);
   const [conditions, setConditions] = useState({});
   const [creating, setCreating] = useState(false);
-  const [deleting, setDeleting] = useState(null);
+  const [archiving, setArchiving] = useState(null);
   const [resumeGrow, setResumeGrow] = useState(null);
+  const [showArchived, setShowArchived] = useState(false);
+  // How full the archive is, fetched only when the section is opened: working
+  // it out means measuring every archived space, and photos are not small.
+  const [archiveUse, setArchiveUse] = useState(null);
+  const { addToast } = useToast();
   // One row's actions at a time: opening another closes the last.
   const [swipedId, setSwipedId] = useState(null);
 
@@ -149,6 +162,63 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
     setCreating(true);
     try { await onNewEnvironment(null); }
     finally { setCreating(false); }
+  }
+
+  // Putting a space back is not destructive and needs no confirming.
+  async function handleUnarchive(grow) {
+    setSwipedId(null);
+    try {
+      await api.unarchiveGrow(grow.id);
+      setArchiveUse(null);
+      await reload();
+    } catch (e) {
+      addToast(`Could not restore that space: ${e?.message ?? "unknown error"}`);
+    }
+  }
+
+  function toggleArchived() {
+    const opening = !showArchived;
+    setShowArchived(opening);
+    if (!opening || archiveUse) return;
+    api.getArchive()
+      .then((d) => setArchiveUse(d))
+      .catch(() => setArchiveUse(null));
+  }
+
+  function renderRow(g) {
+    const archived = Boolean(g.archivedAt);
+    return (
+      <SwipeRow
+        key={g.id}
+        open={swipedId === g.id}
+        onOpenChange={(next) => setSwipedId(next ? g.id : null)}
+        actions={[
+          {
+            label: "Edit",
+            ariaLabel: `Edit ${g.displayName || "this environment"}`,
+            icon: <Pencil size={16} strokeWidth={2} />,
+            onClick: () => onOpenSettings(g.id),
+          },
+          archived ? {
+            label: "Restore",
+            ariaLabel: `Restore ${g.displayName || "this environment"}`,
+            icon: <ArchiveRestore size={16} strokeWidth={2} />,
+            onClick: () => handleUnarchive(g),
+          } : {
+            label: "Archive",
+            ariaLabel: `Archive ${g.displayName || "this environment"}`,
+            icon: <Archive size={16} strokeWidth={2} />,
+            onClick: () => setArchiving(g),
+          },
+        ]}>
+        <EnvironmentCard
+          grow={g}
+          isActive={g.id === activeGrowId}
+          conditions={conditions[g.id]}
+          onOpen={handleOpen}
+        />
+      </SwipeRow>
+    );
   }
 
   function handleOpen(id) {
@@ -189,37 +259,46 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
             No environments yet. Create your first grow space.
           </div>
         )}
-        {/* Each row can be pushed aside to get at renaming or deleting it.
+        {/* Each row can be pushed aside to get at renaming or archiving it.
             Both live in the space's own settings too, so the swipe is a
             shortcut rather than the only way to reach them. */}
-        {grows.map((g) => (
-          <SwipeRow
-            key={g.id}
-            open={swipedId === g.id}
-            onOpenChange={(next) => setSwipedId(next ? g.id : null)}
-            actions={[
-              {
-                label: "Edit",
-                ariaLabel: `Edit ${g.displayName || "this environment"}`,
-                icon: <Pencil size={16} strokeWidth={2} />,
-                onClick: () => onOpenSettings(g.id),
-              },
-              {
-                label: "Delete",
-                ariaLabel: `Delete ${g.displayName || "this environment"}`,
-                icon: <Trash2 size={16} strokeWidth={2} />,
-                tone: "destructive",
-                onClick: () => setDeleting(g),
-              },
-            ]}>
-            <EnvironmentCard
-              grow={g}
-              isActive={g.id === activeGrowId}
-              conditions={conditions[g.id]}
-              onOpen={handleOpen}
-            />
-          </SwipeRow>
-        ))}
+        {liveGrows.map((g) => renderRow(g))}
+
+        {/* Put away, and kept. Everything an archived space ever recorded is
+            still there; it is only out of the way. */}
+        {archivedGrows.length > 0 && (
+          <div>
+            <button
+              type="button"
+              onClick={toggleArchived}
+              aria-expanded={showArchived}
+              style={{
+                display: "flex", alignItems: "center", gap: 7, width: "100%",
+                background: "none", border: "none", padding: "10px 0",
+                color: "var(--c-text-ghost)", fontFamily: MONO, fontSize: 11,
+                letterSpacing: 1, cursor: "pointer",
+              }}>
+              <Archive size={13} strokeWidth={2} />
+              {showArchived ? "\u25be" : "\u25b8"} Archived ({archivedGrows.length})
+            </button>
+            {showArchived && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 4 }}>
+                {/* What the archive holds against what it may hold. Once it is
+                    full, archiving something new drops the space that has been
+                    in here longest, and the app asks first. */}
+                {archiveUse && (
+                  <div style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--c-text-ghost)", lineHeight: 1.7 }}>
+                    {`${archiveUse.spaces.length} of ${archiveUse.caps.maxSpaces} spaces · `}
+                    {`${formatBytes(archiveUse.spaces.reduce((n, g) => n + (g.bytes ?? 0), 0))} of ${formatBytes(archiveUse.caps.maxBytes)}`}
+                    <br />
+                    Archiving something new once this is full drops the space archived longest ago. You will be asked first.
+                  </div>
+                )}
+                {archivedGrows.map((g) => renderRow(g))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <AnimatePresence>
@@ -232,7 +311,8 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
             onClose={() => setOpenId(null)}
             onActivate={(id) => { setActiveGrowId(id); }}
             onOpenSettings={onOpenSettings}
-            onDelete={(g) => setDeleting(g)}
+            onArchive={(g) => setArchiving(g)}
+            onUnarchive={handleUnarchive}
             onChanged={reload}
             onOpenJournalDay={onOpenJournalDay}
           />
@@ -249,12 +329,12 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
         onCancel={() => setResumeGrow(null)}
       />
 
-      {deleting && (
-        <DeleteGrowConfirm
-          growId={deleting.id}
-          growName={deleting.displayName}
-          onClose={() => setDeleting(null)}
-          onDeleted={async () => { setDeleting(null); setOpenId(null); await reload(); }}
+      {archiving && (
+        <ArchiveGrowConfirm
+          growId={archiving.id}
+          growName={archiving.displayName}
+          onClose={() => setArchiving(null)}
+          onArchived={async () => { setArchiving(null); setOpenId(null); setArchiveUse(null); await reload(); }}
         />
       )}
     </div>

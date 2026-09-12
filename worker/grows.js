@@ -75,6 +75,7 @@ async function ensureMigrated(env, userId) {
         display_name    TEXT NOT NULL DEFAULT '',
         status          TEXT NOT NULL DEFAULT 'active'
           CHECK(status IN ('active','harvested','abandoned')),
+        archived_at     TEXT,
         config          TEXT,
         survey          TEXT,
         generated_plan  TEXT,
@@ -99,6 +100,11 @@ async function ensureMigrated(env, userId) {
   // existed (no-op on a freshly-created table above).
   try {
     await env.DB.prepare(`ALTER TABLE grows ADD COLUMN lifecycle TEXT`).run();
+  } catch { /* column already exists */ }
+  // Same for the archive stamp. NULL is "not archived", so every existing
+  // space comes out of this unarchived.
+  try {
+    await env.DB.prepare(`ALTER TABLE grows ADD COLUMN archived_at TEXT`).run();
   } catch { /* column already exists */ }
 
   const existing = await env.DB.prepare(
@@ -151,6 +157,7 @@ export async function loadRawGrow(env, userId, growId) {
     needsSetup:    !row.survey,
     displayName:   row.display_name,
     status:        row.status,
+    archivedAt:    row.archived_at ?? null,
     id:            row.id,
   };
 }
@@ -159,13 +166,14 @@ export async function loadRawGrow(env, userId, growId) {
 export async function loadRawGrows(env, userId) {
   await ensureMigrated(env, userId);
   const res = await env.DB.prepare(
-    `SELECT id, display_name, status, survey, lifecycle, created_at
+    `SELECT id, display_name, status, archived_at, survey, lifecycle, created_at
      FROM grows WHERE user_id = ? ORDER BY created_at DESC`
   ).bind(userId).all();
   return (res.results ?? []).map(r => ({
     id:            r.id,
     displayName:   r.display_name,
     status:        r.status,
+    archivedAt:    r.archived_at ?? null,
     survey:        parseField(r.survey),
     lifecycle:     parseField(r.lifecycle),
     createdAt:     r.created_at,
@@ -179,7 +187,7 @@ export async function listGrows(env, user) {
   let res;
   try {
     res = await env.DB.prepare(
-      `SELECT id, display_name, status, survey, created_at, updated_at
+      `SELECT id, display_name, status, archived_at, survey, created_at, updated_at
        FROM grows WHERE user_id = ? ORDER BY created_at DESC`
     ).bind(user.id).all();
   } catch (e) {
@@ -193,6 +201,7 @@ export async function listGrows(env, user) {
     id:            r.id,
     displayName:   r.display_name,
     status:        r.status,
+    archivedAt:    r.archived_at ?? null,
     survey:        parseField(r.survey),
     // Day 0 is the day the space was created - no query needed for it.
     firstDate:     growAnchor(r.created_at),
@@ -248,6 +257,7 @@ export async function getGrow(env, user, growId) {
     id:           row.id,
     displayName:  row.display_name,
     status:       row.status,
+    archivedAt:   row.archived_at ?? null,
     survey,
     lifecycle:    parseField(row.lifecycle),
     needsSetup:   !survey,
@@ -425,19 +435,9 @@ export async function patchGrowLifecycle(request, env, user, growId) {
   return json({ ok: true, lifecycle: v.value });
 }
 
-// DELETE /api/grows/:id
-export async function deleteGrow(env, user, growId) {
-  await env.DB.prepare(
-    "DELETE FROM grows WHERE id = ? AND user_id = ?"
-  ).bind(growId, user.id).run();
-  // Calendar events belong to the grow; clean them up with it.
-  try {
-    await env.DB.prepare(
-      "DELETE FROM grow_events WHERE grow_id = ? AND user_id = ?"
-    ).bind(growId, user.id).run();
-  } catch { /* table may not exist yet */ }
-  return json({ ok: true });
-}
+// There is no delete here on purpose. A space is retired by archiving it
+// (worker/archive.js), which keeps every row it ever wrote, and the only thing
+// that removes one is the archive making room under its own caps.
 
 // POST /api/grows/:id/setup - finish setting up an environment from the wizard
 // survey. There are no dates to compute: the calendar is written later, as the

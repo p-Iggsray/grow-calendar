@@ -199,7 +199,8 @@ function renderReport(ctx) {
   const { row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows, eventRows, photoRows = [], waterUnit } = ctx;
 
   const name = row.display_name || "My Grow";
-  const status = row.status || "active";
+  // "abandoned" is the stored value; "stopped" is what the app calls it.
+  const status = (row.status || "active") === "abandoned" ? "stopped" : (row.status || "active");
   // The report is written in the words of whatever this space grows.
   const crop = cropOf(survey);
   const w = words(crop);
@@ -548,7 +549,7 @@ h1{font-size:34px;line-height:1.1;margin:0 0 10px;color:var(--gd);letter-spacing
 .sub{display:flex;flex-wrap:wrap;gap:10px;align-items:center;color:var(--mut);font-size:15px;margin-bottom:18px;}
 .badge{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;padding:3px 9px;border-radius:999px;border:1px solid var(--g);color:#7c4a12;background:#fdf3e7;}
 .badge-harvested{border-color:#2f8f4e;color:#14532d;background:#e9f7ee;}
-.badge-abandoned{border-color:#9ca3af;color:#4b5563;background:#f3f4f6;}
+.badge-stopped{border-color:#9ca3af;color:#4b5563;background:#f3f4f6;}
 .stripe{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 4px;}
 .stat{flex:1 1 120px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;}
 .stat-v{font-size:20px;font-weight:700;color:var(--gd);}

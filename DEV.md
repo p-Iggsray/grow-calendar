@@ -170,6 +170,11 @@ npx wrangler d1 execute grow-calendar-db --local --file=./migrations/0001_multi_
 npx wrangler d1 execute grow-calendar-db --remote --file=./migrations/0001_multi_tenant.sql
 ```
 
+`010_grow_archive.sql` adds `grows.archived_at`, which is what archiving a grow
+space sets. Nothing is removed by it and every existing space comes out
+unarchived (NULL). `worker/grows.js` also self-heals the column on databases
+created before it existed, so applying the file by hand is optional.
+
 `0001_multi_tenant.sql` adds `role` and `status` to `users`, makes `plan_config` and `plan_day_overrides` per-user (keyed by `user_id`), adds the `mj_usage` table, and promotes the original owner (lowest `user_id`) to `role='admin'`, `status='approved'`.
 
 **Note on `login_attempts`:** This table was originally added to existing databases via a one-off root-level SQL file (applied in production before the migrations/ system existed; the file has since been deleted). It is now included directly in `schema.sql` so fresh environments get it automatically. Existing databases already have it.
@@ -231,6 +236,8 @@ worker/                           Backend (Cloudflare Worker)
   checkoffs.js, notes.js,         One module per resource: GET/PUT handlers + helpers.
   growLog.js, grows.js, plan.js,
   planSetup.js, stats.js, share.js
+  archive.js                      Archiving a grow space, the archive's caps, and
+                                  the eviction that is the app's only delete.
   mj.js                           Barrel for worker/mj/: POST /api/mj, usage, history, undo.
   mj/                             MJ modules: chat handler, context builders, tool executor, usage, history, undo.
   mj-logic.js                     Pure MJ helpers (merge checkoffs, append note, day view) + tool schemas.
@@ -253,6 +260,50 @@ migrations/                       One-time numbered migrations for existing data
 wrangler.jsonc                    Worker + D1 + assets config.
 launch.sh                         One-click launcher: builds and runs the deployed app against the production DB.
 ```
+
+## The archive
+
+Grow spaces are never deleted. Retiring one archives it: `grows.archived_at`
+gets a timestamp, and clearing that timestamp puts the space back exactly as it
+was. Everything it ever wrote stays in the database, which is why there is no
+`DELETE /api/grows/:id` any more.
+
+Archived spaces drop off the environments list into a collapsed **Archived**
+section, and out of the calendar switcher, MJ's context and share links
+entirely. `usePlan` exposes `liveGrows` and `archivedGrows` alongside the full
+`grows` list; only the environments list asks for the archived ones. Archiving
+the last space you have left is refused, because there would be no list to
+reach the archive through afterwards.
+
+`archived_at` is deliberately separate from `status`: a harvested space stays
+harvested while it is put away, and comes back harvested. (The `abandoned`
+status is now shown as **Stopped**, since "Archived" means the archive.)
+
+### The caps, and the one delete left
+
+The archive is the one place the record grows without bound, so it has two
+ceilings in `src/lib/archive.js`:
+
+- `ARCHIVE_MAX_SPACES` (20 spaces)
+- `ARCHIVE_MAX_BYTES` (2.5 GB of D1's 5 GB, measured across every grow-scoped
+  table; journal photos are base64 in D1 and are nearly the whole figure)
+
+Whichever is reached first, archiving something new makes room by dropping the
+spaces archived longest ago. That drop is the only delete in the app, and it is
+never silent: `POST /api/grows/:id/archive` answers the first call with
+`409 { code: "archive_full", evict: [...] }` naming exactly which spaces would
+go, `ArchiveGrowConfirm` lists them, and nothing happens until the grower calls
+again with `{ evict: true }`. A space larger than the whole budget empties the
+archive and is archived anyway, because refusing to keep the thing just archived
+would be the one outcome nobody asked for.
+
+`planEviction` and `archiveFullness` are pure and tested in
+`test/grow-archive.test.js`. The eviction itself (`purgeGrow` in
+`worker/archive.js`) clears every grow-scoped table before the `grows` row, so a
+failure part-way leaves a space that still exists rather than orphan rows.
+
+Endpoints: `GET /api/archive`, `POST /api/grows/:id/archive`,
+`POST /api/grows/:id/unarchive`.
 
 ## Backup and restore
 

@@ -53,8 +53,15 @@ export function PlanProvider({ children }) {
         // reset. Only fall into first-time setup when NO space is set up yet,
         // and then resume the existing unfinished one rather than leaving the
         // choice ambiguous.
+        //
+        // An archived space is put away, so it never becomes the one the
+        // calendar follows - not on load, and not because it was the last one
+        // stored. It is still in `grows`, because the environments list is
+        // where you go to bring it back.
         const stored = getStoredGrowId();
-        const ready = growsList.filter(g => g.survey);
+        const live = growsList.filter(g => !g.archivedAt);
+        const pool = live.length ? live : growsList;
+        const ready = pool.filter(g => g.survey);
 
         let targetId;
         if (ready.length > 0) {
@@ -63,7 +70,7 @@ export function PlanProvider({ children }) {
             || ready[0];
           targetId = pick.id;
         } else {
-          const pick = growsList.find(g => g.id === stored) || growsList[0];
+          const pick = pool.find(g => g.id === stored) || pool[0];
           targetId = pick.id;
         }
 
@@ -89,9 +96,16 @@ export function PlanProvider({ children }) {
 
   const reload = useCallback(() => setFetchKey(k => k + 1), []);
 
+  // Everything outside the environments list works on the spaces still in use.
+  // The list itself wants both, so `grows` stays whole.
+  const liveGrows = grows.filter(g => !g.archivedAt);
+  const archivedGrows = grows.filter(g => g.archivedAt);
+
   return (
     <PlanContext.Provider value={{
       grows,
+      liveGrows,
+      archivedGrows,
       activeGrowId,
       setActiveGrowId,
       survey, lifecycle,

@@ -173,6 +173,7 @@ const WORDS = {
     waterField: "Water",
     waterNoun: "watering",
     waterVerb: "watered",
+    waterOneTitle: "Water one plant",
     waterAllTitle: "Water every plant",
     healthSection: "Plant Health",
     // Setup.
@@ -204,6 +205,7 @@ const WORDS = {
     waterField: "Misted",
     waterNoun: "misting",
     waterVerb: "misted",
+    waterOneTitle: "Mist one tub",
     waterAllTitle: "Mist every tub",
     healthSection: "Tub Health",
     containerLabel: "Tub size",

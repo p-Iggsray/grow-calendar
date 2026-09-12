@@ -35,8 +35,12 @@ async function request(path, opts = {}) {
   }
   if (!res.ok) {
     const message = data?.error || `request failed with status ${res.status}`;
-    const err = /** @type {Error & { status?: number }} */ (new Error(message));
+    const err = /** @type {Error & { status?: number, body?: any }} */ (new Error(message));
     err.status = res.status;
+    // Some refusals are answers, not failures: archiving carries the list of
+    // spaces it would have to drop. Keep the whole body so the caller can act
+    // on it rather than only showing the sentence.
+    err.body = data;
     throw err;
   }
   return data;
@@ -165,8 +169,13 @@ export const api = {
   // watering) into its survey.
   saveEnvironmentSetup: (id, environmentSetup) =>
     request(`/api/grows/${id}`, { method: "PATCH", body: JSON.stringify({ environmentSetup }) }),
-  deleteGrow: (id) =>
-    request(`/api/grows/${id}`, { method: "DELETE", body: "{}" }),
+  // Spaces are archived, never deleted. `evict: true` is the grower agreeing
+  // to the spaces the first call named as having to go to make room.
+  getArchive: () => request("/api/archive"),
+  archiveGrow: (id, { evict = false } = {}) =>
+    request(`/api/grows/${id}/archive`, { method: "POST", body: JSON.stringify({ evict }) }),
+  unarchiveGrow: (id) =>
+    request(`/api/grows/${id}/unarchive`, { method: "POST", body: "{}" }),
   updateGrowLifecycle: (id, lifecycle) =>
     request(`/api/grows/${id}/lifecycle`, { method: "PATCH", body: JSON.stringify({ lifecycle }) }),
   setupGrow: (id, survey) =>

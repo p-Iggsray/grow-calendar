@@ -73,7 +73,10 @@ export default function App() {
   const { user } = useAuth();
   const today    = useToday();
   const online   = useOnlineStatus();
-  const { grows, activeGrowId, setActiveGrowId, survey, lifecycle, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
+  // Archived spaces are put away: the shell never routes to one, offers one to
+  // MJ, or resumes setup in one. The environments list is the only screen that
+  // sees them, and it asks usePlan for them by name.
+  const { liveGrows: grows, activeGrowId, setActiveGrowId, survey, lifecycle, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
   const lifecyclePhase = getLifecyclePhase(lifecycle);
   // The month the calendar shows - real year + month, free to roam.
   const [viewYM, setViewYM] = useState(() => ({ y: today.getFullYear(), m: today.getMonth() }));
@@ -546,7 +549,7 @@ export default function App() {
                 growId={settingsGrowId}
                 onClose={() => setShowSettings(false)}
                 onSaved={reloadPlan}
-                onDeleted={() => { setShowSettings(false); reloadPlan(); }}
+                onArchived={() => { setShowSettings(false); reloadPlan(); }}
               />
             </Suspense>
           </motion.div>

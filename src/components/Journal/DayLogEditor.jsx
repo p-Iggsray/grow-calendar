@@ -2,14 +2,16 @@ import { ymd } from "../../lib/api.js";
 import { useGrowLog } from "../../lib/useGrowLog.js";
 import { useEnvDay } from "../../lib/useEnvDay.js";
 import {
-  LogSection, AddEntryButton, sumWater,
-  WaterEntry, WaterAllPlants, TrainingEntry, TrainingAllPlants,
-  PlantHealthEntry, HealthAllPlants,
+  LogSection, sumWater,
+  WaterEntry, WaterOnePlant, WaterAllPlants,
+  TrainingEntry, TrainingOnePlant, TrainingAllPlants,
+  PlantHealthEntry, HealthOnePlant, HealthAllPlants,
 } from "./logEntries.jsx";
 import EnvSensorCard from "./EnvSensorCard.jsx";
 import ChoiceField from "../ChoiceField.jsx";
 import { NUTRIENT_PRODUCTS, TUB_CONDITIONS } from "../../lib/choices.js";
 import { displayUnit, fanOutWater, formatWater, loadWaterUnit, waterRow } from "../../lib/waterUnits.js";
+import { forEveryPlant, plantRef, withPlant } from "../../lib/plantRows.js";
 import { cropOf, words } from "../../lib/crops.js";
 import { readsOwnClimate } from "../../lib/growEnvironment.js";
 
@@ -23,6 +25,20 @@ const fieldNameStyle = {
   letterSpacing: 1, color: "var(--c-text-muted)", textTransform: "uppercase",
 };
 
+// Every row in these sections is about a named plant, so a space that holds
+// none has nothing to write yet. Say that rather than offering a box whose
+// entry would belong to nobody.
+function NoPlantsYet({ words: w }) {
+  return (
+    <div style={{
+      border: "1px solid var(--c-border)", borderRadius: 10,
+      padding: "11px 12px", fontSize: 11.5, lineHeight: 1.6, color: "var(--c-text-ghost)",
+    }}>
+      {`Nothing to log here yet: this space holds no ${w.units}. Add one in the environment and every entry can say which ${w.unit} it is about.`}
+    </div>
+  );
+}
+
 export default function DayLogEditor({ date, growId, plants = [], environment = "outdoor", crop, hasWeatherLocation = true, active = true }) {
   const w = words(crop);
   const mushrooms = cropOf(crop) === "mushrooms";
@@ -33,13 +49,11 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
   // to be one selector at the top that scoped all three sections at once, which
   // meant the answer to "which plant?" lived somewhere other than the thing it
   // described, and you had to remember which mode you were in.
-  const newRow = (extra) => ({ plant: "", ...extra });
-  // One row per plant, carrying the plant's id so it links to that plant's own
-  // history. This is what "for all of them" means everywhere in the log: not
-  // one shared row, but a real record against each.
-  const forEveryPlant = (extra) => logPlants.map((p) => ({
-    plant: p.name ?? "", ...(p.id ? { plantId: p.id } : {}), ...extra,
-  }));
+  //
+  // Each section offers the same two ways in, in the order they actually come
+  // up: this one plant, or all of them. Both write a complete row carrying the
+  // plant's id, so neither needs going back over afterwards to say what you
+  // really did.
 
   // Indoor and greenhouse grows can pull the day's environment from a
   // controller import (temp/RH/VPD); either way they read their own climate,
@@ -51,39 +65,49 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
   // Per-plant watering. water_gal is kept as the day's total (sum of all
   // plants) so the stats "total water" aggregation keeps working.
   function setWater(a) { setLogFields({ water_plants: a, water_gal: sumWater(a) }); }
-  // A fresh row starts in the unit you last watered in, so a litre grow never
-  // has to correct the unit on every row it adds.
-  function addWater()           { setWater([...(logEntry.water_plants ?? []), newRow({ amount: "", unit: loadWaterUnit(crop), gal: "" })]); }
+  // One plant got watered. One row, against that plant.
+  function addWaterForOne(plant, amount, unit) {
+    setWater([...(logEntry.water_plants ?? []), waterRow(plantRef(plant), amount, unit)]);
+  }
   // "All plants got 3 L" is several waterings, and it is recorded as several:
   // one row per plant, each holding the amount that plant actually received.
   function addWaterForAll(amount, unit) {
-    const rows = logPlants.length
-      ? fanOutWater(logPlants, amount, unit)
-      : [waterRow(newRow({}), amount, unit)];
-    setWater([...(logEntry.water_plants ?? []), ...rows]);
+    setWater([...(logEntry.water_plants ?? []), ...fanOutWater(logPlants, amount, unit)]);
   }
   // "__row" replaces the whole row: the amount and its unit have to move
   // together or the canonical gallons drift out of step with what is shown.
+  // "__plant" moves the row to another plant, name and id together.
   function updateWater(i, k, v) {
     const a = [...(logEntry.water_plants ?? [])];
-    a[i] = k === "__row" ? v : { ...a[i], [k]: v };
+    a[i] = k === "__row" ? v : k === "__plant" ? withPlant(a[i], v) : { ...a[i], [k]: v };
     setWater(a);
   }
   function removeWater(i)       { const a = [...(logEntry.water_plants ?? [])]; a.splice(i, 1); setWater(a); }
 
-  function addTraining()           { setLogField("training", [...(logEntry.training ?? []), newRow({ action: "" })]); }
+  function addTrainingForOne(plant, action) {
+    setLogField("training", [...(logEntry.training ?? []), { ...plantRef(plant), action }]);
+  }
   function addTrainingForAll(action) {
-    const rows = logPlants.length ? forEveryPlant({ action }) : [newRow({ action })];
-    setLogField("training", [...(logEntry.training ?? []), ...rows]);
+    setLogField("training", [...(logEntry.training ?? []), ...forEveryPlant(logPlants, { action })]);
   }
-  function updateTraining(i, k, v) { const a = [...(logEntry.training ?? [])]; a[i] = { ...a[i], [k]: v }; setLogField("training", a); }
+  function updateTraining(i, k, v) {
+    const a = [...(logEntry.training ?? [])];
+    a[i] = k === "__plant" ? withPlant(a[i], v) : { ...a[i], [k]: v };
+    setLogField("training", a);
+  }
   function removeTraining(i)       { const a = [...(logEntry.training ?? [])]; a.splice(i, 1); setLogField("training", a); }
-  function addHealth()             { setLogField("plant_health", [...(logEntry.plant_health ?? []), newRow({ color: "", trichomes: "", notes: "" })]); }
-  function addHealthForAll(fields) {
-    const rows = logPlants.length ? forEveryPlant(fields) : [newRow(fields)];
-    setLogField("plant_health", [...(logEntry.plant_health ?? []), ...rows]);
+
+  function addHealthForOne(plant, fields) {
+    setLogField("plant_health", [...(logEntry.plant_health ?? []), { ...plantRef(plant), ...fields }]);
   }
-  function updateHealth(i, k, v)   { const a = [...(logEntry.plant_health ?? [])]; a[i] = { ...a[i], [k]: v }; setLogField("plant_health", a); }
+  function addHealthForAll(fields) {
+    setLogField("plant_health", [...(logEntry.plant_health ?? []), ...forEveryPlant(logPlants, fields)]);
+  }
+  function updateHealth(i, k, v) {
+    const a = [...(logEntry.plant_health ?? [])];
+    a[i] = k === "__plant" ? withPlant(a[i], v) : { ...a[i], [k]: v };
+    setLogField("plant_health", a);
+  }
   function removeHealth(i)         { const a = [...(logEntry.plant_health ?? [])]; a.splice(i, 1); setLogField("plant_health", a); }
 
   return (
@@ -150,10 +174,15 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
               onRemove={() => removeWater(i)}
             />
           ))}
+        {/* One plant first: it is what usually happened. Watering the whole
+            space is the second box, not the only one. */}
         {logPlants.length > 0 && (
-          <WaterAllPlants count={logPlants.length} title={w.waterAllTitle} unitWord={w.unit} crop={crop} onAdd={addWaterForAll} />
+          <>
+            <WaterOnePlant title={w.waterOneTitle} plants={logPlants} unitWord={w.unit} crop={crop} onAdd={addWaterForOne} />
+            <WaterAllPlants count={logPlants.length} title={w.waterAllTitle} unitWord={w.unit} crop={crop} onAdd={addWaterForAll} />
+          </>
         )}
-        <AddEntryButton onClick={addWater} label={`ADD ONE ${w.Unit.toUpperCase()}'S ${w.waterNoun.toUpperCase()}`} />
+        {logPlants.length === 0 && <NoPlantsYet words={w} />}
         {sumWater(logEntry.water_plants) && (
           <div style={{
             marginTop: 10, textAlign: "right",
@@ -193,9 +222,12 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
             />
           ))}
         {logPlants.length > 0 && (
-          <TrainingAllPlants count={logPlants.length} unitWord={w.unit} onAdd={addTrainingForAll} />
+          <>
+            <TrainingOnePlant plants={logPlants} unitWord={w.unit} onAdd={addTrainingForOne} />
+            <TrainingAllPlants count={logPlants.length} unitWord={w.unit} onAdd={addTrainingForAll} />
+          </>
         )}
-        <AddEntryButton onClick={addTraining} label={`ADD ONE ${w.Unit.toUpperCase()}'S TRAINING`} />
+        {logPlants.length === 0 && <NoPlantsYet words={w} />}
       </LogSection>
       )}
 
@@ -212,9 +244,12 @@ export default function DayLogEditor({ date, growId, plants = [], environment = 
             />
           ))}
         {logPlants.length > 0 && (
-          <HealthAllPlants count={logPlants.length} unitWord={w.unit} crop={crop} onAdd={addHealthForAll} />
+          <>
+            <HealthOnePlant plants={logPlants} unitWord={w.unit} crop={crop} onAdd={addHealthForOne} />
+            <HealthAllPlants count={logPlants.length} unitWord={w.unit} crop={crop} onAdd={addHealthForAll} />
+          </>
         )}
-        <AddEntryButton onClick={addHealth} label={`ADD ONE ${w.Unit.toUpperCase()}'S HEALTH CHECK`} />
+        {logPlants.length === 0 && <NoPlantsYet words={w} />}
       </LogSection>
     </div>
   );

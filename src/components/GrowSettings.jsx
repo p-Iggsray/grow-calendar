@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
-import { Check, Trash2 } from "lucide-react";
+import { Check, Archive, ArchiveRestore } from "lucide-react";
 import { api } from "../lib/api.js";
 import { Label, Input, RadioGroup, MONO } from "./SetupWizard/styleHelpers.jsx";
-import DeleteGrowConfirm from "./DeleteGrowConfirm.jsx";
+import ArchiveGrowConfirm from "./ArchiveGrowConfirm.jsx";
 import ScreenHeader from "./ScreenHeader.jsx";
 import { Skeleton } from "./Skeleton.jsx";
 
+// How the grow itself is going. Archiving is a separate thing entirely: it is
+// about whether the space is in your way, not about how the plants did, and a
+// space comes out of the archive at whatever status it went in at.
 const STATUS_OPTIONS = [
   { value: "active",    label: "Active" },
   { value: "harvested", label: "Harvested" },
-  { value: "abandoned", label: "Abandoned" },
+  { value: "abandoned", label: "Stopped" },
 ];
 
 // Edits any environment by id (fetches its own data so it works for the active
@@ -17,14 +20,16 @@ const STATUS_OPTIONS = [
 // timeline is written by moving plants between stages as it happens, not
 // planned in advance. onSaved reloads the plan so the change shows immediately;
 // onDeleted runs after the environment is deleted.
-export default function GrowSettings({ growId, onClose, onSaved, onDeleted }) {
+export default function GrowSettings({ growId, onClose, onSaved, onArchived }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [name, setName]     = useState("");
   const [status, setStatus] = useState("active");
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState(null);
-  const [showDelete, setShowDelete] = useState(false);
+  const [archivedAt, setArchivedAt] = useState(null);
+  const [showArchive, setShowArchive] = useState(false);
+  const [restoring, setRestoring] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,6 +40,7 @@ export default function GrowSettings({ growId, onClose, onSaved, onDeleted }) {
         if (cancelled) return;
         setName(data.displayName || "");
         setStatus(data.status || "active");
+        setArchivedAt(data.archivedAt || null);
         setLoading(false);
       })
       .catch(e => {
@@ -57,6 +63,19 @@ export default function GrowSettings({ growId, onClose, onSaved, onDeleted }) {
       setError(e?.message || "Could not save. Try again.");
       setSaving(false);
     }
+  }
+
+  async function handleRestore() {
+    if (restoring) return;
+    setRestoring(true);
+    setError(null);
+    try {
+      await api.unarchiveGrow(growId);
+      setArchivedAt(null);
+      await onSaved?.();
+    } catch (e) {
+      setError(e?.message || "Could not restore this environment.");
+    } finally { setRestoring(false); }
   }
 
   return (
@@ -153,28 +172,39 @@ export default function GrowSettings({ growId, onClose, onSaved, onDeleted }) {
         </div>
       )}
 
-      {/* Danger zone */}
+      {/* Retiring a space. Nothing here deletes: archiving keeps every row
+          the space ever wrote, and restoring puts it back untouched. */}
       <div style={{ marginTop: 30, paddingTop: 18, borderTop: "1px solid var(--c-border-faint)" }}>
         <div style={{
           fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
           color: "var(--c-text-ghost)", marginBottom: 12,
         }}>
-          Danger zone
+          {archivedAt ? "Archived" : "Finished with this space?"}
+        </div>
+        <div style={{
+          fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", lineHeight: 1.7,
+          marginBottom: 12,
+        }}>
+          {archivedAt
+            ? "This space is in the archive. Everything it recorded was kept, and restoring brings it back exactly as it was."
+            : "Archiving takes a space off the list and the calendar switcher and keeps everything in it: the calendar, the journal, every plant's history and every photo. Nothing here deletes."}
         </div>
         <button
           type="button"
           className="touch-target"
-          onClick={() => setShowDelete(true)}
+          disabled={restoring}
+          onClick={() => (archivedAt ? handleRestore() : setShowArchive(true))}
           style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             width: "100%", padding: "13px 16px", borderRadius: 12,
-            background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.35)",
-            color: "var(--c-danger-soft)", fontFamily: MONO, fontSize: 12, letterSpacing: 0.5,
-            cursor: "pointer",
+            background: "var(--c-surface-1)", border: "1px solid var(--c-border-strong)",
+            color: "var(--c-text-dim)", fontFamily: MONO, fontSize: 12, letterSpacing: 0.5,
+            cursor: restoring ? "default" : "pointer", opacity: restoring ? 0.6 : 1,
           }}
         >
-          <Trash2 size={14} strokeWidth={1.8} />
-          Delete this environment
+          {archivedAt
+            ? <><ArchiveRestore size={14} strokeWidth={1.8} />{restoring ? "Restoring…" : "Restore from the archive"}</>
+            : <><Archive size={14} strokeWidth={1.8} />Archive this environment</>}
         </button>
       </div>
       </>
@@ -182,12 +212,12 @@ export default function GrowSettings({ growId, onClose, onSaved, onDeleted }) {
 
       </div>
 
-      {showDelete && (
-        <DeleteGrowConfirm
+      {showArchive && (
+        <ArchiveGrowConfirm
           growId={growId}
           growName={name}
-          onClose={() => setShowDelete(false)}
-          onDeleted={onDeleted}
+          onClose={() => setShowArchive(false)}
+          onArchived={onArchived}
         />
       )}
     </div>
