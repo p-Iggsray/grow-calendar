@@ -185,18 +185,76 @@ export async function getGrowReport(env, user, growId, unit = "gal") {
     photoRows = r.results ?? [];
   } catch { /* no photos table yet */ }
 
-  const html = renderReport({ row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows, eventRows, photoRows, waterUnit });
+  // The imported sensor series, rolled up a day at a time. The raw series is
+  // one row a minute and would run to tens of thousands of lines; a day's
+  // range and average is what anyone reads back off it anyway.
+  let envDays = [];
+  try {
+    const r = await env.DB.prepare(`
+      SELECT date, COUNT(*) AS samples,
+        ROUND(AVG(temp_f),1) AS t_avg, MIN(temp_f) AS t_min, MAX(temp_f) AS t_max,
+        ROUND(AVG(humidity),1) AS h_avg, MIN(humidity) AS h_min, MAX(humidity) AS h_max,
+        ROUND(AVG(vpd),2) AS v_avg, MIN(vpd) AS v_min, MAX(vpd) AS v_max
+      FROM env_readings WHERE user_id = ? AND grow_id = ?
+      GROUP BY date ORDER BY date`,
+    ).bind(user.id, growId).all();
+    envDays = r.results ?? [];
+  } catch { /* no readings imported */ }
+
+  // Day records from before the day-tasks screen was removed. Nothing writes
+  // these any more, but a long-running space still holds them and this file is
+  // the last chance to read them.
+  const legacy = await loadLegacyDayRecords(env, user.id, growId);
+
+  const html = renderReport({
+    row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows,
+    eventRows, photoRows, envDays, legacy, waterUnit,
+  });
+
+  // Building this file is what earns the right to delete the space: stamp when
+  // it happened and hand the stamp back. worker/archive.js will not delete a
+  // space without a token matching it. The stamp is written after the document
+  // is rendered, so a report that failed to build never arms a delete.
+  const rundownAt = new Date().toISOString();
+  try {
+    await env.DB.prepare(
+      "UPDATE grows SET rundown_at = ? WHERE id = ? AND user_id = ?"
+    ).bind(rundownAt, growId, user.id).run();
+  } catch { /* an older grows table without the column: the delete gate simply stays shut */ }
 
   return new Response(html, {
     headers: {
       "content-type": "text/html; charset=utf-8",
       "cache-control": "no-store",
+      "x-rundown-at": rundownAt,
     },
   });
 }
 
+// Check-offs, task notes and per-day plan overrides. All three predate the
+// current daily log and nothing writes them now, so the tables are often
+// missing entirely and every read here tolerates that.
+async function loadLegacyDayRecords(env, userId, growId) {
+  const read = async (sql) => {
+    try { const r = await env.DB.prepare(sql).bind(userId, growId).all(); return r.results ?? []; }
+    catch { return []; }
+  };
+  const [checkoffs, taskNotes, overrides] = await Promise.all([
+    read(`SELECT date, COUNT(*) AS n FROM task_checkoffs
+          WHERE user_id = ? AND grow_id = ? GROUP BY date ORDER BY date`),
+    read(`SELECT date, task_index, note FROM task_notes
+          WHERE user_id = ? AND grow_id = ? AND note != '' ORDER BY date, task_index`),
+    read(`SELECT date, payload FROM plan_day_overrides
+          WHERE user_id = ? AND grow_id = ? ORDER BY date`),
+  ]);
+  return { checkoffs, taskNotes, overrides };
+}
+
 function renderReport(ctx) {
-  const { row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows, eventRows, photoRows = [], waterUnit } = ctx;
+  const {
+    row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows,
+    eventRows, photoRows = [], envDays = [], legacy = {}, waterUnit,
+  } = ctx;
 
   const name = row.display_name || "My Grow";
   // "abandoned" is the stored value; "stopped" is what the app calls it.
@@ -455,6 +513,111 @@ function renderReport(ctx) {
       }).join(""))
     : "";
 
+  // ── Measured conditions ──────────────────────────────────────────────────
+  // What the instruments in the space actually read, a day at a time. Only a
+  // space that imported a controller has any of this.
+  const envSection = envDays.length ? section("Measured Conditions", `
+    <p class="empty">${esc(String(envDays.reduce((n, d) => n + (num(d.samples) ?? 0), 0)))} readings across ${envDays.length} day${envDays.length === 1 ? "" : "s"}, imported from this space's controller.</p>
+    <table class="grid">
+      <thead><tr>
+        <th>Date</th><th>Readings</th>
+        <th>Temp low / avg / high</th><th>RH low / avg / high</th><th>VPD low / avg / high</th>
+      </tr></thead>
+      <tbody>${envDays.map((d) => {
+        const range = (lo, avg, hi, suffix) => [lo, avg, hi].every((n) => num(n) == null)
+          ? "-"
+          : `${num(lo) ?? "-"} / ${num(avg) ?? "-"} / ${num(hi) ?? "-"}${suffix}`;
+        return `<tr>
+          <td>${fmtNice(d.date)}</td>
+          <td>${esc(String(num(d.samples) ?? 0))}</td>
+          <td>${range(d.t_min, d.t_avg, d.t_max, "\u00b0F")}</td>
+          <td>${range(d.h_min, d.h_avg, d.h_max, "%")}</td>
+          <td>${range(d.v_min, d.v_avg, d.v_max, " kPa")}</td>
+        </tr>`;
+      }).join("")}</tbody>
+    </table>`) : "";
+
+  // ── Drying and curing ────────────────────────────────────────────────────
+  // The part of a grow that happens after the calendar stops, and the part the
+  // report never used to mention at all.
+  const lc = parseField(row.lifecycle);
+  let lifecycleSection = "";
+  if (lc && (lc.phase || lc.dryStartedAt || (lc.dryLogs ?? []).length || (lc.cureLogs ?? []).length)) {
+    const marks = [
+      lc.phase ? ["Phase", humanize(lc.phase)] : null,
+      lc.dryStartedAt ? ["Drying started", fmtNice(lc.dryStartedAt)] : null,
+      lc.cureStartedAt ? ["Curing started", fmtNice(lc.cureStartedAt)] : null,
+      lc.finishedAt ? ["Finished", fmtNice(lc.finishedAt)] : null,
+      num(lc.finalWeightG) != null ? [w.yieldLabel, `${num(lc.finalWeightG)} g`] : null,
+    ].filter(Boolean);
+    const ticked = Object.entries(lc.dryChecklist ?? {}).filter(([, v]) => v).map(([k]) => humanize(k));
+    const logTable = (rows, label, extra) => (rows ?? []).length ? `
+      <h3>${esc(label)}</h3>
+      <table class="grid">
+        <thead><tr><th>Date</th>${extra.map((c) => `<th>${esc(c.head)}</th>`).join("")}<th>Note</th></tr></thead>
+        <tbody>${rows.map((e) => `<tr>
+          <td>${fmtNice(e.date)}</td>
+          ${extra.map((c) => `<td>${esc(c.cell(e))}</td>`).join("")}
+          <td>${esc(e.note ?? "")}</td>
+        </tr>`).join("")}</tbody>
+      </table>` : "";
+    lifecycleSection = section("Drying &amp; Curing", `
+      ${marks.length ? `<div class="defs">${marks.map(([l, v]) =>
+        `<div class="def"><div class="def-l">${esc(l)}</div><div class="def-v">${esc(v)}</div></div>`).join("")}</div>` : ""}
+      ${ticked.length ? `<p class="empty">Checked off while drying: ${esc(ticked.join(", "))}.</p>` : ""}
+      ${logTable(lc.dryLogs, "Dry log", [
+        { head: "Temp", cell: (e) => (num(e.tempF) != null ? `${num(e.tempF)}\u00b0F` : "-") },
+        { head: "RH", cell: (e) => (num(e.rh) != null ? `${num(e.rh)}%` : "-") },
+      ])}
+      ${logTable(lc.cureLogs, "Cure log", [
+        { head: "RH", cell: (e) => (num(e.rh) != null ? `${num(e.rh)}%` : "-") },
+        { head: "Burped", cell: (e) => (e.burped ? "Yes" : "No") },
+      ])}
+      ${lc.finalNotes ? `<h3>Final notes</h3><p class="lcnote">${esc(lc.finalNotes)}</p>` : ""}`);
+  }
+
+  // ── Legacy day records ───────────────────────────────────────────────────
+  // Nothing writes these any more. They are here because this file is the last
+  // place they can be read, and a record you cannot read is a record you lost.
+  const legacyCheckoffs = legacy.checkoffs ?? [];
+  const legacyNotes = legacy.taskNotes ?? [];
+  const legacyOverrides = legacy.overrides ?? [];
+  let legacySection = "";
+  if (legacyCheckoffs.length || legacyNotes.length || legacyOverrides.length) {
+    const notesByDate = new Map();
+    for (const n of legacyNotes) {
+      if (!notesByDate.has(n.date)) notesByDate.set(n.date, []);
+      notesByDate.get(n.date).push(n.note);
+    }
+    const dates = [...new Set([
+      ...legacyCheckoffs.map((r) => r.date),
+      ...legacyNotes.map((r) => r.date),
+      ...legacyOverrides.map((r) => r.date),
+    ])].sort();
+    const doneByDate = new Map(legacyCheckoffs.map((r) => [r.date, num(r.n) ?? 0]));
+    const overrideByDate = new Map(legacyOverrides.map((r) => [r.date, parseField(r.payload)]));
+    legacySection = section("Earlier Day Records", `
+      <p class="empty">Tasks ticked off and day-plan edits from before the daily log replaced them.</p>
+      <table class="grid">
+        <thead><tr><th>Date</th><th>Ticked off</th><th>Written on the day</th></tr></thead>
+        <tbody>${dates.map((d) => {
+          const ov = overrideByDate.get(d);
+          const said = [
+            ...(notesByDate.get(d) ?? []),
+            ov?.note ? String(ov.note) : null,
+            ov?.warning ? `Warning: ${ov.warning}` : null,
+            (ov?.addedTasks ?? []).length ? `Added: ${(ov.addedTasks).map((t) => (typeof t === "string" ? t : t?.text ?? "")).filter(Boolean).join("; ")}` : null,
+            (ov?.removedTasks ?? []).length ? `Removed ${ov.removedTasks.length} task${ov.removedTasks.length === 1 ? "" : "s"}` : null,
+          ].filter(Boolean).join(" · ");
+          return `<tr>
+            <td>${fmtNice(d)}</td>
+            <td>${esc(String(doneByDate.get(d) ?? 0))}</td>
+            <td>${esc(said)}</td>
+          </tr>`;
+        }).join("")}</tbody>
+      </table>`);
+  }
+
   // ── Stats summary ────────────────────────────────────────────────────────
   const summaryRows = [
     ["Days with a log entry", String(logDays)],
@@ -463,6 +626,7 @@ function renderReport(ctx) {
     tempMin != null ? ["Lowest temp recorded", `${tempMin}°F`] : null,
     tempMax != null ? ["Highest temp recorded", `${tempMax}°F`] : null,
     ["Day notes written", String(noteRows.length)],
+    envDays.length ? ["Days of sensor readings", String(envDays.length)] : null,
     photoRows.length ? ["Photographs", String(photoRows.length)] : null,
     eventRows.length ? ["Calendar events", String(eventRows.length)] : null,
     firstDate ? ["Length of record", weeksAndDays(dayOfGrow(firstDate, ymdOf(today)) ?? 0)] : null,
@@ -503,7 +667,10 @@ function renderReport(ctx) {
         timelineSection ? "Stage Changes" : null,
         phasesSection ? "Time In Each Stage" : null,
         journalCards ? "Journal, day by day" : null,
+        envSection ? "Measured Conditions" : null,
+        lifecycleSection ? "Drying &amp; Curing" : null,
         platesSection ? "Plates, the photographic record" : null,
+        legacySection ? "Earlier Day Records" : null,
         "Season Stats",
       ].filter(Boolean).map((t) => `<li>${t}</li>`).join("")}
     </ol>
@@ -513,7 +680,10 @@ function renderReport(ctx) {
   ${timelineSection}
   ${phasesSection}
   ${journalSection}
+  ${envSection}
+  ${lifecycleSection}
   ${platesSection}
+  ${legacySection}
   ${statsSection}
   <footer class="foot">
     Generated ${esc(generated)} · Black Cat Botanicals. For educational and personal
@@ -595,6 +765,13 @@ h1{font-size:34px;line-height:1.1;margin:0 0 10px;color:var(--gd);letter-spacing
 .ev-notes{color:#3f5a45;font-size:13px;}
 .daynote{font-size:14px;background:#fffdf3;border:1px solid #f1e9c8;border-radius:8px;padding:8px 12px;margin:8px 0;white-space:pre-wrap;}
 .empty{color:var(--mut);font-style:italic;}
+/* Tables of readings and logs: dense, and they must survive a printer. */
+.card h3{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);margin:18px 0 8px;font-family:'Courier New',monospace;}
+.grid{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0 2px;}
+.grid th{text-align:left;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);font-weight:600;border-bottom:1px solid var(--line);padding:6px 8px 6px 0;}
+.grid td{padding:6px 8px 6px 0;border-bottom:1px dotted var(--line);vertical-align:top;}
+.grid tr{break-inside:avoid;}
+.lcnote{white-space:pre-wrap;margin:4px 0 0;}
 .foot{font-size:11px;color:var(--mut);text-align:center;margin-top:30px;line-height:1.6;font-family:'Courier New',monospace;}
 /* ── The photographic record ───────────────────────────────────────────── */
 .lede{font-size:13px;color:var(--mut);margin:0 0 14px;font-style:italic;}

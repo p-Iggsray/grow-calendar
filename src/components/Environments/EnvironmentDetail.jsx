@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Pencil, SlidersHorizontal, CalendarCheck, Archive, ArchiveRestore, Sun, Ruler, Droplets, Sprout, Wind } from "lucide-react";
+import { Plus, Pencil, SlidersHorizontal, CalendarCheck, Archive, ArchiveRestore, Trash2, Sun, Ruler, Droplets, Sprout, Wind } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { useStageTimeline } from "../../lib/useJournal.js";
 import { tapHaptic } from "../../lib/haptics.js";
@@ -84,7 +84,7 @@ function pillBtn(color = "var(--c-text-dim)", bg = "var(--c-surface-1)", border 
 // in it, and its measured conditions. This is where a grower works day to day
 // outside the calendar.
 export default function EnvironmentDetail({
-  grow, isActive, today, onClose, onActivate, onOpenSettings, onArchive, onUnarchive, onChanged, onOpenJournalDay,
+  grow, isActive, today, onClose, onActivate, onOpenSettings, onArchive, onUnarchive, onDelete, onChanged, onOpenJournalDay,
 }) {
   const growId = grow.id;
   const survey = grow.survey ?? null;
@@ -182,6 +182,11 @@ export default function EnvironmentDetail({
                 icon: Archive, label: "Archive environment",
                 detail: "Keeps everything, takes it off the list",
                 onClick: () => onArchive(grow),
+              },
+              {
+                icon: Trash2, label: "Delete environment", tone: "destructive",
+                detail: "Saves its rundown first, then it is gone for good",
+                onClick: () => onDelete(grow),
               },
             ]}
           />

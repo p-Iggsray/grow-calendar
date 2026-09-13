@@ -12,7 +12,7 @@
 
 import { json, error, nowIso, safeJsonBounded } from "./util.js";
 import { logError } from "./log.js";
-import { ARCHIVE_CAPS, planEviction } from "../src/lib/archive.js";
+import { ARCHIVE_CAPS, planEviction, rundownIsFresh } from "../src/lib/archive.js";
 
 // Every table a space writes to. Archiving keeps all of them; eviction drops
 // all of them together, which is what makes a purge complete rather than
@@ -123,9 +123,40 @@ export async function purgeGrow(env, userId, growId) {
 }
 
 async function growRow(env, userId, growId) {
-  return env.DB.prepare(
-    "SELECT id, display_name, archived_at FROM grows WHERE id = ? AND user_id = ?"
-  ).bind(growId, userId).first();
+  try {
+    return await env.DB.prepare(
+      "SELECT id, display_name, archived_at, rundown_at FROM grows WHERE id = ? AND user_id = ?"
+    ).bind(growId, userId).first();
+  } catch {
+    // A grows table from before the archive columns existed. Read what is
+    // there; the missing columns simply read as absent, which is the safe way
+    // round: no archive stamp, and no rundown to delete on.
+    return env.DB.prepare(
+      "SELECT id, display_name FROM grows WHERE id = ? AND user_id = ?"
+    ).bind(growId, userId).first();
+  }
+}
+
+// The one sentence the app says when a delete arrives without its file.
+const NEEDS_RUNDOWN = "Download this space's rundown first. Deleting is only allowed with the file in hand.";
+
+/**
+ * Has this space's rundown been generated, and is the token the caller
+ * presented the one for it? Returns null when it checks out, or the response
+ * to send back when it does not.
+ *
+ * The rundown IS the safety net. Everything below refuses rather than guesses:
+ * a missing column, an unreadable row, a token that does not match, one that is
+ * hours old - every one of them means no delete.
+ */
+function rundownRefusal(row, token, kind = "delete") {
+  if (rundownIsFresh(row?.rundown_at, typeof token === "string" ? token : null)) return null;
+  return {
+    code: "rundown_required",
+    growId: row?.id ?? null,
+    displayName: row?.display_name ?? null,
+    kind,
+  };
 }
 
 /** GET /api/archive - what is in the archive and how full it is. */
@@ -175,6 +206,26 @@ export async function archiveGrow(request, env, user, growId) {
     }, { status: 409 });
   }
 
+  // Agreeing is not enough. Every space about to go needs its own rundown
+  // generated and handed back, exactly as a plain delete does: a space must
+  // never leave the database as a side effect of archiving another one.
+  if (evict.length) {
+    const tokens = (body?.rundowns && typeof body.rundowns === "object") ? body.rundowns : {};
+    const missing = [];
+    for (const g of evict) {
+      const row = await growRow(env, user.id, g.id);
+      const refusal = rundownRefusal(row, tokens[g.id], "evict");
+      if (refusal) missing.push({ ...refusal, bytes: g.bytes, archivedAt: g.archivedAt });
+    }
+    if (missing.length) {
+      return json({
+        error: NEEDS_RUNDOWN,
+        code: "rundown_required",
+        needRundown: missing,
+      }, { status: 409 });
+    }
+  }
+
   for (const g of evict) await purgeGrow(env, user.id, g.id);
 
   const now = nowIso();
@@ -198,4 +249,26 @@ export async function unarchiveGrow(env, user, growId) {
     "UPDATE grows SET archived_at = NULL, updated_at = ? WHERE id = ? AND user_id = ?"
   ).bind(now, growId, user.id).run();
   return json({ ok: true, archivedAt: null });
+}
+
+/**
+ * DELETE /api/grows/:id
+ *
+ * Deleting is allowed, and it is final: this removes the space and every row
+ * keyed to it. What makes it allowed is the rundown. The caller has to present
+ * the token the report endpoint handed back minutes earlier, so the only way to
+ * reach this is to have had the app build the file and give it to you first.
+ */
+export async function deleteGrow(request, env, user, growId) {
+  const row = await growRow(env, user.id, growId);
+  if (!row) return error(404, "grow not found");
+
+  let body = {};
+  { const p = await safeJsonBounded(request, 4096); if (p.ok) body = p.data ?? {}; }
+
+  const refusal = rundownRefusal(row, body?.rundownAt);
+  if (refusal) return json({ error: NEEDS_RUNDOWN, ...refusal }, { status: 409 });
+
+  await purgeGrow(env, user.id, growId);
+  return json({ ok: true, deleted: growId });
 }

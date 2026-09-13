@@ -71,6 +71,34 @@ export function archiveFullness(spaces, caps = ARCHIVE_CAPS) {
   };
 }
 
+// ── The rundown, and what it lets you do ────────────────────────────────────
+//
+// Deleting a space is allowed, but only with its rundown in your hands. The
+// worker stamps `grows.rundown_at` the moment it builds and sends one, hands
+// the same timestamp back as a token, and a delete has to present it.
+//
+// This proves the app really produced the file and handed it over. It cannot
+// prove the file reached your disk, and nothing in a browser can. What the
+// window below adds is that the token has to be MINUTES old: an ancient
+// rundown, from before half the season was written, is not a copy of what is
+// about to be deleted.
+export const RUNDOWN_VALID_MS = 30 * 60 * 1000;
+
+/**
+ * Is this token the space's current rundown, and recent enough to stand in for
+ * what is about to go? `stamp` is what the server has stored.
+ */
+export function rundownIsFresh(stamp, token, now = Date.now(), validMs = RUNDOWN_VALID_MS) {
+  if (!stamp || !token || stamp !== token) return false;
+  const made = Date.parse(stamp);
+  if (!Number.isFinite(made)) return false;
+  const age = now - made;
+  // A stamp from the future is a clock disagreeing with itself, not a fresh
+  // rundown. Allow a minute of skew and no more.
+  if (age < -60_000) return false;
+  return age <= validMs;
+}
+
 /** Bytes in the units a person reads. */
 export function formatBytes(n) {
   const bytes = Number(n) || 0;

@@ -11,6 +11,9 @@ export default function ConfirmModal({
   message,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
+  // For a confirm that has a condition to meet first: the button says what is
+  // still missing rather than looking ready and doing nothing when pressed.
+  confirmDisabled = false,
   tone = "default", // "default" | "destructive"
   onConfirm,
   onCancel,
@@ -126,11 +129,13 @@ export default function ConfirmModal({
                 type="button"
                 className="touch-target"
                 onClick={onConfirm}
+                disabled={confirmDisabled}
                 style={{
                   ...confirmTone,
                   borderRadius: 10, padding: "8px 14px",
                   fontFamily: "var(--font-ui)", fontSize: 13, letterSpacing: 1,
-                  cursor: "pointer",
+                  cursor: confirmDisabled ? "default" : "pointer",
+                  opacity: confirmDisabled ? 0.5 : 1,
                 }}>
                 {confirmLabel}
               </button>

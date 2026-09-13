@@ -76,6 +76,7 @@ async function ensureMigrated(env, userId) {
         status          TEXT NOT NULL DEFAULT 'active'
           CHECK(status IN ('active','harvested','abandoned')),
         archived_at     TEXT,
+        rundown_at      TEXT,
         config          TEXT,
         survey          TEXT,
         generated_plan  TEXT,
@@ -105,6 +106,10 @@ async function ensureMigrated(env, userId) {
   // space comes out of this unarchived.
   try {
     await env.DB.prepare(`ALTER TABLE grows ADD COLUMN archived_at TEXT`).run();
+  } catch { /* column already exists */ }
+  // When this space's rundown was last generated. A delete has to present it.
+  try {
+    await env.DB.prepare(`ALTER TABLE grows ADD COLUMN rundown_at TEXT`).run();
   } catch { /* column already exists */ }
 
   const existing = await env.DB.prepare(

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   planEviction, archiveFullness, formatBytes,
   ARCHIVE_MAX_SPACES, ARCHIVE_MAX_BYTES, ARCHIVE_CAPS,
+  rundownIsFresh, RUNDOWN_VALID_MS,
 } from "../src/lib/archive.js";
 
 const space = (id, bytes) => ({ id, bytes });
@@ -94,4 +95,49 @@ test("formatBytes reads the way a person would say it", () => {
   assert.equal(formatBytes(1.5 * 1024 ** 2), "1.5 MB");
   assert.equal(formatBytes(12 * 1024 ** 3), "12 GB");
   assert.equal(formatBytes(null), "0 B");
+});
+
+// ── The rundown gate ────────────────────────────────────────────────────────
+
+const HOUR = 3600_000;
+const now = Date.parse("2026-09-13T12:00:00.000Z");
+const stampAt = (msAgo) => new Date(now - msAgo).toISOString();
+
+test("a token matching a rundown made minutes ago opens the gate", () => {
+  const stamp = stampAt(60_000);
+  assert.equal(rundownIsFresh(stamp, stamp, now), true);
+});
+
+test("no rundown, no delete", () => {
+  assert.equal(rundownIsFresh(null, "2026-09-13T11:59:00.000Z", now), false);
+  assert.equal(rundownIsFresh(undefined, undefined, now), false);
+  assert.equal(rundownIsFresh("", "", now), false);
+});
+
+test("a token that is not the stored one is refused", () => {
+  assert.equal(rundownIsFresh(stampAt(60_000), stampAt(120_000), now), false);
+});
+
+test("a rundown older than the window is not a copy of what is being deleted", () => {
+  const stale = stampAt(2 * HOUR);
+  assert.equal(rundownIsFresh(stale, stale, now), false);
+  // Right on the edge still counts; a second past it does not.
+  const edge = stampAt(RUNDOWN_VALID_MS);
+  assert.equal(rundownIsFresh(edge, edge, now), true);
+  const past = stampAt(RUNDOWN_VALID_MS + 1000);
+  assert.equal(rundownIsFresh(past, past, now), false);
+});
+
+test("a stamp from the future is a broken clock, not a fresh rundown", () => {
+  const way = new Date(now + HOUR).toISOString();
+  assert.equal(rundownIsFresh(way, way, now), false);
+  // A little skew between the worker and the phone is tolerated.
+  const skew = new Date(now + 30_000).toISOString();
+  assert.equal(rundownIsFresh(skew, skew, now), true);
+});
+
+test("garbage never opens the gate", () => {
+  assert.equal(rundownIsFresh("not a date", "not a date", now), false);
+  assert.equal(rundownIsFresh(0, 0, now), false);
+  assert.equal(rundownIsFresh({}, {}, now), false);
 });

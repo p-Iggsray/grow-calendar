@@ -550,6 +550,7 @@ export default function App() {
                 onClose={() => setShowSettings(false)}
                 onSaved={reloadPlan}
                 onArchived={() => { setShowSettings(false); reloadPlan(); }}
+                onDeleted={() => { setShowSettings(false); reloadPlan(); }}
               />
             </Suspense>
           </motion.div>

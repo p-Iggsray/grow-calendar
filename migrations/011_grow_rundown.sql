@@ -1,0 +1,11 @@
+-- Deleting a grow space requires its rundown.
+--
+-- The report endpoint stamps this column when it builds and sends a space's
+-- rundown, and hands the same timestamp back as a token. DELETE /api/grows/:id
+-- refuses without a token that matches this column and is only minutes old, so
+-- nothing leaves the database that was not written out first.
+--
+-- Nothing is removed by this migration. Existing spaces start with no rundown
+-- (NULL), which simply means one has to be generated before they can be
+-- deleted.
+ALTER TABLE grows ADD COLUMN rundown_at TEXT;

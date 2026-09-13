@@ -11,8 +11,7 @@ import { currentStageOf, dayOfGrow, stageLabel } from "../lib/stageTimeline.js";
 import { partitionPlants } from "./PlantsTab/constants.js";
 import { useToast } from "../lib/useToast.jsx";
 import { api } from "../lib/api.js";
-import { loadWaterUnit } from "../lib/waterUnits.js";
-import { cropOf } from "../lib/crops.js";
+import { downloadRundown } from "../lib/rundown.js";
 import { loadSaveToRoll, rememberSaveToRoll } from "../lib/savePhoto.js";
 import { loadLastBackup, rememberBackup, backupAge } from "../lib/backup.js";
 import { tapHaptic } from "../lib/haptics.js";
@@ -141,26 +140,13 @@ export default function SettingsScreen({
     day != null ? `Day ${day}` : null,
   ].filter(Boolean).join(" · ") || null;
 
-  // Downloads the full, print-ready grow report as a self-contained HTML file
-  // (it has a built-in "Save as PDF / Print" button). We fetch + save rather
-  // than navigating to the URL: this is an installed standalone PWA (scope "/"),
-  // so a same-origin window.open is captured by the app window and replaces the
-  // running app - which looked like a hard refresh. Requires an active grow.
+  // The active space's rundown, saved as a file. Same document the delete flow
+  // insists on, so there is one report and not two that could drift apart.
   async function openReport() {
     if (!activeGrowId || reportBusy) return;
     setReportBusy(true);
     try {
-      const html = await api.getGrowReport(activeGrowId, loadWaterUnit(cropOf(activeGrow?.survey)));
-      const blob = new Blob([html], { type: "text/html" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `grow-report-${activeGrowId}.html`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      // Give the browser a moment to start the download before revoking.
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      await downloadRundown(activeGrowId, { name: activeGrow?.displayName, survey: activeGrow?.survey });
     } catch (err) {
       addToast(`Could not export report: ${err?.message ?? "unknown error"}`);
     } finally {

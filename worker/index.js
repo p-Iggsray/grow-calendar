@@ -14,7 +14,7 @@ import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from ".
 import { getHealth, postClientError } from "./health.js";
 import { getWeather } from "./weather.js";
 import { listGrows, createGrow, getGrow, patchGrow, patchGrowLifecycle, setupGrow } from "./grows.js";
-import { getArchive, archiveGrow, unarchiveGrow } from "./archive.js";
+import { getArchive, archiveGrow, unarchiveGrow, deleteGrow } from "./archive.js";
 import { listGrowEvents, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./events.js";
 import { createJournalPhoto, getJournalPhoto, getPhotoImage, deleteJournalPhoto, listPlantPhotos } from "./photos.js";
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
@@ -166,7 +166,9 @@ async function authenticatedRoute(request, env, path, method, user) {
     const growId = growMatch[1];
     if (method === "GET")    return getGrow(env, user, growId);
     if (method === "PATCH")  return patchGrow(request, env, user, growId);
-    // No DELETE. A space is retired by archiving it, which keeps everything.
+    // Deleting is allowed, but only with the space's rundown in hand: the
+    // handler refuses without the token the report endpoint just issued.
+    if (method === "DELETE") return deleteGrow(request, env, user, growId);
   }
   // The archive: what is in it, and putting a space in or taking it back out.
   if (path === "/api/archive" && method === "GET") return getArchive(env, user);

@@ -234,6 +234,7 @@ CREATE TABLE IF NOT EXISTS grows (
   display_name    TEXT NOT NULL DEFAULT '',
   status          TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','harvested','abandoned')),
   archived_at     TEXT,             -- ISO timestamp; NULL means the space is not archived
+  rundown_at      TEXT,             -- when a rundown was last generated; a delete must present it
   config          TEXT,             -- JSON: drive dates
   survey          TEXT,             -- JSON: grow survey
   generated_plan  TEXT,            -- JSON: AI-generated plan
@@ -250,6 +251,7 @@ CREATE INDEX IF NOT EXISTS idx_grows_user_id ON grows(user_id, created_at DESC);
 -- CREATE TABLE IF NOT EXISTS grows (id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, display_name TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','harvested','abandoned')), config TEXT, survey TEXT, generated_plan TEXT, phase_overrides TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
 -- CREATE INDEX IF NOT EXISTS idx_grows_user_id ON grows(user_id, created_at DESC);
 -- ALTER TABLE grows ADD COLUMN archived_at TEXT;
+-- ALTER TABLE grows ADD COLUMN rundown_at TEXT;
 
 -- Per-plant log entries (notes + height + health). plant_id references a survey.strains[] entry id.
 CREATE TABLE IF NOT EXISTS plant_log (

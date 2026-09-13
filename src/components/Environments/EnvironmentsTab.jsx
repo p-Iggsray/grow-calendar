@@ -10,6 +10,7 @@ import { MONO, partitionPlants } from "../PlantsTab/constants.js";
 import { cropOf, words } from "../../lib/crops.js";
 import EnvironmentDetail, { ENV_KIND_LABEL } from "./EnvironmentDetail.jsx";
 import ArchiveGrowConfirm from "../ArchiveGrowConfirm.jsx";
+import DeleteGrowConfirm from "../DeleteGrowConfirm.jsx";
 import SwipeRow from "../SwipeRow.jsx";
 import ConfirmModal from "../ConfirmModal.jsx";
 import ScreenHeader from "../ScreenHeader.jsx";
@@ -125,6 +126,7 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
   const [conditions, setConditions] = useState({});
   const [creating, setCreating] = useState(false);
   const [archiving, setArchiving] = useState(null);
+  const [deleting, setDeleting] = useState(null);
   const [resumeGrow, setResumeGrow] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
   // How full the archive is, fetched only when the section is opened: working
@@ -313,6 +315,7 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
             onOpenSettings={onOpenSettings}
             onArchive={(g) => setArchiving(g)}
             onUnarchive={handleUnarchive}
+            onDelete={(g) => setDeleting(g)}
             onChanged={reload}
             onOpenJournalDay={onOpenJournalDay}
           />
@@ -328,6 +331,16 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
         onConfirm={() => { const id = resumeGrow.id; setResumeGrow(null); onNewEnvironment(id); }}
         onCancel={() => setResumeGrow(null)}
       />
+
+      {deleting && (
+        <DeleteGrowConfirm
+          growId={deleting.id}
+          growName={deleting.displayName}
+          survey={deleting.survey}
+          onClose={() => setDeleting(null)}
+          onDeleted={async () => { setDeleting(null); setOpenId(null); setArchiveUse(null); await reload(); }}
+        />
+      )}
 
       {archiving && (
         <ArchiveGrowConfirm

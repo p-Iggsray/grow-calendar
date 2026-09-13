@@ -145,10 +145,14 @@ export const api = {
     return res.blob();
   },
 
+  // The rundown: everything this space ever recorded, as one printable file.
+  // The `rundownAt` stamp that comes back with it is what a delete has to
+  // present, so callers keep it rather than only the html.
   getGrowReport: async (growId, unit = "gal") => {
     const res = await fetch(`/api/grows/${encodeURIComponent(growId)}/report?unit=${encodeURIComponent(unit)}`, { credentials: "same-origin" });
     if (!res.ok) throw new Error(`Report failed: ${res.status}`);
-    return res.text();
+    const rundownAt = res.headers.get("x-rundown-at");
+    return { html: await res.text(), rundownAt };
   },
 
   getWeather: (growId) =>
@@ -172,10 +176,15 @@ export const api = {
   // Spaces are archived, never deleted. `evict: true` is the grower agreeing
   // to the spaces the first call named as having to go to make room.
   getArchive: () => request("/api/archive"),
-  archiveGrow: (id, { evict = false } = {}) =>
-    request(`/api/grows/${id}/archive`, { method: "POST", body: JSON.stringify({ evict }) }),
+  // `rundowns` maps each space the archive would have to drop to the token its
+  // rundown was issued with. Without them the server refuses to evict.
+  archiveGrow: (id, { evict = false, rundowns } = {}) =>
+    request(`/api/grows/${id}/archive`, { method: "POST", body: JSON.stringify({ evict, ...(rundowns ? { rundowns } : {}) }) }),
   unarchiveGrow: (id) =>
     request(`/api/grows/${id}/unarchive`, { method: "POST", body: "{}" }),
+  // Deleting is final and needs the token the rundown was issued with.
+  deleteGrow: (id, rundownAt) =>
+    request(`/api/grows/${id}`, { method: "DELETE", body: JSON.stringify({ rundownAt }) }),
   updateGrowLifecycle: (id, lifecycle) =>
     request(`/api/grows/${id}/lifecycle`, { method: "PATCH", body: JSON.stringify({ lifecycle }) }),
   setupGrow: (id, survey) =>

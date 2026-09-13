@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Check, Archive, ArchiveRestore } from "lucide-react";
+import { Check, Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import { api } from "../lib/api.js";
 import { Label, Input, RadioGroup, MONO } from "./SetupWizard/styleHelpers.jsx";
 import ArchiveGrowConfirm from "./ArchiveGrowConfirm.jsx";
+import DeleteGrowConfirm from "./DeleteGrowConfirm.jsx";
 import ScreenHeader from "./ScreenHeader.jsx";
 import { Skeleton } from "./Skeleton.jsx";
 
@@ -20,7 +21,7 @@ const STATUS_OPTIONS = [
 // timeline is written by moving plants between stages as it happens, not
 // planned in advance. onSaved reloads the plan so the change shows immediately;
 // onDeleted runs after the environment is deleted.
-export default function GrowSettings({ growId, onClose, onSaved, onArchived }) {
+export default function GrowSettings({ growId, onClose, onSaved, onArchived, onDeleted }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [name, setName]     = useState("");
@@ -29,6 +30,8 @@ export default function GrowSettings({ growId, onClose, onSaved, onArchived }) {
   const [error, setError]   = useState(null);
   const [archivedAt, setArchivedAt] = useState(null);
   const [showArchive, setShowArchive] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [survey, setSurvey] = useState(null);
   const [restoring, setRestoring] = useState(false);
 
   useEffect(() => {
@@ -41,6 +44,7 @@ export default function GrowSettings({ growId, onClose, onSaved, onArchived }) {
         setName(data.displayName || "");
         setStatus(data.status || "active");
         setArchivedAt(data.archivedAt || null);
+        setSurvey(data.survey || null);
         setLoading(false);
       })
       .catch(e => {
@@ -206,6 +210,30 @@ export default function GrowSettings({ growId, onClose, onSaved, onArchived }) {
             ? <><ArchiveRestore size={14} strokeWidth={1.8} />{restoring ? "Restoring…" : "Restore from the archive"}</>
             : <><Archive size={14} strokeWidth={1.8} />Archive this environment</>}
         </button>
+
+        {/* The other way out, and the final one. It saves the space's rundown
+            before it will go through, so what is lost is the app's copy and
+            not the record. */}
+        <button
+          type="button"
+          className="touch-target"
+          onClick={() => setShowDelete(true)}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            width: "100%", padding: "13px 16px", borderRadius: 12, marginTop: 10,
+            background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.35)",
+            color: "var(--c-danger-soft)", fontFamily: MONO, fontSize: 12, letterSpacing: 0.5,
+            cursor: "pointer",
+          }}
+        >
+          <Trash2 size={14} strokeWidth={1.8} />
+          Delete this environment
+        </button>
+        <div style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--c-text-ghost)", lineHeight: 1.7, marginTop: 8 }}>
+          Deleting saves this space&rsquo;s rundown first: every day logged, every
+          plant&rsquo;s history, the stage changes, the readings and the photographs,
+          as one file you keep. Then the space leaves the app for good.
+        </div>
       </div>
       </>
       )}
@@ -218,6 +246,16 @@ export default function GrowSettings({ growId, onClose, onSaved, onArchived }) {
           growName={name}
           onClose={() => setShowArchive(false)}
           onArchived={onArchived}
+        />
+      )}
+
+      {showDelete && (
+        <DeleteGrowConfirm
+          growId={growId}
+          growName={name}
+          survey={survey}
+          onClose={() => setShowDelete(false)}
+          onDeleted={onDeleted}
         />
       )}
     </div>
