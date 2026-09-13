@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Pencil, SlidersHorizontal, CalendarCheck, Archive, ArchiveRestore, Trash2, Sun, Ruler, Droplets, Sprout, Wind } from "lucide-react";
+import { Plus, Pencil, SlidersHorizontal, CalendarCheck, Archive, ArchiveRestore, Trash2, FileText, Sun, Ruler, Droplets, Sprout, Wind } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { useStageTimeline } from "../../lib/useJournal.js";
 import { tapHaptic } from "../../lib/haptics.js";
@@ -17,6 +17,8 @@ import ScreenHeader from "../ScreenHeader.jsx";
 import Portal from "../Portal.jsx";
 import HeaderMenu from "../HeaderMenu.jsx";
 import { ymd as lifecycleYmd, useLifecycleSave } from "../Lifecycle/shared.jsx";
+import { downloadRundown } from "../../lib/rundown.js";
+import { useToast } from "../../lib/useToast.jsx";
 
 export const ENV_KIND_LABEL = { indoor: "Indoor", outdoor: "Outdoor", greenhouse: "Greenhouse" };
 const MEDIUM_LABEL = {
@@ -104,6 +106,8 @@ export default function EnvironmentDetail({
   // Drying can only be started on the environment the calendar is following,
   // which is the one the lifecycle hook writes to.
   const { save: saveLifecycle, busy: dryingBusy } = useLifecycleSave();
+  const [rundownBusy, setRundownBusy] = useState(false);
+  const { addToast } = useToast();
   const growing = getLifecyclePhase(grow.lifecycle) === "growing";
   const isArchived = Boolean(grow.archivedAt);
 
@@ -141,6 +145,21 @@ export default function EnvironmentDetail({
     await api.patchPlant(growId, plant.id, { status: next });
     await onChanged?.();
   }
+  // Any space's whole record, as a file, whenever you want it. This does not
+  // belong only to the delete flow: an archived space is never the active one,
+  // so without this the only way to reach its report would be to start
+  // deleting it.
+  async function handleSaveRundown() {
+    if (rundownBusy) return;
+    setRundownBusy(true);
+    try {
+      await downloadRundown(growId, { name: grow.displayName, survey });
+      addToast("Rundown saved.");
+    } catch (e) {
+      addToast(`Could not build the rundown: ${e?.message ?? "unknown error"}`);
+    } finally { setRundownBusy(false); }
+  }
+
   async function handleDeletePlant(plant) {
     await api.deletePlant(growId, plant.id);
     setConfirmDeletePlant(null);
@@ -169,6 +188,12 @@ export default function EnvironmentDetail({
             items={[
               { icon: Pencil, label: "Edit the space", detail: `What it grows, size, ${crop === "mushrooms" ? "substrate, tub size" : "lighting, medium, watering"}`, onClick: () => setEditingSetup(true) },
               { icon: SlidersHorizontal, label: "Rename environment", onClick: () => onOpenSettings(growId) },
+              {
+                icon: FileText,
+                label: rundownBusy ? "Building the rundown…" : "Save the rundown",
+                detail: "Everything this space recorded, as one file you keep",
+                onClick: handleSaveRundown, disabled: rundownBusy,
+              },
               isActive && growing && {
                 icon: Wind, label: "Start drying early",
                 detail: "Ends the calendar and opens the dry tracker",

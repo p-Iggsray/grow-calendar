@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, Thermometer, Droplets, Gauge, CalendarCheck, Home, Trees, Warehouse, Sprout, Pencil, Archive, ArchiveRestore } from "lucide-react";
+import { Plus, Thermometer, Droplets, Gauge, CalendarCheck, Home, Trees, Warehouse, Sprout, Pencil, Archive, ArchiveRestore, FileText } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { usePlan } from "../../lib/usePlan.jsx";
 import { useToday } from "../../lib/dates.js";
@@ -15,6 +15,7 @@ import SwipeRow from "../SwipeRow.jsx";
 import ConfirmModal from "../ConfirmModal.jsx";
 import ScreenHeader from "../ScreenHeader.jsx";
 import { formatBytes } from "../../lib/archive.js";
+import { downloadRundown } from "../../lib/rundown.js";
 import { useToast } from "../../lib/useToast.jsx";
 
 const KIND_ICON = { indoor: Home, outdoor: Trees, greenhouse: Warehouse };
@@ -132,6 +133,7 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
   // How full the archive is, fetched only when the section is opened: working
   // it out means measuring every archived space, and photos are not small.
   const [archiveUse, setArchiveUse] = useState(null);
+  const [rundownId, setRundownId] = useState(null);
   const { addToast } = useToast();
   // One row's actions at a time: opening another closes the last.
   const [swipedId, setSwipedId] = useState(null);
@@ -187,6 +189,21 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
       .catch(() => setArchiveUse(null));
   }
 
+  // A space's whole record as a file, from the list itself. An archived space
+  // is never the active one, so without this the only way to its report would
+  // be to start deleting it.
+  async function handleRundown(grow) {
+    if (rundownId) return;
+    setSwipedId(null);
+    setRundownId(grow.id);
+    try {
+      await downloadRundown(grow.id, { name: grow.displayName, survey: grow.survey });
+      addToast(`Saved the rundown for ${grow.displayName?.trim() || "that space"}.`);
+    } catch (e) {
+      addToast(`Could not build the rundown: ${e?.message ?? "unknown error"}`);
+    } finally { setRundownId(null); }
+  }
+
   function renderRow(g) {
     const archived = Boolean(g.archivedAt);
     return (
@@ -195,7 +212,12 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
         open={swipedId === g.id}
         onOpenChange={(next) => setSwipedId(next ? g.id : null)}
         actions={[
-          {
+          archived ? {
+            label: rundownId === g.id ? "Saving" : "Rundown",
+            ariaLabel: `Save the rundown for ${g.displayName || "this environment"}`,
+            icon: <FileText size={16} strokeWidth={2} />,
+            onClick: () => handleRundown(g),
+          } : {
             label: "Edit",
             ariaLabel: `Edit ${g.displayName || "this environment"}`,
             icon: <Pencil size={16} strokeWidth={2} />,
@@ -296,6 +318,9 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
                     Archiving something new once this is full drops the space archived longest ago. You will be asked first.
                   </div>
                 )}
+                <div style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--c-text-ghost)", lineHeight: 1.7 }}>
+                  Push a row aside to save its rundown or put it back. Opening one shows everything it recorded.
+                </div>
                 {archivedGrows.map((g) => renderRow(g))}
               </div>
             )}

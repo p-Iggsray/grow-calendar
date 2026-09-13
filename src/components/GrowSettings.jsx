@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Check, Archive, ArchiveRestore, Trash2 } from "lucide-react";
+import { Check, Archive, ArchiveRestore, Trash2, FileText } from "lucide-react";
 import { api } from "../lib/api.js";
 import { Label, Input, RadioGroup, MONO } from "./SetupWizard/styleHelpers.jsx";
+import { downloadRundown } from "../lib/rundown.js";
 import ArchiveGrowConfirm from "./ArchiveGrowConfirm.jsx";
 import DeleteGrowConfirm from "./DeleteGrowConfirm.jsx";
 import ScreenHeader from "./ScreenHeader.jsx";
@@ -33,6 +34,7 @@ export default function GrowSettings({ growId, onClose, onSaved, onArchived, onD
   const [showDelete, setShowDelete] = useState(false);
   const [survey, setSurvey] = useState(null);
   const [restoring, setRestoring] = useState(false);
+  const [rundownBusy, setRundownBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,6 +69,17 @@ export default function GrowSettings({ growId, onClose, onSaved, onArchived, onD
       setError(e?.message || "Could not save. Try again.");
       setSaving(false);
     }
+  }
+
+  async function handleRundown() {
+    if (rundownBusy) return;
+    setRundownBusy(true);
+    setError(null);
+    try {
+      await downloadRundown(growId, { name, survey });
+    } catch (e) {
+      setError(e?.message || "Could not build the rundown.");
+    } finally { setRundownBusy(false); }
   }
 
   async function handleRestore() {
@@ -176,9 +189,42 @@ export default function GrowSettings({ growId, onClose, onSaved, onArchived, onD
         </div>
       )}
 
-      {/* Retiring a space. Nothing here deletes: archiving keeps every row
-          the space ever wrote, and restoring puts it back untouched. */}
-      <div style={{ marginTop: 30, paddingTop: 18, borderTop: "1px solid var(--c-border-faint)" }}>
+      {/* The record, as a file. Available at any time and to any space,
+          archived ones included: saving what a space did is not a step on the
+          way to losing it. */}
+      <div style={{ marginTop: 26, paddingTop: 18, borderTop: "1px solid var(--c-border-faint)" }}>
+        <div style={{
+          fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
+          color: "var(--c-text-ghost)", marginBottom: 12,
+        }}>
+          Its record
+        </div>
+        <button
+          type="button"
+          className="touch-target"
+          disabled={rundownBusy}
+          onClick={handleRundown}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            width: "100%", padding: "13px 16px", borderRadius: 12,
+            background: "rgba(var(--c-accent-rgb), 0.1)", border: "1px solid rgba(var(--c-accent-rgb), 0.3)",
+            color: "var(--c-accent)", fontFamily: MONO, fontSize: 12, letterSpacing: 0.5,
+            cursor: rundownBusy ? "default" : "pointer", opacity: rundownBusy ? 0.6 : 1,
+          }}
+        >
+          <FileText size={14} strokeWidth={1.8} />
+          {rundownBusy ? "Building the rundown…" : "Save the rundown"}
+        </button>
+        <div style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--c-text-ghost)", lineHeight: 1.7, marginTop: 8 }}>
+          Every day logged, every plant&rsquo;s history, the stage changes, the
+          readings, the photographs and the drying log, as one printable file.
+        </div>
+      </div>
+
+      {/* Retiring a space. Archiving keeps every row the space ever wrote, and
+          restoring puts it back untouched. Deleting does not, which is why it
+          insists on the file above first. */}
+      <div style={{ marginTop: 26, paddingTop: 18, borderTop: "1px solid var(--c-border-faint)" }}>
         <div style={{
           fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
           color: "var(--c-text-ghost)", marginBottom: 12,
