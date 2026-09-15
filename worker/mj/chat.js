@@ -11,7 +11,7 @@ import { cropOf } from "../../src/lib/crops.js";
 import { growLocation, strainSummary } from "../../src/lib/growProfile.js";
 import { firstGrowId } from "../perDayScope.js";
 import { GEMINI_DAILY_LIMIT, GEMINI_PRO_DAILY_LIMIT, PER_USER_DAILY_CAP } from "../limits.js";
-import { MJ_PERSONA, MJ_TOOLS, MJ_WRITE_TOOLS, cropBrief } from "../mj-logic.js";
+import { MJ_TOOLS, MJ_WRITE_TOOLS, buildSystemSegments } from "../mj-logic.js";
 import { runGemini } from "../providers/gemini.js";
 import { ProviderError } from "../providers/errors.js";
 import { logError } from "../log.js";
@@ -140,32 +140,29 @@ export async function postMj(request, env, user) {
     lifecycleContext = "LIFECYCLE: This grow is COMPLETE (harvested, dried, and cured). Help with storage, review, or planning the next grow.";
   }
 
-  // Assemble system prompt segments.
+  // Assemble the system prompt. Order is load-bearing: see buildSystemSegments.
+  // The timeline of recorded stage changes belongs down here with the rest of
+  // what changes, not up with the persona - it moves every time the grower
+  // records anything, and up there it broke the cacheable prefix each time.
   const timelineText = buildTimelineText(timeline.events, timeline.firstDate, today);
-  // The crop brief sits with the persona: it is what MJ knows, not what is
-  // happening today, and it changes only when the space itself does.
-  const baseBlock = [MJ_PERSONA, "", cropBrief(raw.survey), "", timelineText]
-    .filter(s => s !== "").join("\n");
-
   const rosterContext = buildRosterContext(raw.survey);
 
-  const dynamicParts = [
-    growProfile,
-    rosterContext,
-    lifecycleContext,
-    envContext,
-    growsContext,
-    growLogContext,
-    weatherContext,
-    statsContext,
-    `Today's date is ${today}.`,
-    contextDate ? `The grower currently has ${contextDate} open in the app.` : "",
-  ].filter(Boolean).join("\n\n");
-
-  const systemSegments = [
-    { text: baseBlock,     cache: false },
-    { text: dynamicParts,  cache: false },
-  ];
+  const systemSegments = buildSystemSegments({
+    survey: raw.survey,
+    volatile: [
+      timelineText,
+      growProfile,
+      rosterContext,
+      lifecycleContext,
+      envContext,
+      growsContext,
+      growLogContext,
+      weatherContext,
+      statsContext,
+      `Today's date is ${today}.`,
+      contextDate ? `The grower currently has ${contextDate} open in the app.` : "",
+    ],
+  });
 
   // Reserve the per-user slot atomically right before the (expensive) model
   // call so concurrent requests can't all slip past the cap, and so a failed

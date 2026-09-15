@@ -174,6 +174,37 @@ export function cropBrief(crop) {
 
 
 /**
+ * MJ's system prompt, split where the cache can see the seam.
+ *
+ * Gemini 2.5 caches implicitly: no API call, no flag, nothing to switch on. It
+ * matches the PREFIX of a request against recent ones and discounts whatever
+ * repeats, which makes prompt ORDER the whole of the optimisation. Stable text
+ * first, volatile text last, and never the two interleaved.
+ *
+ * This is worth caring about here because the stable part is not small (the
+ * persona and the crop brief together, plus the tool declarations the API
+ * sends alongside them) and it is re-sent on every turn AND on every iteration
+ * of the tool loop. One question answered in eight tool round-trips was
+ * re-sending all of it eight times.
+ *
+ * The trap this function exists to close: the timeline of recorded stage
+ * changes used to sit in the stable block, on the reasoning that it is "what
+ * MJ knows about this space". It is, but it also changes the day anything is
+ * recorded, which broke the prefix for every grow on every stage change. It is
+ * volatile text and it now sits with the volatile text.
+ *
+ * `stable` must depend on NOTHING but the crop. That is a property worth
+ * keeping, so it is tested rather than trusted.
+ */
+export function buildSystemSegments({ survey, volatile }) {
+  const stable = [MJ_PERSONA, cropBrief(survey)].filter(Boolean).join("\n\n");
+  return [
+    { text: stable, stable: true },
+    { text: (volatile ?? []).filter(Boolean).join("\n\n"), stable: false },
+  ];
+}
+
+/**
  * The tools that change the database.
  *
  * Retrying a whole turn on a second model is only safe while nothing has been
