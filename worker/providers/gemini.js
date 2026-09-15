@@ -1,5 +1,5 @@
 import { ProviderError } from "./errors.js";
-import { GEMINI_CONNECT_TIMEOUT_MS, GEMINI_IDLE_TIMEOUT_MS } from "../mj/constants.js";
+import { GEMINI_CONNECT_TIMEOUT_MS, GEMINI_IDLE_TIMEOUT_MS, GEMINI_RETRY_AFTER_MS } from "../mj/constants.js";
 
 /**
  * A deadline that only runs while nothing is happening.
@@ -129,7 +129,8 @@ export function parseGeminiResponse(data) {
 // function calls have been seen yet in this response. Gemini never mixes
 // text and function calls in the same turn, so this is always safe.
 // Returns the full { text, functionCalls, parts } for the caller to use.
-async function streamGeminiCall({ apiKey, model, body, onChunk, gatewayBase, userId }) {
+async function streamGeminiCall({ apiKey, model, body, onChunk, gatewayBase, userId, usage }) {
+  if (usage) usage.requests += 1;
   const base = geminiBase(gatewayBase);
   const headers = { "x-goog-api-key": apiKey, "content-type": "application/json" };
   if (userId != null) headers["cf-aig-metadata"] = JSON.stringify({ user_id: String(userId) });
@@ -215,18 +216,41 @@ async function streamGeminiCall({ apiKey, model, body, onChunk, gatewayBase, use
 
 // onChunk is forwarded to streaming tool-call iterations too, but Gemini
 // never emits text on the same turn as function calls, so it's a no-op there.
-export async function runGemini({ apiKey, model, systemSegments, tools, messages, executeToolUse, maxIterations, onChunk, gatewayBase, userId }) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * One turn, however many round trips it takes.
+ *
+ * `usage` is a caller-owned `{ requests }` counter rather than a return value
+ * on purpose: the caller needs the count whether this returns or throws, and a
+ * turn that failed on its sixth request still made six requests against the
+ * quota. Returning it would lose exactly the case that matters.
+ */
+export async function runGemini({ apiKey, model, systemSegments, tools, messages, executeToolUse, maxIterations, onChunk, gatewayBase, userId, usage }) {
   const contents = toGeminiContents(messages);
   let finalText = "";
 
   for (let iter = 0; iter < maxIterations; iter++) {
     let text, functionCalls, parts;
+    const body = buildGeminiBody({ systemSegments, tools, contents });
     try {
-      const body = buildGeminiBody({ systemSegments, tools, contents });
-      ({ text, functionCalls, parts } = await streamGeminiCall({ apiKey, model, body, onChunk, gatewayBase, userId }));
+      ({ text, functionCalls, parts } = await streamGeminiCall({ apiKey, model, body, onChunk, gatewayBase, userId, usage }));
     } catch (e) {
-      if (e instanceof ProviderError) throw e;
-      throw new ProviderError("unreachable");
+      // A quota refusal arrives before the response opens, so nothing has been
+      // streamed to the grower and there is nothing to duplicate by trying
+      // again. Give the per-minute window a moment to roll over, once.
+      if (e instanceof ProviderError && e.kind === "quota") {
+        await sleep(GEMINI_RETRY_AFTER_MS);
+        try {
+          ({ text, functionCalls, parts } = await streamGeminiCall({ apiKey, model, body, onChunk, gatewayBase, userId, usage }));
+        } catch (again) {
+          throw again instanceof ProviderError ? again : new ProviderError("unreachable");
+        }
+      } else if (e instanceof ProviderError) {
+        throw e;
+      } else {
+        throw new ProviderError("unreachable");
+      }
     }
 
     if (text) finalText = text;

@@ -18,12 +18,22 @@ export async function bumpUserUsage(env, userId, today) {
   return Number(row?.count ?? 1);
 }
 
-// Increment the global per-model counter (shared across all users).
-export async function bumpModelUsage(env, model, today) {
+/**
+ * Increment the global per-model counter by the number of API REQUESTS made.
+ *
+ * Not by one. The limit this defends is Google's requests-per-day, and one
+ * chat message is a tool loop that can make eight of them. Counting messages
+ * undercounted the real figure by up to eightfold, which meant the ceiling
+ * meant to keep us inside the free tier could be passed without ever showing
+ * as passed.
+ */
+export async function bumpModelUsage(env, model, today, requests = 1) {
+  const n = Math.max(0, Math.round(Number(requests) || 0));
+  if (n === 0) return;
   await env.DB.prepare(
-    "INSERT INTO mj_model_usage (model, date, count) VALUES (?, ?, 1) " +
-    "ON CONFLICT(model, date) DO UPDATE SET count = count + 1",
-  ).bind(model, today).run();
+    "INSERT INTO mj_model_usage (model, date, count) VALUES (?, ?, ?) " +
+    "ON CONFLICT(model, date) DO UPDATE SET count = count + ?",
+  ).bind(model, today, n, n).run();
 }
 
 export async function readMjModelUsage(env, today, model) {

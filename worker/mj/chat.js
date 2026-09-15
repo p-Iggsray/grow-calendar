@@ -198,9 +198,20 @@ export async function postMj(request, env, user) {
       let reply = null;
       let modelUsed = null;
       let lastErr = null;
+      // Every round trip this turn makes. Owned here so the count survives a
+      // failure: requests made before something went wrong still went to
+      // Google and still count against the quota.
+      //
+      // Split by model, because Pro and Flash have very different daily
+      // ceilings and a turn can touch both. Charging Pro's attempts to Flash
+      // would leave the tighter of the two limits under-counted, which is the
+      // one that matters.
+      const usage = { requests: 0 };
+      const spent = new Map();
       try {
         for (const model of modelsToTry) {
           let tryNext = false;
+          const before = usage.requests;
           try {
             ({ reply } = await runGemini({
               apiKey, model, systemSegments, tools: MJ_TOOLS, messages,
@@ -208,6 +219,7 @@ export async function postMj(request, env, user) {
               onChunk: (delta) => send({ delta }),
               gatewayBase: env.CF_AI_GATEWAY_URL ?? null,
               userId: user.id,
+              usage,
             }));
             modelUsed = model;
           } catch (e) {
@@ -223,8 +235,17 @@ export async function postMj(request, env, user) {
             if (wrote || (e instanceof ProviderError && e.kind === "unreachable")) break;
             actions.length = 0;
             tryNext = true;
+          } finally {
+            // Runs on every way out of this attempt, break included, so no
+            // path can leave requests uncounted.
+            spent.set(model, (spent.get(model) ?? 0) + (usage.requests - before));
           }
           if (!tryNext) break;
+        }
+
+        // Whatever reached Google counts, whether or not it produced an answer.
+        for (const [model, n] of spent) {
+          if (n > 0) await bumpModelUsage(env, model, today, n).catch(() => {});
         }
 
         if (reply === null || modelUsed === null) {
@@ -260,7 +281,6 @@ export async function postMj(request, env, user) {
           return;
         }
 
-        await bumpModelUsage(env, modelUsed, today);
         await saveConversation(env, user.id, threadGrowId, userContent, reply, actions);
         const [proCount, flashCount, userCount] = await Promise.all([
           readMjModelUsage(env, today, GEMINI_PRO_MODEL),

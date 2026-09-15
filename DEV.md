@@ -54,22 +54,37 @@ Your real production login is different and lives in the remote database.
 
 ## MJ (AI grow assistant)
 
-The floating "MJ" button opens a chat backed by Google Gemini 2.5 Flash. MJ answers questions about the grow AND takes actions on your behalf: checking tasks off and appending to your daily notes. The Worker holds the API key as a secret and never exposes it to the browser.
+The floating "MJ" button opens a chat backed by Google Gemini 2.5. MJ answers
+questions about the grow AND acts on it: writing the journal, logging water and
+conditions, managing the plant roster, editing the grow profile and driving the
+post-harvest lifecycle. The Worker holds the API key as a secret and never
+exposes it to the browser.
 
 ### Model
 
-All users hit `gemini-2.5-flash` via the free-tier Generative Language API, using the single shared `GEMINI_API_KEY` secret. If the key is missing, `/api/mj` returns a friendly "MJ is not configured yet" message.
+Everyone hits `gemini-2.5-flash` via the free-tier Generative Language API,
+using the single shared `GEMINI_API_KEY` secret. Admins get `gemini-2.5-pro`
+first with Flash behind it (see **Failing safely** for when that fallback is
+allowed to run). If the key is missing, `/api/mj` returns a friendly "MJ is not
+configured yet" message.
 
-### Usage tracking and the in-chat usage bar
+`CF_AI_GATEWAY_URL`, when set, routes calls through a Cloudflare AI Gateway
+instead of straight to Google.
 
-There is no per-user daily cap. Instead, each call increments the `mj_usage` D1 table and the MJ chat header shows a small usage bar that reflects today's aggregate request count against `GEMINI_DAILY_LIMIT` (defined in `worker/limits.js`, currently `1500`, the documented Gemini API free-tier RPD for `gemini-2.5-flash`). Bump the constant if Google changes the limit.
+### The in-chat usage bar
 
-The bar is fed by:
+The MJ chat header shows today's counts. It is fed by:
 
-- `GET /api/mj/usage` (called when the chat opens) returning `{ date, count, limit }`
-- The `usage` field on each `POST /api/mj` response (refreshes the bar after every send)
+- `GET /api/mj/usage` when the chat opens
+- the `usage` field on the final SSE frame of each `POST /api/mj`
 
-If Gemini's own free-tier quota is exhausted at Google's end, MJ returns a "hit today's limit, try again later" message instead of an error.
+Both return `{ date, proCount, proLimit, flashCount, flashLimit, userCount,
+userLimit }`. See **Quota, and what actually counts** below for what those
+numbers now mean, because the flash count went up when it started counting
+honestly.
+
+If Gemini's own quota is exhausted at Google's end, MJ says she has hit today's
+limit rather than reporting an error.
 
 ### Local setup
 
@@ -91,7 +106,89 @@ npx wrangler secret put GEMINI_API_KEY
 
 ### How MJ works
 
-Non-streaming, via a tool-use loop in `worker/mj.js`. Conversations are ephemeral (in memory, cleared on reload). The system prompt carries a generated season overview (`buildPlanText`, derived live from the D1 plan config) plus today's date. MJ reads per-day specifics on demand with its `get_day` tool and acts with `set_tasks_done` and `append_note` (notes are appended, never overwritten). It touches the `task_checkoffs`, `day_notes`, `plan_config`/`plan_day_overrides`, and `mj_usage` tables, which must exist in the target environment before deploying.
+Streaming (SSE), via a tool-calling loop in `worker/mj/`. `chat.js` validates
+the request, enforces quota, assembles context and runs the loop;
+`providers/gemini.js` is the Gemini adapter; `mj-logic.js` holds the persona,
+the crop briefs and the tool schemas as pure data.
+
+Conversations are **persisted**, in `mj_conversations`, one thread per grow plus
+a general thread (`grow_id IS NULL`). The last 20 messages are replayed as
+context. `MJ_TOOLS` declares 16 tools: six read (`get_day`, `get_week`,
+`get_grow_log`, `get_grow_info`, `get_environment`, `get_plant_log`) and ten
+write (listed in `MJ_WRITE_TOOLS`).
+
+### Prompt order is load-bearing
+
+Gemini 2.5 caches **implicitly**: no API call, no flag, nothing to enable. It
+matches the prefix of a request against recent ones and discounts what repeats
+by 90%. So the whole optimisation is prompt order.
+
+`buildSystemSegments` returns two segments and the first must never vary by
+anything but the crop:
+
+| Segment | Contents | Approx tokens |
+|---|---|---|
+| stable | persona + crop brief | 2,580 |
+| (alongside) | `MJ_TOOLS` declarations | 3,660 |
+| volatile | stage timeline, roster, weather, log, stats, today's date | varies |
+
+That ~6,240 tokens repeats on every turn **and on every iteration of the tool
+loop**, so an eight-step answer used to re-send about 50,000 tokens of
+identical text.
+
+`test/mj-prompt-cache.test.js` asserts the stable segment is byte-identical
+across days, stage histories, growers and spaces, and fails the build if a date
+appears in it. That test exists because the stage timeline used to live in the
+stable block and quietly broke the prefix every time anything was recorded.
+
+### Quota, and what actually counts
+
+Two ceilings, both in `worker/limits.js`, plus a per-user cap:
+
+- `GEMINI_DAILY_LIMIT` (1500) global flash requests/day
+- `GEMINI_PRO_DAILY_LIMIT` (25) global pro requests/day
+- `PER_USER_DAILY_CAP` (50) MJ messages per user/day
+
+**A message is not a request.** One chat message is a tool loop that can make up
+to `MAX_TOOL_ITERATIONS` (8) round trips. `bumpModelUsage` therefore takes a
+count, and `runGemini` reports it through a caller-owned `usage` counter so the
+figure survives a failure: requests made before something went wrong still
+reached Google. Each model is charged its own share, because Pro's ceiling is
+far tighter than Flash's and a turn can touch both.
+
+The per-user slot is reserved before the model call so concurrent requests
+cannot all slip past the cap, and released if the call never succeeded.
+
+The iteration ceiling is 8 rather than 12 because the free tier allows ten
+requests a **minute**: one question using twelve would trip the per-minute
+limit on its own. A 429 is retried once after `GEMINI_RETRY_AFTER_MS`, since
+mid-answer it is usually the per-minute window rather than the daily one.
+
+### Failing safely
+
+- **Timeouts measure silence, not duration.** A total timeout would kill the
+  long thoughtful answer that is worth waiting for. Nothing before the response
+  opens is a dead connection (`GEMINI_CONNECT_TIMEOUT_MS`, 20s); a gap that long
+  mid-stream is one that died without saying so (`GEMINI_IDLE_TIMEOUT_MS`, 45s).
+- **The Pro-to-Flash fallback stops once anything has been written.** Retrying a
+  turn re-runs its tools, which is free for reads and wrong for writes. The turn
+  is flagged as having written *before* the tool runs, and such a turn is saved
+  to history with its actions so they can still be undone.
+- **Context blocks fail soft but never silently.** Losing one costs MJ knowledge
+  without costing the reply; each logs when it happens.
+
+### What MJ is told about the weather
+
+Her context carries the grow's **own** weather, resolved from `survey.lat/lon`,
+read cache-only so no National Weather Service round trip sits in front of a
+reply. A space with no location gets no weather rather than somebody else's, a
+forecast older than six hours is dropped rather than read out as current, and
+anything over twenty minutes old says how old it is.
+
+What the space *is* decides how much she hears: outdoors the sky is the record
+so the full forecast applies, while an indoor or greenhouse space gets severe
+weather alerts only. A tent does not care about tomorrow's high; it does care
+about the ice storm that will take the power out.
 
 ## First-time Cloudflare setup
 
