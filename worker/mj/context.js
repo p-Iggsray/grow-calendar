@@ -2,6 +2,9 @@
 // System-prompt context builders: grow log, weather, stats, grows list.
 import { displayUnit, formatWater, rowDisplay, unitLabel } from "../../src/lib/waterUnits.js";
 import { cropOf, words } from "../../src/lib/crops.js";
+import { autoLogsWeather } from "../../src/lib/growEnvironment.js";
+import { logError } from "../log.js";
+import { weatherBlock } from "../../src/lib/mjWeather.js";
 
 function tryParseArr(s) {
   if (!s) return [];
@@ -55,49 +58,51 @@ export async function buildGrowLogContext(env, userId, growId) {
   return lines.join("\n");
 }
 
-export async function buildWeatherContext(env) {
-  try {
-    // Read from cache directly - avoid importing getWeather which returns a Response.
-    const row = await env.DB.prepare(
-      "SELECT value, updated_at FROM weather_cache WHERE key LIKE 'weather:hourly:%' LIMIT 1"
-    ).first();
-    const alertRow = await env.DB.prepare(
-      "SELECT value FROM weather_cache WHERE key LIKE 'weather:alerts:%' LIMIT 1"
-    ).first();
+/**
+ * This grow's weather, and only this grow's.
+ *
+ * The cache is keyed by coordinates. Reading it without them (which is what
+ * this did) hands back whichever row happens to come first, so a grower could
+ * be told another location's forecast under a hard-coded heading naming a
+ * third. Coordinates come off the survey the caller already loaded, so there
+ * is no extra query and no geocoding round trip in front of a reply.
+ *
+ * Cache-only on purpose. The weather card warms it whenever the calendar is
+ * open; making MJ wait on the National Weather Service would put an external
+ * request in front of every first message of a session.
+ */
+export async function buildWeatherContext(env, survey) {
+  const lat = Number(survey?.lat);
+  const lon = Number(survey?.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return "";
 
-    const lines = ["CURRENT WEATHER (Athens, OH):"];
-    if (row?.value) {
-      try {
-        const { periods, highLow } = JSON.parse(row.value);
-        if (highLow?.high != null || highLow?.low != null) {
-          lines.push(`  Forecast today: High ${highLow.high ?? "?"}°F, Low ${highLow.low ?? "?"}°F`);
-        }
-        const current = periods?.[0];
-        if (current) {
-          lines.push(`  Now: ${current.temp}°F - ${current.shortForecast}`);
-        }
-        const next = periods?.slice(1, 4);
-        if (next?.length) {
-          const nexts = next.map(p => `${p.temp}°F (${p.shortForecast})`).join(" → ");
-          lines.push(`  Next ${next.length}h: ${nexts}`);
-        }
-      } catch { /* corrupt cache */ }
-    }
-    if (alertRow?.value) {
-      try {
-        const alerts = JSON.parse(alertRow.value);
-        if (alerts.length > 0) {
-          lines.push(`  ⚠ ACTIVE ALERTS:`);
-          for (const a of alerts.slice(0, 3)) {
-            lines.push(`    - ${a.event}: ${a.headline || a.severity}`);
-          }
-        }
-      } catch { /* corrupt cache */ }
-    }
-    if (lines.length === 1) lines.push("  (no recent weather data - cache may be cold)");
-    return lines.join("\n");
-  } catch {
-    return "CURRENT WEATHER: unavailable";
+  try {
+    const key = `${lat},${lon}`;
+    const [hourlyRow, alertRow] = await Promise.all([
+      env.DB.prepare("SELECT value, updated_at FROM weather_cache WHERE key = ?")
+        .bind(`weather:hourly:${key}`).first(),
+      env.DB.prepare("SELECT value, updated_at FROM weather_cache WHERE key = ?")
+        .bind(`weather:alerts:${key}`).first(),
+    ]);
+
+    const parse = (row) => {
+      if (!row?.value) return null;
+      try { return JSON.parse(row.value); } catch { return null; }
+    };
+
+    return weatherBlock({
+      location: typeof survey?.location === "string" ? survey.location : null,
+      hourly: parse(hourlyRow),
+      alerts: parse(alertRow),
+      updatedAt: hourlyRow?.updated_at ?? alertRow?.updated_at ?? null,
+      mode: autoLogsWeather(survey?.environment) ? "full" : "alerts",
+    });
+  } catch (e) {
+    // Losing a context block costs MJ knowledge without costing the reply, so
+    // it fails soft. Silently is a different matter: that is how a broken
+    // block goes unnoticed for months.
+    logError("mj-context-weather", { message: String(e?.message ?? e) });
+    return "";
   }
 }
 
@@ -110,14 +115,28 @@ export async function buildStatsContext(env, userId, growId) {
         COUNT(*) AS log_days
       FROM grow_log WHERE user_id = ? AND grow_id = ?
     `).bind(userId, growId).first();
+    if (!logRow) return "";
+
+    // Gallons are what the total is STORED in, never necessarily what it was
+    // measured in. MJ is told not to convert a grower's own measure, so the
+    // season total has to come back in the unit the season was logged in.
+    const unitRes = await env.DB.prepare(
+      "SELECT water_plants FROM grow_log WHERE user_id = ? AND grow_id = ? AND water_plants IS NOT NULL"
+    ).bind(userId, growId).all();
+    const rows = (unitRes.results ?? []).flatMap((r) => tryParseArr(r.water_plants));
+    // No fallback: with nothing to go on, displayUnit(rows, null) says so
+    // rather than inventing gallons.
+    const unit = displayUnit(rows, null);
 
     const lines = ["SEASON STATS:"];
-    if (logRow) {
-      lines.push(`  Total water logged: ${logRow.total_water ?? 0} gal over ${logRow.log_days ?? 0} days`);
-      lines.push(`  Feed days recorded: ${logRow.feed_days ?? 0}`);
-    }
+    const total = Number(logRow.total_water ?? 0);
+    lines.push(unit
+      ? `  Total water logged: ${formatWater(total, unit)} over ${logRow.log_days ?? 0} days`
+      : `  Days with a log entry: ${logRow.log_days ?? 0}`);
+    lines.push(`  Feed days recorded: ${logRow.feed_days ?? 0}`);
     return lines.join("\n");
-  } catch {
+  } catch (e) {
+    logError("mj-context-stats", { message: String(e?.message ?? e) });
     return "";
   }
 }
@@ -141,7 +160,8 @@ export async function buildEnvContext(env, userId, growId) {
     }
     lines.push("  (use get_environment for full history or a specific day)");
     return lines.join("\n");
-  } catch {
+  } catch (e) {
+    logError("mj-context-env", { message: String(e?.message ?? e) });
     return "";
   }
 }

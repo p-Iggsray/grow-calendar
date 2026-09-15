@@ -107,7 +107,7 @@ export async function postMj(request, env, user) {
   const [grows, growLogContext, weatherContext, statsContext, envContext] = await Promise.all([
     loadRawGrows(env, user.id).catch(() => []),
     buildGrowLogContext(env, user.id, dayGrowId),
-    buildWeatherContext(env),
+    buildWeatherContext(env, raw.survey),
     buildStatsContext(env, user.id, dayGrowId),
     buildEnvContext(env, user.id, dayGrowId),
   ]);
