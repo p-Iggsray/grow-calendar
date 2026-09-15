@@ -173,6 +173,27 @@ export function cropBrief(crop) {
 }
 
 
+/**
+ * The tools that change the database.
+ *
+ * Retrying a whole turn on a second model is only safe while nothing has been
+ * written: reads can be redone all day, but a note appended twice is appended
+ * twice. Kept beside MJ_TOOLS so a new writing tool is added a line away from
+ * the list that has to know about it.
+ */
+export const MJ_WRITE_TOOLS = new Set([
+  "update_grow_info",
+  "update_grow_profile",
+  "append_note",
+  "replace_note",
+  "log_grow_data",
+  "add_plant",
+  "update_plant",
+  "delete_plant",
+  "add_plant_log_entry",
+  "lifecycle_action",
+]);
+
 export const MJ_TOOLS = [
   {
     name: "get_grow_info",

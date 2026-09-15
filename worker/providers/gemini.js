@@ -1,4 +1,21 @@
 import { ProviderError } from "./errors.js";
+import { GEMINI_CONNECT_TIMEOUT_MS, GEMINI_IDLE_TIMEOUT_MS } from "../mj/constants.js";
+
+/**
+ * A deadline that only runs while nothing is happening.
+ *
+ * `bump()` pushes it back, so a stream that is producing text is never cut off
+ * for being long, and a stream that has gone quiet is cut off promptly.
+ */
+function idleDeadline(ms, onExpire) {
+  let timer = null;
+  const arm = () => { timer = setTimeout(onExpire, ms); };
+  arm();
+  return {
+    bump(nextMs = ms) { clearTimeout(timer); timer = setTimeout(onExpire, nextMs); },
+    clear() { clearTimeout(timer); },
+  };
+}
 
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
@@ -59,6 +76,8 @@ export async function askGeminiForJson({ apiKey, model, instruction, text, schem
       responseSchema: schema,
     },
   };
+  const ctl = new AbortController();
+  const deadline = idleDeadline(GEMINI_CONNECT_TIMEOUT_MS, () => ctl.abort());
   let res;
   try {
     res = await fetch(`${geminiBase(gatewayBase)}/${model}:generateContent`, {
@@ -66,12 +85,17 @@ export async function askGeminiForJson({ apiKey, model, instruction, text, schem
       headers: {
         "content-type": "application/json",
         "x-goog-api-key": apiKey,
-        ...(userId ? { "cf-aig-metadata": JSON.stringify({ userId: String(userId) }) } : {}),
+        // Same spelling as the streaming path, so one grower is one identity
+        // in the gateway's metadata rather than two.
+        ...(userId != null ? { "cf-aig-metadata": JSON.stringify({ user_id: String(userId) }) } : {}),
       },
       body: JSON.stringify(body),
+      signal: ctl.signal,
     });
   } catch {
     throw new ProviderError("unreachable");
+  } finally {
+    deadline.clear();
   }
   if (!res.ok) {
     throw new ProviderError(res.status === 429 ? "rate_limited" : "upstream", res.status);
@@ -110,23 +134,38 @@ async function streamGeminiCall({ apiKey, model, body, onChunk, gatewayBase, use
   const headers = { "x-goog-api-key": apiKey, "content-type": "application/json" };
   if (userId != null) headers["cf-aig-metadata"] = JSON.stringify({ user_id: String(userId) });
 
+  // Without this a hung upstream holds the request open until the platform
+  // kills it, and the grower watches a spinner that will never resolve.
+  const ctl = new AbortController();
+  let timedOut = false;
+  const deadline = idleDeadline(GEMINI_CONNECT_TIMEOUT_MS, () => { timedOut = true; ctl.abort(); });
+
   let res;
   try {
     res = await fetch(`${base}/${model}:streamGenerateContent?alt=sse`, {
       method: "POST",
       headers,
       body: JSON.stringify(body),
+      signal: ctl.signal,
     });
   } catch {
-    throw new ProviderError("unreachable");
+    deadline.clear();
+    throw new ProviderError("unreachable", timedOut ? `no response in ${GEMINI_CONNECT_TIMEOUT_MS}ms` : undefined);
   }
 
-  if (res.status === 429) throw new ProviderError("quota", `429 ${(await res.text().catch(() => "")).slice(0, 160)}`);
+  if (res.status === 429) {
+    deadline.clear();
+    throw new ProviderError("quota", `429 ${(await res.text().catch(() => "")).slice(0, 160)}`);
+  }
   if (!res.ok) {
+    deadline.clear();
     const detail = await res.text().catch(() => "");
     console.error("gemini stream error", res.status, detail);
     throw new ProviderError("upstream", `${res.status} ${String(detail).slice(0, 160)}`);
   }
+
+  // The response is open. From here the clock measures gaps between chunks.
+  deadline.bump(GEMINI_IDLE_TIMEOUT_MS);
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -152,15 +191,24 @@ async function streamGeminiCall({ apiKey, model, body, onChunk, gatewayBase, use
     }
   }
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    const lines = buf.split("\n");
-    buf = lines.pop() ?? "";
-    for (const line of lines) processLine(line);
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      deadline.bump(GEMINI_IDLE_TIMEOUT_MS);
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop() ?? "";
+      for (const line of lines) processLine(line);
+    }
+    if (buf) processLine(buf);
+  } catch (e) {
+    // A stream cut short mid-answer is not a partial answer worth keeping: the
+    // tool calls it was about to make never arrived.
+    throw new ProviderError("unreachable", timedOut ? `silent for ${GEMINI_IDLE_TIMEOUT_MS}ms` : String(e?.message ?? e).slice(0, 160));
+  } finally {
+    deadline.clear();
   }
-  if (buf) processLine(buf);
 
   return { text: fullText.trim(), functionCalls, parts: allParts };
 }

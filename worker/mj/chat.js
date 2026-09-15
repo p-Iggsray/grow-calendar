@@ -11,7 +11,7 @@ import { cropOf } from "../../src/lib/crops.js";
 import { growLocation, strainSummary } from "../../src/lib/growProfile.js";
 import { firstGrowId } from "../perDayScope.js";
 import { GEMINI_DAILY_LIMIT, GEMINI_PRO_DAILY_LIMIT, PER_USER_DAILY_CAP } from "../limits.js";
-import { MJ_PERSONA, MJ_TOOLS, cropBrief } from "../mj-logic.js";
+import { MJ_PERSONA, MJ_TOOLS, MJ_WRITE_TOOLS, cropBrief } from "../mj-logic.js";
 import { runGemini } from "../providers/gemini.js";
 import { ProviderError } from "../providers/errors.js";
 import { logError } from "../log.js";
@@ -188,15 +188,21 @@ export async function postMj(request, env, user) {
       }
 
       const actions = [];
-      const executeToolUse = (name, input) =>
-        executeTool(name, input, env, user.id, timeline, actions, activeGrowId, raw);
+      // Whether this attempt has already changed the database. Set BEFORE the
+      // tool runs, not after it records itself: the point is to know a write
+      // was attempted even if it failed part way, because that is exactly the
+      // case where redoing it is worst.
+      let wrote = false;
+      const executeToolUse = (name, input) => {
+        if (MJ_WRITE_TOOLS.has(name)) wrote = true;
+        return executeTool(name, input, env, user.id, timeline, actions, activeGrowId, raw);
+      };
 
       let reply = null;
       let modelUsed = null;
       let lastErr = null;
       try {
         for (const model of modelsToTry) {
-          actions.length = 0;
           let tryNext = false;
           try {
             ({ reply } = await runGemini({
@@ -208,13 +214,18 @@ export async function postMj(request, env, user) {
             }));
             modelUsed = model;
           } catch (e) {
-            if (e instanceof ProviderError && e.kind === "unreachable") {
-              send({ error: "Could not reach the AI service" });
-              return;
-            }
             lastErr = e;
+            logError("mj-fallback", { from: model, kind: e?.kind, detail: e?.detail, wrote, message: String(e?.message ?? e) });
+            // A second model would start the whole turn again, tools and all.
+            // That is free when the turn only read things and wrong the moment
+            // it wrote one: the note is already appended, the plant already
+            // added. Stop here and report it rather than doing it twice.
+            //
+            // An unreachable service is not worth a second model either: the
+            // first one never got off the machine.
+            if (wrote || (e instanceof ProviderError && e.kind === "unreachable")) break;
+            actions.length = 0;
             tryNext = true;
-            logError("mj-fallback", { from: model, kind: e?.kind, detail: e?.detail, message: String(e?.message ?? e) });
           }
           if (!tryNext) break;
         }
@@ -227,11 +238,24 @@ export async function postMj(request, env, user) {
               "UPDATE mj_usage SET count = count - 1 WHERE user_id = ? AND date = ? AND count > 0",
             ).bind(user.id, today).run();
           }
+          // A turn that wrote before it failed leaves real changes behind. Say
+          // so, because "try again" is the wrong advice when half of it landed.
+          if (wrote) {
+            const detail = user.role === "admin" && lastErr?.detail ? ` [${lastErr.detail}]` : "";
+            const said = "I lost the connection part way through. What I had already saved is saved, listed below, so check it before asking me again.";
+            // Record the turn even though it failed. The changes are real, and
+            // an action nobody can see is an action nobody can undo.
+            await saveConversation(env, user.id, threadGrowId, userContent, said, actions).catch(() => {});
+            send({ error: `${said}${detail}`, actions });
+            return;
+          }
           // Only call it a "limit" when Gemini actually returned a quota (429).
           // Other failures (bad/expired API key → 403, rejected model → 400,
           // gateway errors) were previously masked as a daily-limit message.
           if (lastErr instanceof ProviderError && lastErr.kind === "quota") {
             send({ error: "MJ has hit today's limit, please try again later" });
+          } else if (lastErr instanceof ProviderError && lastErr.kind === "unreachable") {
+            send({ error: "Could not reach the AI service" });
           } else {
             const detail = user.role === "admin" && lastErr?.detail ? ` [${lastErr.detail}]` : "";
             send({ error: `MJ is having trouble reaching the AI service right now. Please try again in a bit.${detail}` });
