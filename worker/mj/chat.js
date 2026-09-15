@@ -10,7 +10,7 @@ import { getLifecyclePhase, dryProgress, cureProgress, dryGuide } from "../../sr
 import { cropOf } from "../../src/lib/crops.js";
 import { growLocation, strainSummary } from "../../src/lib/growProfile.js";
 import { firstGrowId } from "../perDayScope.js";
-import { GEMINI_DAILY_LIMIT, GEMINI_PRO_DAILY_LIMIT, PER_USER_DAILY_CAP } from "../limits.js";
+import { GEMINI_DAILY_LIMIT, GEMINI_PRO_DAILY_LIMIT, RESERVED_FOR_OTHERS } from "../limits.js";
 import { MJ_TOOLS, MJ_WRITE_TOOLS, buildSystemSegments } from "../mj-logic.js";
 import { runGemini } from "../providers/gemini.js";
 import { ProviderError } from "../providers/errors.js";
@@ -19,7 +19,7 @@ import {
   MAX_MSG_LEN, MAX_TOOL_ITERATIONS, DATE_RE, GEMINI_MODEL, GEMINI_PRO_MODEL,
   MAX_MJ_REQUEST_BYTES, MAX_IMAGE_B64_LEN, MAX_CONTEXT_MESSAGES,
 } from "./constants.js";
-import { todayInET, bumpUserUsage, bumpModelUsage, readMjModelUsage, readMjUsageForUser } from "./usage.js";
+import { todayInET, bumpUserUsage, bumpModelUsage, readMjModelUsage, readMjUsageForUser, dailyRequestBudget } from "./usage.js";
 import { ensureMjThreadSchema, loadHistory, saveConversation } from "./history.js";
 import { buildGrowLogContext, buildWeatherContext, buildStatsContext, buildGrowsContext, buildEnvContext, buildRosterContext } from "./context.js";
 import { executeTool } from "./tools.js";
@@ -64,18 +64,28 @@ export async function postMj(request, env, user) {
   const today = todayInET();
 
   // Fail fast (no increment) so a capped user doesn't trigger context-building
-  // work. The shared global flash ceiling is enforced here too - previously it
-  // relied entirely on Google returning 429.
-  if (user.role !== "admin") {
-    const [flashGlobal, userCount] = await Promise.all([
+  // work. Everything here counts REQUESTS to Google, not messages: one message
+  // is a tool loop that can make several, and the quota is spent in requests.
+  const isAdmin = user.role === "admin";
+  const budget = dailyRequestBudget(user);
+  // An admin cannot spend the last of the day. Before this they bypassed every
+  // check, which was harmless against 1500 requests a day and is not against
+  // 250: one long afternoon would leave the app dead for everyone else.
+  const globalCeiling = isAdmin ? GEMINI_DAILY_LIMIT - RESERVED_FOR_OTHERS : GEMINI_DAILY_LIMIT;
+  {
+    const [flashGlobal, userSpent] = await Promise.all([
       readMjModelUsage(env, today, GEMINI_MODEL),
       readMjUsageForUser(env, user.id, today),
     ]);
-    if (flashGlobal >= GEMINI_DAILY_LIMIT) {
-      return error(429, "MJ has reached today's shared limit. Try again after midnight ET.");
+    // Headroom for a whole turn, because a turn cannot be stopped half way
+    // through once it has started making requests.
+    if (flashGlobal + MAX_TOOL_ITERATIONS > globalCeiling) {
+      return error(429, isAdmin
+        ? `MJ is near today's shared limit, and the last ${RESERVED_FOR_OTHERS} requests are held back for everyone else. Resets at midnight ET.`
+        : "MJ has reached today's shared limit. Try again after midnight ET.");
     }
-    if (userCount >= PER_USER_DAILY_CAP) {
-      return error(429, `You've used all ${PER_USER_DAILY_CAP} MJ messages for today. Resets at midnight ET.`);
+    if (userSpent >= budget) {
+      return error(429, `You've used your ${budget} MJ requests for today. Resets at midnight ET.`);
     }
   }
 
@@ -164,14 +174,14 @@ export async function postMj(request, env, user) {
     ],
   });
 
-  // Reserve the per-user slot atomically right before the (expensive) model
-  // call so concurrent requests can't all slip past the cap, and so a failed
-  // call still counts against abuse rather than being free to retry.
-  if (user.role !== "admin") {
-    const reserved = await bumpUserUsage(env, user.id, today);
-    if (reserved > PER_USER_DAILY_CAP) {
-      return error(429, `You've used all ${PER_USER_DAILY_CAP} MJ messages for today. Resets at midnight ET.`);
-    }
+  // Reserve one request atomically right before the (expensive) model call so
+  // concurrent messages can't all slip past the cap. The reservation is
+  // corrected to what the turn actually cost once it is over, including back
+  // down to nothing when it never reached Google at all.
+  const reserved = await bumpUserUsage(env, user.id, today, 1);
+  if (reserved > budget) {
+    await bumpUserUsage(env, user.id, today, -1);
+    return error(429, `You've used your ${budget} MJ requests for today. Resets at midnight ET.`);
   }
 
   const modelsToTry = user.role === "admin" ? [GEMINI_PRO_MODEL, GEMINI_MODEL] : [GEMINI_MODEL];
@@ -243,19 +253,18 @@ export async function postMj(request, env, user) {
           if (!tryNext) break;
         }
 
-        // Whatever reached Google counts, whether or not it produced an answer.
+        // Whatever reached Google counts, whether or not it produced an
+        // answer. One request was reserved up front, so the grower is charged
+        // the difference: a six-step turn costs five more, and a turn that
+        // never got off the machine gives its reservation back.
         for (const [model, n] of spent) {
           if (n > 0) await bumpModelUsage(env, model, today, n).catch(() => {});
         }
+        await bumpUserUsage(env, user.id, today, usage.requests - 1).catch(() => {});
 
         if (reply === null || modelUsed === null) {
-          // The call never succeeded - release the reserved per-user slot so a
-          // service outage doesn't burn the user's daily message quota.
-          if (user.role !== "admin") {
-            await env.DB.prepare(
-              "UPDATE mj_usage SET count = count - 1 WHERE user_id = ? AND date = ? AND count > 0",
-            ).bind(user.id, today).run();
-          }
+          // No separate release here: the reconciliation above already charged
+          // exactly what was spent, which for a service outage is nothing.
           // A turn that wrote before it failed leaves real changes behind. Say
           // so, because "try again" is the wrong advice when half of it landed.
           if (wrote) {
@@ -287,8 +296,12 @@ export async function postMj(request, env, user) {
           readMjModelUsage(env, today, GEMINI_MODEL),
           readMjUsageForUser(env, user.id, today),
         ]);
-        const userLimit = user.role === "admin" ? null : PER_USER_DAILY_CAP;
-        send({ done: true, actions, modelUsed, usage: { date: today, proCount, proLimit: GEMINI_PRO_DAILY_LIMIT, flashCount, flashLimit: GEMINI_DAILY_LIMIT, userCount, userLimit } });
+        send({ done: true, actions, modelUsed, usage: {
+          date: today, unit: "requests",
+          proCount, proLimit: GEMINI_PRO_DAILY_LIMIT,
+          flashCount, flashLimit: GEMINI_DAILY_LIMIT,
+          userCount, userLimit: budget,
+        } });
       } catch (e) {
         logError("mj-stream", { message: String(e?.message ?? e) });
         send({ error: "Something went wrong" });

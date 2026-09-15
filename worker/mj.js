@@ -6,4 +6,7 @@ export { getMjUsage } from "./mj/usage.js";
 export { getMjHistory, deleteMjHistory } from "./mj/history.js";
 export { postMjUndo } from "./mj/undo.js";
 export { GEMINI_PRO_MODEL } from "./mj/constants.js";
-export { GEMINI_DAILY_LIMIT, GEMINI_PRO_DAILY_LIMIT, PER_USER_DAILY_CAP } from "./limits.js";
+export {
+  GEMINI_DAILY_LIMIT, GEMINI_RPM_LIMIT, GEMINI_TPM_LIMIT, GEMINI_PRO_DAILY_LIMIT,
+  PER_USER_DAILY_REQUESTS, ADMIN_DAILY_REQUESTS, RESERVED_FOR_OTHERS,
+} from "./limits.js";

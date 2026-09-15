@@ -3,12 +3,13 @@
 
 export const MAX_MSG_LEN = 4000;
 
-// Each iteration is a whole round trip to Gemini, not a cheap local step. The
-// free tier allows ten requests a MINUTE, so a single question that used all
-// twelve would blow through the per-minute limit on its own and take the next
-// question down with it. Eight still leaves room for a genuinely multi-step
-// answer while staying under the ceiling.
-export const MAX_TOOL_ITERATIONS = 8;
+// Each iteration is a whole round trip to Gemini, not a cheap local step, and
+// the free tier allows ten requests a MINUTE. At eight, one deep question
+// could take eight of those ten and stall whatever was asked next. Six leaves
+// four requests of headroom in any given minute and is still a genuinely
+// multi-step answer: read the day, read the week, check the log, check the
+// sensors, then reply.
+export const MAX_TOOL_ITERATIONS = 6;
 
 // A 429 arriving mid-answer is usually the per-minute limit, not the daily
 // one, and waiting a moment clears it. Once only: a second 429 is a real

@@ -1,21 +1,40 @@
 // @ts-check
 // Daily usage counters (per-user and per-model) + the GET /mj/usage handler.
 import { json } from "../util.js";
-import { GEMINI_DAILY_LIMIT, GEMINI_PRO_DAILY_LIMIT, PER_USER_DAILY_CAP } from "../limits.js";
+import {
+  GEMINI_DAILY_LIMIT, GEMINI_PRO_DAILY_LIMIT,
+  PER_USER_DAILY_REQUESTS, ADMIN_DAILY_REQUESTS,
+} from "../limits.js";
 import { GEMINI_MODEL, GEMINI_PRO_MODEL } from "./constants.js";
 
 export function todayInET() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 }
 
-// Increment the per-user daily counter and return the new value, so a cap can
-// be enforced atomically (reserve-before-call) rather than racily.
-export async function bumpUserUsage(env, userId, today) {
+/**
+ * Move this user's daily REQUEST count and return the new value.
+ *
+ * Counted in requests to Google rather than chat messages, because that is the
+ * unit the quota is spent in: one message can be six requests.
+ *
+ * `delta` may be negative, which is how a turn reconciles itself. A slot is
+ * reserved before the model is called so concurrent requests cannot all slip
+ * past the cap at once; afterwards the reservation is corrected to whatever the
+ * turn actually cost, including back down to nothing when it cost nothing.
+ */
+export async function bumpUserUsage(env, userId, today, delta = 1) {
+  const n = Math.round(Number(delta) || 0);
+  if (n === 0) return readMjUsageForUser(env, userId, today);
   const row = await env.DB.prepare(
-    "INSERT INTO mj_usage (user_id, date, count) VALUES (?, ?, 1) " +
-    "ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1 RETURNING count",
-  ).bind(userId, today).first();
-  return Number(row?.count ?? 1);
+    "INSERT INTO mj_usage (user_id, date, count) VALUES (?, ?, ?) " +
+    "ON CONFLICT(user_id, date) DO UPDATE SET count = MAX(0, count + ?) RETURNING count",
+  ).bind(userId, today, Math.max(0, n), n).first();
+  return Number(row?.count ?? 0);
+}
+
+/** A grower's daily request budget. The owner gets more, not everything. */
+export function dailyRequestBudget(user) {
+  return user?.role === "admin" ? ADMIN_DAILY_REQUESTS : PER_USER_DAILY_REQUESTS;
 }
 
 /**
@@ -57,6 +76,11 @@ export async function getMjUsage(env, user) {
     readMjModelUsage(env, today, GEMINI_MODEL),
     readMjUsageForUser(env, user.id, today),
   ]);
-  const userLimit = user.role === "admin" ? null : PER_USER_DAILY_CAP;
-  return json({ date: today, proCount, proLimit: GEMINI_PRO_DAILY_LIMIT, flashCount, flashLimit: GEMINI_DAILY_LIMIT, userCount, userLimit });
+  // Every count here is REQUESTS to Google, not messages sent.
+  return json({
+    date: today, unit: "requests",
+    proCount, proLimit: GEMINI_PRO_DAILY_LIMIT,
+    flashCount, flashLimit: GEMINI_DAILY_LIMIT,
+    userCount, userLimit: dailyRequestBudget(user),
+  });
 }

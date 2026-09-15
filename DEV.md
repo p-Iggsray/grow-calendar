@@ -143,26 +143,55 @@ stable block and quietly broke the prefix every time anything was recorded.
 
 ### Quota, and what actually counts
 
-Two ceilings, both in `worker/limits.js`, plus a per-user cap:
+**Everything is counted in requests to Google, never in chat messages.** One
+message is a tool loop that can make up to `MAX_TOOL_ITERATIONS` (6) round
+trips, so the two are not the same unit. Treating them as one is how the old
+ceiling came to be wrong by a factor of six.
 
-- `GEMINI_DAILY_LIMIT` (1500) global flash requests/day
-- `GEMINI_PRO_DAILY_LIMIT` (25) global pro requests/day
-- `PER_USER_DAILY_CAP` (50) MJ messages per user/day
+This project's real free-tier quota for `gemini-2.5-flash`, read off the Cloud
+Console quotas page rather than from documentation (published figures disagree
+with each other):
 
-**A message is not a request.** One chat message is a tool loop that can make up
-to `MAX_TOOL_ITERATIONS` (8) round trips. `bumpModelUsage` therefore takes a
-count, and `runGemini` reports it through a caller-owned `usage` counter so the
-figure survives a failure: requests made before something went wrong still
-reached Google. Each model is charged its own share, because Pro's ceiling is
-far tighter than Flash's and a turn can touch both.
+| Quota | Value |
+|---|---|
+| requests/day | 250 |
+| requests/minute | 10 |
+| tokens/minute | 250,000 |
 
-The per-user slot is reserved before the model call so concurrent requests
-cannot all slip past the cap, and released if the call never succeeded.
+Requests bind first: at ten a minute the app uses roughly 89,000 tokens a
+minute, well inside the token allowance. So `worker/limits.js` divides up
+requests:
 
-The iteration ceiling is 8 rather than 12 because the free tier allows ten
-requests a **minute**: one question using twelve would trip the per-minute
-limit on its own. A 429 is retried once after `GEMINI_RETRY_AFTER_MS`, since
-mid-answer it is usually the per-minute window rather than the daily one.
+| Constant | Value | Meaning |
+|---|---|---|
+| `GEMINI_DAILY_LIMIT` | 250 | the whole day, all users |
+| `GEMINI_PRO_DAILY_LIMIT` | 25 | global pro requests/day |
+| `PER_USER_DAILY_REQUESTS` | 60 | one grower's share |
+| `ADMIN_DAILY_REQUESTS` | 180 | the owner's share |
+| `RESERVED_FOR_OTHERS` | 40 | what an admin can never spend |
+
+Admins used to bypass every check. That was harmless against 1500 requests a
+day and is not against 250: one long afternoon would leave the app dead for
+everyone else until midnight ET. They now get a large budget rather than an
+unlimited one, and cannot touch the reserve.
+
+A turn reserves one request before the model call, so concurrent messages
+cannot all slip past the cap, then corrects the figure to what it actually
+cost: a six-step turn costs five more, and a turn that never reached Google
+gives the reservation back. `runGemini` reports the count through a
+caller-owned `usage` counter rather than a return value, so the figure survives
+a failure; requests made before something broke still reached Google. Each
+model is charged its own share, since Pro's ceiling is far tighter.
+
+The global check requires a whole turn's headroom (`+ MAX_TOOL_ITERATIONS`),
+because a turn cannot be stopped part way once it has started making requests.
+
+A 429 is retried once after `GEMINI_RETRY_AFTER_MS`, since mid-answer it is
+usually the per-minute window rather than the daily one.
+
+**Rough shape of a day:** a simple question is 1 request, a typical one about
+3, a deep one up to 6. So 250 requests is roughly 80 ordinary conversations or
+40 heavy ones, shared across everyone.
 
 ### Failing safely
 
