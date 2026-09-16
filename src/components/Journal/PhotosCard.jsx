@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, Download, Images, X } from "lucide-react";
 import { api, ymd } from "../../lib/api.js";
+import { photoUrl } from "../../lib/photoUrl.js";
 import { tapHaptic } from "../../lib/haptics.js";
 import { batchResultMessage, fileToDataUrls, MAX_BATCH } from "../../lib/photos.js";
 import {
@@ -152,9 +153,10 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
                   aspectRatio: "1 / 1", position: "relative",
                 }}>
                 <img
-                  src={p.thumb}
+                  src={photoUrl(p.id)}
                   alt=""
                   loading="lazy"
+                  decoding="async"
                   style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                 />
                 {p.plantId && plantName(p.plantId) && (

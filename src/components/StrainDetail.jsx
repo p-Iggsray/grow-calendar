@@ -11,7 +11,7 @@ import { tapHaptic } from "../lib/haptics.js";
 import {
   FLOWER_WEEKS_MAX, FLOWER_WEEKS_MIN, NOTE_MAX, STRAIN_TYPES, strainTraits,
 } from "../lib/strainLibrary.js";
-import { photoUrl } from "../lib/strainPhotos.js";
+import { photoUrl } from "../lib/photoUrl.js";
 import { stageLabel } from "../lib/stageTimeline.js";
 
 const UI = "var(--font-ui)";

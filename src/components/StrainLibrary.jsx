@@ -7,7 +7,8 @@ import StrainDetail from "./StrainDetail.jsx";
 import AddStrainSheet from "./AddStrainSheet.jsx";
 import { useStrainLibrary } from "../lib/useStrainLibrary.js";
 import { filterStrains, STRAIN_FILTERS, CROP_FILTERS, strainSummary, strainNameKey } from "../lib/strainLibrary.js";
-import { coverPhoto, photoUrl } from "../lib/strainPhotos.js";
+import { coverPhoto } from "../lib/strainPhotos.js";
+import { photoUrl } from "../lib/photoUrl.js";
 import { tapHaptic } from "../lib/haptics.js";
 
 const UI = "var(--font-ui)";

@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { coverPhoto, photoUrl, pickStrainPhotos, spread, stageOn } from "../src/lib/strainPhotos.js";
+import { coverPhoto, pickStrainPhotos, spread, stageOn } from "../src/lib/strainPhotos.js";
+import { photoUrl } from "../src/lib/photoUrl.js";
 
 const photo = (id, date, plantId = "p1") => ({ id, date, plantId, growId: "g1" });
 

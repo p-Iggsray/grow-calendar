@@ -96,8 +96,3 @@ export function coverPhoto(picked) {
   }
   return best;
 }
-
-/** The URL an <img> loads a stored photo from, at either size. */
-export function photoUrl(id, size = "thumb") {
-  return `/api/photos/${encodeURIComponent(id)}/${size === "full" ? "full" : "thumb"}`;
-}

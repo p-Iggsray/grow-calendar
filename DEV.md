@@ -579,6 +579,38 @@ Endpoints: `GET /api/archive`, `POST /api/grows/:id/archive`,
 `POST /api/grows/:id/unarchive`, `GET /api/grows/:id/report`,
 `DELETE /api/grows/:id`.
 
+## Photographs: stored as base64, served as bytes
+
+Photos live in D1 as base64 data URLs. That is fine as storage and ruinous as a
+payload, so **a list of photographs is a list of ids**. The picture itself comes
+from `/api/photos/:id/:size`, which answers with real bytes under
+`private, max-age=31536000, immutable` (true: an id names one picture and will
+never name another).
+
+| Payload | Before | After |
+|---|---|---|
+| journal day, 6 photos | 0.29 MB | 0.4 KB |
+| journal day, 20 photos | 0.96 MB | 1.3 KB |
+| plant timeline, 100 shots | 4.78 MB | 6.6 KB |
+| plant timeline, 300 shots | 14.33 MB | 20.1 KB |
+
+Three things follow from it. The browser caches each picture, so reopening a day
+costs nothing. `loading="lazy"` finally does something: against a data URL the
+bytes had already arrived, so there was nothing to defer. And React diffs ids
+rather than megabyte-long strings.
+
+The queries do not select `thumb` either, so D1 stops reading ~49 KB a row to
+answer a list.
+
+`photoUrl()` in `src/lib/photoUrl.js` builds the URL; `test/photo-payload.test.js`
+asserts that no list response carries bytes and that the queries do not read the
+column. The strain library has always worked this way, which is where the
+pattern came from.
+
+Two places still handle base64 on purpose: the rundown in `worker/report.js`
+embeds thumbnails because the file has to be self-contained, and MJ's
+`get_photos` needs the bytes to hand to Gemini.
+
 ## Backup and restore
 
 Settings has a **Back up everything** row. It downloads `GET /api/backup.json`:

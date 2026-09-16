@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Download, MoreHorizontal, Trash2 } from "lucide-react";
 import { api } from "../lib/api.js";
+import { photoUrl } from "../lib/photoUrl.js";
 import { nextIndex } from "../lib/photos.js";
 import { tapHaptic } from "../lib/haptics.js";
 import { photoFileFrom, savePhotoFile, saveOutcomeMessage } from "../lib/savePhoto.js";
@@ -179,7 +180,7 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
               }}>
               {/* The thumbnail holds the frame until the full image arrives. */}
               <img
-                src={fulls[p.id] || p.thumb}
+                src={fulls[p.id] || p.thumb || photoUrl(p.id)}
                 alt=""
                 draggable={false}
                 style={{

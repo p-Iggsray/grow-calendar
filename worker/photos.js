@@ -116,7 +116,9 @@ export async function createJournalPhoto(request, env, user, growId) {
     logError("photo-create-failed", { message: String(err?.message) });
     return error(500, "could not save the photo");
   }
-  return json({ photo: { id, date: p.data.date, thumb: p.data.thumb, plantId, fromCamera: fromCamera === 1 } });
+  // No thumbnail here either: the caller already has the picture it just sent,
+  // and it refetches the day rather than inserting this reply.
+  return json({ photo: { id, date: p.data.date, plantId, fromCamera: fromCamera === 1 } });
 }
 
 // GET /api/grows/:id/photos/:photoId - the full-size image, fetched only when
@@ -180,30 +182,41 @@ export async function deleteJournalPhoto(env, user, growId, photoId) {
   return json({ ok: true });
 }
 
-// Thumbnails for one day - folded into the journal day payload. Plant photos
+// One day's photographs - folded into the journal day payload. Plant photos
 // ride along tagged with their plant.
+//
+// IDs, never bytes. `thumb` used to come back in this list, which put up to
+// twenty base64 thumbnails (~49 KB each) inside a single day's JSON. The
+// browser loads each picture from /api/photos/:id/thumb instead, so the day
+// costs one small request plus whatever scrolls into view. Not selecting the
+// column also means D1 stops reading 49 KB a row to answer this.
 export async function photosForDay(env, userId, growId, date) {
   await ensureJournalPhotosSchema(env);
   const res = await env.DB.prepare(
-    "SELECT id, date, thumb, plant_id, from_camera FROM journal_photos WHERE user_id = ? AND grow_id = ? AND date = ? ORDER BY created_at"
+    "SELECT id, date, plant_id, from_camera FROM journal_photos WHERE user_id = ? AND grow_id = ? AND date = ? ORDER BY created_at"
   ).bind(userId, growId, date).all();
   return (res.results ?? []).map(r => ({
-    id: r.id, date: r.date, thumb: r.thumb,
+    id: r.id, date: r.date,
     plantId: r.plant_id ?? null, fromCamera: r.from_camera === 1,
   }));
 }
 
 // GET /api/grows/:id/plants/:plantId/photos - one plant's photo timeline,
 // newest first.
+//
+// This was the worst of them: no limit, and every row carried its thumbnail,
+// so a well-photographed plant answered with several megabytes of base64 in
+// one response. IDs only now, so the whole timeline is a few kilobytes however
+// long it is, and each picture arrives when its tile scrolls into view.
 export async function listPlantPhotos(env, user, growId, plantId) {
   const row = await ownedGrowRow(env, user.id, growId);
   if (!row) return error(404, "grow not found");
   await ensureJournalPhotosSchema(env);
   const res = await env.DB.prepare(
-    "SELECT id, date, thumb, from_camera FROM journal_photos WHERE user_id = ? AND grow_id = ? AND plant_id = ? ORDER BY date DESC, created_at DESC"
+    "SELECT id, date, from_camera FROM journal_photos WHERE user_id = ? AND grow_id = ? AND plant_id = ? ORDER BY date DESC, created_at DESC"
   ).bind(user.id, growId, plantId).all();
   return json({ photos: (res.results ?? []).map(r => ({
-    id: r.id, date: r.date, thumb: r.thumb, fromCamera: r.from_camera === 1,
+    id: r.id, date: r.date, fromCamera: r.from_camera === 1,
   })) });
 }
 

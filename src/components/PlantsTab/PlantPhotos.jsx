@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, Images } from "lucide-react";
 import { api, ymd } from "../../lib/api.js";
+import { photoUrl } from "../../lib/photoUrl.js";
 import { batchResultMessage, fileToDataUrls, MAX_BATCH } from "../../lib/photos.js";
 import PhotoViewer from "../PhotoViewer.jsx";
 import { fmtDateKey, MONO } from "./constants.js";
@@ -126,9 +127,10 @@ export default function PlantPhotos({ growId, plantId, unitWord = "plant" }) {
                 aspectRatio: "1 / 1", position: "relative",
               }}>
               <img
-                src={p.thumb}
+                src={photoUrl(p.id)}
                 alt=""
                 loading="lazy"
+                decoding="async"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               />
               <span style={{
