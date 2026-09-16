@@ -90,7 +90,7 @@ export default function ChoiceField({
         style={{
           flex: 1, minWidth: 0, padding: "11px 13px", borderRadius: 10,
           background: "var(--c-surface-1)", border: "1px solid var(--c-border-strong)",
-          color: "var(--c-text)", fontFamily: UI, fontSize: 16, outline: "none",
+          color: "var(--c-text)", fontFamily: UI, fontSize: 16,
         }}
       />
       <button
@@ -199,7 +199,7 @@ export default function ChoiceField({
                     placeholder={searchLabel}
                     style={{
                       flex: 1, minWidth: 0, padding: "10px 0", border: "none", background: "none",
-                      color: "var(--c-text)", fontFamily: UI, fontSize: 16, outline: "none",
+                      color: "var(--c-text)", fontFamily: UI, fontSize: 16,
                     }}
                   />
                   <button

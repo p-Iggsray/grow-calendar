@@ -183,7 +183,7 @@ function EnvField({ icon: Icon, label, value, onChange }) {
           width: "100%", boxSizing: "border-box",
           background: "var(--c-surface-1)", color: "var(--c-text)",
           border: "1px solid var(--c-border-strong)", borderRadius: 10,
-          padding: "12px 14px", fontSize: 16, fontFamily: "var(--font-ui)", outline: "none",
+          padding: "12px 14px", fontSize: 16, fontFamily: "var(--font-ui)",
         }}
       />
     </label>

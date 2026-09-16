@@ -156,7 +156,7 @@ export default function RemindersCard({ date, growId, events = [], today }) {
                 flex: 1, minWidth: 0, boxSizing: "border-box",
                 background: "var(--c-surface-1)", color: "var(--c-text)",
                 border: "1px solid var(--c-border-strong)", borderRadius: 10,
-                padding: "10px 12px", fontSize: 16, fontFamily: UI, outline: "none",
+                padding: "10px 12px", fontSize: 16, fontFamily: UI,
               }}
             />
             <button
@@ -187,7 +187,7 @@ export default function RemindersCard({ date, growId, events = [], today }) {
                     flexShrink: 0, boxSizing: "border-box",
                     background: "var(--c-surface-1)", color: "var(--c-text)",
                     border: "1px solid var(--c-border-strong)", borderRadius: 9,
-                    padding: "7px 10px", fontSize: 15, fontFamily: UI, outline: "none",
+                    padding: "7px 10px", fontSize: 15, fontFamily: UI,
                   }}
                 />
                 <button

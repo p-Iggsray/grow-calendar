@@ -100,6 +100,27 @@ button {
   touch-action: manipulation;
 }
 
+/* One focus ring for the whole app. :focus-visible fires for keyboard and
+   switch navigation, and for text entry however it was focused, so a pointer
+   user never sees a ring on a plain button press. Hazel on the page
+   background is 7.8:1 and on a card 7.1:1, well past the 3:1 WCAG asks of a
+   non-text indicator. Nothing else in the app may suppress an outline;
+   test/focus-ring.test.js enforces that. */
+:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+/* The chat composer reads as a single control, so the pill carries the focus
+   state and the textarea inside it does not draw a second ring within it. */
+.chat-composer:focus-within {
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 1px var(--c-accent);
+}
+.chat-composer textarea:focus-visible {
+  outline: none;
+}
+
 /* Press feedback: every enabled button subtly shrinks under the finger so each
    tap feels physical. Inline transforms (framer-motion) override this, which is
    the correct behavior for already-animated controls. */
@@ -126,9 +147,6 @@ button:not(:disabled):active {
 /* Rich journal-entry editor (contentEditable). The placeholder rides the
    :empty pseudo-class; the editor resets itself to truly-empty markup so it
    reliably shows. Headers/lists style the whitelisted tags. */
-.rich-entry {
-  outline: none;
-}
 .rich-entry:empty::before {
   content: attr(data-placeholder);
   color: var(--c-text-ghost);
@@ -209,8 +227,8 @@ textarea {
   }
 }
 
-/* Today's calendar cell gets a slow halo pulse. The outline is what animates,
-   so the cell's own border stays exactly where it was - no layout shift. */
+/* Today's calendar cell gets a slow halo pulse. A box-shadow is what
+   animates, so the cell's own border stays put - no layout shift. */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -254,14 +272,9 @@ textarea {
 button.day-cell {
   -webkit-appearance: none;
   appearance: none;
-  outline: none;
 }
 button.day-cell:disabled {
   pointer-events: none;
-}
-button.day-cell:focus-visible {
-  outline: 2px solid var(--c-accent);
-  outline-offset: 2px;
 }
 
 /* Native <details> with a hand-rolled chevron. The chevron lives inside the

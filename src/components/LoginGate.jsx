@@ -15,7 +15,6 @@ const INPUT_STYLE = {
   color: "var(--c-text)",
   fontSize: 14,
   fontFamily: "var(--font-ui)",
-  outline: "none",
   width: "100%",
 };
 

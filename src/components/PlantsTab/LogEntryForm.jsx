@@ -117,7 +117,7 @@ export default function LogEntryForm({ initial, environment, crop, nextFlush = 1
                 width: "100%", boxSizing: "border-box", padding: "12px 14px",
                 borderRadius: 10, background: "var(--c-surface-1)", color: "var(--c-text)",
                 border: "1px solid var(--c-border-strong)", fontSize: 16,
-                fontFamily: "var(--font-ui)", outline: "none",
+                fontFamily: "var(--font-ui)",
               }}>
               {WATER_UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
             </select>
@@ -200,7 +200,7 @@ export default function LogEntryForm({ initial, environment, crop, nextFlush = 1
           onChange={(e) => setBody(e.target.value)}
           rows={3}
           placeholder="What did you observe or do?"
-          style={{ width: "100%", boxSizing: "border-box", background: "var(--c-surface-1)", color: "var(--c-text)", border: "1px solid var(--c-border-strong)", borderRadius: 10, padding: "12px 14px", fontSize: 16, fontFamily: SERIF, outline: "none", resize: "vertical" }}
+          style={{ width: "100%", boxSizing: "border-box", background: "var(--c-surface-1)", color: "var(--c-text)", border: "1px solid var(--c-border-strong)", borderRadius: 10, padding: "12px 14px", fontSize: 16, fontFamily: SERIF, resize: "vertical" }}
         />
       </div>
 

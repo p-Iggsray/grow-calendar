@@ -38,7 +38,7 @@ function Reading({ label, unit, name, entry, setField, min, max, autoFocus }) {
             width: "100%", boxSizing: "border-box",
             background: "var(--c-input-bg)", color: "var(--c-text)",
             border: "1px solid var(--c-border-strong)", borderRadius: 10,
-            padding: "10px 26px 10px 11px", fontSize: 16, fontFamily: UI, outline: "none",
+            padding: "10px 26px 10px 11px", fontSize: 16, fontFamily: UI,
           }}
         />
         <span aria-hidden="true" style={{

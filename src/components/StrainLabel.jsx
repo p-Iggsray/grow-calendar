@@ -32,7 +32,7 @@ const UI = "var(--font-ui)";
 const inputStyle = {
   background: "var(--c-input-bg)", color: "var(--c-text)",
   border: "1px solid var(--c-border-strong)", borderRadius: 9,
-  padding: "10px 11px", fontSize: 16, fontFamily: UI, outline: "none",
+  padding: "10px 11px", fontSize: 16, fontFamily: UI,
   width: "100%", boxSizing: "border-box",
 };
 const labelStyle = {

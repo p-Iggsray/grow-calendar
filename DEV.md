@@ -611,6 +611,34 @@ Two places still handle base64 on purpose: the rundown in `worker/report.js`
 embeds thumbnails because the file has to be self-contained, and MJ's
 `get_photos` needs the bytes to hand to Gemini.
 
+## Focus rings
+
+One rule in `src/styles.css` draws the ring for the whole app:
+
+```css
+:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+```
+
+`:focus-visible` is the important half. It fires for keyboard and switch
+navigation, and for text entry however it was focused, so a pointer user never
+sees a ring from a plain button press. Hazel is 7.8:1 against the page and
+7.1:1 against a card, well past the 3:1 WCAG asks of a non-text indicator.
+
+The app used to set `outline: "none"` in 24 inline styles and replace it in
+exactly one place, so tab navigation was invisible nearly everywhere. Those are
+gone. Do not add them back: an inline style outranks any stylesheet selector, so
+one of them silently disables the global rule for that control and no amount of
+CSS wins it back without `!important`.
+
+The single exception is the MJ composer, where the pill and the textarea read as
+one control. The pill takes `:focus-within`, and only then may the textarea drop
+its own ring. `test/focus-ring.test.js` enforces the whole arrangement: no inline
+suppression at all, and a stylesheet rule may drop a ring only when its own
+selector has a `:focus-within` replacement.
+
 ## Backup and restore
 
 Settings has a **Back up everything** row. It downloads `GET /api/backup.json`:

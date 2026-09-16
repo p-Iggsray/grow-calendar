@@ -121,7 +121,7 @@ export default function AddPlantSheet({ crop, onSave, onCancel, saving, initial,
               style={{
                 width: "100%", boxSizing: "border-box", padding: "12px 14px",
                 borderRadius: 10, background: "var(--c-surface-1)", color: "var(--c-text)",
-                border: "1px solid var(--c-border-strong)", fontFamily: MONO, fontSize: 14, outline: "none",
+                border: "1px solid var(--c-border-strong)", fontFamily: MONO, fontSize: 14,
               }}>
               {stageOptions(crop).map((s) => (
                 <option key={s.value} value={s.value}>{s.label}</option>

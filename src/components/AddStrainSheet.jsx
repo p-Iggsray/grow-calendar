@@ -12,7 +12,7 @@ const inputStyle = {
   width: "100%", boxSizing: "border-box",
   background: "var(--c-input-bg)", color: "var(--c-text)",
   border: "1px solid var(--c-border-strong)", borderRadius: 10,
-  padding: "11px 12px", fontSize: 16, fontFamily: UI, outline: "none",
+  padding: "11px 12px", fontSize: 16, fontFamily: UI,
 };
 
 const labelStyle = {

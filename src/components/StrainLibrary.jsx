@@ -206,7 +206,7 @@ export default function StrainLibrary({ onClose }) {
               width: "100%", boxSizing: "border-box",
               background: "var(--c-input-bg)", color: "var(--c-text)",
               border: "1px solid var(--c-border-strong)", borderRadius: 11,
-              padding: "10px 34px", fontSize: 16, fontFamily: UI, outline: "none",
+              padding: "10px 34px", fontSize: 16, fontFamily: UI,
             }}
           />
           {query && (

@@ -44,7 +44,7 @@ const inputStyle = {
   width: "100%", boxSizing: "border-box",
   background: "var(--c-input-bg)", color: "var(--c-text)",
   border: "1px solid var(--c-border-strong)", borderRadius: 10,
-  padding: "10px 12px", fontSize: 16, fontFamily: UI, outline: "none",
+  padding: "10px 12px", fontSize: 16, fontFamily: UI,
 };
 
 // One strain's page: what you thought of it, what the packet claimed, and

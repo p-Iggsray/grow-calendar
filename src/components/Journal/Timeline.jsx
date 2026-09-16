@@ -205,7 +205,7 @@ export default function Timeline({ today, stageEvents = [], firstDate = null, gr
             style={{
               width: "100%", boxSizing: "border-box", padding: "12px 14px",
               borderRadius: 12, background: "var(--c-surface-1)",
-              border: "1px solid var(--c-border)", outline: "none",
+              border: "1px solid var(--c-border)",
               fontFamily: UI, fontSize: 15, color: "var(--c-text)",
             }}
           />

@@ -43,7 +43,7 @@ const _entryRemove = {
 const _entryInput = {
   background: "var(--c-surface-1)", color: "var(--c-text)",
   border: "1px solid var(--c-border-strong)", borderRadius: 8,
-  padding: "9px 10px", fontSize: 14, outline: "none",
+  padding: "9px 10px", fontSize: 14,
   fontFamily: "var(--font-ui)",
   width: "100%", boxSizing: "border-box",
 };

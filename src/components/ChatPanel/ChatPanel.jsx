@@ -399,7 +399,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
         flexShrink: 0,
         background: "var(--c-bg)",
       }}>
-        <div style={{
+        <div className="chat-composer" style={{
           display: "flex", alignItems: "flex-end", gap: 8,
           background: "var(--c-border-faint)",
           border: "1px solid rgba(255,255,255,0.11)",
@@ -431,7 +431,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
             placeholder={imageData ? "Add a message (optional)…" : "Ask about your grow…"}
             style={{
               flex: 1, resize: "none", maxHeight: 120,
-              background: "none", border: "none", outline: "none",
+              background: "none", border: "none",
               color: "var(--c-text)", fontSize: 16, lineHeight: 1.5,
               fontFamily: SERIF, padding: "5px 0",
             }}

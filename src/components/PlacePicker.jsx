@@ -61,7 +61,7 @@ export default function PlacePicker({ value = "", onPick, onUseMyLocation, locat
           placeholder="Start typing a city or town"
           style={{
             flex: 1, minWidth: 0, padding: "12px 0", border: "none", background: "none",
-            color: "var(--c-text)", fontFamily: UI, fontSize: 16, outline: "none",
+            color: "var(--c-text)", fontFamily: UI, fontSize: 16,
           }}
         />
       </div>
