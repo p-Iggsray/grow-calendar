@@ -258,9 +258,17 @@ export async function runGemini({ apiKey, model, systemSegments, tools, messages
 
     contents.push({ role: "model", parts });
     const responseParts = [];
+    // Pictures a tool wants the model to actually look at. They cannot travel
+    // inside the functionResponse: on 2.5 that field is JSON and an image
+    // nested in it is invisible. They go in the same turn as SIBLING parts
+    // instead, which is how a 2.5 model receives an image at all.
+    const shown = [];
     for (const fc of functionCalls) {
-      const result = await executeToolUse(fc.name, fc.args);
+      const result = await executeToolUse(fc.name, fc.args, shown);
       responseParts.push({ functionResponse: { name: fc.name, response: result } });
+    }
+    for (const img of shown) {
+      if (img?.mimeType && img?.data) responseParts.push({ inlineData: img });
     }
     contents.push({ role: "user", parts: responseParts });
   }

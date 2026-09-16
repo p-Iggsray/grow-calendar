@@ -16,6 +16,8 @@ import { normalizeLifecycle } from "../../src/lib/lifecycle.js";
 import { todayInET } from "./usage.js";
 import { ensurePlantLogSchema } from "../plants.js";
 import { geocode } from "../geocode.js";
+import { photosForRange, fullPhoto, toInlineData } from "../photos.js";
+import { searchJournalRows } from "../journal.js";
 import { logError } from "../log.js";
 import { DATE_RE } from "./constants.js";
 import { autoLogsWeather } from "../../src/lib/growEnvironment.js";
@@ -100,7 +102,7 @@ function shapeLogRow(r) {
   };
 }
 
-export async function executeTool(name, input, env, userId, timeline, actions, growId, rawGrow) {
+export async function executeTool(name, input, env, userId, timeline, actions, growId, rawGrow, shown) {
   // Per-day reads/writes are grow-scoped; fall back to the user's first grow
   // when no active grow was supplied. (Grow-editing tools below keep using the
   // raw `growId` so their "no active grow" guards still apply.)
@@ -140,6 +142,85 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
         stageHistory: timeline?.events ?? [],
         growStartDate: timeline?.firstDate ?? null,
         growId,
+      };
+    }
+
+    if (name === "search_journal") {
+      if (!growId) return { error: "No active grow selected." };
+      const out = await searchJournalRows(env, { id: userId }, growId, input?.query, input?.limit ?? 15);
+      if (out.error) return { error: out.error };
+      return {
+        query: out.q,
+        days_found: out.results.length,
+        // Dates and excerpts, not whole entries: enough to say when something
+        // happened and roughly what was written, and get_day reads the rest.
+        days: out.results,
+        note: out.results.length
+          ? "Each day here mentions the search text. Use get_day for the full record of any of them."
+          : "Nothing in this grow's journal mentions that.",
+      };
+    }
+
+    if (name === "get_photos") {
+      if (!growId) return { error: "No active grow selected." };
+      const { photos, total } = await photosForRange(env, userId, growId, {
+        from: DATE_RE.test(input?.from ?? "") ? input.from : null,
+        to: DATE_RE.test(input?.to ?? "") ? input.to : null,
+        plantId: typeof input?.plant_id === "string" ? input.plant_id : null,
+        limit: input?.limit,
+      });
+      if (total === 0) return { photos: [], total: 0, note: "No photographs match that." };
+
+      const survey = rawGrow?.survey ?? {};
+      const plantName = (id) => (survey?.strains ?? []).find((p) => p.id === id)?.name ?? null;
+
+      // The metadata is the answer even if the pictures do not come through,
+      // so it is always complete on its own: when each was taken, how far into
+      // the grow, and which plant it is of.
+      const listed = photos.map((r, i) => {
+        const inline = toInlineData(r.thumb);
+        if (inline && shown) shown.push(inline);
+        return {
+          position: i + 1,
+          id: r.id,
+          date: r.date,
+          growDay: buildDayInfo(r.date, timeline).growDay,
+          plant: plantName(r.plant_id),
+          viewable: Boolean(inline),
+        };
+      });
+      const viewable = listed.filter((p) => p.viewable).length;
+      return {
+        photos: listed,
+        total,
+        showing: listed.length,
+        note: [
+          `${total} photograph${total === 1 ? "" : "s"} match; showing ${listed.length}, oldest first.`,
+          viewable
+            ? `The ${viewable} image${viewable === 1 ? " is" : "s are"} attached in order, at thumbnail size (480px). Describe only what you can actually see. For trichomes or anything needing detail, call get_photo with one id for the full-resolution version.`
+            : "The images themselves could not be attached, so answer from the dates and plants only and say you cannot see them.",
+        ].join(" "),
+      };
+    }
+
+    if (name === "get_photo") {
+      if (!growId) return { error: "No active grow selected." };
+      const id = typeof input?.photo_id === "string" ? input.photo_id : null;
+      if (!id) return { error: "photo_id is required - get one from get_photos." };
+      const row = await fullPhoto(env, userId, growId, id);
+      if (!row) return { error: `No photograph with id ${id} in this grow.` };
+      const inline = toInlineData(row.data);
+      if (inline && shown) shown.push(inline);
+      const survey = rawGrow?.survey ?? {};
+      return {
+        id: row.id,
+        date: row.date,
+        growDay: buildDayInfo(row.date, timeline).growDay,
+        plant: (survey?.strains ?? []).find((p) => p.id === row.plant_id)?.name ?? null,
+        viewable: Boolean(inline),
+        note: inline
+          ? "Attached at full resolution. This is the one to judge detail from."
+          : "This photograph could not be attached, so say you cannot see it rather than describing it.",
       };
     }
 

@@ -200,9 +200,13 @@ export async function postMj(request, env, user) {
       // was attempted even if it failed part way, because that is exactly the
       // case where redoing it is worst.
       let wrote = false;
-      const executeToolUse = (name, input) => {
+      // `shown` is where a tool puts images it wants MJ to look at. They reach
+      // the model as sibling parts of the tool response and stay in this turn
+      // only: her written observations are what gets saved, not the pictures
+      // she formed them from.
+      const executeToolUse = (name, input, shown) => {
         if (MJ_WRITE_TOOLS.has(name)) wrote = true;
-        return executeTool(name, input, env, user.id, timeline, actions, activeGrowId, raw);
+        return executeTool(name, input, env, user.id, timeline, actions, activeGrowId, raw, shown);
       };
 
       let reply = null;

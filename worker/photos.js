@@ -227,3 +227,90 @@ export async function photoCountsForDates(env, userId, growId, dates) {
   ).bind(userId, growId, ...dates).all();
   return Object.fromEntries((res.results ?? []).map(r => [r.date, r.n]));
 }
+
+
+// ── What MJ is allowed to look at ──────────────────────────────────────────
+//
+// Reads for the photo tools. Thumbnails to browse a timeline cheaply, and one
+// full-resolution image when detail actually decides the answer: at 480px a
+// trichome call would be a guess, and MJ is told to commit to a verdict.
+
+/** At most this many thumbnails in one look. Each is ~50k chars of base64. */
+export const MJ_PHOTO_BATCH = 6;
+
+/**
+ * Photos for a date range, spread across it rather than bunched at one end,
+ * and handed back OLDEST FIRST.
+ *
+ * A grower who shot forty pictures on harvest day and one a week before it
+ * should not get six views of harvest day when they asked how the month went.
+ * So the most recent rows are read, then thinned by taking one per day until
+ * the batch is full, which is what makes a comparison a comparison.
+ *
+ * The order at the end is chronological because that is how change reads: the
+ * position of a picture in the sequence is its position in time, so "the
+ * canopy filled in between the second and the third" means something.
+ */
+export async function photosForRange(env, userId, growId, { from, to, plantId, limit }) {
+  await ensureJournalPhotosSchema(env);
+  const cap = Math.max(1, Math.min(MJ_PHOTO_BATCH, Math.round(Number(limit) || MJ_PHOTO_BATCH)));
+
+  const where = ["user_id = ?", "grow_id = ?"];
+  const binds = [userId, growId];
+  if (from) { where.push("date >= ?"); binds.push(from); }
+  if (to)   { where.push("date <= ?"); binds.push(to); }
+  if (plantId) { where.push("plant_id = ?"); binds.push(plantId); }
+
+  const countRow = await env.DB.prepare(
+    `SELECT COUNT(*) AS n FROM journal_photos WHERE ${where.join(" AND ")}`
+  ).bind(...binds).first();
+  const total = Number(countRow?.n ?? 0);
+  if (total === 0) return { photos: [], total: 0 };
+
+  const res = await env.DB.prepare(
+    `SELECT id, date, thumb, plant_id FROM journal_photos
+     WHERE ${where.join(" AND ")} ORDER BY date DESC, created_at DESC LIMIT 200`
+  ).bind(...binds).all();
+  const rows = res.results ?? [];
+
+  // One per day first, then fill from what is left, so a range always reads as
+  // a spread of days before it reads as a spread of shots.
+  const seen = new Set();
+  const picked = [];
+  for (const r of rows) {
+    if (picked.length >= cap) break;
+    if (seen.has(r.date)) continue;
+    seen.add(r.date);
+    picked.push(r);
+  }
+  for (const r of rows) {
+    if (picked.length >= cap) break;
+    if (!picked.includes(r)) picked.push(r);
+  }
+  picked.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  return { photos: picked, total };
+}
+
+/** One photo at the size it was stored, for when detail is the whole question. */
+export async function fullPhoto(env, userId, growId, photoId) {
+  await ensureJournalPhotosSchema(env);
+  return env.DB.prepare(
+    "SELECT id, date, data, plant_id FROM journal_photos WHERE id = ? AND user_id = ? AND grow_id = ?"
+  ).bind(photoId, userId, growId).first();
+}
+
+/**
+ * Split a stored data URL into the parts Gemini wants.
+ *
+ * Photos are stored as `data:image/jpeg;base64,...`; an inlineData part wants
+ * the mime type and the payload separately. Anything that is not a data URL
+ * returns null and is simply not shown, which is the right outcome for the 1x1
+ * placeholder a failed upload leaves behind.
+ */
+export function toInlineData(dataUrl) {
+  const m = /^data:(image\/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl ?? ""));
+  if (!m) return null;
+  // The blank placeholder carries no information and is not worth a token.
+  if (m[2].length < 200) return null;
+  return { mimeType: m[1], data: m[2] };
+}

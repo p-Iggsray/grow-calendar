@@ -277,15 +277,23 @@ export async function getJournalTimeline(env, user, growId, before, limitRaw) {
   });
 }
 
-// GET /api/journal/search?q= -> days whose note or plant entries mention the
-// text, newest first, with a match excerpt for each.
-export async function searchJournal(env, user, growId, qRaw) {
+/**
+ * Days whose note, plant entries or feed mention some text, newest first.
+ *
+ * Returns rows rather than a Response so MJ's search_journal tool and the
+ * journal's own search box answer from the same code. A search that disagreed
+ * with the one in the app would be worse than no search at all.
+ *
+ * `{ error }` back means the caller asked for something it cannot have.
+ */
+export async function searchJournalRows(env, user, growId, qRaw, limit = 40) {
   const q = String(qRaw ?? "").trim().slice(0, 80);
-  if (q.length < 2) return error(400, "type at least 2 characters to search");
+  if (q.length < 2) return { error: "type at least 2 characters to search" };
   const row = await ownedGrowRow(env, user.id, growId);
-  if (!row) return error(404, "grow not found");
+  if (!row) return { error: "grow not found" };
   const names = plantNameMap(parseSurvey(row.survey));
   const like = `%${escapeLike(q)}%`;
+  const cap = Math.max(1, Math.min(40, Math.round(Number(limit) || 40)));
 
   await ensurePlantLogSchema(env);
   const [notes, entries, feeds] = await Promise.all([
@@ -316,8 +324,16 @@ export async function searchJournal(env, user, growId, qRaw) {
   }
   for (const r of feeds.results ?? []) add(r.date, { source: "feed", text: makeExcerpt(r.feed, 140) });
 
-  const results = [...byDate.values()].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 40);
-  return json({ q, results });
+  const results = [...byDate.values()].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, cap);
+  return { q, results };
+}
+
+// GET /api/journal/search?q= -> days whose note or plant entries mention the
+// text, newest first, with a match excerpt for each.
+export async function searchJournal(env, user, growId, qRaw) {
+  const out = await searchJournalRows(env, user, growId, qRaw);
+  if (out.error) return error(out.error === "grow not found" ? 404 : 400, out.error);
+  return json(out);
 }
 
 // GET /api/journal/month?month=YYYY-MM -> { month, days: { date: {log, note, plants} } }

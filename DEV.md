@@ -113,9 +113,53 @@ the crop briefs and the tool schemas as pure data.
 
 Conversations are **persisted**, in `mj_conversations`, one thread per grow plus
 a general thread (`grow_id IS NULL`). The last 20 messages are replayed as
-context. `MJ_TOOLS` declares 16 tools: six read (`get_day`, `get_week`,
-`get_grow_log`, `get_grow_info`, `get_environment`, `get_plant_log`) and ten
-write (listed in `MJ_WRITE_TOOLS`).
+context. `MJ_TOOLS` declares 19 tools: nine read (`get_day`, `get_week`, `get_grow_log`,
+`get_grow_info`, `get_environment`, `get_plant_log`, `search_journal`,
+`get_photos`, `get_photo`) and ten write (listed in `MJ_WRITE_TOOLS`).
+
+### Letting MJ look at photographs
+
+`get_photos` returns up to `MJ_PHOTO_BATCH` (6) thumbnails for a date range or
+one plant, and `get_photo` returns a single image at full resolution. Stored
+thumbnails are 480px, which carries colour, canopy and vigour but not
+trichomes, so the persona tells her to fetch a full image before judging
+detail.
+
+**The images cannot travel inside the tool result.** On Gemini 2.5 a
+`functionResponse` is JSON, and an image nested in it is invisible to the model
+(multimodal function responses are a Gemini 3 feature). They are sent as
+**sibling `inlineData` parts in the same turn** as the `functionResponse`, which
+is how a 2.5 model receives an image at all.
+
+The mechanism: `executeTool` takes a `shown` array, pushes `{mimeType, data}`
+into it, and `runGemini` appends those as sibling parts after the function
+responses. `test/mj-tool-images.test.js` asserts the shape of what actually
+goes on the wire, including that no base64 is smuggled into the JSON result,
+where 2.5 would read it as a meaningless string and bill for it anyway.
+
+Two deliberate properties:
+
+- **The metadata is the answer on its own.** Every result carries the date,
+  grow day, plant and a `viewable` flag whether or not the image attaches. If a
+  photo cannot be shown, the tool says so and the persona tells her to admit it
+  rather than describe a picture she was not given.
+- **Images live for one turn.** They are in `contents` while she reasons and
+  are never written to `mj_conversations`; her written observations are the
+  durable part. Replaying pictures into every later turn would inflate each one
+  to re-send something she has already described in words.
+
+`photosForRange` thins its results to one per day before filling the batch, so
+a range always reads as a spread of days rather than forty shots of harvest
+day, and returns them oldest first so position in the sequence means position
+in time.
+
+### Searching the journal
+
+`search_journal` wraps `searchJournalRows` in `worker/journal.js`, the same
+function behind the journal's own search box, so MJ and the app can never
+disagree about what the record says. It matters for quota as much as for
+quality: "when did I last see mites" used to mean walking days one at a time,
+and every one of those days was a whole request against a budget of 250.
 
 ### Prompt order is load-bearing
 

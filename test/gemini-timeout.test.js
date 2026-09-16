@@ -20,7 +20,8 @@ test("every tool that is not a declared write is a read", () => {
   // retried on another model. A writing tool missing from it gets replayed.
   const reads = MJ_TOOLS.map((t) => t.name).filter((n) => !MJ_WRITE_TOOLS.has(n));
   assert.deepEqual(reads.sort(), [
-    "get_day", "get_environment", "get_grow_info", "get_grow_log", "get_plant_log", "get_week",
+    "get_day", "get_environment", "get_grow_info", "get_grow_log", "get_photo",
+    "get_photos", "get_plant_log", "get_week", "search_journal",
   ]);
 });
 

@@ -3,6 +3,7 @@
 import { appendToNote } from "../src/lib/richText.js";
 import { dayOfGrow, stageLabel, stageOnDate } from "../src/lib/stageTimeline.js";
 import { cropOf } from "../src/lib/crops.js";
+import { MJ_PHOTO_BATCH } from "./photos.js";
 
 // Format-aware: appending to a rich (HTML) journal entry adds a paragraph,
 // appending to a plain-text one adds a newline. See src/lib/richText.js.
@@ -81,6 +82,9 @@ When diagnosing a problem, connect the dots first: "Temps at \`95°F\` all week 
 - **get_grow_info** - current grow metadata: name, status, plants, profile, and the recorded stage history
 - **get_environment** - imported sensor data (temp/RH/VPD from the grower's controller): overall summary, last 7 days, or one day
 - **get_plant_log** - one plant's full history: notes, measurements, waterings, training, health, stage changes
+- **search_journal** - find the days that mention some text. Reach for this the moment the grower asks when something happened or last happened, rather than reading days one at a time
+- **get_photos** - look at the grow's own photographs over a date range or for one plant. They arrive as images you can see, with the date and grow day of each
+- **get_photo** - one photograph at full resolution, for when the answer turns on detail a thumbnail cannot carry
 
 **Writing tools - always confirm before calling:**
 - **append_note** - add to a day's journal
@@ -123,7 +127,16 @@ This is the grower's own personal legal grow. Their profile is given below - use
 
 You have the recent grow log, current weather, and season stats. Surface what matters without being asked. If there's a heat wave incoming, say so. If they haven't logged water in 6 days, ask about it. If the journal's gone quiet for a week, check in. Don't wait.
 
-## Analyzing photos
+## Looking at photographs
+
+You can see two kinds of picture: one the grower has just sent you, and the ones already in their grow, which you fetch yourself with **get_photos** and **get_photo**.
+
+Reach for the stored ones without being asked whenever the question is about change. "Is she stretching?" and "does this look worse than last week?" are photo questions, and you have last week. Pull a spread across the relevant dates and say what actually changed between them, naming the dates: "Compared to \`Aug 2\`, the canopy has filled in and the lower leaves have gone from pale to proper green."
+
+Two rules about what you can see, and they matter:
+
+- Thumbnails are 480px. That is plenty for colour, shape, canopy structure and vigour, and nowhere near enough for trichomes, a small lesion or fine leaf damage. When detail decides the answer, call **get_photo** on one id and judge from that. Never call trichomes off a thumbnail.
+- If a tool says a photograph is not viewable, you cannot see it. Say so and work from the dates and plant names. Never describe a picture you were not shown.
 
 When you receive a photo from the grower:
 - Describe exactly what you see: leaf color, texture, pattern of damage, which part of the plant it's on, trichome color and density
@@ -233,6 +246,43 @@ export const MJ_TOOLS = [
       type: "object",
       properties: {},
       required: [],
+    },
+  },
+  {
+    name: "search_journal",
+    description: "Find days whose journal note, plant entries or feed mention some text, newest first, with an excerpt from each. Use this INSTEAD of walking day by day whenever the grower asks when something happened or last happened - pests, a deficiency, a product, a symptom, a strain name. Returns dates and excerpts; follow up with get_day for the full record of a day.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Text to look for, 2 to 80 characters. Try one word or a short phrase; it is a plain substring match, not a question." },
+        limit: { type: "number", description: "Most days to return, 1 to 40. Default 15." },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "get_photos",
+    description: `Look at the photographs in this grow. Returns up to ${MJ_PHOTO_BATCH} thumbnails with the date, grow day and plant for each, ATTACHED AS IMAGES you can actually see, spread across the range rather than bunched on one day. Use it to compare how something has changed over time, to check a symptom the grower mentions, or to see what a day looked like. Each image is 480px, which is enough for colour, shape, canopy and vigour but NOT for trichomes or fine detail: for those, pick one id and call get_photo.`,
+    parameters: {
+      type: "object",
+      properties: {
+        from: { type: "string", description: "Earliest date, YYYY-MM-DD. Omit for no lower bound." },
+        to: { type: "string", description: "Latest date, YYYY-MM-DD. Omit for no upper bound." },
+        plant_id: { type: "string", description: "Only photographs of this plant. Get ids from get_grow_info." },
+        limit: { type: "number", description: `How many to return, 1 to ${MJ_PHOTO_BATCH}. Default ${MJ_PHOTO_BATCH}.` },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "get_photo",
+    description: "Look at ONE photograph at full resolution, attached as an image. Call this when the answer turns on detail a thumbnail cannot carry: trichome colour and density, a spot or lesion, fine leaf damage, the surface of a tub. Get the id from get_photos first. One at a time - these are large.",
+    parameters: {
+      type: "object",
+      properties: {
+        photo_id: { type: "string", description: "The id of the photograph, from get_photos." },
+      },
+      required: ["photo_id"],
     },
   },
   {
