@@ -250,6 +250,55 @@ usually the per-minute window rather than the daily one.
 - **Context blocks fail soft but never silently.** Losing one costs MJ knowledge
   without costing the reply; each logs when it happens.
 
+### Measuring her: the eval suite
+
+MJ is ~3,000 tokens of persona plus nineteen tool schemas, and until this
+existed there was no way to tell whether editing a line made her better or
+worse. Two tiers, because they cost differently.
+
+**Free, and part of `npm test`.** `test/mj-persona.test.js` checks the things
+that are true of the prompt itself: every tool has a usable description and a
+well-formed schema, every required parameter exists, MJ is told about every
+tool she has, the persona never promises a tool that does not exist, and
+neither the persona nor any tool description contains an em dash when she is
+told never to use one. These catch the drift that is invisible until she is
+live. `test/mj-eval-harness.test.js` tests the harness's own judging, because a
+suite that reports green through a broken checker is worse than no suite.
+
+**Paid, and run deliberately.**
+
+```bash
+npm run eval                  # the hard checks
+npm run eval -- --grade       # also judge whether each answer is any good
+npm run eval -- --case day-zero --verbose
+```
+
+Twelve golden cases in `eval/cases.js`, run against the real model with the
+real persona, the real tool declarations and the real tool executor. Only the
+database is a stand-in: `eval/fixture.js` is a fixed grow with known answers
+(mites on 2026-08-02, watering logged in litres, day 0 at 2026-06-01), because
+a suite running against live data would change its verdicts whenever you logged
+something.
+
+Each case can claim four kinds of thing:
+
+| Claim | Catches |
+|---|---|
+| `expectTools` / `forbidTools` | a persona edit quietly changing how she works |
+| `mustMatch` / `mustNotMatch` | a rule the persona states outright being broken |
+| `maxRequests` | an edit that costs two more requests per answer |
+| `grade` | whether the answer is actually useful, judged by a model |
+
+The grader is separate on purpose. Its verdict is reported beside the hard
+checks rather than folded into them, because a case can pass every rule and
+still read badly, and because the grader is itself unverified judgement. An
+unparseable grader answer is `unknown`, never a silent pass.
+
+A full graded run is at most ~54 requests against a daily allowance of 250, and
+usually far fewer, since most answers take one or two. The runner prints the
+ceiling before it starts and the real spend at the end, and exits non-zero if
+any hard check failed.
+
 ### What MJ is told about the weather
 
 Her context carries the grow's **own** weather, resolved from `survey.lat/lon`,
@@ -410,6 +459,14 @@ worker/                           Backend (Cloudflare Worker)
   planSetup.js, stats.js, share.js
   archive.js                      Archiving a grow space, the archive's caps, the
                                   rundown gate, and the deletes it lets through.
+
+eval/                             MJ's golden set. Run with npm run eval; costs
+                                  real requests, so it is not in npm test.
+  cases.js                        Twelve cases and what each one claims.
+  fixture.js                      A fixed grow with known answers.
+  judge.js                        Deciding whether a case passed (unit tested).
+  grade.js                        The model-graded half, and its rubric.
+  run.mjs                         The runner and its scorecard.
   report.js                       The rundown: a space's whole record as one
                                   printable, self-contained HTML document.
   mj.js                           Barrel for worker/mj/: POST /api/mj, usage, history, undo.

@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "deploy": "vite build && wrangler deploy",
     "test": "node --test",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "eval": "node eval/run.mjs"
   },
   "dependencies": {
     "framer-motion": "^12.40.0",

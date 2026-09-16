@@ -3,7 +3,7 @@
 // 2. Base JS rules + globals for browser code in src/.
 // 3. Worker code in worker/ runs on Cloudflare Workers - browser-ish globals
 //    (crypto, fetch, Response, URL) but no DOM.
-// 4. Test/script files in test/ and scripts/ run on Node, so Node globals.
+// 4. Test/script files in test/, scripts/ and eval/ run on Node, so Node globals.
 
 import js from "@eslint/js";
 import globals from "globals";
@@ -66,9 +66,9 @@ export default [
     },
   },
 
-  // Tests + scripts (Node)
+  // Tests, scripts and MJ's eval suite (Node)
   {
-    files: ["test/**/*.js", "scripts/**/*.{js,mjs}"],
+    files: ["test/**/*.js", "scripts/**/*.{js,mjs}", "eval/**/*.{js,mjs}"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
