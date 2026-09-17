@@ -28,7 +28,8 @@ import { getGrowReport } from "./report.js";
 import { getStats } from "./stats.js";
 import { requireOwner } from "./owner.js";
 import { logError, logInfo } from "./log.js";
-import { getShareToken, createShareToken, deleteShareToken, getSharedView } from "./share.js";
+import { getShareToken, createShareToken, deleteShareToken } from "./share.js";
+import { getShareSpaces, getShareMonth, getShareDay, getShareTimeline, getSharePhotos, getSharePhoto } from "./shareView.js";
 
 export default {
   async fetch(request, env, _ctx) {
@@ -109,8 +110,32 @@ async function route(request, env, path) {
 
   // public routes (no auth required)
   if (path === "/api/health" && method === "GET") return getHealth(env);
-  const shareViewMatch = path.match(/^\/api\/share\/([A-Za-z0-9_-]{10,60})$/);
-  if (shareViewMatch && method === "GET") return getSharedView(env, shareViewMatch[1]);
+
+  // The friend view. Everything under /api/share/:token is readable without a
+  // session by whoever holds the link, and nothing under it writes. The token
+  // itself decides which spaces are reachable; see shareContext in share.js.
+  const TOK = "([A-Za-z0-9_-]{10,60})";
+  if (method === "GET") {
+    const m = (re) => path.match(re);
+    let hit;
+    if ((hit = m(new RegExp(`^/api/share/${TOK}$`))))
+      return getShareSpaces(env, hit[1]);
+    if ((hit = m(new RegExp(`^/api/share/${TOK}/grows/([A-Za-z0-9]+)/month/(\\d{4}-\\d{2})$`))))
+      return getShareMonth(env, hit[1], hit[2], hit[3]);
+    if ((hit = m(new RegExp(`^/api/share/${TOK}/grows/([A-Za-z0-9]+)/day/(\\d{4}-\\d{2}-\\d{2})$`))))
+      return getShareDay(env, hit[1], hit[2], hit[3]);
+    if ((hit = m(new RegExp(`^/api/share/${TOK}/grows/([A-Za-z0-9]+)/timeline$`))))
+      return getShareTimeline(env, hit[1], hit[2], new URL(request.url).searchParams.get("before"));
+    if ((hit = m(new RegExp(`^/api/share/${TOK}/grows/([A-Za-z0-9]+)/photos$`))))
+      return getSharePhotos(env, hit[1], hit[2], new URL(request.url).searchParams.get("offset"));
+    if ((hit = m(new RegExp(`^/api/share/${TOK}/photos/([A-Za-z0-9_]+)/(thumb|full)$`))))
+      return getSharePhoto(env, hit[1], hit[2], hit[3]);
+    // A mistyped or truncated share URL is a broken link, not a sign-in
+    // prompt. Without this it falls through to the session check below and
+    // tells a friend with no account that they are "not authenticated".
+    if (path.startsWith("/api/share/") && path !== "/api/share")
+      return error(404, "share link not found or has been revoked");
+  }
 
   // public auth routes
   if (path === "/api/auth/login"           && method === "POST") return login(request, env);

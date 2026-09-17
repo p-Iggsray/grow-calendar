@@ -16,6 +16,17 @@ export { STAGE_LABEL, stagesFor };
 // stages, so an index comparison never mixes the two.
 export const STAGE_ORDER = ALL_STAGES;
 
+// One character per stage. Colour alone cannot carry which stage a day is in
+// (WCAG 1.4.1), so any compact calendar cell prints this alongside the tint.
+// Within one crop's ladder the characters are distinct; across crops they may
+// repeat, because no calendar shows two crops at once.
+export const STAGE_GLYPH = {
+  germination: "G", seedling: "S", vegetative: "V", flowering: "F",
+  flushing: "~", harvest: "H", drying: "D", curing: "C", done: "\u2022",
+  inoculation: "I", colonization: "K", spawn_to_bulk: "B", consolidation: "N",
+  fruiting: "R", flush_harvest: "H", dehydrating: "D", stored: "\u2022",
+};
+
 export function stageGroup(stage) {
   return STAGE_GROUP[stage] ?? null;
 }

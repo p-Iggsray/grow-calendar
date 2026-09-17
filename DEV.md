@@ -611,6 +611,87 @@ Two places still handle base64 on purpose: the rundown in `worker/report.js`
 embeds thumbnails because the file has to be self-contained, and MJ's
 `get_photos` needs the bytes to hand to Gemini.
 
+## The friend view
+
+`/share/:token` is a read-only window onto a grower's journal, opened by a link
+and nothing else. No session, no cookie, no account.
+
+It used to show one auto-picked grow as a single non-interactive month: the
+stage colours and nothing behind them. Now it opens the journal itself.
+
+### What a link reaches
+
+One token per grower, every live space behind it, switched from the header.
+The rules live in exactly one function, `shareContext` in `worker/share.js`,
+and every public read route resolves through it before touching anything:
+
+- **Live spaces only.** Archiving a space takes it off the link, photographs
+  and all, without deleting a thing.
+- **A space that never finished setup** is not on the link either.
+- **A space id the link does not reach answers 404, never 403.** A 403 would
+  confirm the id exists.
+
+Widen the surface there or nowhere.
+
+### What never travels
+
+| Kept out | Where it is dropped |
+| --- | --- |
+| Location, coordinates | `shareSurvey` |
+| Closing notes, dry/cure log notes | `shareLifecycle` |
+| Reminders and to-dos (`grow_events`) | never queried by `getShareDay` |
+| MJ conversations | no route reads them |
+
+`test/share-scope.test.js` asserts each of these, including that no location
+string survives anywhere in the spaces payload. The share sheet in the app
+states the same list to the grower, because a link has no password and no
+expiry: whoever it is forwarded to can open it.
+
+### The routes
+
+All GET, all public, all under `worker/shareView.js`:
+
+```
+/api/share/:token                                 the spaces this link opens
+/api/share/:token/grows/:id/month/YYYY-MM         which days hold anything
+/api/share/:token/grows/:id/day/YYYY-MM-DD        one day, whole
+/api/share/:token/grows/:id/timeline?before=      the grow back to front, paged
+/api/share/:token/grows/:id/photos?offset=        every picture, paged
+/api/share/:token/photos/:photoId/(thumb|full)    the bytes
+```
+
+Two rules they all follow. **Nothing writes.** And **nothing calls upstream**:
+a public URL must never be a way to spend somebody's weather or model quota, so
+a shared day reports the climate already written into its log rather than
+fetching any. The photo route exists because `/api/photos/:id/:size` is
+session-authorised and a friend has no session; it additionally checks the
+picture belongs to a space the link reaches.
+
+An unmatched path under `/api/share/` answers 404 rather than falling through
+to the session check, which used to tell a friend with a mistyped link that
+they were "not authenticated".
+
+### The client
+
+`src/components/Buddy/` is its own small app, lazy-loaded as a separate chunk
+so the grower does not download it to open their own calendar. It deliberately
+does **not** reuse `src/components/Journal/`: those are 2,900 lines of editors
+wired to write hooks, and threading a `readOnly` flag through them is how a
+write control eventually leaks onto a public page. It reuses the pure helpers
+instead, the same `recordRows`, `summarizeEntry` and `stageOnDate` the owner's
+own pages read through, so the two views cannot drift.
+
+The whole state of a read lives in the URL (`?g=` space, `?t=` tab, `?d=` day,
+encoded by `src/lib/shareRoute.js`), which is what makes the phone's back
+button step back through what somebody just read, and what makes one day of one
+space a link they can pass on.
+
+`openingMonth` in that same file decides where the calendar lands. Today's
+month is the wrong answer for any grow that is not currently running: a link to
+a grow that finished in June opened on September and showed a blank grid. It
+lands on the month of the last thing written in the space instead, which is why
+the spaces payload carries `lastDate`.
+
 ## Focus rings
 
 One rule in `src/styles.css` draws the ring for the whole app:

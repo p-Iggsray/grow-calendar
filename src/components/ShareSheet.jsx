@@ -84,8 +84,32 @@ export default function ShareSheet({ onClose }) {
         <div style={{ fontSize: 17, fontWeight: 800, color: "var(--c-text)", marginBottom: 4, letterSpacing: -0.3 }}>
           Share your grow
         </div>
-        <div style={{ fontSize: 12, color: "var(--c-text-faint)", fontFamily: MONO, marginBottom: 18, lineHeight: 1.7 }}>
-          Anyone with the link can view your calendar and plan - read-only, no account needed. They can&apos;t edit, log, or see your notes.
+        <div style={{ fontSize: 12, color: "var(--c-text-faint)", fontFamily: MONO, marginBottom: 12, lineHeight: 1.7 }}>
+          Anyone with the link can read your grow. No account, no password, and
+          nothing they can change.
+        </div>
+
+        {/* This is the only place the promise is made, so it is made exactly.
+            A link has no password and no expiry: whoever it is forwarded to can
+            open it, which is why the list on the right is worth reading. */}
+        <div style={{
+          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12,
+          marginBottom: 18, fontSize: 11.5, fontFamily: MONO, lineHeight: 1.65,
+        }}>
+          <div>
+            <div style={{ color: "var(--c-accent)", marginBottom: 3 }}>They see</div>
+            <div style={{ color: "var(--c-text-muted)" }}>
+              Every day of every live space: what you logged, what you wrote,
+              each plant&apos;s entries, and every photograph.
+            </div>
+          </div>
+          <div>
+            <div style={{ color: "var(--c-text-dim)", marginBottom: 3 }}>Stays private</div>
+            <div style={{ color: "var(--c-text-muted)" }}>
+              Where the grow is, your reminders, your chats with MJ, and every
+              archived space.
+            </div>
+          </div>
         </div>
 
         {error && (

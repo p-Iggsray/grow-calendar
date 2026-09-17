@@ -6,11 +6,14 @@ import Splash from "./components/Splash.jsx";
 import { AppShellSkeleton } from "./components/LoadingScreens.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import Toast from "./components/Toast.jsx";
-import BuddyView from "./components/BuddyView.jsx";
 import { AuthProvider, useAuth } from "./lib/auth.jsx";
 import { ToastProvider } from "./lib/useToast.jsx";
 import { PlanProvider } from "./lib/usePlan.jsx";
 import { api } from "./lib/api.js";
+
+// The friend view is its own chunk. It is a whole second app, and the grower
+// opening their own calendar should not download it to get there.
+const BuddyView = lazy(() => import("./components/Buddy/BuddyView.jsx"));
 import "./styles.css";
 
 // Report unhandled JS errors to /api/errors for observability.
@@ -165,7 +168,9 @@ createRoot(document.getElementById("root")).render(
     <ErrorBoundary>
       <ToastProvider>
         {_shareMatch ? (
-          <BuddyView token={_shareMatch[1]} />
+          <Suspense fallback={<AppShellSkeleton />}>
+            <BuddyView token={_shareMatch[1]} />
+          </Suspense>
         ) : (
           <AuthProvider>
             <Root />

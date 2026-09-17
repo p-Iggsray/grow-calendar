@@ -1,11 +1,12 @@
 // @ts-check
 import { cropOf } from "../src/lib/crops.js";
-import { json, error, nowIso, bytesToBase64Url } from "./util.js";
+import { json, nowIso, bytesToBase64Url } from "./util.js";
 import { loadRawGrows } from "./grows.js";
-import { loadStageTimeline } from "./stages.js";
+
+export const SHARE_TOKEN_RE = /^[A-Za-z0-9_-]{10,60}$/;
 
 function genToken() {
-  const bytes = new Uint8Array(24); // 24 bytes → 32-char base64url
+  const bytes = new Uint8Array(24); // 24 bytes -> 32-char base64url
   crypto.getRandomValues(bytes);
   return bytesToBase64Url(bytes);
 }
@@ -35,64 +36,63 @@ export async function deleteShareToken(env, user) {
   return json({ ok: true });
 }
 
-// Only the shareable survey fields: what it grows, the environment, and the
-// variety names/types.
-// Location, coordinates, plant ids, and free-form notes stay private.
-function surveyBasics(survey) {
-  if (!survey || typeof survey !== "object") return null;
-  const strains = (Array.isArray(survey.strains) ? survey.strains : [])
-    .map(s => ({
-      name: typeof s?.name === "string" ? s.name : "",
-      type: typeof s?.type === "string" ? s.type : "",
-    }))
-    .filter(s => s.name);
-  return { crop: cropOf(survey), environment: survey.environment ?? null, strains };
-}
+// ── What a link is allowed to reach ─────────────────────────────────────────
 
-// GET /api/share/:token - public endpoint, no auth required.
-// Returns a read-only snapshot: grow name, the recorded stage timeline, survey
-// basics, and lifecycle. No personal info (email, role, logs, media).
-export async function getSharedView(env, token) {
-  if (!token || token.length > 60) return error(400, "invalid token");
-
+// A token resolves to one grower and to the exact set of spaces their link
+// opens: live spaces that finished setup. An archived space is put away, so it
+// never appears on a link even though its record is still on disk.
+//
+// Every public read route resolves through here and then checks the requested
+// space against growIds, so there is exactly one place in the codebase that
+// decides what a link can see. Widen it here or nowhere.
+export async function shareContext(env, token) {
+  if (!SHARE_TOKEN_RE.test(String(token ?? ""))) return null;
   const row = await env.DB.prepare(
     "SELECT user_id FROM share_tokens WHERE token = ?"
   ).bind(token).first();
-  if (!row) return error(404, "share link not found or has been revoked");
+  if (!row) return null;
 
-  // Prefer the grows table (loadRawGrows auto-migrates legacy plan_config).
-  // Tokens are per user, not per grow: share the active grow, else the most
-  // recent one that finished setup.
-  let grow = null;
+  let grows = [];
   try {
-    const grows = await loadRawGrows(env, row.user_id);
-    // An archived space is put away; a share link never lands on one.
-    const live = grows.filter(g => !g.archivedAt);
-    grow = live.find(g => g.status === "active" && g.survey)
-        ?? live.find(g => g.survey)
-        ?? null;
-  } catch { /* grows table unavailable */ }
+    grows = (await loadRawGrows(env, row.user_id)).filter((g) => !g.archivedAt && g.survey);
+  } catch { /* grows table unavailable: the link resolves to nothing */ }
 
-  if (!grow) return error(404, "grow not set up yet");
+  return {
+    userId: row.user_id,
+    grows,
+    growIds: new Set(grows.map((g) => g.id)),
+  };
+}
 
-  // The shared calendar is the recorded stage history, the same source the
-  // grower's own calendar reads.
-  const { events, firstDate } = await loadStageTimeline(env, row.user_id, grow.id);
+// ── Redaction ───────────────────────────────────────────────────────────────
 
-  // Lifecycle carries the grower's private notes (finalNotes, dry/cure log
-  // notes) - a buddy link gets only the phase and its dates.
-  const lc = grow.lifecycle;
-  return json({
-    growName: grow.displayName || "Black Cat Botanicals",
-    status: grow.status,
-    stageEvents: events,
-    firstDate,
-    survey: surveyBasics(grow.survey),
-    lifecycle: lc ? {
-      phase: lc.phase ?? null,
-      dryStartedAt: lc.dryStartedAt ?? null,
-      cureStartedAt: lc.cureStartedAt ?? null,
-      finishedAt: lc.finishedAt ?? null,
-    } : null,
-  });
+// The one thing a link never carries. A share URL has no password and no
+// expiry, so anyone it is forwarded to can open it: where the plants physically
+// are does not travel with the rest of the record.
+//
+// Kept: what is grown, the kind of space, and the variety names, which is what
+// makes someone else's read of the journal make any sense at all.
+export function shareSurvey(survey) {
+  if (!survey || typeof survey !== "object") return null;
+  const strains = (Array.isArray(survey.strains) ? survey.strains : [])
+    .map((s) => ({
+      id: typeof s?.id === "string" ? s.id : "",
+      name: typeof s?.name === "string" ? s.name : "",
+      type: typeof s?.type === "string" ? s.type : "",
+    }))
+    .filter((s) => s.name);
+  return { crop: cropOf(survey), environment: survey.environment ?? null, strains };
+}
+
+// Lifecycle carries the grower's closing notes and their dry/cure log notes.
+// A link gets the phase and its dates, which is the shape of the finish, not
+// what they privately thought of it.
+export function shareLifecycle(lc) {
+  if (!lc) return null;
+  return {
+    phase: lc.phase ?? null,
+    dryStartedAt: lc.dryStartedAt ?? null,
+    cureStartedAt: lc.cureStartedAt ?? null,
+    finishedAt: lc.finishedAt ?? null,
+  };
 }

@@ -255,8 +255,6 @@ export const api = {
   getShareToken: () => request("/api/share"),
   createShareToken: () => request("/api/share", { method: "POST", body: "{}" }),
   deleteShareToken: () => request("/api/share", { method: "DELETE", body: "{}" }),
-  getSharedView: (token) => fetch(`/api/share/${token}`)
-    .then(r => r.json().then(d => r.ok ? d : Promise.reject(new Error(d.error || "Not found")))),
 
 };
 
