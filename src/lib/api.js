@@ -252,6 +252,11 @@ export const api = {
   deletePlantLogEntry: (growId, plantId, entryId) =>
     request(`/api/grows/${growId}/plants/${plantId}/log/${entryId}`, { method: "DELETE", body: "{}" }),
 
+  // Where this variety's label should point, or {code:null} when it has no
+  // public page. Minted on first ask, then stable, so a printed label keeps
+  // working.
+  getStrainPageCode: (name) =>
+    request(`/api/strains/page-code?name=${encodeURIComponent(name)}`),
   getShareToken: () => request("/api/share"),
   createShareToken: () => request("/api/share", { method: "POST", body: "{}" }),
   deleteShareToken: () => request("/api/share", { method: "DELETE", body: "{}" }),

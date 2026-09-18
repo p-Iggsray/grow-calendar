@@ -611,6 +611,72 @@ Two places still handle base64 on purpose: the rundown in `worker/report.js`
 embeds thumbnails because the file has to be self-contained, and MJ's
 `get_photos` needs the bytes to hand to Gemini.
 
+## Who can reach anything
+
+Everything in here is the owner's. Exactly four things answer without a
+session, and `test/public-surface.test.js` is the lock on that list: a route
+added above the session gate in `worker/index.js` fails the suite, so opening a
+fifth public surface takes a deliberate edit to that test rather than a patch
+that lands in the wrong half of a file.
+
+| Public | What it is | What it holds back |
+| --- | --- | --- |
+| `/api/health` | the database is up | everything else |
+| `/api/auth/*` | the door | 401 without credentials |
+| `/api/share/:token` | the friend link | see **The friend view** |
+| `/s/:code` | one variety's reference page | every word of your record |
+
+Below the gate, `currentUser` then `requireOwner` run before any route
+dispatches. `requireOwner` is the only definition of "me" in the codebase and
+answers 404, never 403, so a stranger holding a session learns nothing about
+what exists. A session that is not the owner's is deleted the moment it is
+used. Cookies are `HttpOnly`, `Secure` on HTTPS, `SameSite=Lax`, and mutating
+requests must declare `application/json`, which a cross-site `<form>` cannot.
+
+Nothing is offered to a search engine: `robots.txt`, an `X-Robots-Tag` header
+on every response, and a `noindex` meta tag, because robots.txt alone is
+advisory and a share link pasted into a forum gets fetched by crawlers that
+never read it.
+
+### Mushrooms are not shareable, at all
+
+Nothing about a mushroom grow leaves this app. Two independent gates, because
+one gate is not a gate:
+
+1. **The link.** `shareContext` keeps only spaces whose crop is
+   `SHAREABLE_CROP`. A tub is not in the switcher, its days answer 404 when
+   named directly, and its photographs are not fetchable even with a photo id.
+2. **The catalog.** `recordStrains` takes the whole survey and returns early
+   for anything that is not cannabis, so a mushroom variety's name never
+   reaches `strain_catalog`, which is the one table in this app with a public
+   face. `ensureStrainPrivacy` sweeps out anything recorded before that gate
+   existed, reading which names are mushrooms from the grower's own surveys
+   since the catalog predates the crop column. `getStrainPage` refuses a
+   non-cannabis row again on the way out.
+
+Both are **allowlists of one crop, never a list of excluded ones**. A crop
+added to the app later is private until somebody deliberately edits
+`SHAREABLE_CROP` and `PUBLIC_CROP`, rather than public until somebody
+remembers to exclude it. `test/privacy-cutoff.test.js` asserts the shape as
+well as the behaviour.
+
+### The strain page is addressed by a code, not a name
+
+`/s/` used to be `/s/<strain name>`. That leaked the only thing it had: a word
+is guessable, so anyone could walk a list of variety names and read back which
+ones answered 200. In a single-person app, that catalog is one person's shelf.
+
+The address is now a random `page_code` minted per variety and stored on its
+catalog row. It is handed out by `GET /api/strains/page-code?name=...`, which
+is owner-only, and it reaches the world only by being printed on that variety's
+own label. An existing row keeps the code it already handed out, so a label
+printed last year still scans. A variety with no public page answers `null` and
+its label prints with no QR at all rather than a dead one, and the label sheet
+says which of the two reasons it is.
+
+The page itself never touched a user row and still does not: no rating, no
+notes, no dates, no spaces, no session.
+
 ## The friend view
 
 `/share/:token` is a read-only window onto a grower's journal, opened by a link

@@ -6,6 +6,16 @@
 // notes, no dates, no spaces, no session - the page never touches a user row,
 // so there is nothing here to leak.
 //
+// It used to live at /s/<strain name>, which meant it leaked the one thing it
+// had: whether a name was in the catalog at all. A word is guessable, so anyone
+// could walk a list of variety names and read back which ones came up 200. In a
+// single-person app that catalog is one person's shelf. The address is now a
+// random code minted per variety and handed out only to its own label, so the
+// page is reachable by scanning the jar and by nothing else.
+//
+// Mushrooms never get here. They are kept out of the catalog upstream
+// (worker/strains.js) and refused again below, because one gate is not a gate.
+//
 // The profile is written once by the model and then cached forever. Two things
 // keep an open, unauthenticated endpoint from being a way to spend somebody
 // else's quota:
@@ -180,27 +190,35 @@ function page(html, status = 200) {
       // Public and immutable enough to sit in a CDN for a day.
       "cache-control": status === 200 ? "public, max-age=86400" : "no-store",
       "referrer-policy": "no-referrer",
+      "x-robots-tag": "noindex, nofollow, noarchive, nosnippet",
       "x-content-type-options": "nosniff",
     },
   });
 }
 
-/** GET /s/:key - the public page for one strain. No session, no user data. */
-export async function getStrainPage(env, rawKey) {
-  const key = strainNameKey(decodeURIComponent(String(rawKey ?? "")));
-  if (!key) return page(renderStrainPage(null, null), 404);
+// Only the shape a minted code can have. Anything else is not a code somebody
+// scanned, so it never reaches the database.
+const PAGE_CODE_RE = /^[A-Za-z0-9_-]{12,32}$/;
 
-  // Only a name somebody actually grows gets a page, which is also what stops
-  // an open endpoint from becoming a way to generate arbitrary text.
+/** GET /s/:code - the public page for one strain. No session, no user data. */
+export async function getStrainPage(env, rawCode) {
+  const code = decodeURIComponent(String(rawCode ?? ""));
+  if (!PAGE_CODE_RE.test(code)) return page(renderStrainPage({ name: "Not found" }, null), 404);
+
+  // Only a variety somebody actually grows gets a page, which is also what
+  // stops an open endpoint from becoming a way to generate arbitrary text.
   let catalog = null;
   try {
     catalog = await env.DB.prepare(
-      "SELECT name, type, flower_weeks, photo FROM strain_catalog WHERE name_key = ?",
-    ).bind(key).first();
+      "SELECT name_key, name, type, flower_weeks, photo, crop FROM strain_catalog WHERE page_code = ?",
+    ).bind(code).first();
   } catch { /* catalog not created yet */ }
-  if (!catalog) {
+  // The second gate. A row that predates the crop column reads as cannabis,
+  // which is what it was: nothing else was ever recorded here.
+  if (!catalog || (catalog.crop != null && catalog.crop !== "cannabis")) {
     return page(renderStrainPage({ name: "Not found" }, null), 404);
   }
+  const key = catalog.name_key;
 
   await ensureProfileSchema(env);
   const cached = await env.DB.prepare(

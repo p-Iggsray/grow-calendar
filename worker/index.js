@@ -19,7 +19,7 @@ import { listGrowEvents, createGrowEvent, patchGrowEvent, deleteGrowEvent } from
 import { createJournalPhoto, getJournalPhoto, getPhotoImage, deleteJournalPhoto, listPlantPhotos } from "./photos.js";
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
 import { getReverseGeocode, getGeocodeSearch } from "./geocode.js";
-import { listStrains } from "./strains.js";
+import { listStrains, getStrainPageCode, ensureStrainPrivacy } from "./strains.js";
 import { listStrainEntries, putStrainEntry, deleteStrainEntry, renameStrain, removeStrain } from "./strainLibrary.js";
 import { getStrainPhotos } from "./strainPhotos.js";
 import { getStageTimeline } from "./stages.js";
@@ -161,6 +161,8 @@ async function authenticatedRoute(request, env, path, method, user) {
 
   // Ensure the per-day tables are grow-scoped before any handler touches them.
   await ensurePerDayGrowScope(env);
+  // And that nothing with a public face is left over from before the crop gate.
+  await ensureStrainPrivacy(env, user.id);
 
   if (path === "/api/weather"          && method === "GET")    return getWeather(request, env, user);
   if (path === "/api/mj"              && method === "POST")   return postMj(request, env, user);
@@ -284,6 +286,9 @@ async function authenticatedRoute(request, env, path, method, user) {
     const reportUrl = new URL(request.url);
     return getGrowReport(env, user, growReportMatch[1], reportUrl.searchParams.get("unit") || "gal");
   }
+
+  if (path === "/api/strains/page-code" && method === "GET")
+    return getStrainPageCode(env, user, new URL(request.url).searchParams.get("name"));
 
   if (path === "/api/share" && method === "GET")    return getShareToken(env, user);
   if (path === "/api/share" && method === "POST")   return createShareToken(env, user);

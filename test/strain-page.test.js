@@ -6,11 +6,22 @@ import { strainPagePath } from "../src/lib/strainPage.js";
 // The page a label's code opens. Its whole job is to say something about the
 // variety and nothing about the grower, so that is what these pin.
 
-test("the path is the strain's key, and a nameless strain has no page", () => {
-  assert.equal(strainPagePath("Blue Dream"), "/s/blue%20dream");
-  assert.equal(strainPagePath("  BLUE   Dream "), "/s/blue%20dream", "same strain, same page");
+test("the path is a minted code, never the strain's name", () => {
+  // The address used to be the name, which meant guessing the word was enough
+  // to confirm the variety existed. It is a code the server mints now, and a
+  // name handed to this function is not an address at all.
+  assert.equal(strainPagePath("k7Fq2mXp91nR"), "/s/k7Fq2mXp91nR");
+  assert.equal(strainPagePath("blue dream"), null);
+  assert.equal(strainPagePath("Blue Dream"), null);
   assert.equal(strainPagePath(""), null);
   assert.equal(strainPagePath(null), null);
+});
+
+test("a variety with no code prints a label with no square on it", () => {
+  // Which is what a mushroom gets, and what anything else with no public page
+  // gets: no code means no QR, never a QR that leads nowhere.
+  assert.equal(strainPagePath(undefined), null);
+  assert.equal(strainPagePath("../../etc/passwd"), null);
 });
 
 test("a full profile renders every section it was given", () => {

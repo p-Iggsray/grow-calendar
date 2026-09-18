@@ -5,6 +5,10 @@ import { loadRawGrows } from "./grows.js";
 
 export const SHARE_TOKEN_RE = /^[A-Za-z0-9_-]{10,60}$/;
 
+// The only crop a link may ever carry. Not a list of crops to exclude: a crop
+// added to the app later must be private until this line says otherwise.
+export const SHAREABLE_CROP = "cannabis";
+
 function genToken() {
   const bytes = new Uint8Array(24); // 24 bytes -> 32-char base64url
   crypto.getRandomValues(bytes);
@@ -39,8 +43,16 @@ export async function deleteShareToken(env, user) {
 // ── What a link is allowed to reach ─────────────────────────────────────────
 
 // A token resolves to one grower and to the exact set of spaces their link
-// opens: live spaces that finished setup. An archived space is put away, so it
-// never appears on a link even though its record is still on disk.
+// opens: live cannabis spaces that finished setup.
+//
+// Three things are held back, and the first is absolute:
+//
+//   * a mushroom space, whatever its state. Nothing about one is shareable,
+//     and the rule is an allowlist of one crop rather than a list of excluded
+//     ones, so a crop added later is private by default and stays that way
+//     until somebody deliberately opens it.
+//   * an archived space, which is put away even though its record is on disk.
+//   * a space that never finished setup.
 //
 // Every public read route resolves through here and then checks the requested
 // space against growIds, so there is exactly one place in the codebase that
@@ -54,7 +66,9 @@ export async function shareContext(env, token) {
 
   let grows = [];
   try {
-    grows = (await loadRawGrows(env, row.user_id)).filter((g) => !g.archivedAt && g.survey);
+    grows = (await loadRawGrows(env, row.user_id)).filter(
+      (g) => g.survey && !g.archivedAt && cropOf(g.survey) === SHAREABLE_CROP,
+    );
   } catch { /* grows table unavailable: the link resolves to nothing */ }
 
   return {

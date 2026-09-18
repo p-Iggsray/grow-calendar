@@ -495,6 +495,6 @@ export async function setupGrow(request, env, user, growId) {
   // staying blank until the next stage change.
   await seedStageEntries(env, user.id, growId, survey);
 
-  await recordStrains(env, survey.strains);
+  await recordStrains(env, survey);
   return json({ ok: true, displayName });
 }

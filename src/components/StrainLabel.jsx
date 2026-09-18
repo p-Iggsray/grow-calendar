@@ -4,7 +4,7 @@ import Portal from "./Portal.jsx";
 import { qrMatrix } from "../lib/qr.js";
 import { drawLabel, labelDraft, labelFields, LABEL_W, LABEL_H } from "../lib/growLabel.js";
 import { photoFileFrom, savePhotoFile, saveOutcomeMessage } from "../lib/savePhoto.js";
-import { ymd } from "../lib/api.js";
+import { api, ymd } from "../lib/api.js";
 import { strainPagePath } from "../lib/strainPage.js";
 import { tapHaptic } from "../lib/haptics.js";
 
@@ -18,6 +18,11 @@ import { tapHaptic } from "../lib/haptics.js";
 // The code opens a public page about the strain itself - what the variety is,
 // how it grows, what it tastes of - and nothing about you. Hand somebody a jar
 // and they can read about the plant; they cannot read your grow.
+//
+// It points at a random code the server mints per variety, never at the
+// variety's name: a name is a word anybody can guess, and guessing it used to
+// be enough to confirm the variety existed. A variety with no public page (a
+// mushroom, above all) has no code, and the label simply prints without a QR.
 //
 // The picker below chooses which harvest this jar came from, which decides the
 // space named on the label. It no longer steers the code.
@@ -61,6 +66,9 @@ export default function StrainLabel({ strain, onClose }) {
   const plant = roster.find((p) => p.id === plantId) ?? roster[roster.length - 1] ?? null;
 
   const [draft, setDraft] = useState(() => labelDraft(strain, plant, ymd(new Date())));
+  // Where this label's code points, once the server has said. Undefined while
+  // it is being asked, null when this variety has no public page.
+  const [pageCode, setPageCode] = useState(undefined);
   const [file, setFile] = useState(null);
   const [state, setState] = useState("");
   const [error, setError] = useState(null);
@@ -84,6 +92,19 @@ export default function StrainLabel({ strain, onClose }) {
     if (!plant) return;
   }, [plant]);
 
+  // One ask per name. A failure means no code, which means no QR: a label with
+  // a dead square on it is worse than a label with none.
+  useEffect(() => {
+    const name = String(draft.name ?? "").trim();
+    if (!name) { setPageCode(null); return; }
+    let live = true;
+    setPageCode(undefined);
+    api.getStrainPageCode(name)
+      .then((d) => { if (live) setPageCode(d?.code ?? null); })
+      .catch(() => { if (live) setPageCode(null); });
+    return () => { live = false; };
+  }, [draft.name]);
+
   const filename = `${(draft.name || "label").replace(/[^\w-]+/g, "-").toLowerCase()}-label.png`;
 
   const render = useCallback(() => {
@@ -93,15 +114,14 @@ export default function StrainLabel({ strain, onClose }) {
     // The code opens a public page about the strain itself: what the variety
     // is, how it grows, what it tastes of. Not this jar, and not your records -
     // hand somebody a jar and they can read about the plant, not about you.
-    const slug = strainPagePath(draft.name);
-    const link = slug ? `${window.location.origin}${slug}` : window.location.origin;
-    drawLabel(canvas, spec, qrMatrix(link));
+    const slug = strainPagePath(pageCode);
+    drawLabel(canvas, spec, slug ? qrMatrix(`${window.location.origin}${slug}`) : null);
     setFile(null);
     canvas.toBlob((blob) => {
       if (!blob) return;
       photoFileFrom(blob, filename).then(setFile).catch(() => setFile(null));
     }, "image/png");
-  }, [draft, filename]);
+  }, [draft, filename, pageCode]);
 
   useEffect(() => {
     const t = setTimeout(render, 180);
@@ -172,6 +192,18 @@ export default function StrainLabel({ strain, onClose }) {
               aria-label={`Label preview for ${draft.name || "this strain"}`}
             />
           </div>
+
+          {/* A label that quietly lost its square is a label somebody prints
+              twice. Say which of the two reasons it is. */}
+          {pageCode === null && String(draft.name ?? "").trim() !== "" && (
+            <div style={{
+              marginTop: 8, fontFamily: "var(--font-ui)", fontSize: 11.5,
+              color: "var(--c-text-ghost)", lineHeight: 1.6,
+            }}>
+              No code on this one. A scannable page exists only for cannabis
+              varieties you have grown before.
+            </div>
+          )}
 
           {/* Which plant this jar holds. The code follows this choice. */}
           {roster.length > 1 && (
