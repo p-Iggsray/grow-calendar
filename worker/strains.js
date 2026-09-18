@@ -12,6 +12,7 @@
 //     list of exclusions, so a crop added later is private until somebody
 //     deliberately decides otherwise.
 import { json, bytesToBase64Url } from "./util.js";
+import { logError } from "./log.js";
 import { cropOf } from "../src/lib/crops.js";
 import { strainNameKey } from "../src/lib/strainLibrary.js";
 
@@ -43,6 +44,18 @@ async function ensureStrainSchema(env) {
   await env.DB.prepare(
     "CREATE UNIQUE INDEX IF NOT EXISTS idx_strain_catalog_code ON strain_catalog (page_code)"
   ).run();
+  // The written profiles cached against these names. Created here as well as in
+  // strainPage.js because the sweep deletes from it, and a database where
+  // nobody has ever opened a strain page does not have the table yet. That
+  // missing table is what made the sweep fail, and a sweep that never finishes
+  // is one that never stops being attempted.
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS strain_profile (
+      name_key   TEXT PRIMARY KEY,
+      body       TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `).run();
   _strainSchemaReady = true;
 }
 
@@ -152,14 +165,45 @@ export async function listStrains(env, _user) {
 
 // One-time cleanup, run on the owner's next visit rather than as a migration
 // file, because deciding which catalog rows are mushrooms needs their surveys.
-// Memoized per isolate: the work is a no-op once it has run.
+//
+// It is one-time in earnest, and the first version of it was not. That one
+// memoized only on success, in a module variable, and sat in front of every
+// authenticated request. It deleted from a table that only existed once
+// somebody had opened a strain page, so on a database where nobody ever had,
+// it threw every time, was swallowed every time, and never recorded itself as
+// done: every API call the app made then re-ran a scan of every grow and a
+// failing batch before getting to its own work.
+//
+// So: the marker lives in the database rather than in a module variable, and
+// the flag is set whatever happens. The work is attempted once per deploy at
+// the very most, and a failure costs one request rather than all of them.
+const SWEEP_MARKER = "strain_privacy_sweep_v1";
 let _privacySwept = false;
+
 export async function ensureStrainPrivacy(env, userId) {
   if (_privacySwept) return;
+  // Set first. Nothing here is worth a second attempt inside one isolate, and
+  // a failing attempt least of all.
+  _privacySwept = true;
   try {
+    await env.DB.prepare(
+      "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)"
+    ).run();
+    const done = await env.DB.prepare(
+      "SELECT value FROM settings WHERE key = ?"
+    ).bind(SWEEP_MARKER).first();
+    if (done) return;
+
     await purgeNonPublicStrains(env, userId);
-    _privacySwept = true;
-  } catch { /* retried on the next request rather than cached as done */ }
+    await env.DB.prepare(
+      "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)"
+    ).bind(SWEEP_MARKER, new Date().toISOString()).run();
+  } catch (err) {
+    // A sweep that cannot run leaves a privacy job undone, which is worth
+    // knowing about. It is not worth failing the request it rode in on, and
+    // not worth retrying in front of every request either.
+    logError("strain-privacy-sweep", { message: String(err?.message ?? err) });
+  }
 }
 
 /**
