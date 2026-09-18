@@ -1,6 +1,9 @@
 node_modules
 dist
 .vite
+# Vite writes one of these beside the config on every build and removes it when
+# the build finishes. A build killed partway leaves it behind.
+vite.config.js.timestamp-*
 
 .env
 .env.local
