@@ -107,12 +107,32 @@ test("a label with nothing but a name still draws on both", () => {
   }
 });
 
-test("the colour label draws inside a margin a desktop printer can hold", () => {
-  // It is for a home inkjet or laser, neither of which prints to the trim, so
-  // nothing may be drawn against the edge of the sheet.
-  const src = new URL("../src/lib/growLabelColor.js", import.meta.url).pathname;
-  const text = readFileSync(src, "utf8");
-  const margin = /const MARGIN = (\d+)/.exec(text);
-  assert.ok(margin, "MARGIN is gone");
-  assert.ok(Number(margin[1]) >= 45, "a margin under 0.15in is inside what a tray can hold");
+const colourSrc = readFileSync(
+  new URL("../src/lib/growLabelColor.js", import.meta.url).pathname, "utf8");
+
+test("the colour label is one flat colour, corner to corner", () => {
+  // It bleeds on purpose: no white margin, no panel inside a border, and no
+  // gradient on the ground. The ground is filled once, across the whole canvas.
+  assert.match(colourSrc, /ctx\.fillStyle = INK;\s*\n\s*ctx\.fillRect\(0, 0, LABEL_W, LABEL_H\)/);
+  assert.ok(!/const MARGIN/.test(colourSrc), "a margin would put white back on the outside");
+});
+
+test("the colour label is set in something playful, Comic Sans first", () => {
+  const face = /const FACE =([\s\S]*?);\n/.exec(colourSrc);
+  assert.ok(face, "FACE is gone");
+  assert.match(face[1], /^\s*`"Comic Sans MS"/, "Comic Sans has to lead the stack");
+  // A device without it must land on another informal face rather than on a
+  // workaday sans, which would quietly undo the whole point.
+  for (const fallback of ["Chalkboard", "Marker Felt", "cursive"]) {
+    assert.ok(face[1].includes(fallback), `the stack lost its ${fallback} fallback`);
+  }
+  assert.ok(!/Helvetica|Arial|Courier/.test(face[1]), "a plain fallback defeats the choice");
+});
+
+test("nothing asks for a weight the font does not ship", () => {
+  // Comic Sans has Regular and Bold and nothing else. Asking for 800 makes the
+  // browser smear the bold one, which shows at 300dpi.
+  const weights = [...colourSrc.matchAll(/`(\d00) /g)].map((m) => Number(m[1]));
+  const tooHeavy = [...new Set(weights)].filter((w) => w > 700);
+  assert.deepEqual(tooHeavy, [], `weights above 700 get synthesised: ${tooHeavy.join(", ")}`);
 });

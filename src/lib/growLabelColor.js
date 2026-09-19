@@ -4,17 +4,24 @@
 // same labelFields() spec, so flipping between the two never changes a word.
 // What changes is everything about how it is set.
 //
-// It is built for a home inkjet or laser, which is why the ink stops well short
-// of the trim: a desktop printer cannot print to the edge of a sheet, so a
-// design that bleeds comes back with a white hairline down one side and the
-// composition off-centre. The dark ground is a PANEL inside a white margin
-// instead. That keeps the brand's near-black without asking the printer for
-// something it cannot do. It is still a lot of toner; on a laser it comes out
-// crisp, on an inkjet give it a minute before it goes near a jar.
+// One flat colour, corner to corner. No white margin, no panel inside a border,
+// no gradient on the ground: the label is one field of near-black and the
+// design sits on it. That means it bleeds, which is a real thing to know before
+// printing. Die-cut label stock is fine, because each label sits inset from the
+// edge of the sheet and the printer never has to reach the paper's edge.
+// Printing onto a plain sheet and cutting it out is not: a desktop printer
+// cannot lay ink to the trim, so the dark stops early on one side.
+//
+// It is a lot of toner either way. On a laser it comes out crisp; on an inkjet
+// give it a minute before it goes near a jar.
 //
 // The palette is the app's own and nothing else: near-black ground, hazel, and
 // a warm off-white for type. Every jar on the shelf reads as one brand, which
 // is the entire job of a brand.
+//
+// The type is deliberately not the app's. The black-and-white label is a
+// document and is set like one; this one is a product label on a jar somebody
+// hands to a friend, so it is set in something with a bit of a grin.
 
 import {
   CAT_HEAD, CAT_INNER_EARS, CAT_EYE_L, CAT_EYE_R, CAT_PUPILS, CAT_GLINTS,
@@ -25,8 +32,7 @@ import { LABEL_W, LABEL_H } from "./growLabel.js";
 export { LABEL_W, LABEL_H };
 
 // The app's palette, verbatim. See src/styles.css.
-const INK = "#0c0b0a";        // near-black ground
-const INK_LIFT = "#17130e";   // the top of the ground's gradient
+const INK = "#0c0b0a";        // near-black ground, flat, corner to corner
 const HAZEL = "#e0913f";
 const HAZEL_LIT = "#f0ad5f";  // the lit edge of a hazel face
 const HAZEL_DEEP = "#b8712c"; // its shadowed edge
@@ -34,14 +40,22 @@ const CREAM = "#f5f0e8";
 const MUTED = "#a0917c";
 const PAPER = "#ffffff";
 
-// A desktop printer holds about 0.17in of margin at best. 60px at 300dpi is
-// 0.2in, which clears every consumer tray without eating the composition.
-const MARGIN = 60;
-const RADIUS = 34;
-const PAD = 62;               // panel edge to content
+// Full bleed: the colour runs off all four edges. PAD is the only inset, and it
+// is where content starts rather than where the ink does.
+const PAD = 96;
 
-const UI = `"Helvetica Neue", Helvetica, Arial, sans-serif`;
-const MONO = `"Courier New", Courier, monospace`;
+/**
+ * One typeface for the whole label, and a playful one on purpose.
+ *
+ * Comic Sans first because it was asked for by name and it is on essentially
+ * every Windows and Mac. The rest are the friendly faces each platform actually
+ * ships, in the order they are likely to exist, so a device without Comic Sans
+ * lands on something in the same spirit rather than falling back to Helvetica
+ * and quietly undoing the whole point. `cursive` is the last resort, which the
+ * browser maps to whatever informal face it has.
+ */
+const FACE = `"Comic Sans MS", "Comic Neue", "Chalkboard SE", "Chalkboard", ` +
+  `"Marker Felt", "Segoe Print", "Bradley Hand", cursive`;
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -191,7 +205,7 @@ function drawQr(ctx, matrix, x, y, box) {
 
 /** A small caps tag in hazel, the label's one voice for naming a field. */
 function tag(ctx, text, x, y, px = 30) {
-  ctx.font = `800 ${px}px ${UI}`;
+  ctx.font = `700 ${px}px ${FACE}`;
   ctx.fillStyle = HAZEL;
   drawTracked(ctx, text.toUpperCase(), x, y, 3.4);
 }
@@ -206,45 +220,24 @@ export function drawColorLabel(canvas, spec, matrix) {
   const ctx = canvas.getContext("2d");
   ctx.textBaseline = "alphabetic";
 
-  // The sheet. White to the trim, because the printer decides where the trim
-  // actually falls and it is never quite where the file says.
-  ctx.fillStyle = PAPER;
+  // One flat colour, corner to corner. No margin, no panel, no gradient: the
+  // whole label is this field and everything else sits on top of it.
+  ctx.fillStyle = INK;
   ctx.fillRect(0, 0, LABEL_W, LABEL_H);
 
-  // The panel: the near-black ground, lifted slightly at the top so a large
-  // flat field has somewhere for the eye to go.
-  const px0 = MARGIN;
-  const py0 = MARGIN;
-  const pw = LABEL_W - MARGIN * 2;
-  const ph = LABEL_H - MARGIN * 2;
-  const ground = ctx.createLinearGradient(0, py0, 0, py0 + ph);
-  ground.addColorStop(0, INK_LIFT);
-  ground.addColorStop(0.45, INK);
-  ground.addColorStop(1, INK);
-  ctx.fillStyle = ground;
-  roundRect(ctx, px0, py0, pw, ph, RADIUS);
-  ctx.fill();
-
-  // A hazel hairline just inside the panel edge. It is what tells the eye the
-  // dark is deliberate rather than a printing accident.
-  ctx.strokeStyle = "rgba(224,145,63,0.45)";
-  ctx.lineWidth = 3;
-  roundRect(ctx, px0 + 16, py0 + 16, pw - 32, ph - 32, RADIUS - 10);
-  ctx.stroke();
-
-  const left = px0 + PAD;
-  const right = px0 + pw - PAD;
-  const bottom = py0 + ph - PAD;
+  const left = PAD;
+  const right = LABEL_W - PAD;
+  const bottom = LABEL_H - PAD;
 
   // ── Masthead ──────────────────────────────────────────────────────────────
   const markW = 116;
-  const markTop = py0 + PAD - 6;
+  const markTop = PAD - 6;
   drawCatMark(ctx, left, markTop, markW);
 
-  ctx.font = `800 40px ${UI}`;
+  ctx.font = `700 40px ${FACE}`;
   ctx.fillStyle = CREAM;
   drawTracked(ctx, "BLACK CAT BOTANICALS", left + markW + 30, markTop + 58, 5.2);
-  ctx.font = `600 23px ${UI}`;
+  ctx.font = `400 23px ${FACE}`;
   ctx.fillStyle = MUTED;
   drawTracked(ctx, "CULTIVATED AND PACKED BY HAND", left + markW + 32, markTop + 96, 3.4);
 
@@ -275,7 +268,7 @@ export function drawColorLabel(canvas, spec, matrix) {
   const gridLines = Math.ceil(gridRows.length / cols);
   const ROW_PITCH = 104;
 
-  const namePx = fitText(ctx, spec.name, headW, 132, UI, 800, 54);
+  const namePx = fitText(ctx, spec.name, headW, 132, FACE, 700, 54);
   const heights = [namePx + 16];
   if (spec.variety) heights.push(60);
   if (potency) heights.push(124);
@@ -296,14 +289,14 @@ export function drawColorLabel(canvas, spec, matrix) {
   const qrY = stackTop;
 
   const nameTop = stackTop;
-  ctx.font = `800 ${namePx}px ${UI}`;
+  ctx.font = `700 ${namePx}px ${FACE}`;
   ctx.fillStyle = CREAM;
   ctx.fillText(spec.name, left, nameTop + namePx);
 
   let chipBottom = nameTop + heights[0];
   if (spec.variety) {
     const word = spec.variety.toUpperCase();
-    ctx.font = `800 34px ${UI}`;
+    ctx.font = `700 34px ${FACE}`;
     const chipW = trackedWidth(ctx, word, 4.6) + 46;
     const chipH = 60;
     const chipTop = chipBottom + gap;
@@ -311,7 +304,7 @@ export function drawColorLabel(canvas, spec, matrix) {
     roundRect(ctx, left, chipTop, chipW, chipH, 12);
     ctx.fill();
     ctx.fillStyle = INK;
-    ctx.font = `800 34px ${UI}`;
+    ctx.font = `700 34px ${FACE}`;
     drawTracked(ctx, word, left + 23, chipTop + 42, 4.6);
     chipBottom = chipTop + chipH;
   }
@@ -335,14 +328,14 @@ export function drawColorLabel(canvas, spec, matrix) {
     ctx.fill();
 
     const mid = dataTop + badgeH / 2;
-    ctx.font = `800 30px ${UI}`;
+    ctx.font = `700 30px ${FACE}`;
     ctx.fillStyle = "rgba(12,11,10,0.66)";
     drawTracked(ctx, label, left + 34, mid + 11, 3.8);
 
-    ctx.font = `800 30px ${UI}`;
+    ctx.font = `700 30px ${FACE}`;
     const labelW = trackedWidth(ctx, label, 3.8);
-    const valuePx = fitText(ctx, potency.value, headW - labelW - 110, 74, MONO, 700, 40);
-    ctx.font = `700 ${valuePx}px ${MONO}`;
+    const valuePx = fitText(ctx, potency.value, headW - labelW - 110, 74, FACE, 700, 40);
+    ctx.font = `700 ${valuePx}px ${FACE}`;
     ctx.fillStyle = INK;
     const valueW = ctx.measureText(potency.value).width;
     ctx.fillText(potency.value, left + headW - 34 - valueW, mid + valuePx * 0.36);
@@ -360,8 +353,8 @@ export function drawColorLabel(canvas, spec, matrix) {
     const cx = left + (i % cols) * colW;
     const cy = dataTop + Math.floor(i / cols) * ROW_PITCH;
     tag(ctx, row.label, cx, cy + 26);
-    const valuePx = fitText(ctx, row.value, colW - 30, 46, MONO, 700, 26);
-    ctx.font = `700 ${valuePx}px ${MONO}`;
+    const valuePx = fitText(ctx, row.value, colW - 30, 46, FACE, 700, 26);
+    ctx.font = `700 ${valuePx}px ${FACE}`;
     ctx.fillStyle = CREAM;
     ctx.fillText(row.value, cx, cy + 78);
   });
@@ -376,12 +369,12 @@ export function drawColorLabel(canvas, spec, matrix) {
     ctx.fillRect(left, dataTop, right - left, 2);
 
     tag(ctx, "Terpenes", left, bandTop, 26);
-    ctx.font = `800 26px ${UI}`;
+    ctx.font = `700 26px ${FACE}`;
     let tx = left + trackedWidth(ctx, "TERPENES", 3.4) + 34;
 
     for (const t of spec.terpenes) {
       const text = t.pct ? `${t.name} ${t.pct}` : t.name;
-      ctx.font = `700 30px ${MONO}`;
+      ctx.font = `700 30px ${FACE}`;
       const w = ctx.measureText(text).width;
       // Drop the rest rather than running off the panel. The preview shows the
       // drop, so a list that is too long is visibly too long before it prints.
@@ -399,7 +392,7 @@ export function drawColorLabel(canvas, spec, matrix) {
   if (matrix) {
     drawQr(ctx, matrix, qrX, qrY, qrBox);
     // What the square is for. Without it a code on a jar is just a square.
-    ctx.font = `700 21px ${UI}`;
+    ctx.font = `700 21px ${FACE}`;
     ctx.fillStyle = MUTED;
     drawTracked(ctx, "SCAN FOR THIS VARIETY", qrX + qrBox / 2, qrY + qrBox + 34, 2.6, "center");
   }
