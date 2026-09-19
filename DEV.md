@@ -758,6 +758,68 @@ a grow that finished in June opened on September and showed a blank grid. It
 lands on the month of the last thing written in the space instead, which is why
 the spaces payload carries `lastDate`.
 
+## The long list, and what measuring said
+
+The plan here was a memo pass on the Calendar. Measuring killed that idea and
+found a real problem somewhere else, which is the whole argument for measuring.
+
+**The Calendar was never slow.** It re-renders zero times when a day opens, when
+the day closes, when MJ opens, and while typing into MJ, because it is unmounted
+under the day view and no chat state sits above it. `React.memo` there would have
+been ceremony.
+
+**The strain library was slow, and only at size.** On a mid-range phone (6x CPU
+throttle) with 180 strains:
+
+```
+                    before            after
+open the library    601ms   1505ms    101ms   407ms
+type in the search  170ms    414ms      0       0
+clear the search    847ms   1084ms      0       0
+```
+
+Three things, in the order they matter:
+
+1. **Only the visible rows are mounted.** `src/lib/windowedList.js` plus
+   `useWindowedRows.js`. Twenty-three rows exist at a time instead of 183, which
+   is what took the open from 601ms to 101ms. Memo cannot do this: it skips
+   re-renders, and a first mount is not one.
+2. **The search is deferred.** `useDeferredValue` lets the keystroke paint and
+   the list catch up, which is why typing costs nothing now.
+3. **The row is memoized**, with `useCallback` on both handlers it takes. A
+   fresh arrow per row would change every row's props every render and memo
+   would skip nothing.
+
+### It is exact, not estimated
+
+Row height comes from the strain, not from measuring the page: both text lines
+are clipped to one line with an ellipsis, so nothing wraps, and the only thing
+that varies is the star rating. Two heights, known before anything renders, so
+the offsets are computed up front and the window never drifts the way a guessed
+average does. `test/windowed-list.test.js` pins the styles those constants come
+from, so moving the row's padding fails a test rather than showing up as a list
+that scrolls slightly wrong.
+
+### Under 60 rows, none of this runs
+
+Windowing is the fiddliest code in any list and buys nothing on forty rows, so
+below `WINDOW_THRESHOLD` the plain path runs: no spacers, no listener, no
+range maths.
+
+### The bug worth remembering
+
+Scroll events **do not bubble**. The first version listened on `window`, which
+hears the document and nothing else, and several screens in this app are a
+fixed box with `overflow: auto` inside. So on those screens the range was
+measured once and never again: the same twenty-three rows stayed mounted while
+the spacer slid past underneath them. The list looked fast and was simply
+broken, and the performance numbers looked *better* than the real fix because
+it had stopped doing any work.
+
+The listener is registered in the capture phase on `document`, which is the
+only way to hear scroll from an arbitrary element. There is a test for exactly
+that, and it fails if anyone puts it back on `window`.
+
 ## Reduced motion
 
 The device asks for less motion; the app listens in two halves, because there

@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { memo, useCallback, useDeferredValue, useMemo, useState } from "react";
+import { useWindowedRows } from "../lib/useWindowedRows.js";
+import { rowHeight } from "../lib/strainRowHeight.js";
 import { AnimatePresence } from "framer-motion";
 import { ChevronRight, Heart, Plus, Search, Sprout, X } from "lucide-react";
 import ScreenHeader from "./ScreenHeader.jsx";
@@ -42,7 +44,7 @@ function Cover({ strain }) {
 // One strain in the list. Everything you need to recognise it, plus the one
 // action worth having here: the heart, because favouriting should never cost
 // you a screen.
-function StrainRow({ strain, onOpen, onToggleFavorite, last }) {
+const StrainRow = memo(function StrainRow({ strain, onOpen, onToggleFavorite, last }) {
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 4,
@@ -105,7 +107,7 @@ function StrainRow({ strain, onOpen, onToggleFavorite, last }) {
       </button>
     </div>
   );
-}
+});
 
 function Section({ title, count, children }) {
   return (
@@ -140,9 +142,13 @@ export default function StrainLibrary({ onClose }) {
   const [openKey, setOpenKey] = useState(null);
   const [adding, setAdding] = useState(false);
 
+  // The field updates on the keystroke; the list is allowed to arrive a beat
+  // later. Without this every character re-filters and re-renders the whole
+  // library before the letter you typed appears.
+  const deferredQuery = useDeferredValue(query);
   const visible = useMemo(
-    () => filterStrains(strains, { query, filter, crop: mixed ? cropFilter : "all" }),
-    [strains, query, filter, cropFilter, mixed],
+    () => filterStrains(strains, { query: deferredQuery, filter, crop: mixed ? cropFilter : "all" }),
+    [strains, deferredQuery, filter, cropFilter, mixed],
   );
   // The open strain is looked up fresh every render, so a star tapped on its
   // own page is reflected here the moment the save lands.
@@ -150,11 +156,19 @@ export default function StrainLibrary({ onClose }) {
 
   // Sections only earn their keep on the unfiltered list. Once you have typed
   // a search or picked a filter, one flat list of answers reads better.
-  const grouped = !query.trim() && filter === "all" && cropFilter === "all";
+  const grouped = !deferredQuery.trim() && filter === "all" && cropFilter === "all";
   const growing = grouped ? visible.filter((s) => s.growingNow) : [];
   const rest = grouped ? visible.filter((s) => !s.growingNow) : visible;
 
-  const toggleFavorite = (s) => save(s.name, { favorite: !s.favorite });
+  // Only the long section is windowed. "Growing now" is bounded by how many
+  // plants are in the ground, which is never the list that hurts.
+  const restHeights = useMemo(() => rest.map(rowHeight), [rest]);
+  const win = useWindowedRows(restHeights);
+
+  // Both handlers are stable, because a new arrow function per row would change
+  // every row's props on every render and memo would never skip a thing.
+  const toggleFavorite = useCallback((s) => save(s.name, { favorite: !s.favorite }), [save]);
+  const openStrain = useCallback((x) => setOpenKey(x.key), []);
 
   return (
     <div>
@@ -294,7 +308,7 @@ export default function StrainLibrary({ onClose }) {
           <Section title="Growing now" count={growing.length}>
             {growing.map((s, i) => (
               <StrainRow
-                key={s.key} strain={s} onOpen={(x) => setOpenKey(x.key)}
+                key={s.key} strain={s} onOpen={openStrain}
                 onToggleFavorite={toggleFavorite} last={i === growing.length - 1}
               />
             ))}
@@ -305,12 +319,17 @@ export default function StrainLibrary({ onClose }) {
           <Section
             title={grouped && growing.length > 0 ? "Everything else" : "Strains"}
             count={rest.length}>
-            {rest.map((s, i) => (
-              <StrainRow
-                key={s.key} strain={s} onOpen={(x) => setOpenKey(x.key)}
-                onToggleFavorite={toggleFavorite} last={i === rest.length - 1}
-              />
-            ))}
+            <div ref={win.ref}>
+              {win.padTop > 0 && <div style={{ height: win.padTop }} aria-hidden="true" />}
+              {rest.slice(win.start, win.end).map((s, i) => (
+                <StrainRow
+                  key={s.key} strain={s} onOpen={openStrain}
+                  onToggleFavorite={toggleFavorite}
+                  last={win.start + i === rest.length - 1}
+                />
+              ))}
+              {win.padBottom > 0 && <div style={{ height: win.padBottom }} aria-hidden="true" />}
+            </div>
           </Section>
         )}
 
