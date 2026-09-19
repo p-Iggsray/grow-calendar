@@ -3,6 +3,8 @@ import { X, Download, Loader2, Plus, Trash2 } from "lucide-react";
 import Portal from "./Portal.jsx";
 import { qrMatrix } from "../lib/qr.js";
 import { drawLabel, labelDraft, labelFields, LABEL_W, LABEL_H } from "../lib/growLabel.js";
+import { drawColorLabel } from "../lib/growLabelColor.js";
+import { LABEL_VARIANTS, labelVariant, rememberLabelVariant, variantSuffix } from "../lib/labelVariant.js";
 import { photoFileFrom, savePhotoFile, saveOutcomeMessage } from "../lib/savePhoto.js";
 import { api, ymd } from "../lib/api.js";
 import { strainPagePath } from "../lib/strainPage.js";
@@ -72,6 +74,9 @@ export default function StrainLabel({ strain, onClose }) {
   const [file, setFile] = useState(null);
   const [state, setState] = useState("");
   const [error, setError] = useState(null);
+  // Which of the two labels. Remembered per device, because it tracks which
+  // printer is on the desk rather than anything about the jar.
+  const [variant, setVariant] = useState(labelVariant);
 
   const set = (k, v) => setDraft((d) => ({ ...d, [k]: v }));
   const setTerp = (i, k, v) => setDraft((d) => {
@@ -105,7 +110,9 @@ export default function StrainLabel({ strain, onClose }) {
     return () => { live = false; };
   }, [draft.name]);
 
-  const filename = `${(draft.name || "label").replace(/[^\w-]+/g, "-").toLowerCase()}-label.png`;
+  // The variant is in the name, so the two files sit side by side in a camera
+  // roll instead of one quietly replacing the other.
+  const filename = `${(draft.name || "label").replace(/[^\w-]+/g, "-").toLowerCase()}-label-${variantSuffix(variant)}.png`;
 
   const render = useCallback(() => {
     const canvas = canvasRef.current;
@@ -115,13 +122,15 @@ export default function StrainLabel({ strain, onClose }) {
     // is, how it grows, what it tastes of. Not this jar, and not your records -
     // hand somebody a jar and they can read about the plant, not about you.
     const slug = strainPagePath(pageCode);
-    drawLabel(canvas, spec, slug ? qrMatrix(`${window.location.origin}${slug}`) : null);
+    const matrix = slug ? qrMatrix(`${window.location.origin}${slug}`) : null;
+    // Both take the same spec, so flipping never changes a word on the jar.
+    (variant === "plain" ? drawLabel : drawColorLabel)(canvas, spec, matrix);
     setFile(null);
     canvas.toBlob((blob) => {
       if (!blob) return;
       photoFileFrom(blob, filename).then(setFile).catch(() => setFile(null));
     }, "image/png");
-  }, [draft, filename, pageCode]);
+  }, [draft, filename, pageCode, variant]);
 
   useEffect(() => {
     const t = setTimeout(render, 180);
@@ -179,6 +188,42 @@ export default function StrainLabel({ strain, onClose }) {
             </button>
           </div>
 
+          {/* Which of the two, sitting on the preview it changes. Both carry
+              the same fields; only the treatment differs. */}
+          <div
+            role="radiogroup"
+            aria-label="Label style"
+            style={{
+              display: "flex", gap: 4, marginBottom: 10, padding: 4,
+              background: "var(--c-input-bg)", borderRadius: 12,
+              border: "1px solid var(--c-border)",
+            }}>
+            {LABEL_VARIANTS.map((v) => {
+              const on = variant === v.value;
+              return (
+                <button
+                  key={v.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => { tapHaptic(); setVariant(v.value); rememberLabelVariant(v.value); }}
+                  style={{
+                    flex: 1, padding: "9px 8px", borderRadius: 9, cursor: "pointer",
+                    background: on ? "rgba(var(--c-accent-rgb), 0.16)" : "none",
+                    border: `1px solid ${on ? "rgba(var(--c-accent-rgb), 0.4)" : "transparent"}`,
+                    color: on ? "var(--c-accent)" : "var(--c-text-muted)",
+                    fontFamily: UI, fontSize: 13, fontWeight: on ? 750 : 600,
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
+                  }}>
+                  {v.label}
+                  <span style={{ fontSize: 10.5, fontWeight: 600, color: "var(--c-text-ghost)" }}>
+                    {v.hint}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* The preview IS the file. */}
           <div style={{
             background: "#fff", borderRadius: 10, overflow: "hidden",
@@ -189,7 +234,7 @@ export default function StrainLabel({ strain, onClose }) {
               width={LABEL_W}
               height={LABEL_H}
               style={{ width: "100%", height: "auto", display: "block" }}
-              aria-label={`Label preview for ${draft.name || "this strain"}`}
+              aria-label={`${variant === "plain" ? "Black and white" : "Colour"} label preview for ${draft.name || "this strain"}`}
             />
           </div>
 
