@@ -28,6 +28,7 @@ import {
   CAT_NOSE, CAT_MOUTH, CAT_WHISKERS,
 } from "./catMark.js";
 import { LABEL_W, LABEL_H } from "./growLabel.js";
+import { LABEL_FONT } from "./labelFont.js";
 
 export { LABEL_W, LABEL_H };
 
@@ -47,14 +48,20 @@ const PAD = 96;
 /**
  * One typeface for the whole label, and a playful one on purpose.
  *
- * Comic Sans first because it was asked for by name and it is on essentially
- * every Windows and Mac. The rest are the friendly faces each platform actually
- * ships, in the order they are likely to exist, so a device without Comic Sans
- * lands on something in the same spirit rather than falling back to Helvetica
- * and quietly undoing the whole point. `cursive` is the last resort, which the
- * browser maps to whatever informal face it has.
+ * Comic Neue leads because it is the one face that is actually HERE: bundled
+ * with the app under the OFL, so the label looks the same on a Windows desktop,
+ * an iPhone and somebody else's Android. It is a cleaned-up Comic Sans, which
+ * is the brief.
+ *
+ * The rest are the informal faces each platform ships, kept as a net in case
+ * the bundled file has not arrived yet. `cursive` is the last resort. Nothing
+ * workaday is in this list on purpose: a fallback to Helvetica would quietly
+ * undo the whole point, so a miss lands on something else with a grin.
+ *
+ * The draw waits on the bundled file before using this; see labelFont.js for
+ * why canvas makes that necessary.
  */
-const FACE = `"Comic Sans MS", "Comic Neue", "Chalkboard SE", "Chalkboard", ` +
+const FACE = `"${LABEL_FONT}", "Comic Sans MS", "Chalkboard SE", "Chalkboard", ` +
   `"Marker Felt", "Segoe Print", "Bradley Hand", cursive`;
 
 function roundRect(ctx, x, y, w, h, r) {

@@ -4,6 +4,7 @@ import Portal from "./Portal.jsx";
 import { qrMatrix } from "../lib/qr.js";
 import { drawLabel, labelDraft, labelFields, LABEL_W, LABEL_H } from "../lib/growLabel.js";
 import { drawColorLabel } from "../lib/growLabelColor.js";
+import { ensureLabelFont } from "../lib/labelFont.js";
 import { LABEL_VARIANTS, labelVariant, rememberLabelVariant, variantSuffix } from "../lib/labelVariant.js";
 import { photoFileFrom, savePhotoFile, saveOutcomeMessage } from "../lib/savePhoto.js";
 import { api, ymd } from "../lib/api.js";
@@ -114,9 +115,15 @@ export default function StrainLabel({ strain, onClose }) {
   // roll instead of one quietly replacing the other.
   const filename = `${(draft.name || "label").replace(/[^\w-]+/g, "-").toLowerCase()}-label-${variantSuffix(variant)}.png`;
 
-  const render = useCallback(() => {
+  const render = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    // Canvas draws in the fallback face without a word of complaint if the
+    // bundled font has not arrived, so the colour label waits for it. Resolves
+    // either way: a font that never loads still gets a printable label.
+    if (variant !== "plain") await ensureLabelFont();
+    if (!canvasRef.current) return;              // sheet closed while waiting
+
     const spec = labelFields(draft);
     // The code opens a public page about the strain itself: what the variety
     // is, how it grows, what it tastes of. Not this jar, and not your records -

@@ -1,3 +1,31 @@
+/* Comic Neue, bundled rather than borrowed from the device.
+ *
+ * It is used by exactly one thing: the colour jar label. Comic Sans is on
+ * Windows and most Macs but not on iOS, Android or Linux, so a label that
+ * leaned on the device would change face depending on who opened the app,
+ * which is not what a brand label can do. 40KB for the two weights.
+ *
+ * SIL Open Font License 1.1, and the licence travels with the files:
+ * public/fonts/comic-neue-OFL.txt.
+ *
+ * `swap` because nothing in the app's chrome uses this face, so there is no
+ * text waiting on it. The canvas does not respect font-display at all, which
+ * is why the label draw waits on document.fonts; see src/lib/labelFont.js. */
+@font-face {
+  font-family: "Comic Neue";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/comic-neue-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Comic Neue";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/comic-neue-700.woff2") format("woff2");
+}
+
 :root {
   color-scheme: dark;
 

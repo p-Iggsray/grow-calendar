@@ -6,7 +6,7 @@ import {
 import { labelFields } from "../src/lib/growLabel.js";
 import { drawLabel, LABEL_W, LABEL_H } from "../src/lib/growLabel.js";
 import { drawColorLabel } from "../src/lib/growLabelColor.js";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 
 test("there are exactly two labels, and the colour one is the default", () => {
   assert.deepEqual(LABEL_VARIANTS.map((v) => v.value), ["colour", "plain"]);
@@ -117,16 +117,54 @@ test("the colour label is one flat colour, corner to corner", () => {
   assert.ok(!/const MARGIN/.test(colourSrc), "a margin would put white back on the outside");
 });
 
-test("the colour label is set in something playful, Comic Sans first", () => {
+test("the colour label leads with the font that is actually bundled", () => {
   const face = /const FACE =([\s\S]*?);\n/.exec(colourSrc);
   assert.ok(face, "FACE is gone");
-  assert.match(face[1], /^\s*`"Comic Sans MS"/, "Comic Sans has to lead the stack");
-  // A device without it must land on another informal face rather than on a
-  // workaday sans, which would quietly undo the whole point.
-  for (const fallback of ["Chalkboard", "Marker Felt", "cursive"]) {
+  // Comic Neue ships with the app, so it is the only entry guaranteed to exist
+  // on whatever device opens this. A system font leading the stack would put
+  // the label back to looking different per platform.
+  assert.match(face[1], /^\s*`"\$\{LABEL_FONT\}"/, "the bundled font has to lead the stack");
+  for (const fallback of ["Comic Sans MS", "Chalkboard", "Marker Felt", "cursive"]) {
     assert.ok(face[1].includes(fallback), `the stack lost its ${fallback} fallback`);
   }
   assert.ok(!/Helvetica|Arial|Courier/.test(face[1]), "a plain fallback defeats the choice");
+});
+
+test("the bundled font is on disk, in both weights, with its licence", () => {
+  // Every weight the label asks for needs a file behind it, and the OFL
+  // requires the licence to travel with the font.
+  const at = (f) => new URL(`../public/fonts/${f}`, import.meta.url).pathname;
+  for (const f of ["comic-neue-400.woff2", "comic-neue-700.woff2"]) {
+    assert.ok(statSync(at(f)).size > 5000, `${f} is missing or truncated`);
+  }
+  const licence = readFileSync(at("comic-neue-OFL.txt"), "utf8");
+  assert.match(licence, /SIL Open Font License/);
+});
+
+test("every weight the label draws has a face declared for it", () => {
+  // A weight with no @font-face resolves instantly and silently draws in the
+  // fallback, which is the whole class of bug labelFont.js exists to stop.
+  const css = readFileSync(new URL("../src/styles.css", import.meta.url).pathname, "utf8");
+  const declared = new Set(
+    [...css.matchAll(/@font-face\s*\{[^}]*?font-family:\s*"Comic Neue"[^}]*?font-weight:\s*(\d+)/gs)]
+      .map((m) => Number(m[1])));
+  const asked = new Set([...colourSrc.matchAll(/`(\d00) /g)].map((m) => Number(m[1])));
+  for (const w of asked) {
+    assert.ok(declared.has(w), `the label draws at weight ${w} with no @font-face for it`);
+  }
+});
+
+test("the label waits for the font before it draws", () => {
+  // Canvas does not wait and does not complain: without this the colour label
+  // silently renders in the fallback on a cold open.
+  const sheet = readFileSync(
+    new URL("../src/components/StrainLabel.jsx", import.meta.url).pathname, "utf8");
+  assert.match(sheet, /await ensureLabelFont\(\)/);
+  const fontSrc = readFileSync(
+    new URL("../src/lib/labelFont.js", import.meta.url).pathname, "utf8");
+  // And it must never reject: a font that fails to load is a label in the
+  // fallback, not an empty preview.
+  assert.match(fontSrc, /catch\s*\{\s*\n?\s*return false;/);
 });
 
 test("nothing asks for a weight the font does not ship", () => {
