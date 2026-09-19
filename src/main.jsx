@@ -1,6 +1,6 @@
 import { StrictMode, lazy, Suspense, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, MotionConfig, useReducedMotion } from "framer-motion";
 import LoginGate from "./components/LoginGate.jsx";
 import Splash from "./components/Splash.jsx";
 import { AppShellSkeleton } from "./components/LoadingScreens.jsx";
@@ -163,21 +163,41 @@ if ("serviceWorker" in navigator) {
 // Detect buddy / share-link routes before mounting the auth stack.
 const _shareMatch = window.location.pathname.match(/^\/share\/([A-Za-z0-9_-]{10,60})$/);
 
+// Reduced motion, for the whole app, from one line.
+//
+// Twenty-five components animate with framer-motion and four of them asked
+// whether the device wanted motion. The other twenty-one slid, scaled and flew
+// regardless, and the `transition: none` in styles.css never touched them:
+// framer-motion animates by writing inline styles from JavaScript, so there is
+// no CSS transition there to cancel.
+//
+// `reducedMotion="user"` is the setting that fixes all of them at once. When
+// the device asks for less motion it drops transform and layout animations and
+// leaves opacity alone, which is the distinction that matters: a thing that
+// fades is telling you it changed, a thing that slides across the screen is
+// what makes people ill. Elements snap to their target rather than sticking at
+// their starting transform, so a sheet that would have slid up is simply
+// already there.
+//
+// It wraps both apps, because the friend view is somebody else's device and
+// their setting counts too.
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <ErrorBoundary>
-      <ToastProvider>
-        {_shareMatch ? (
-          <Suspense fallback={<AppShellSkeleton />}>
-            <BuddyView token={_shareMatch[1]} />
-          </Suspense>
-        ) : (
-          <AuthProvider>
-            <Root />
-          </AuthProvider>
-        )}
-        <Toast />
-      </ToastProvider>
-    </ErrorBoundary>
+    <MotionConfig reducedMotion="user">
+      <ErrorBoundary>
+        <ToastProvider>
+          {_shareMatch ? (
+            <Suspense fallback={<AppShellSkeleton />}>
+              <BuddyView token={_shareMatch[1]} />
+            </Suspense>
+          ) : (
+            <AuthProvider>
+              <Root />
+            </AuthProvider>
+          )}
+          <Toast />
+        </ToastProvider>
+      </ErrorBoundary>
+    </MotionConfig>
   </StrictMode>
 );

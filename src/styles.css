@@ -261,6 +261,26 @@ textarea {
   to { transform: rotate(360deg); }
 }
 
+/* The one way to spin something.
+ *
+ * It used to be written inline at every call site, which meant it could not be
+ * turned off: an inline style beats any stylesheet rule, so the reduced-motion
+ * block below would have been powerless over it. As a class it is one rule to
+ * change and one rule to override.
+ *
+ * (There was a `className="spin"` in the label sheet with no rule behind it,
+ * so that spinner has been sitting still next to the word "Saving" this whole
+ * time. It spins now.) */
+.spin {
+  animation: spin 1s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+@keyframes spinner-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
 @keyframes today-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(224, 145, 63, 0.5); }
   50%      { box-shadow: 0 0 0 6px rgba(224, 145, 63, 0); }
@@ -288,10 +308,27 @@ textarea {
   border-radius: 8px;
 }
 
+/* What the device asks for, honoured.
+ *
+ * This block only reaches CSS. Framer Motion animates by writing inline styles
+ * from JavaScript, so `transition: none` never touched any of it; that half is
+ * handled by <MotionConfig reducedMotion="user"> in main.jsx, which drops
+ * transform and layout animations across every motion component at once while
+ * leaving opacity alone.
+ *
+ * Reduced motion is not no motion. A thing that fades is telling you it
+ * changed; a thing that slides, scales or spins is what makes people ill. So
+ * fades stay and movement goes. */
 @media (prefers-reduced-motion: reduce) {
   .cell-today { animation: none; }
   .skeleton { animation: none; }
   * { transition: none !important; }
+
+  /* A frozen spinner beside the word "Importing" reads as a hung app, so it
+     keeps saying "working" by breathing rather than by rotating. */
+  .spin {
+    animation: spinner-pulse 1.4s ease-in-out infinite;
+  }
 }
 
 /* Calendar day buttons: keep the visual identical to the prior <div> cells

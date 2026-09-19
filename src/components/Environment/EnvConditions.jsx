@@ -125,7 +125,7 @@ export default function EnvConditions({ growId, indoorish, mushrooms = false }) 
           display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
         }}>
           {importing
-            ? <><Loader size={15} style={{ animation: "spin 1s linear infinite" }} /> {progress || "Importing…"}</>
+            ? <><Loader size={15} className="spin" /> {progress || "Importing…"}</>
             : <><Upload size={16} strokeWidth={2} /> Import controller report (.csv)</>}
         </button>
         <div style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--c-text-ghost)", marginTop: 10, lineHeight: 1.6 }}>

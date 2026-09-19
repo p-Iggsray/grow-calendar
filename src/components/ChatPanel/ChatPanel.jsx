@@ -452,7 +452,7 @@ export default function ChatPanel({ onClose, contextDate, activeGrowId, grows, s
             }}
           >
             {busy ? (
-              <Loader size={16} strokeWidth={2} color="var(--c-accent)" style={{ animation: "spin 1s linear infinite" }} />
+              <Loader size={16} strokeWidth={2} color="var(--c-accent)" className="spin" />
             ) : (
               <ArrowUp size={17} strokeWidth={2.2} color={canSend ? "var(--c-bg)" : "var(--c-text-ghost)"} />
             )}

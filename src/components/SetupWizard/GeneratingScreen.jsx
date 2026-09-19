@@ -21,12 +21,13 @@ export function GeneratingScreen() {
 }
 
 function Spinner() {
+  // The rotation is the .spin class, not an inline style, so a device asking
+  // for reduced motion can actually turn it off. See src/styles.css.
   return (
-    <div style={{
+    <div className="spin" style={{
       width: 40, height: 40, borderRadius: "50%",
       border: "3px solid rgba(var(--c-accent-rgb), 0.15)",
       borderTopColor: "var(--c-accent)",
-      animation: "spin 0.9s linear infinite",
     }} />
   );
 }

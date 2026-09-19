@@ -758,6 +758,62 @@ a grow that finished in June opened on September and showed a blank grid. It
 lands on the month of the last thing written in the space instead, which is why
 the spaces payload carries `lastDate`.
 
+## Reduced motion
+
+The device asks for less motion; the app listens in two halves, because there
+are two kinds of animation here and CSS can only reach one of them.
+
+**The JavaScript half.** Twenty-five components animate with framer-motion.
+Four of them asked whether the device wanted motion; the other twenty-one slid,
+scaled and flew regardless. The `* { transition: none !important }` in
+`styles.css` never touched any of them, because framer-motion animates by
+writing inline styles from JavaScript, so there is no CSS transition there to
+cancel.
+
+One line fixes all of them, in `src/main.jsx`:
+
+```jsx
+<MotionConfig reducedMotion="user">
+```
+
+When the device asks for less, framer-motion drops transform and layout
+animations and leaves opacity alone. That distinction is the whole point:
+**reduced motion is not no motion.** A thing that fades is telling you it
+changed; a thing that slides across the screen is what makes people ill.
+
+Elements snap to their target rather than sticking at their starting transform,
+which is the failure worth knowing about. Measured on the share sheet, which
+springs up from `y: "100%"`:
+
+```
+                 40ms   90ms  160ms  300ms  700ms
+no-preference    307    131     16     -6      0     a real slide, with overshoot
+reduce             0      0      0      0      0     already there, not stranded
+```
+
+It wraps the friend view too. That runs on somebody else's device and their
+setting counts.
+
+**The CSS half** stays in the `@media (prefers-reduced-motion: reduce)` block:
+the today-cell pulse, the skeleton shimmer, and every transition.
+
+### Spinners breathe rather than freeze
+
+A frozen spinner beside the word "Importing" reads as a hung app, so under
+reduced motion `.spin` swaps its rotation for `spinner-pulse`, which fades
+between 1 and 0.35 opacity. Opacity only, because a pulse that scales is still
+movement.
+
+The rotation had to become a class first. It was written inline at three call
+sites, and **an inline style beats every stylesheet rule**, so the
+reduced-motion block was powerless over it. Same trap the focus rings were in.
+`test/reduced-motion.test.js` now fails on any inline `animation:` in `src/`.
+
+While moving it: the label sheet had `className="spin"` with no `.spin` rule
+anywhere in the codebase, so that spinner had been sitting perfectly still next
+to the word "Saving" since it was written. There is a test that every class the
+app spins has a rule behind it.
+
 ## Focus rings
 
 One rule in `src/styles.css` draws the ring for the whole app:
