@@ -900,6 +900,45 @@ the elapsed time Splash read was always 0 so it restarted from scratch anyway.
 A pre-React animation is a fiction. The paint can only be static. There is a
 test that fails if `@keyframes` or `animation:` reappears in it.
 
+### Tab switches, and the half of the fade nobody watches
+
+Item six on the frontend list was "add a stagger on first mount", on the
+observation that the codebase had exactly one stagger in it. Measuring first
+turned that around: the app does not lack entrance motion, it has too much of
+it in the wrong place.
+
+Every tab switch runs through an `AnimatePresence mode="wait"`, and `mode="wait"`
+will not mount the incoming screen until the outgoing one has finished exiting.
+With a 150ms fade on both sides those ran back to back. Traced frame by frame
+at 4x CPU, Calendar to Spaces:
+
+| | incoming mounts | readable |
+|---|---|---|
+| first switch | 314ms | 485ms |
+| second switch, data cached | 231ms | 395ms |
+
+Nearly 400ms from tap to a readable screen with every byte already in memory. A
+per-card stagger would have gone on top of that.
+
+The exit fade is the half nobody is looking at: what is leaving is leaving. It
+is gone, and only the incoming fade remains. Same switch:
+
+| | incoming mounts | readable |
+|---|---|---|
+| first switch | 163ms | 336ms |
+| second switch | 80ms | 258ms |
+
+`mode="wait"` stays, doing the job it is actually useful for: keeping the two
+screens out of flow together, which would shove the layout around mid switch.
+With no `exit` prop to wait on it resolves immediately.
+
+The screens that slide in over the top, Stats and the chat panel, keep their
+exits. Those genuinely go back out the way they came.
+
+`test/tab-switch.test.js` fails if an `exit` reappears in that block, because
+adding one back for symmetry looks harmless in a diff and costs 140ms on every
+switch.
+
 ## Reduced motion
 
 The device asks for less motion; the app listens in two halves, because there

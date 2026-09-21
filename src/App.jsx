@@ -67,6 +67,24 @@ const CAL_HEIGHT = "calc(100dvh - 66px - env(safe-area-inset-bottom, 0px))";
 
 // Shared transition configs.
 const PUSH_SPRING   = { type: "spring", damping: 30, stiffness: 260, restDelta: 0.5 };
+// How long a tab screen takes to fade in. There is deliberately no matching
+// fade OUT, and that is the whole point.
+//
+// The tab content sits in an AnimatePresence with mode="wait", which holds the
+// incoming screen from mounting until the outgoing one has finished exiting.
+// With an exit fade on every screen that made the two 150ms fades run back to
+// back. Traced frame by frame at 4x CPU, Calendar to Spaces:
+//
+//   incoming screen mounted at 231ms, readable at 395ms
+//
+// with every byte already in memory. The exit fade is the half nobody is
+// looking at: what is leaving is leaving. Dropping it lets the incoming screen
+// mount on the very next frame and fade up on its own, which measured 59ms and
+// 231ms for the same switch.
+//
+// mode="wait" stays, now doing the job it is actually useful for: keeping the
+// two screens from ever being in flow together, which would shove the layout
+// around mid-transition. With no exit prop to wait on it resolves immediately.
 const FADE_DURATION = { duration: 0.15 };
 
 export default function App() {
@@ -357,7 +375,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Tab content - crossfades between Calendar, Plan, and More */}
+      {/* Tab content: the outgoing screen goes at once, the incoming one fades up */}
       <div style={{ paddingBottom: fullScreenCalendar ? 0 : TAB_CLEARANCE }}>
         <AnimatePresence mode="wait">
           {tabKey === "more" ? (
@@ -365,7 +383,6 @@ export default function App() {
               key="more"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
               transition={FADE_DURATION}
             >
               <SettingsScreen
@@ -381,7 +398,6 @@ export default function App() {
               key="environments"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
               transition={FADE_DURATION}
             >
               <EnvironmentsTab
@@ -393,15 +409,15 @@ export default function App() {
               />
             </motion.div>
           ) : lifecyclePhase === "drying" ? (
-            <motion.div key="drying" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FADE_DURATION}>
+            <motion.div key="drying" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={FADE_DURATION}>
               <Suspense fallback={<PanelSkeleton />}><DryingTracker today={today} /></Suspense>
             </motion.div>
           ) : lifecyclePhase === "curing" ? (
-            <motion.div key="curing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FADE_DURATION}>
+            <motion.div key="curing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={FADE_DURATION}>
               <Suspense fallback={<PanelSkeleton />}><CuringTracker today={today} /></Suspense>
             </motion.div>
           ) : lifecyclePhase === "done" ? (
-            <motion.div key="done" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FADE_DURATION}>
+            <motion.div key="done" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={FADE_DURATION}>
               <Suspense fallback={<PanelSkeleton />}><GrowComplete onStartNewGrow={() => setActiveTab("environments")} /></Suspense>
             </motion.div>
           ) : (
@@ -409,7 +425,6 @@ export default function App() {
               key="calendar"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
               transition={FADE_DURATION}
               style={fullScreenCalendar ? {
                 height: CAL_HEIGHT,
