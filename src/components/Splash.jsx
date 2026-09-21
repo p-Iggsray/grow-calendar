@@ -1,12 +1,23 @@
 import { motion, useReducedMotion } from "framer-motion";
 import CatMark from "./CatMark.jsx";
+import { PREPAINTED } from "../lib/launch.js";
 
 // The app's launch screen: the cat, opening its eyes, on the black. Shown on
 // first boot (auth check) and while the main bundle loads, so it doubles as
 // the Suspense fallback. Kept lightweight - no data, no fonts beyond the
 // system stack already in use.
+//
+// It is usually not the first thing on screen. index.html paints the same
+// opening before this bundle has downloaded (src/lib/splashPrepaint.js), so by
+// the time React gets here the mark and the wordmark are already up, at rest.
+// `settled` is that case, and it means: do not play the entrance. Fading in
+// something the eye can already see reads as a flicker, not an arrival.
+//
+// The glow and the dots do animate either way. They loop, and the paint leaves
+// them at the first frame of their loop, so they simply start moving.
 export default function Splash() {
   const reduce = useReducedMotion();
+  const settled = PREPAINTED || reduce;
 
   return (
     <div
@@ -26,10 +37,10 @@ export default function Splash() {
         padding: "0 24px",
         paddingTop: "env(safe-area-inset-top, 0px)",
       }}>
-      <Cat reduce={reduce} />
+      <Cat reduce={reduce} settled={settled} />
 
       <motion.div
-        initial={reduce ? false : { opacity: 0, y: 8 }}
+        initial={settled ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35, duration: 0.5, ease: "easeOut" }}
         style={{ textAlign: "center" }}>
@@ -53,7 +64,7 @@ export default function Splash() {
 }
 
 // The mark arrives, then sits there breathing in its own glow.
-function Cat({ reduce }) {
+function Cat({ reduce, settled }) {
   return (
     <div style={{
       position: "relative", width: 132, height: 118,
@@ -72,7 +83,7 @@ function Cat({ reduce }) {
       />
       <motion.div
         style={{ position: "relative", lineHeight: 0 }}
-        initial={reduce ? false : { opacity: 0, scale: 0.82 }}
+        initial={settled ? false : { opacity: 0, scale: 0.82 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.55, ease: "backOut" }}>
         <CatMark size={140} lit />

@@ -9,6 +9,7 @@ import Toast from "./components/Toast.jsx";
 import { AuthProvider, useAuth } from "./lib/auth.jsx";
 import { ToastProvider } from "./lib/useToast.jsx";
 import { PlanProvider } from "./lib/usePlan.jsx";
+import { holdMs, warmLaunch } from "./lib/launch.js";
 import { api } from "./lib/api.js";
 
 // The friend view is its own chunk. It is a whole second app, and the grower
@@ -56,19 +57,19 @@ document.addEventListener(
 // the auth/login chunk - not the entire calendar engine.
 const App = lazy(() => import("./App.jsx"));
 
-// Minimum time the opening animation is held so it always plays fully through - // even on a warm/instant load - before fading out to reveal the app. Reduced-
-// motion users skip the wait (there's no animation to watch).
-const INTRO_HOLD_MS = 1900;
-
 // One persistent intro overlay that sits above everything and fades out once the
 // animation has played AND the app underneath is ready. Owning the Splash in a
 // single place (rather than rendering it from two branches) means the animation
 // mounts once and never restarts mid-play.
+//
+// How long it is held depends on whether this is the first launch on this
+// device. The reasoning, and the measurements behind it, are in
+// src/lib/launch.js: the hold has never once been what the app was waiting on.
 function IntroGate({ ready }) {
   const reduce = useReducedMotion();
   const [minElapsed, setMinElapsed] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setMinElapsed(true), reduce ? 350 : INTRO_HOLD_MS);
+    const t = setTimeout(() => setMinElapsed(true), holdMs({ warm: warmLaunch(), reduce }));
     return () => clearTimeout(t);
   }, [reduce]);
 

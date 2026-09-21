@@ -100,3 +100,74 @@ export function catMarkSvg({
     ).join("") +
     `</svg>`;
 }
+
+/**
+ * The mark lit, as an SVG string.
+ *
+ * Same treatment as `<CatMark lit>`: a coat with a gradient in it, a rim light
+ * off the top left, warm inner ears, and eyes that carry their own glow. This
+ * is that version for the one place that cannot run React at all, which is the
+ * paint index.html puts on screen before the bundle has arrived.
+ *
+ * `uid` scopes every gradient id, so this can sit on a page beside a rendered
+ * CatMark without the two stealing each other's paint.
+ */
+export function litCatMarkSvg({ width = 140, uid = "bcb" } = {}) {
+  const id = (name) => `${uid}-${name}`;
+  const url = (name) => `url(#${id(name)})`;
+  const stops = (list) =>
+    list.map(([o, c, a]) =>
+      `<stop offset="${o}" stop-color="${c}"${a === undefined ? "" : ` stop-opacity="${a}"`}/>`,
+    ).join("");
+
+  return `<svg viewBox="${CAT_VIEWBOX}" width="${width}" height="${
+    Math.round(width * CAT_ASPECT)
+  }" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">` +
+    `<defs>` +
+      `<linearGradient id="${id("coat")}" x1="0.15" y1="0" x2="0.85" y2="1">${
+        stops([["0%", "#2a231d"], ["40%", "#0f0d0b"], ["100%", "#020202"]])
+      }</linearGradient>` +
+      `<linearGradient id="${id("rim")}" x1="0.05" y1="0.05" x2="0.8" y2="0.95">${
+        stops([["0%", "#ffc27a"], ["42%", "#e89a45"], ["88%", "#e0913f", "0.22"], ["100%", "#e0913f", "0"]])
+      }</linearGradient>` +
+      `<linearGradient id="${id("ear")}" x1="0.5" y1="0" x2="0.5" y2="1">${
+        stops([["0%", "#7a4520"], ["100%", "#2a160b"]])
+      }</linearGradient>` +
+      `<radialGradient id="${id("iris")}" cx="0.42" cy="0.3" r="0.85">${
+        stops([["0%", "#ffe3a6"], ["42%", "#eda049"], ["100%", "#8f4d12"]])
+      }</radialGradient>` +
+      `<linearGradient id="${id("whiskerL")}" x1="1" y1="0" x2="0" y2="0">${
+        stops([["0%", "#d8ccbc", "0.9"], ["100%", "#d8ccbc", "0.05"]])
+      }</linearGradient>` +
+      `<linearGradient id="${id("whiskerR")}" x1="0" y1="0" x2="1" y2="0">${
+        stops([["0%", "#d8ccbc", "0.9"], ["100%", "#d8ccbc", "0.05"]])
+      }</linearGradient>` +
+      `<linearGradient id="${id("snout")}" x1="0.5" y1="0" x2="0.5" y2="1">${
+        stops([["0%", "#d99a72"], ["100%", "#7c4326"]])
+      }</linearGradient>` +
+      `<filter id="${id("glow")}" x="-160%" y="-160%" width="420%" height="420%">` +
+        `<feGaussianBlur stdDeviation="2.6"/>` +
+      `</filter>` +
+    `</defs>` +
+    CAT_WHISKERS.map((d, i) =>
+      `<path d="${d}" fill="${url(i < 3 ? "whiskerL" : "whiskerR")}"/>`,
+    ).join("") +
+    `<path d="${CAT_HEAD}" fill="${url("coat")}" stroke="${url("rim")}"` +
+      ` stroke-width="2.7" stroke-linejoin="round"/>` +
+    CAT_INNER_EARS.map((d) => `<path d="${d}" fill="${url("ear")}" opacity="0.85"/>`).join("") +
+    `<g filter="${url("glow")}" opacity="0.85">` +
+      `<path d="${CAT_EYE_L}" fill="#e0913f"/><path d="${CAT_EYE_R}" fill="#e0913f"/>` +
+    `</g>` +
+    `<path d="${CAT_EYE_L}" fill="${url("iris")}"/><path d="${CAT_EYE_R}" fill="${url("iris")}"/>` +
+    CAT_PUPILS.map((p) =>
+      `<ellipse cx="${p.cx}" cy="${p.cy}" rx="${p.rx}" ry="${p.ry}" fill="#0a0806"/>`,
+    ).join("") +
+    CAT_GLINTS.map((g) =>
+      `<circle cx="${g.cx}" cy="${g.cy}" r="${g.r}" fill="#fffaf0" opacity="0.9"/>`,
+    ).join("") +
+    `<path d="${CAT_NOSE}" fill="${url("snout")}"/>` +
+    CAT_MOUTH.map((d) =>
+      `<path d="${d}" fill="none" stroke="#6f6053" stroke-width="1.7" stroke-linecap="round"/>`,
+    ).join("") +
+    `</svg>`;
+}

@@ -8,13 +8,10 @@
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <meta name="theme-color" content="#0c0b0a" />
     <meta name="color-scheme" content="dark" />
-    <!-- Critical paint styles: match the brand background immediately so there's
-         no white flash before the CSS bundle / React splash load. -->
-    <style>
-      html { background: #0c0b0a; }
-      body { margin: 0; }
-      #root { min-height: 100vh; }
-    </style>
+    <!-- Critical paint: the brand ground, the mark and the wordmark, all of it
+         on screen before the bundle exists. Filled in at build (and in dev) by
+         the prepaint-splash plugin in vite.config.js, from src/lib/splashPrepaint.js. -->
+    <style>/* prepaint-css */</style>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Black Cat" />
@@ -27,7 +24,7 @@
     <title>Black Cat Botanicals</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><!-- prepaint --></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

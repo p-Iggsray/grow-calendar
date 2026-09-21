@@ -2,6 +2,24 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import fs from "fs";
 import path from "path";
+import { prepaintCss, prepaintHtml } from "./src/lib/splashPrepaint.js";
+
+// Put the opening into index.html itself, so the brand is on screen in the
+// document's own first paint rather than waiting on the bundle. Injected
+// rather than written by hand because the mark is generated from the shared
+// geometry in src/lib/catMark.js, and a hand-copied cat is a cat that drifts.
+//
+// Runs in dev and in build, so what is developed against is what ships.
+function prepaintSplash() {
+  return {
+    name: "prepaint-splash",
+    transformIndexHtml(html) {
+      return html
+        .replace("/* prepaint-css */", prepaintCss())
+        .replace("<!-- prepaint -->", prepaintHtml());
+    },
+  };
+}
 
 // Stamp a unique build ID into sw.js and inject the critical JS/CSS asset URLs
 // so they are pre-cached during SW install. Pre-caching ensures the app shell
@@ -45,7 +63,7 @@ function stampSwVersion() {
 }
 
 export default defineConfig({
-  plugins: [react(), stampSwVersion()],
+  plugins: [react(), prepaintSplash(), stampSwVersion()],
   server: {
     open: true,
     host: true,

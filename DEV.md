@@ -820,6 +820,86 @@ The listener is registered in the capture phase on `document`, which is the
 only way to hear scroll from an arbitrary element. There is a test for exactly
 that, and it fails if anyone puts it back on `window`.
 
+## The launch
+
+Two changes, both from measuring the launch rather than guessing at it.
+
+Every number below is milliseconds from navigation, taken against the real
+worker with real data (4 grows, 400 logged days, 180 strains), on a 390x844
+viewport with the CPU throttled.
+
+### The hold was never covering work
+
+`INTRO_HOLD_MS` was a flat 1900ms, so the opening animation always played
+through. What it actually did:
+
+| condition | app painted | overlay lifted | dead wait |
+|---|---|---|---|
+| cold, 4x CPU, 4G | 820 | 2843 | 2023 |
+| warm, 4x CPU, 4G | 542 | 2610 | 2068 |
+| cold, 6x CPU, 3G | 2012 | 3569 | 1557 |
+| cold, 6x CPU, 400kbps | 4836 | 5687 | 851 |
+
+There is no condition, down to 400kbps with six times the CPU throttling, where
+the app was not finished well before the hold expired. The hold is not a loading
+screen. It is a title card, and a title card on every glance at a phone is a
+toll.
+
+So it is full length on a cold launch and short on every launch after. Warm
+means either a flag in localStorage or a service worker already controlling the
+page: the flag is the honest answer and survives a hard reload, the controller
+catches storage having been cleared with the shell still cached. Both missing
+means cold, which errs towards showing the opening once too often rather than
+never. `src/lib/launch.js`, and `holdMs()` is pure so the decision has tests.
+
+Warm launches now lift the overlay at ~1340ms instead of ~2610ms.
+
+### The opening now paints before React exists
+
+`index.html` carried three lines of critical CSS: a black background, so there
+was no white flash. But a black rectangle is not the brand, and React did not
+mount the real splash until 396ms on a cold 4G launch and 3224ms on a cold
+400kbps one. That whole window was blank.
+
+The mark is geometry and the wordmark is three lines of text, so both can be in
+the document's own first paint. `src/lib/splashPrepaint.js` builds that paint as
+a string and the `prepaint-splash` plugin in `vite.config.js` injects it into
+`#root`, in dev and in build alike. React clears the container when it mounts,
+so nothing has to remove it. The mark is generated from the shared geometry in
+`src/lib/catMark.js` through a new `litCatMarkSvg()`, so there is no hand-copied
+cat to drift.
+
+The brand is now on screen at 184ms on a cold 4G launch and 400ms at 400kbps.
+`index.html` went from 0.74 KB to 2.7 KB gzipped, which is still inside the
+first congestion window.
+
+Splash sees the paint (`PREPAINTED`) and skips its own entrance. Fading in
+something the eye can already see reads as a flicker, not an arrival. The glow
+and the dots still animate: they loop, and the paint parks them on the first
+frame of each loop so they simply start moving. Screenshotting either side of
+the handover puts 0.01% of pixels apart, and those are the glow caught mid
+breath.
+
+### Nothing in that paint may animate
+
+This is load-bearing and the reason is not obvious.
+
+The first version gave the paint the same entrance the splash plays, and had
+Splash resume it with a negative `animation-delay` rather than restart it. It
+did nothing at all, and the probe said why:
+
+    DOMContentLoaded: anims=1 currentTime=0 startTime=null playState=running opacity=0
+
+`startTime: null` means the animation is still **pending**. A CSS animation is
+created during style resolution but is given no start time until the first
+rendering opportunity, and on a cold launch that frame does not come until the
+bundle has parsed. So `animation-fill-mode: both` held the mark at its
+from-frame, opacity zero, for exactly the window the paint exists to cover, and
+the elapsed time Splash read was always 0 so it restarted from scratch anyway.
+
+A pre-React animation is a fiction. The paint can only be static. There is a
+test that fails if `@keyframes` or `animation:` reappears in it.
+
 ## Reduced motion
 
 The device asks for less motion; the app listens in two halves, because there
