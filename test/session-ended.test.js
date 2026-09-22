@@ -101,15 +101,22 @@ test("signing in lets the next expiry speak again", async () => {
   assert.equal(fired, 2);
 });
 
-test("every fetch in the client reports its status, not just request()", () => {
-  // Four calls bypass request() entirely: the MJ stream and the three that
-  // want a blob or raw text. A 401 on any of them is the same dead session.
+test("every network call in the client reports its status", () => {
+  // A 401 anywhere is the same dead session, so every path that touches the
+  // network has to report back. Most go through send(), but four do not: the
+  // MJ stream and the three that want a blob or raw text.
+  //
+  // The count: each fetch() site except the one inside send() itself, plus
+  // each send() call site, plus the one noteStatus definition. send()'s own
+  // fetch is excluded because its two callers are what report for it.
   const src = read("../src/lib/api.js");
   const fetches = (src.match(/\bfetch\(/g) || []).length;
+  const sendCalls = (src.match(/=\s*await send\(/g) || []).length;
   const notes = (src.match(/\bnoteStatus\(/g) || []).length;
-  // One noteStatus definition, plus one per fetch call site.
-  assert.equal(notes, fetches + 1,
-    `${fetches} fetch calls but ${notes - 1} report their status`);
+
+  const callSites = (fetches - 1) + sendCalls;
+  assert.equal(notes, callSites + 1,
+    `${callSites} network call sites but ${notes - 1} report their status`);
 });
 
 test("the provider turns the signal into a signed-out app", () => {

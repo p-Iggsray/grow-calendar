@@ -1,5 +1,7 @@
 // @ts-check
 
+import * as outbox from "./outbox.js";
+
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 // ── When the session ends ──────────────────────────────────────────────────
@@ -56,6 +58,99 @@ function noteStatus(path, status) {
 /** Signing in again puts the app back in business. */
 export function clearSessionEnded() { sessionEnded = false; }
 
+// ── The outbox ─────────────────────────────────────────────────────────────
+
+/** The one fetch. Replay uses it directly so a retry cannot re-queue itself. */
+function send(path, opts = {}) {
+  const isMutating = MUTATING_METHODS.has((opts.method || "GET").toUpperCase());
+  return fetch(path, {
+    credentials: "same-origin",
+    // The worker requires application/json on every mutating verb as a CSRF
+    // check, even for body-less requests like logout.
+    headers: isMutating ? { "content-type": "application/json" } : undefined,
+    ...opts,
+  });
+}
+
+const outboxListeners = new Set();
+
+/** Subscribe to the number of writes waiting for a signal. */
+export function onOutboxChange(fn) {
+  outboxListeners.add(fn);
+  return () => { outboxListeners.delete(fn); };
+}
+
+export function outboxSize() { return outbox.load().length; }
+
+function announceOutbox() {
+  const n = outboxSize();
+  for (const fn of outboxListeners) {
+    try { fn(n); } catch { /* a listener must not break a save */ }
+  }
+}
+
+/**
+ * Park a write until there is a signal.
+ * @returns {boolean} false when storage refused it, which means the caller
+ *   must fail rather than claim the write is safe.
+ */
+function queueWrite(path, method, body) {
+  if (typeof body !== "string") return false;
+  const key = outbox.entryKey(method, path);
+  const { queue } = outbox.trim(outbox.put(outbox.load(), {
+    key, path, method, body, at: Date.now(),
+  }));
+  if (!outbox.save(queue)) return false;
+  announceOutbox();
+  return true;
+}
+
+let flushing = false;
+
+/**
+ * Send everything that has been waiting, oldest first and one at a time, so
+ * two edits to different days land in the order they were written.
+ *
+ * Stops at the first network failure and leaves the rest queued: the signal is
+ * gone again and hammering it helps nobody. A write the server actively
+ * refuses (a 4xx that is not a 401) is dropped instead, because it will be
+ * refused every time and would otherwise block everything behind it forever.
+ *
+ * @returns {Promise<{sent: number, refused: number, left: number}>}
+ */
+export async function flushOutbox() {
+  if (flushing) return { sent: 0, refused: 0, left: outboxSize() };
+  flushing = true;
+  let sent = 0;
+  let refused = 0;
+  try {
+    for (const entry of outbox.load()) {
+      let res;
+      try {
+        res = await send(entry.path, { method: entry.method, body: entry.body });
+      } catch {
+        break; // still no signal
+      }
+      noteStatus(entry.path, res.status);
+      // A 401 means the session ended. Keep the entry: signing back in should
+      // deliver the writing, not discard it.
+      if (res.status === 401) break;
+      if (!res.ok && res.status >= 400 && res.status < 500) refused++;
+      outbox.save(outbox.drop(outbox.load(), entry.key));
+      if (res.ok) sent++;
+    }
+  } finally {
+    flushing = false;
+    announceOutbox();
+  }
+  // Whatever landed changed days the app may be looking at.
+  if (sent > 0 && typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("journal-mutated"));
+    window.dispatchEvent(new CustomEvent("growlog-mutated"));
+  }
+  return { sent, refused, left: outboxSize() };
+}
+
 /**
  * Thin fetch wrapper. Throws an Error with `.status` on non-2xx; returns the
  * parsed JSON body otherwise. Worker requires application/json on every
@@ -75,13 +170,19 @@ function withGrow(path, growId) {
 }
 
 async function request(path, opts = {}) {
-  const isMutating = MUTATING_METHODS.has((opts.method || "GET").toUpperCase());
-  const headers = isMutating ? { "content-type": "application/json" } : undefined;
-  const res = await fetch(path, {
-    credentials: "same-origin",
-    headers,
-    ...opts,
-  });
+  const method = (opts.method || "GET").toUpperCase();
+  let res;
+  try {
+    res = await send(path, opts);
+  } catch (netErr) {
+    // No signal. If this is a write that can wait, it waits; see outbox.js for
+    // which ones qualify and why creates do not. Anything else fails the way
+    // it always has.
+    if (outbox.isReplayable(method, path) && queueWrite(path, method, opts.body)) {
+      return { queued: true };
+    }
+    throw netErr;
+  }
   noteStatus(path, res.status);
   let data = null;
   const text = await res.text();

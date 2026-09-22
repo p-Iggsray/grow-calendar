@@ -1023,6 +1023,76 @@ its own ring. `test/focus-ring.test.js` enforces the whole arrangement: no inlin
 suppression at all, and a stylesheet rule may drop a ring only when its own
 selector has a `:focus-within` replacement.
 
+## Writing with no signal
+
+The offline strip has always said "changes will sync when reconnected".
+Nothing synced. Driving a browser offline and writing a journal entry gave a
+failed PUT, a "Save failed" beside the WRITING header, no retry when the
+connection came back, and an entry that was gone after a reload. The strip was
+the only untrue part of that, and `src/lib/outbox.js` is what makes it true.
+
+### What may be queued, and why not everything
+
+Only writes that address a thing by its own key and replace it whole:
+
+    PUT /api/notes/:date
+    PUT /api/grow-log/:date
+    PUT /api/strain-library
+    PUT /api/strain-library/photos
+
+A PUT to `/api/notes/2026-09-01` says "this day's note is now exactly this", so
+sending it late, or twice, or after three more edits, lands the same way. That
+is the property that makes a queue safe without a merge, and it is the whole
+reason the allowlist is an allowlist.
+
+Creates are deliberately excluded. A new plant, a new space, a photo: those are
+POSTs whose ids the server hands back, and a log entry written offline against
+a plant that does not exist yet cannot be replayed without inventing ids on the
+client and reconciling them later. Those still fail at the time, the way they
+always did.
+
+### Edits collapse
+
+The note autosaves 800ms after each pause in typing. Ten minutes of writing in
+a tent is not a hundred queued requests, it is one: entries are keyed by what
+they are writing to, and a later edit replaces the earlier one. The queue holds
+each destination's final state, not a history of how it got there. A
+replacement keeps its original place in the line, because order still matters
+between different destinations.
+
+### Delivery
+
+Three moments send the queue, because "back online" is not one event in
+practice. The `online` event fires when the OS thinks there is a network, which
+on a phone leaving a dead zone is often a few seconds early. Returning to the
+app covers a connection that came back while it was in the background. And
+mounting covers a queue written in a session that ended before it could send,
+which is the whole point of putting it in storage.
+
+It sends one at a time, oldest first. A network failure stops the run and
+leaves the rest queued. A 401 stops it too and keeps everything, because
+signing back in should deliver the writing rather than discard it. A 4xx that
+is not a 401 drops that one entry, since it will be refused every time and
+would otherwise block everything behind it forever.
+
+If storage refuses the write, the save fails instead of queueing. Claiming a
+write is safe when nothing recorded it is the one outcome worse than failing.
+
+### Bounds
+
+200 entries or 2MB, oldest dropped first. One entry over budget on its own is
+kept rather than dropped, because discarding the thing just written is worse
+than being over.
+
+### The strip
+
+It now counts what is waiting, and there is a second, calmer one for being back
+online with a queue still draining. Both are one line: the first draft ran to
+two at 390px and sat on top of the top bar's eyebrow. That overlap was always
+there and one line had hidden it, so the shell now gives up `STRIP_HEIGHT` of
+padding whenever a strip is showing. `test/offline-strip.test.js` pins the
+height to the padding it is drawn with, and both texts to a length that fits.
+
 ## When the session ends
 
 Sessions last 30 days and rotate as they go. When one finally lapses, or is

@@ -6,6 +6,7 @@ import { usePlan } from "./lib/usePlan.jsx";
 import { useJournalMonth, useRecentJournal, useStageTimeline } from "./lib/useJournal.js";
 import { api, ymd } from "./lib/api.js";
 import { buildSuggestions } from "./lib/mjSuggestions.js";
+import { useOutbox } from "./lib/useOutbox.js";
 import { useOnlineStatus } from "./lib/useOnlineStatus.js";
 import { hasGrowLocation } from "./lib/growProfile.js";
 import { tracksOutdoorWeather } from "./lib/growEnvironment.js";
@@ -62,6 +63,9 @@ function NewGrowInitializer({ onReady }) {
 
 // Bottom padding so scrollable content clears the fixed tab bar.
 const TAB_CLEARANCE = "calc(66px + env(safe-area-inset-bottom, 0px))";
+// One line of the offline/syncing strip: 8px padding top and bottom around
+// 11px text. test/offline-strip.test.js pins the two together.
+const STRIP_HEIGHT = 28;
 // The full-screen calendar sizes itself to everything above the tab bar.
 const CAL_HEIGHT = "calc(100dvh - 66px - env(safe-area-inset-bottom, 0px))";
 
@@ -91,6 +95,8 @@ export default function App() {
   const { user } = useAuth();
   const today    = useToday();
   const online   = useOnlineStatus();
+  // Writes made with no signal, waiting for one. See src/lib/outbox.js.
+  const pending  = useOutbox();
   // Archived spaces are put away: the shell never routes to one, offers one to
   // MJ, or resumes setup in one. The environments list is the only screen that
   // sees them, and it asks usePlan for them by name.
@@ -360,8 +366,12 @@ export default function App() {
   // The month grid claims the whole viewport; every other screen scrolls.
   const fullScreenCalendar = tabKey === "calendar" && lifecyclePhase === "growing" && mainView === "calendar";
 
+  // The status strip is fixed to the top, so the shell has to give up the
+  // height or the strip sits on the top bar's eyebrow line.
+  const strip = !online || pending > 0;
+
   return (
-    <div style={SHELL_STYLE}>
+    <div style={strip ? { ...SHELL_STYLE, paddingTop: STRIP_HEIGHT } : SHELL_STYLE}>
       {/* Offline banner */}
       {!online && (
         <div style={{
@@ -371,7 +381,23 @@ export default function App() {
           fontFamily: "var(--font-ui)", fontSize: 11,
           letterSpacing: 1.5, color: "#fecaca",
         }}>
-          OFFLINE - changes will sync when reconnected
+          {pending > 0
+            ? `OFFLINE - ${pending} ${pending === 1 ? "change" : "changes"} saved, will sync`
+            : "OFFLINE - your writing is saved here"}
+        </div>
+      )}
+
+      {/* Back online with a queue still draining. Same strip, calmer colour:
+          nothing is wrong, something is just in flight. */}
+      {online && pending > 0 && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+          background: "rgba(var(--c-accent-rgb), 0.92)", backdropFilter: "blur(8px)",
+          padding: "8px 16px", textAlign: "center",
+          fontFamily: "var(--font-ui)", fontSize: 11,
+          letterSpacing: 1.5, color: "var(--c-bg)",
+        }}>
+          SYNCING {pending} {pending === 1 ? "CHANGE" : "CHANGES"}
         </div>
       )}
 
