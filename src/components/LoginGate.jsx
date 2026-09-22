@@ -23,7 +23,7 @@ const INPUT_STYLE = {
 // no hint about who it belongs to or what is inside. The only other public
 // surface is a /share/:token buddy link, which the owner hands out by hand.
 export default function LoginGate() {
-  const { login } = useAuth();
+  const { login, sessionExpired } = useAuth();
   const [mode, setMode] = useState("login"); // login | reset
   const [username,        setUsername]        = useState("");
   const [password,        setPassword]        = useState("");
@@ -111,6 +111,13 @@ export default function LoginGate() {
             Black Cat Botanicals
           </div>
         </div>
+
+        {/* Why you are looking at this again, when you did not sign out. */}
+        {sessionExpired && !successMsg && !error && (
+          <div style={{ fontSize: 12, color: "var(--c-text-dim)", lineHeight: 1.5, background: "var(--c-surface-2)", border: "1px solid var(--c-border)", borderRadius: 8, padding: "8px 10px", marginBottom: 12 }}>
+            Your session ended. Sign in again to pick up where you left off.
+          </div>
+        )}
 
         {/* Success banner */}
         {successMsg && (

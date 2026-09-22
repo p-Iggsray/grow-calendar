@@ -1023,6 +1023,47 @@ its own ring. `test/focus-ring.test.js` enforces the whole arrangement: no inlin
 suppression at all, and a stylesheet rule may drop a ring only when its own
 selector has a `:focus-within` replacement.
 
+## When the session ends
+
+Sessions last 30 days and rotate as they go. When one finally lapses, or is
+cleared server-side, every app route starts answering 401.
+
+Nothing used to listen for that, and the result was quieter and worse than an
+error. Deleting the session under a running app and then using it normally
+produced no message at all: eight endpoints answered 401 in silence, every
+screen still looked signed in, and the day view offered
+
+    Nothing logged yet. Write about the day below and what you mention fills in here.
+
+over a record that was there the whole time. An entry typed into that
+invitation disappeared without so much as a failed request.
+
+A 401 is never worth retrying. The worker returns it from one place,
+`currentUser`, and only for reasons that are final: no cookie, no session row,
+a row past its expiry (which it deletes on the way out), or a session that is
+not the owner's. So `api.js` treats the first one as the end of the session,
+tells `AuthProvider`, and the app becomes the login screen with a line saying
+why. It announces once however many requests were in flight, because opening a
+screen fires eight of them and they come back together.
+
+Two exemptions are load-bearing. `/api/auth/login` answers 401 for a wrong
+password, and treating that as an expiry would sign you out of the sign-in
+screen. `/api/auth/me` answers 401 whenever nobody is signed in, which is the
+ordinary cold start that `AuthProvider` already reads as "show the login".
+`test/session-ended.test.js` pins both, along with the rule that a 403, 429 or
+500 is not an expiry.
+
+Four calls bypass `request()` (the MJ stream, and the three that want a blob or
+raw text). They report their status too, and a test counts `noteStatus` calls
+against `fetch` calls so a fifth one cannot be added without one.
+
+### What this does not do
+
+It makes the loss visible. It does not prevent it: an entry half-written when
+the session lapses is still gone, because the editor holds it in component
+state and the login screen unmounts that. Persisting drafts is the same job as
+the offline outbox, and belongs with it.
+
 ## Backup and restore
 
 Settings has a **Back up everything** row. It downloads `GET /api/backup.json`:

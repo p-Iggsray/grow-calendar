@@ -2,6 +2,60 @@
 
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
+// ── When the session ends ──────────────────────────────────────────────────
+//
+// A 401 from an app route is not a failure worth retrying. The worker returns
+// it from one place, currentUser, and only for reasons that are final: no
+// cookie, no session row, a row past its expiry (which it deletes on the way
+// out), or a session that is not the owner's. There is no state in which the
+// same request would work a moment later.
+//
+// Nothing used to listen for it, and the result was quieter and worse than an
+// error. Deleting the session under a running app and then using it normally
+// produced no message of any kind: eight endpoints answered 401 in silence,
+// every screen still looked signed in, and the day view offered "Nothing
+// logged yet. Write about the day below" over a record that was there all
+// along. An entry typed into that invitation disappeared without so much as a
+// failed request.
+//
+// The auth routes are exempt, and have to be. /api/auth/login answers 401 for
+// a wrong password, and treating that as "your session ended" would sign you
+// out of the sign-in screen. /api/auth/me answers 401 whenever nobody is
+// signed in, which is the ordinary cold start that AuthProvider already reads
+// as "show the login".
+const AUTH_PREFIX = "/api/auth/";
+
+const sessionEndedListeners = new Set();
+let sessionEnded = false;
+
+/**
+ * Subscribe to the session ending. Returns an unsubscribe.
+ * @param {() => void} fn
+ */
+export function onSessionEnded(fn) {
+  sessionEndedListeners.add(fn);
+  return () => { sessionEndedListeners.delete(fn); };
+}
+
+/**
+ * Every response passes through here. It announces the end once however many
+ * requests were in flight when it happened, because opening a screen fires
+ * eight of them and they all come back 401 together.
+ * @param {string} path
+ * @param {number} status
+ */
+function noteStatus(path, status) {
+  if (status !== 401 || path.startsWith(AUTH_PREFIX) || sessionEnded) return;
+  sessionEnded = true;
+  for (const fn of sessionEndedListeners) {
+    // A listener throwing must not turn into a failed fetch for the caller.
+    try { fn(); } catch { /* nothing to do */ }
+  }
+}
+
+/** Signing in again puts the app back in business. */
+export function clearSessionEnded() { sessionEnded = false; }
+
 /**
  * Thin fetch wrapper. Throws an Error with `.status` on non-2xx; returns the
  * parsed JSON body otherwise. Worker requires application/json on every
@@ -28,6 +82,7 @@ async function request(path, opts = {}) {
     headers,
     ...opts,
   });
+  noteStatus(path, res.status);
   let data = null;
   const text = await res.text();
   if (text) {
@@ -88,6 +143,7 @@ export const api = {
       }),
     }).then(async (res) => {
       if (!res.ok) {
+        noteStatus("/api/mj", res.status);
         const text = await res.text().catch(() => "");
         let msg;
         try { msg = JSON.parse(text).error; } catch { msg = `request failed ${res.status}`; }
@@ -131,6 +187,7 @@ export const api = {
     request(withGrow(`/api/grow-log/${date}`, growId), { method: "PUT", body: JSON.stringify(entry) }),
   downloadGrowLogCsv: async (growId) => {
     const res = await fetch(withGrow("/api/grow-log/export.csv", growId), { credentials: "same-origin" });
+    noteStatus("/api/grow-log/export.csv", res.status);
     if (!res.ok) throw new Error(`Export failed: ${res.status}`);
     return res.blob();
   },
@@ -141,6 +198,7 @@ export const api = {
   // the only export big enough that holding it as a string is worth avoiding.
   getBackup: async () => {
     const res = await fetch("/api/backup.json", { credentials: "same-origin" });
+    noteStatus("/api/backup.json", res.status);
     if (!res.ok) throw new Error(`Backup failed: ${res.status}`);
     return res.blob();
   },
@@ -150,6 +208,7 @@ export const api = {
   // present, so callers keep it rather than only the html.
   getGrowReport: async (growId, unit = "gal") => {
     const res = await fetch(`/api/grows/${encodeURIComponent(growId)}/report?unit=${encodeURIComponent(unit)}`, { credentials: "same-origin" });
+    noteStatus("/api/grows/report", res.status);
     if (!res.ok) throw new Error(`Report failed: ${res.status}`);
     const rundownAt = res.headers.get("x-rundown-at");
     return { html: await res.text(), rundownAt };
