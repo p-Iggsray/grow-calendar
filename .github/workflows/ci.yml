@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  # A "Run workflow" button in the Actions tab, so a deploy can be redone
+  # without a new commit (after a Cloudflare setting changes, for example).
+  # Run from main, it deploys, since the deploy job checks the ref.
+  workflow_dispatch:
 
 jobs:
   check:
