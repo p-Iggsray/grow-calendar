@@ -202,6 +202,47 @@ async function request(path, opts = {}) {
   return data;
 }
 
+/**
+ * Send a video file as the raw request body, reporting progress.
+ *
+ * XHR rather than fetch for one reason: fetch cannot report upload progress,
+ * and a minute of video over a cellular connection is long enough that a
+ * button saying "Adding..." with nothing moving reads as a hang.
+ *
+ * @param {string} growId
+ * @param {string} date YYYY-MM-DD
+ * @param {Blob} file
+ * @param {string} mime
+ * @param {(fraction: number) => void} [onProgress]
+ * @returns {Promise<{ uploadKey: string }>}
+ */
+function uploadVideoFile(growId, date, file, mime, onProgress) {
+  const path = `/api/grows/${growId}/videos/upload?date=${encodeURIComponent(date)}`;
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", path);
+    xhr.withCredentials = true;
+    xhr.setRequestHeader("content-type", mime);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total);
+    };
+    xhr.onerror = () => reject(new Error("The upload was interrupted. Check your connection and try again."));
+    xhr.onabort = () => reject(new Error("The upload was cancelled."));
+    xhr.onload = () => {
+      noteStatus(path, xhr.status);
+      let data = null;
+      try { data = xhr.responseText ? JSON.parse(xhr.responseText) : null; } catch { data = null; }
+      if (xhr.status >= 200 && xhr.status < 300 && data?.uploadKey) { resolve(data); return; }
+      const err = /** @type {Error & { status?: number }} */ (
+        new Error(data?.error || `upload failed with status ${xhr.status}`)
+      );
+      err.status = xhr.status;
+      reject(err);
+    };
+    xhr.send(file);
+  });
+}
+
 export const api = {
   me: () => request("/api/auth/me"),
   login: (username, password) =>
@@ -353,6 +394,11 @@ export const api = {
     request(`/api/grows/${id}/photos`, { method: "POST", body: JSON.stringify(photo) }),
   getJournalPhoto: (id, photoId) =>
     request(`/api/grows/${id}/photos/${photoId}`),
+  // A video is two requests: the raw file into storage, then its row and
+  // poster frame. See worker/videos.js for why the file goes first.
+  uploadVideoFile,
+  createJournalVideo: (id, video) =>
+    request(`/api/grows/${id}/videos`, { method: "POST", body: JSON.stringify(video) }),
   getStageTimeline: (id) => request(`/api/grows/${id}/stages`),
   // Reminders. `month`, `date` or `from` (+ optional `limit`) pick the window.
   listGrowEvents: (id, params) =>

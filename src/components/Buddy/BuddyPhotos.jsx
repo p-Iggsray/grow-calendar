@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { UI, NUM } from "./chrome.jsx";
+import VideoBadge from "../VideoBadge.jsx";
+
+const isVideo = (p) => p?.kind === "video";
+const describe = (p) => {
+  const what = isVideo(p) ? "Video" : "Photo";
+  return p.plantName ? `${p.plantName}, ${p.date}${isVideo(p) ? " (video)" : ""}` : `${what} from ${p.date}`;
+};
 
 // A grid of thumbnails. Each tile fetches its own picture from the share
 // route, so a day with twenty photographs costs twenty small images that the
@@ -17,20 +24,21 @@ export function PhotoGrid({ photos, api, onOpen, min = 92 }) {
           <button
             type="button"
             onClick={() => onOpen(i)}
-            aria-label={`Open photo ${i + 1} of ${photos.length}${p.date ? `, ${p.date}` : ""}`}
+            aria-label={`Open ${isVideo(p) ? "video" : "photo"} ${i + 1} of ${photos.length}${p.date ? `, ${p.date}` : ""}`}
             style={{
               display: "block", width: "100%", aspectRatio: "1", padding: 0,
               border: "none", background: "var(--c-surface-2)", borderRadius: 10,
-              overflow: "hidden", cursor: "pointer",
+              overflow: "hidden", cursor: "pointer", position: "relative",
             }}>
             <img
               src={api.photoUrl(p.id, "thumb")}
-              alt={p.plantName ? `${p.plantName}, ${p.date}` : `Photo from ${p.date}`}
+              alt={describe(p)}
               loading="lazy"
               decoding="async"
               className="photo-tile"
               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", borderRadius: 10 }}
             />
+            {isVideo(p) && <VideoBadge durationMs={p.durationMs} />}
           </button>
         </li>
       ))}
@@ -91,7 +99,8 @@ export function PhotoLightbox({ photos, index, api, onClose, onIndex }) {
       aria-label={`Photo ${index + 1} of ${photos.length}`}
       tabIndex={-1}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      onTouchStart={(e) => { touchX.current = e.touches[0]?.clientX ?? null; }}
+      // A drag on a video is its scrubber, not a page turn.
+      onTouchStart={(e) => { touchX.current = e.target?.tagName === "VIDEO" ? null : (e.touches[0]?.clientX ?? null); }}
       onTouchEnd={(e) => {
         const from = touchX.current;
         const to = e.changedTouches[0]?.clientX;
@@ -118,11 +127,24 @@ export function PhotoLightbox({ photos, index, api, onClose, onIndex }) {
       </div>
 
       <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 8px" }}>
-        <img
-          src={api.photoUrl(photo.id, "full")}
-          alt={photo.plantName ? `${photo.plantName}, ${photo.date}` : `Photo from ${photo.date}`}
-          style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block" }}
-        />
+        {isVideo(photo) ? (
+          <video
+            key={photo.id}
+            src={api.videoUrl(photo.id)}
+            poster={api.photoUrl(photo.id, "thumb")}
+            controls
+            playsInline
+            preload="metadata"
+            aria-label={describe(photo)}
+            style={{ maxWidth: "100%", maxHeight: "100%", display: "block", background: "#000" }}
+          />
+        ) : (
+          <img
+            src={api.photoUrl(photo.id, "full")}
+            alt={describe(photo)}
+            style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block" }}
+          />
+        )}
       </div>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, padding: "12px 0 16px", flexShrink: 0 }}>

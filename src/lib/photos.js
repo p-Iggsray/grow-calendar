@@ -414,6 +414,85 @@ export async function fileToDataUrls(file) {
   }
 }
 
+// ── A video's poster frame and length ────────────────────────────────────────
+//
+// The video itself goes up untouched; what is made here is the still that
+// stands in for it on every tile, share page and printed rundown. The frame is
+// taken a moment in rather than at zero, because the first frame of a phone
+// clip is often black or mid-exposure.
+
+const POSTER_SEEK_SECONDS = 0.5;
+// How long to wait for a phone to hand over metadata or a frame before giving
+// up on the poster (never on the video itself).
+const VIDEO_READ_TIMEOUT_MS = 15_000;
+
+function once(target, event, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { cleanup(); reject(new Error("timed out")); }, timeoutMs);
+    const onEvent = () => { cleanup(); resolve(); };
+    const onError = () => { cleanup(); reject(new Error("could not read that video")); };
+    function cleanup() {
+      clearTimeout(timer);
+      target.removeEventListener(event, onEvent);
+      target.removeEventListener("error", onError);
+    }
+    target.addEventListener(event, onEvent);
+    target.addEventListener("error", onError);
+  });
+}
+
+/**
+ * Read a picked video: its length, and a poster frame as a thumbnail data URL.
+ * Throws only when the length cannot be read at all, since without it the cap
+ * cannot be checked. A frame that will not draw falls back to a blank tile;
+ * the play badge still says what it is.
+ */
+export async function readVideoFile(file) {
+  const url = URL.createObjectURL(file);
+  const video = document.createElement("video");
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = "auto";
+  video.src = url;
+  try {
+    await once(video, "loadedmetadata", VIDEO_READ_TIMEOUT_MS)
+      .catch(() => { throw new Error("Could not read that video. Try a different one."); });
+    const durationMs = Math.round(video.duration * 1000);
+    if (!Number.isFinite(durationMs) || durationMs <= 0) {
+      throw new Error("Could not tell how long that video is. Try a different one.");
+    }
+
+    let thumb = BLANK_THUMB;
+    try {
+      video.currentTime = Math.min(POSTER_SEEK_SECONDS, video.duration / 2);
+      await once(video, "seeked", VIDEO_READ_TIMEOUT_MS);
+      thumb = await posterFrom(video) ?? BLANK_THUMB;
+    } catch { /* keep the blank tile */ }
+    return { durationMs, thumb };
+  } finally {
+    video.removeAttribute("src");
+    video.load();
+    URL.revokeObjectURL(url);
+  }
+}
+
+// Paint the current frame and run it through the same budgeted encoder a
+// photo's thumbnail uses, so a poster sits in the same tiles at the same cost.
+async function posterFrom(video) {
+  const w = video.videoWidth;
+  const h = video.videoHeight;
+  if (!w || !h) return null;
+  const frame = paint(video, w, h);
+  if (!frame) return null;
+  try {
+    const type = await bestFormat();
+    const state = { jpegOnly: type !== "image/webp" };
+    return await encodeToDataUrl(frame, type, Math.min(THUMB_EDGE, Math.max(w, h)), MAX_THUMB_BYTES, MAX_THUMB_CHARS, state);
+  } finally {
+    release(frame);
+  }
+}
+
 /**
  * Pure: the message to show after a batch upload. One failure out of many
  * should not read like total failure, and total failure should not read like

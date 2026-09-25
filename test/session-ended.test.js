@@ -107,14 +107,16 @@ test("every network call in the client reports its status", () => {
   // MJ stream and the three that want a blob or raw text.
   //
   // The count: each fetch() site except the one inside send() itself, plus
-  // each send() call site, plus the one noteStatus definition. send()'s own
-  // fetch is excluded because its two callers are what report for it.
+  // each send() call site, plus each XHR (the video upload, which needs upload
+  // progress fetch cannot give), plus the one noteStatus definition. send()'s
+  // own fetch is excluded because its two callers are what report for it.
   const src = read("../src/lib/api.js");
   const fetches = (src.match(/\bfetch\(/g) || []).length;
   const sendCalls = (src.match(/=\s*await send\(/g) || []).length;
+  const xhrSends = (src.match(/\bxhr\.send\(/g) || []).length;
   const notes = (src.match(/\bnoteStatus\(/g) || []).length;
 
-  const callSites = (fetches - 1) + sendCalls;
+  const callSites = (fetches - 1) + sendCalls + xhrSends;
   assert.equal(notes, callSites + 1,
     `${callSites} network call sites but ${notes - 1} report their status`);
 });

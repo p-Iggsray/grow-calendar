@@ -15,7 +15,8 @@ import { isLogFilled, rowToEntry, ensureGrowLogSchema } from "./growLog.js";
 import { journalPlantEntry, buildMonthIndex, buildTimelineDays } from "./journal.js";
 import { readNote } from "./notes.js";
 import { ensurePlantLogSchema } from "./plants.js";
-import { photosForDay, photoCountsForMonth, photoCountsForDates, ensureJournalPhotosSchema } from "./photos.js";
+import { photosForDay, photoCountsForMonth, photoCountsForDates, ensureJournalPhotosSchema, pictureColumnSql } from "./photos.js";
+import { streamMediaObject } from "./media.js";
 import { stageFromRow } from "./stages.js";
 import { buildRunningTimeline, growAnchor } from "../src/lib/stageTimeline.js";
 import { sanitizeHtml, looksLikeHtml } from "../src/lib/richText.js";
@@ -290,7 +291,7 @@ export async function getSharePhotos(env, token, growId, offsetRaw) {
   await ensureJournalPhotosSchema(env);
   const names = plantNames(grow.survey);
   const rows = await env.DB.prepare(
-    `SELECT id, date, plant_id FROM journal_photos
+    `SELECT id, date, plant_id, kind, duration_ms FROM journal_photos
      WHERE user_id = ? AND grow_id = ?
      ORDER BY date DESC, created_at DESC
      LIMIT ? OFFSET ?`
@@ -303,6 +304,7 @@ export async function getSharePhotos(env, token, growId, offsetRaw) {
       id: r.id,
       date: r.date,
       plantName: r.plant_id ? (names[r.plant_id] ?? null) : null,
+      ...(r.kind === "video" ? { kind: "video", durationMs: r.duration_ms ?? null } : {}),
     })),
     hasMore,
     nextOffset: hasMore ? offset + SHARE_PHOTO_PAGE : null,
@@ -324,9 +326,8 @@ export async function getSharePhoto(env, token, photoId, size) {
   if (!PHOTO_ID_RE.test(String(photoId ?? ""))) return error(400, "invalid photo id");
 
   await ensureJournalPhotosSchema(env);
-  const column = size === "full" ? "data" : "thumb";
   const row = await env.DB.prepare(
-    `SELECT grow_id, ${column} AS url FROM journal_photos WHERE id = ? AND user_id = ?`
+    `SELECT grow_id, ${pictureColumnSql(size)} AS url FROM journal_photos WHERE id = ? AND user_id = ?`
   ).bind(photoId, ctx.userId).first();
   if (!row?.url || !ctx.growIds.has(row.grow_id)) return error(404, "photo not found");
 
@@ -346,4 +347,21 @@ export async function getSharePhoto(env, token, photoId, size) {
       "x-content-type-options": "nosniff",
     },
   });
+}
+
+// GET /api/share/:token/videos/:videoId
+//
+// The video behind a link, under the same two checks as a photo: it belongs to
+// the link's owner, and to a space the link still reaches.
+export async function getShareVideo(request, env, token, videoId) {
+  const ctx = await shareContext(env, token);
+  if (!ctx) return error(404, "share link not found or has been revoked");
+  if (!PHOTO_ID_RE.test(String(videoId ?? ""))) return error(400, "invalid video id");
+
+  await ensureJournalPhotosSchema(env);
+  const row = await env.DB.prepare(
+    "SELECT grow_id, r2_key, mime FROM journal_photos WHERE id = ? AND user_id = ? AND kind = 'video'"
+  ).bind(videoId, ctx.userId).first();
+  if (!row?.r2_key || !ctx.growIds.has(row.grow_id)) return error(404, "video not found");
+  return streamMediaObject(env, row.r2_key, request, row.mime);
 }

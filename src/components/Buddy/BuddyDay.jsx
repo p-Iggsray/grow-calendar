@@ -7,6 +7,16 @@ import { kindLabel, summarizeEntry, HEALTH_MAP } from "../PlantsTab/constants.js
 import { UI, BOOK, NUM, SectionLabel, Rule } from "./chrome.jsx";
 import { Photos } from "./BuddyPhotos.jsx";
 
+// "3 photographs, 1 video", leaving out whichever there are none of.
+function mediaCount(items) {
+  const videos = items.filter((p) => p.kind === "video").length;
+  const stills = items.length - videos;
+  return [
+    stills ? `${stills} ${stills === 1 ? "photograph" : "photographs"}` : "",
+    videos ? `${videos} ${videos === 1 ? "video" : "videos"}` : "",
+  ].filter(Boolean).join(", ");
+}
+
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 // The same record row the grower reads on their own journal page, minus the
@@ -194,9 +204,9 @@ export default function BuddyDay({ space, day, api, today }) {
       )}
 
       {photos.length > 0 && (
-        <section aria-label="Photos from this day" style={{ marginTop: 16 }}>
+        <section aria-label="Photos and videos from this day" style={{ marginTop: 16 }}>
           <SectionLabel style={{ marginBottom: 7 }}>
-            {photos.length} {photos.length === 1 ? "photograph" : "photographs"}
+            {mediaCount(photos)}
           </SectionLabel>
           <Photos photos={photos} api={api} />
         </section>

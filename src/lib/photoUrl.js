@@ -20,3 +20,8 @@
 export function photoUrl(id, size = "thumb") {
   return `/api/photos/${encodeURIComponent(id)}/${size === "full" ? "full" : "thumb"}`;
 }
+
+/** The URL a <video> streams a stored video from. Range requests work here. */
+export function videoUrl(id) {
+  return `/api/videos/${encodeURIComponent(id)}`;
+}

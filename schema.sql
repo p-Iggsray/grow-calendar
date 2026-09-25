@@ -305,8 +305,13 @@ CREATE TABLE IF NOT EXISTS journal_photos (
   date       TEXT NOT NULL,
   plant_id   TEXT,             -- set when the photo belongs to one plant
   from_camera INTEGER NOT NULL DEFAULT 0,  -- shot in-app, so not in the camera roll yet
-  data       TEXT NOT NULL,
-  thumb      TEXT NOT NULL,
+  kind       TEXT NOT NULL DEFAULT 'photo', -- 'photo' or 'video'
+  data       TEXT NOT NULL,     -- the photo as a data URL; empty for a video
+  thumb      TEXT NOT NULL,     -- thumbnail, or a video's poster frame
+  r2_key     TEXT,              -- a video's file in the MEDIA bucket
+  mime       TEXT,              -- a video's container type
+  size_bytes INTEGER,           -- a video's size in R2
+  duration_ms INTEGER,          -- a video's length
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_journal_photos_day ON journal_photos (grow_id, date);

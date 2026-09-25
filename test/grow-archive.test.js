@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   planEviction, archiveFullness, formatBytes,
-  ARCHIVE_MAX_SPACES, ARCHIVE_MAX_BYTES, ARCHIVE_CAPS,
+  ARCHIVE_MAX_SPACES, ARCHIVE_MAX_BYTES, ARCHIVE_MAX_MEDIA_BYTES, ARCHIVE_CAPS,
   rundownIsFresh, RUNDOWN_VALID_MS,
 } from "../src/lib/archive.js";
 
@@ -78,14 +78,50 @@ test("archiveFullness reports both ceilings and the nearer one", () => {
 });
 
 test("archiveFullness of an empty archive is empty, not NaN", () => {
-  assert.deepEqual(archiveFullness([], CAPS), { count: 0, bytes: 0, maxSpaces: 3, maxBytes: 1000, fraction: 0 });
+  assert.deepEqual(archiveFullness([], CAPS), {
+    count: 0, bytes: 0, mediaBytes: 0,
+    maxSpaces: 3, maxBytes: 1000, maxMediaBytes: ARCHIVE_MAX_MEDIA_BYTES,
+    fraction: 0,
+  });
   assert.equal(archiveFullness(null, CAPS).fraction, 0);
 });
 
 test("the shipped caps are real numbers", () => {
   assert.ok(Number.isFinite(ARCHIVE_MAX_SPACES) && ARCHIVE_MAX_SPACES > 0);
   assert.ok(Number.isFinite(ARCHIVE_MAX_BYTES) && ARCHIVE_MAX_BYTES > 0);
-  assert.deepEqual(ARCHIVE_CAPS, { maxSpaces: ARCHIVE_MAX_SPACES, maxBytes: ARCHIVE_MAX_BYTES });
+  assert.ok(Number.isFinite(ARCHIVE_MAX_MEDIA_BYTES) && ARCHIVE_MAX_MEDIA_BYTES > 0);
+  assert.deepEqual(ARCHIVE_CAPS, {
+    maxSpaces: ARCHIVE_MAX_SPACES, maxBytes: ARCHIVE_MAX_BYTES, maxMediaBytes: ARCHIVE_MAX_MEDIA_BYTES,
+  });
+});
+
+// Videos are in R2, a pool of their own, so they have a ceiling of their own.
+const MEDIA_CAPS = { maxSpaces: 99, maxBytes: 1000, maxMediaBytes: 5000 };
+const withVideo = (id, bytes, mediaBytes) => ({ id, bytes, mediaBytes });
+
+test("video bytes past their own ceiling evict, even with the database nearly empty", () => {
+  const archived = [withVideo("a", 1, 3000), withVideo("b", 1, 1000)];
+  assert.deepEqual(
+    planEviction(archived, withVideo("new", 1, 2000), MEDIA_CAPS).map((g) => g.id),
+    ["a"],
+  );
+});
+
+test("video bytes never count against the database ceiling", () => {
+  // 4900 bytes of video would blow a 1000 byte database cap if they were
+  // mixed together. They are not, so nothing goes.
+  const archived = [withVideo("a", 100, 4000)];
+  assert.deepEqual(planEviction(archived, withVideo("new", 100, 900), MEDIA_CAPS), []);
+});
+
+test("a space with no mediaBytes at all is read as none", () => {
+  assert.deepEqual(planEviction([space("a", 10)], space("new", 10), MEDIA_CAPS), []);
+});
+
+test("archiveFullness shows the video ceiling when it is the nearer one", () => {
+  const f = archiveFullness([withVideo("a", 100, 4000)], MEDIA_CAPS);
+  assert.equal(f.mediaBytes, 4000);
+  assert.equal(f.fraction, 0.8);
 });
 
 test("formatBytes reads the way a person would say it", () => {

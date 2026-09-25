@@ -48,7 +48,7 @@ export async function getStrainPhotos(env, user) {
   const [photoRes, stageRes] = await Promise.all([
     env.DB.prepare(
       `SELECT id, grow_id, date, plant_id FROM journal_photos
-       WHERE user_id = ? AND plant_id IS NOT NULL
+       WHERE user_id = ? AND plant_id IS NOT NULL AND kind = 'photo'
        ORDER BY date ASC, created_at ASC LIMIT ${MAX_PHOTOS}`
     ).bind(user.id).all(),
     env.DB.prepare(

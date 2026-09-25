@@ -12,6 +12,7 @@
 
 import { json, error, nowIso, safeJsonBounded } from "./util.js";
 import { logError } from "./log.js";
+import { deleteMediaObjects } from "./media.js";
 import { ARCHIVE_CAPS, planEviction, rundownIsFresh } from "../src/lib/archive.js";
 
 // Every table a space writes to. Archiving keeps all of them; eviction drops
@@ -81,15 +82,34 @@ export async function bytesByGrow(env, userId) {
   return totals;
 }
 
+/**
+ * Video bytes each grow holds in R2, as `{ [growId]: bytes }`. Counted apart
+ * from the database, because it is a different pool with its own ceiling.
+ */
+export async function mediaBytesByGrow(env, userId) {
+  const totals = {};
+  try {
+    const res = await env.DB.prepare(
+      `SELECT grow_id, SUM(COALESCE(size_bytes, 0)) AS bytes
+       FROM journal_photos WHERE user_id = ? AND kind = 'video' GROUP BY grow_id`
+    ).bind(userId).all();
+    for (const r of res.results ?? []) {
+      if (r.grow_id) totals[r.grow_id] = Number(r.bytes) || 0;
+    }
+  } catch { /* no videos column yet, so no videos */ }
+  return totals;
+}
+
 /** The archive as it stands: its spaces oldest-archived first, and the caps. */
 export async function readArchive(env, userId) {
-  const [rows, bytes] = await Promise.all([
+  const [rows, bytes, mediaBytes] = await Promise.all([
     env.DB.prepare(
       `SELECT id, display_name, status, archived_at, created_at
        FROM grows WHERE user_id = ? AND archived_at IS NOT NULL
        ORDER BY archived_at ASC, created_at ASC`
     ).bind(userId).all(),
     bytesByGrow(env, userId),
+    mediaBytesByGrow(env, userId),
   ]);
   const spaces = (rows.results ?? []).map((r) => ({
     id: r.id,
@@ -98,8 +118,9 @@ export async function readArchive(env, userId) {
     archivedAt: r.archived_at,
     createdAt: r.created_at,
     bytes: bytes[r.id] ?? 0,
+    mediaBytes: mediaBytes[r.id] ?? 0,
   }));
-  return { spaces, bytes, caps: ARCHIVE_CAPS };
+  return { spaces, bytes, mediaBytes, caps: ARCHIVE_CAPS };
 }
 
 /**
@@ -108,6 +129,17 @@ export async function readArchive(env, userId) {
  * a space that still exists rather than rows nothing owns.
  */
 export async function purgeGrow(env, userId, growId) {
+  // Which video files the space owns, read before its rows go, and removed
+  // after: a file outliving its row costs storage, a row outliving its file is
+  // a tile that will not play.
+  let mediaKeys = [];
+  try {
+    const res = await env.DB.prepare(
+      "SELECT r2_key FROM journal_photos WHERE user_id = ? AND grow_id = ? AND r2_key IS NOT NULL"
+    ).bind(userId, growId).all();
+    mediaKeys = (res.results ?? []).map((r) => r.r2_key);
+  } catch { /* no videos column yet, so no videos */ }
+
   for (const { table } of GROW_TABLES) {
     try {
       await env.DB.prepare(
@@ -120,6 +152,7 @@ export async function purgeGrow(env, userId, growId) {
   await env.DB.prepare(
     "DELETE FROM grows WHERE id = ? AND user_id = ?"
   ).bind(growId, userId).run();
+  await deleteMediaObjects(env, mediaKeys);
 }
 
 async function growRow(env, userId, growId) {
@@ -192,15 +225,20 @@ export async function archiveGrow(request, env, user, growId) {
   let body = {};
   { const p = await safeJsonBounded(request, 4096); if (p.ok) body = p.data ?? {}; }
 
-  const { spaces, bytes, caps } = await readArchive(env, user.id);
-  const incoming = { id: growId, displayName: row.display_name, bytes: bytes[growId] ?? 0 };
+  const { spaces, bytes, mediaBytes, caps } = await readArchive(env, user.id);
+  const incoming = {
+    id: growId, displayName: row.display_name,
+    bytes: bytes[growId] ?? 0, mediaBytes: mediaBytes[growId] ?? 0,
+  };
   const evict = planEviction(spaces, incoming, caps);
 
   if (evict.length && body?.evict !== true) {
     return json({
       error: "The archive is full.",
       code: "archive_full",
-      evict: evict.map((g) => ({ id: g.id, displayName: g.displayName, archivedAt: g.archivedAt, bytes: g.bytes })),
+      evict: evict.map((g) => ({
+        id: g.id, displayName: g.displayName, archivedAt: g.archivedAt, bytes: g.bytes, mediaBytes: g.mediaBytes,
+      })),
       incoming,
       archive: { spaces, caps },
     }, { status: 409 });
@@ -215,7 +253,7 @@ export async function archiveGrow(request, env, user, growId) {
     for (const g of evict) {
       const row = await growRow(env, user.id, g.id);
       const refusal = rundownRefusal(row, tokens[g.id], "evict");
-      if (refusal) missing.push({ ...refusal, bytes: g.bytes, archivedAt: g.archivedAt });
+      if (refusal) missing.push({ ...refusal, bytes: g.bytes, mediaBytes: g.mediaBytes, archivedAt: g.archivedAt });
     }
     if (missing.length) {
       return json({

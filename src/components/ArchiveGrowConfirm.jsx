@@ -127,7 +127,7 @@ export default function ArchiveGrowConfirm({ growId, growName, onClose, onArchiv
                     {g.displayName?.trim() || "Unnamed environment"}
                   </span>
                   <span style={{ display: "block", fontSize: 10.5, color: "var(--c-text-ghost)", marginTop: 2 }}>
-                    {saving ? "Building the rundown…" : saved ? "Rundown saved" : `${formatBytes(g.bytes)} · save its rundown`}
+                    {saving ? "Building the rundown…" : saved ? "Rundown saved" : `${formatBytes((g.bytes ?? 0) + (g.mediaBytes ?? 0))} · save its rundown`}
                   </span>
                 </span>
               </button>

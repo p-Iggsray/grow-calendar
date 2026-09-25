@@ -17,6 +17,7 @@ import { listGrows, createGrow, getGrow, patchGrow, patchGrowLifecycle, setupGro
 import { getArchive, archiveGrow, unarchiveGrow, deleteGrow } from "./archive.js";
 import { listGrowEvents, createGrowEvent, patchGrowEvent, deleteGrowEvent } from "./events.js";
 import { createJournalPhoto, getJournalPhoto, getPhotoImage, deleteJournalPhoto, listPlantPhotos } from "./photos.js";
+import { uploadVideoFile, createJournalVideo, getVideo } from "./videos.js";
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
 import { getReverseGeocode, getGeocodeSearch } from "./geocode.js";
 import { listStrains, getStrainPageCode, ensureStrainPrivacy } from "./strains.js";
@@ -29,7 +30,7 @@ import { getStats } from "./stats.js";
 import { requireOwner } from "./owner.js";
 import { logError, logInfo } from "./log.js";
 import { getShareToken, createShareToken, deleteShareToken } from "./share.js";
-import { getShareSpaces, getShareMonth, getShareDay, getShareTimeline, getSharePhotos, getSharePhoto } from "./shareView.js";
+import { getShareSpaces, getShareMonth, getShareDay, getShareTimeline, getSharePhotos, getSharePhoto, getShareVideo } from "./shareView.js";
 
 export default {
   async fetch(request, env, _ctx) {
@@ -104,7 +105,7 @@ function hasJsonContentType(request) {
 async function route(request, env, path) {
   const method = request.method;
 
-  if (isMutating(method) && !hasJsonContentType(request)) {
+  if (isMutating(method) && !hasJsonContentType(request) && !isVideoUpload(request, path, method)) {
     return error(415, "content-type must be application/json");
   }
 
@@ -130,6 +131,8 @@ async function route(request, env, path) {
       return getSharePhotos(env, hit[1], hit[2], new URL(request.url).searchParams.get("offset"));
     if ((hit = m(new RegExp(`^/api/share/${TOK}/photos/([A-Za-z0-9_]+)/(thumb|full)$`))))
       return getSharePhoto(env, hit[1], hit[2], hit[3]);
+    if ((hit = m(new RegExp(`^/api/share/${TOK}/videos/([A-Za-z0-9_]+)$`))))
+      return getShareVideo(request, env, hit[1], hit[2]);
     // A mistyped or truncated share URL is a broken link, not a sign-in
     // prompt. Without this it falls through to the session check below and
     // tells a friend with no account that they are "not authenticated".
@@ -152,6 +155,16 @@ async function route(request, env, path) {
   // catches up on this same round-trip.
   const response = await authenticatedRoute(request, env, path, method, user);
   return attachSessionCookie(response, request, user.rotateTo);
+}
+
+// A video's file is the one body that cannot be JSON. It is exempt only on its
+// own route and only as video/*, which a <form> cannot send either, so the
+// check above loses nothing: a cross-site page still cannot make this request
+// without a preflight that is never honoured.
+const VIDEO_UPLOAD_PATH = /^\/api\/grows\/([A-Za-z0-9]+)\/videos\/upload$/;
+function isVideoUpload(request, path, method) {
+  if (method !== "PUT" || !VIDEO_UPLOAD_PATH.test(path)) return false;
+  return (request.headers.get("content-type") || "").toLowerCase().startsWith("video/");
 }
 
 async function authenticatedRoute(request, env, path, method, user) {
@@ -235,6 +248,16 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (photoImageMatch && method === "GET") {
     return getPhotoImage(env, user, photoImageMatch[1], photoImageMatch[2]);
   }
+
+  // A stored video, streamed with Range support so a <video> can seek.
+  const videoMatch = path.match(/^\/api\/videos\/([A-Za-z0-9_]+)$/);
+  if (videoMatch && method === "GET") return getVideo(request, env, user, videoMatch[1]);
+
+  // Journal videos: the file first, then its row and poster. See videos.js.
+  const videoUploadMatch = path.match(VIDEO_UPLOAD_PATH);
+  if (videoUploadMatch && method === "PUT") return uploadVideoFile(request, env, user, videoUploadMatch[1]);
+  const videosMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/videos$/);
+  if (videosMatch && method === "POST") return createJournalVideo(request, env, user, videosMatch[1]);
 
   // Journal photos: attached to a day's journal page.
   const photosMatch = path.match(/^\/api\/grows\/([A-Za-z0-9]+)\/photos(?:\/([A-Za-z0-9_]+))?$/);

@@ -344,7 +344,19 @@ npx wrangler d1 execute grow-calendar-db --remote --file=./schema.sql
 
 Creates all current tables on the production D1 database (`users`, `sessions`, `login_attempts`, `task_checkoffs`, `day_notes`, `plan_config`, `plan_day_overrides`, `mj_usage`).
 
-### 5. Deploy
+### 5. Create the media bucket
+
+Journal videos are stored in R2, bound as `MEDIA` in `wrangler.jsonc`. Create the
+bucket once before the first deploy that includes videos:
+
+```bash
+npx wrangler r2 bucket create grow-calendar-media
+```
+
+Without it the deploy fails on the missing binding. `wrangler dev` simulates the
+bucket locally with no setup.
+
+### 6. Deploy
 
 ```bash
 npm run deploy
@@ -352,7 +364,7 @@ npm run deploy
 
 Runs `vite build` then `wrangler deploy`. Wrangler prints your live URL.
 
-### 6. Connect Cloudflare to GitHub for auto-deploy
+### 7. Connect Cloudflare to GitHub for auto-deploy
 
 In the Cloudflare dashboard, find your `grow-calendar` Worker, go to **Settings > Builds > Build configuration**, and:
 
@@ -395,6 +407,10 @@ present. Neither removes anything: existing spaces come out unarchived and with
 no rundown yet, which simply means one has to be generated before they can be
 deleted. `worker/grows.js` self-heals both columns on databases created before
 they existed, so applying the files by hand is optional.
+
+`012_journal_videos.sql` adds `kind`, `r2_key`, `mime`, `size_bytes` and
+`duration_ms` to `journal_photos`. Every existing row defaults to
+`kind = 'photo'`. `worker/photos.js` self-heals these columns too.
 
 `0001_multi_tenant.sql` adds `role` and `status` to `users`, makes `plan_config` and `plan_day_overrides` per-user (keyed by `user_id`), adds the `mj_usage` table, and promotes the original owner (lowest `user_id`) to `role='admin'`, `status='approved'`.
 
@@ -551,6 +567,9 @@ ceilings in `src/lib/archive.js`:
 - `ARCHIVE_MAX_SPACES` (20 spaces)
 - `ARCHIVE_MAX_BYTES` (2.5 GB of D1's 5 GB, measured across every grow-scoped
   table; journal photos are base64 in D1 and are nearly the whole figure)
+- `ARCHIVE_MAX_MEDIA_BYTES` (5 GB of R2's 10 GB free tier, the summed
+  `size_bytes` of archived spaces' videos, which never count against the D1
+  figure)
 
 Whichever is reached first, archiving something new makes room by dropping the
 spaces archived longest ago. That drop is never silent, and it is gated exactly
@@ -573,7 +592,8 @@ asked for. Its rundowns are still required first.
 `test/grow-archive.test.js`; the filename rules are in
 `test/rundown-file.test.js`. The eviction itself (`purgeGrow` in
 `worker/archive.js`) clears every grow-scoped table before the `grows` row, so a
-failure part-way leaves a space that still exists rather than orphan rows.
+failure part-way leaves a space that still exists rather than orphan rows. It
+reads the space's video keys first and removes those files from R2 last.
 
 Endpoints: `GET /api/archive`, `POST /api/grows/:id/archive`,
 `POST /api/grows/:id/unarchive`, `GET /api/grows/:id/report`,
@@ -610,6 +630,41 @@ pattern came from.
 Two places still handle base64 on purpose: the rundown in `worker/report.js`
 embeds thumbnails because the file has to be self-contained, and MJ's
 `get_photos` needs the bytes to hand to Gemini.
+
+## Videos: files in R2, rows beside the photos
+
+A video is a row in `journal_photos` with `kind = 'video'`. Its file is in the
+`MEDIA` R2 bucket under `videos/:userId/:growId/:uuid`, its poster frame is in
+`thumb`, and `data` is empty. Sharing the table is what makes every surface that
+lists a day's pictures (the journal, a plant's timeline, the share link, MJ, the
+rundown, the archive sizing) list videos with them, in the order they were
+added, with no second query.
+
+Adding one is two requests, file first (`worker/videos.js`):
+
+1. `PUT /api/grows/:id/videos/upload?date=` with the raw file as the body and
+   `content-type: video/*`. This is the one mutating route exempt from the JSON
+   content-type check, and only for `video/*`, which a form cannot send. The body
+   streams into R2 without being buffered. Caps are checked before the upload.
+2. `POST /api/grows/:id/videos` with the returned `uploadKey`, the poster, the
+   length and the plant. The worker `head`s the object for the real size and
+   type, re-checks caps, and inserts the row.
+
+If step 2 never happens the file is orphaned in R2: storage, never a broken tile.
+
+Limits (`src/lib/videos.js`, shared by both ends): 100 MB (the Worker request
+body ceiling), 60 seconds, 100 videos per grow. Photos and videos share the
+20-per-day cap; photos keep their own 800-per-grow cap.
+
+Playback is `GET /api/videos/:id` (and `/api/share/:token/videos/:id`), which
+answers Range requests with 206. Safari will not play a video without them. The
+client builds the poster and reads the length in `readVideoFile`
+(`src/lib/photos.js`) using the same budgeted encoder as a photo thumbnail.
+
+Wherever a still is needed, a video gives its poster: `/api/photos/:id/full`
+returns it, the rundown prints it with a play mark and the length, and MJ's
+photo tools see it and are told it is only the opening frame. The backup lists
+video rows like photo rows, metadata only. The strain library leaves videos out.
 
 ## Who can reach anything
 

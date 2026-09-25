@@ -18,15 +18,24 @@ export const ARCHIVE_MAX_SPACES = 20;
 // D1 gives the whole database 5 GB. Half of it is a fair share for spaces that
 // are finished, and still leaves room for several photo-heavy live grows.
 export const ARCHIVE_MAX_BYTES = 2.5 * 1024 * 1024 * 1024;
+// Videos live in R2, a separate pool with 10 GB free, so they get a ceiling of
+// their own. Half of it, for the same reason as above: the rest is for grows
+// that are still running.
+export const ARCHIVE_MAX_MEDIA_BYTES = 5 * 1024 * 1024 * 1024;
 
-export const ARCHIVE_CAPS = { maxSpaces: ARCHIVE_MAX_SPACES, maxBytes: ARCHIVE_MAX_BYTES };
+export const ARCHIVE_CAPS = {
+  maxSpaces: ARCHIVE_MAX_SPACES,
+  maxBytes: ARCHIVE_MAX_BYTES,
+  maxMediaBytes: ARCHIVE_MAX_MEDIA_BYTES,
+};
 
 /**
  * Which archived spaces have to go for `incoming` to fit.
  *
  * `archived` is what the archive already holds, OLDEST ARCHIVED FIRST, each
- * `{ id, bytes }`. `incoming` is the space about to join them. Returns the
- * spaces to drop, oldest first, which is empty whenever it already fits.
+ * `{ id, bytes, mediaBytes }`. `incoming` is the space about to join them.
+ * Returns the spaces to drop, oldest first, which is empty whenever it already
+ * fits. `bytes` is database, `mediaBytes` is video files; either can decide.
  *
  * The incoming space is never evicted, so a single space larger than the whole
  * byte budget empties the archive and is then archived anyway. That is the
@@ -36,18 +45,22 @@ export const ARCHIVE_CAPS = { maxSpaces: ARCHIVE_MAX_SPACES, maxBytes: ARCHIVE_M
 export function planEviction(archived, incoming, caps = ARCHIVE_CAPS) {
   const maxSpaces = caps?.maxSpaces ?? ARCHIVE_MAX_SPACES;
   const maxBytes = caps?.maxBytes ?? ARCHIVE_MAX_BYTES;
+  const maxMediaBytes = caps?.maxMediaBytes ?? ARCHIVE_MAX_MEDIA_BYTES;
   const queue = (archived ?? []).filter((g) => g && g.id !== incoming?.id);
+  const sum = (key) => queue.reduce((n, g) => n + (Number(g[key]) || 0), 0)
+    + (Number(incoming?.[key]) || 0);
 
   let count = queue.length + (incoming ? 1 : 0);
-  let bytes = queue.reduce((sum, g) => sum + (Number(g.bytes) || 0), 0)
-    + (Number(incoming?.bytes) || 0);
+  let bytes = sum("bytes");
+  let mediaBytes = sum("mediaBytes");
 
   const evict = [];
-  while (queue.length && (count > maxSpaces || bytes > maxBytes)) {
+  while (queue.length && (count > maxSpaces || bytes > maxBytes || mediaBytes > maxMediaBytes)) {
     const oldest = queue.shift();
     evict.push(oldest);
     count -= 1;
     bytes -= Number(oldest.bytes) || 0;
+    mediaBytes -= Number(oldest.mediaBytes) || 0;
   }
   return evict;
 }
@@ -56,17 +69,22 @@ export function planEviction(archived, incoming, caps = ARCHIVE_CAPS) {
 export function archiveFullness(spaces, caps = ARCHIVE_CAPS) {
   const maxSpaces = caps?.maxSpaces ?? ARCHIVE_MAX_SPACES;
   const maxBytes = caps?.maxBytes ?? ARCHIVE_MAX_BYTES;
+  const maxMediaBytes = caps?.maxMediaBytes ?? ARCHIVE_MAX_MEDIA_BYTES;
   const list = spaces ?? [];
   const bytes = list.reduce((sum, g) => sum + (Number(g?.bytes) || 0), 0);
+  const mediaBytes = list.reduce((sum, g) => sum + (Number(g?.mediaBytes) || 0), 0);
   return {
     count: list.length,
     bytes,
+    mediaBytes,
     maxSpaces,
     maxBytes,
+    maxMediaBytes,
     // Whichever ceiling is nearer is the one worth showing.
     fraction: Math.min(1, Math.max(
       maxSpaces ? list.length / maxSpaces : 0,
       maxBytes ? bytes / maxBytes : 0,
+      maxMediaBytes ? mediaBytes / maxMediaBytes : 0,
     )),
   };
 }

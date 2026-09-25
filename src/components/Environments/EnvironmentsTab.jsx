@@ -133,6 +133,7 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
   // How full the archive is, fetched only when the section is opened: working
   // it out means measuring every archived space, and photos are not small.
   const [archiveUse, setArchiveUse] = useState(null);
+  const archivedVideoBytes = (archiveUse?.spaces ?? []).reduce((n, g) => n + (g.mediaBytes ?? 0), 0);
   const [rundownId, setRundownId] = useState(null);
   const { addToast } = useToast();
   // One row's actions at a time: opening another closes the last.
@@ -314,6 +315,9 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
                   <div style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--c-text-ghost)", lineHeight: 1.7 }}>
                     {`${archiveUse.spaces.length} of ${archiveUse.caps.maxSpaces} spaces · `}
                     {`${formatBytes(archiveUse.spaces.reduce((n, g) => n + (g.bytes ?? 0), 0))} of ${formatBytes(archiveUse.caps.maxBytes)}`}
+                    {archivedVideoBytes > 0 && archiveUse.caps.maxMediaBytes
+                      ? ` · videos ${formatBytes(archivedVideoBytes)} of ${formatBytes(archiveUse.caps.maxMediaBytes)}`
+                      : ""}
                     <br />
                     Archiving something new once this is full drops the space archived longest ago. You will be asked first.
                   </div>

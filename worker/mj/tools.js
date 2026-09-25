@@ -187,9 +187,11 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
           growDay: buildDayInfo(r.date, timeline).growDay,
           plant: plantName(r.plant_id),
           viewable: Boolean(inline),
+          ...(r.kind === "video" ? { video: true, seconds: Math.round((r.duration_ms ?? 0) / 1000) } : {}),
         };
       });
       const viewable = listed.filter((p) => p.viewable).length;
+      const videos = listed.filter((p) => p.video).length;
       return {
         photos: listed,
         total,
@@ -199,7 +201,10 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
           viewable
             ? `The ${viewable} image${viewable === 1 ? " is" : "s are"} attached in order, at thumbnail size (480px). Describe only what you can actually see. For trichomes or anything needing detail, call get_photo with one id for the full-resolution version.`
             : "The images themselves could not be attached, so answer from the dates and plants only and say you cannot see them.",
-        ].join(" "),
+          videos
+            ? `Entries marked video are clips; you are seeing only their opening frame, so do not describe what happens in them.`
+            : "",
+        ].filter(Boolean).join(" "),
       };
     }
 
@@ -212,15 +217,19 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
       const inline = toInlineData(row.data);
       if (inline && shown) shown.push(inline);
       const survey = rawGrow?.survey ?? {};
+      const video = row.kind === "video";
       return {
         id: row.id,
         date: row.date,
         growDay: buildDayInfo(row.date, timeline).growDay,
         plant: (survey?.strains ?? []).find((p) => p.id === row.plant_id)?.name ?? null,
         viewable: Boolean(inline),
-        note: inline
-          ? "Attached at full resolution. This is the one to judge detail from."
-          : "This photograph could not be attached, so say you cannot see it rather than describing it.",
+        ...(video ? { video: true, seconds: Math.round((row.duration_ms ?? 0) / 1000) } : {}),
+        note: !inline
+          ? "This photograph could not be attached, so say you cannot see it rather than describing it."
+          : video
+            ? "This is a video. Only its opening frame is attached, at thumbnail size, so judge only what that one frame shows and say the clip itself cannot be watched."
+            : "Attached at full resolution. This is the one to judge detail from.",
       };
     }
 

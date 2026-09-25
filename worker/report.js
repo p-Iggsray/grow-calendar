@@ -17,6 +17,8 @@ import { rowToEntry } from "./growLog.js";
 import { recordRows } from "../src/lib/dayRecord.js";
 import { noteToHtml } from "../src/lib/richText.js";
 import { weeksAndDays } from "../src/lib/dates-core.js";
+import { ensureJournalPhotosSchema } from "./photos.js";
+import { formatDuration } from "../src/lib/videos.js";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -26,6 +28,18 @@ function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => (
     { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
   ));
+}
+// Inline SVG rather than a glyph: fonts disagree about what a play symbol looks
+// like, and print-to-PDF is the one place a missing glyph cannot be fixed.
+function playMark() {
+  return `<svg class="play" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="#1f2a22"/><path d="M8 6 L14.5 10 L8 14 Z" fill="#fff"/></svg>`;
+}
+/** Pure: "24 photographs, 3 videos", leaving out whichever is none. */
+export function mediaCountLabel(photos, videos) {
+  const parts = [];
+  if (photos) parts.push(`${photos} photograph${photos === 1 ? "" : "s"}`);
+  if (videos) parts.push(`${videos} video${videos === 1 ? "" : "s"}`);
+  return parts.join(", ") || "0 photographs";
 }
 function parseField(raw) {
   if (!raw) return null;
@@ -177,10 +191,13 @@ export async function getGrowReport(env, user, growId, unit = "gal") {
   // each and would put a 300-photo grow past 200MB, which no browser would
   // print and most would not open. A thumbnail is 480px on its long edge,
   // which at contact-sheet size on paper is sharper than the paper is.
+  //
+  // A video prints as its poster frame, marked so paper still says it moved.
   let photoRows = [];
   try {
+    await ensureJournalPhotosSchema(env);
     const r = await env.DB.prepare(
-      "SELECT id, date, plant_id, thumb FROM journal_photos WHERE user_id = ? AND grow_id = ? ORDER BY date, created_at",
+      "SELECT id, date, plant_id, thumb, kind, duration_ms FROM journal_photos WHERE user_id = ? AND grow_id = ? ORDER BY date, created_at",
     ).bind(user.id, growId).all();
     photoRows = r.results ?? [];
   } catch { /* no photos table yet */ }
@@ -397,6 +414,9 @@ function renderReport(ctx) {
     photosByDate.get(p.date).push(p);
   }
   const plantNameById = new Map(plants.filter((p) => p?.id).map((p) => [p.id, p.name || ""]));
+  const videoCount = photoRows.filter((p) => p?.kind === "video").length;
+  const stillCount = photoRows.length - videoCount;
+  const mediaCountText = mediaCountLabel(stillCount, videoCount);
 
   const byDate = new Map();
   const slot = (d) => {
@@ -462,8 +482,11 @@ function renderReport(ctx) {
     // showing one twice costs nothing.
     const shots = photosByDate.get(d) ?? [];
     const stripHtml = shots.length
-      ? `<div class="jshots">${shots.map((p) =>
-          `<img class="jshot" src="${esc(p.thumb)}" alt="${esc(`${fmtLong(d)} photograph`)}" loading="lazy">`).join("")}</div>`
+      ? `<div class="jshots">${shots.map((p) => {
+          const video = p.kind === "video";
+          const img = `<img class="jshot" src="${esc(p.thumb)}" alt="${esc(`${fmtLong(d)} ${video ? "video" : "photograph"}`)}" loading="lazy">`;
+          return video ? `<span class="vwrap">${img}${playMark()}</span>` : img;
+        }).join("")}</div>`
       : "";
 
     const dayNum = dayOfGrow(firstDate, d);
@@ -489,8 +512,9 @@ function renderReport(ctx) {
   // context. A block is kept whole on one page where it fits.
   const plateDates = [...photosByDate.keys()].sort();
   const platesSection = plateDates.length
-    ? section(`Plates · ${photoRows.length} photograph${photoRows.length === 1 ? "" : "s"}`,
-      `<p class="lede">Every photograph of this grow, oldest first, grouped by the day it was taken.</p>` +
+    ? section(`Plates · ${mediaCountText}`,
+      `<p class="lede">Every photograph of this grow, oldest first, grouped by the day it was taken.${
+        videoCount ? " A video is shown by its opening frame, marked with a play symbol and its length." : ""}</p>` +
       plateDates.map((d) => {
         const shots = photosByDate.get(d);
         const stage = firstDate && d >= firstDate ? stageOnDate(stageEvents, d) : null;
@@ -500,13 +524,16 @@ function renderReport(ctx) {
             <span class="plate-date">${fmtLong(d)}</span>
             ${dayNum != null ? `<span class="plate-day">Day ${dayNum}</span>` : ""}
             ${stage ? chip(stage) : ""}
-            <span class="plate-n">${shots.length} photo${shots.length === 1 ? "" : "s"}</span>
+            <span class="plate-n">${shots.length} item${shots.length === 1 ? "" : "s"}</span>
           </div>
           <div class="sheet">${shots.map((p) => {
             const who = p.plant_id ? plantNameById.get(p.plant_id) : "";
-            return `<figure class="frame">
-              <img src="${esc(p.thumb)}" alt="${esc(`${fmtLong(d)}${who ? ` - ${who}` : ""}`)}" loading="lazy">
-              ${who ? `<figcaption>${esc(who)}</figcaption>` : ""}
+            const video = p.kind === "video";
+            const length = video && p.duration_ms ? formatDuration(p.duration_ms) : "";
+            const caption = [who, video ? `Video${length ? ` ${length}` : ""}` : ""].filter(Boolean).join(" · ");
+            return `<figure class="frame${video ? " vframe" : ""}">
+              <span class="vwrap"><img src="${esc(p.thumb)}" alt="${esc(`${fmtLong(d)}${who ? ` - ${who}` : ""}${video ? " (video)" : ""}`)}" loading="lazy">${video ? playMark() : ""}</span>
+              ${caption ? `<figcaption>${esc(caption)}</figcaption>` : ""}
             </figure>`;
           }).join("")}</div>
         </div>`;
@@ -627,7 +654,8 @@ function renderReport(ctx) {
     tempMax != null ? ["Highest temp recorded", `${tempMax}°F`] : null,
     ["Day notes written", String(noteRows.length)],
     envDays.length ? ["Days of sensor readings", String(envDays.length)] : null,
-    photoRows.length ? ["Photographs", String(photoRows.length)] : null,
+    stillCount ? ["Photographs", String(stillCount)] : null,
+    videoCount ? ["Videos", String(videoCount)] : null,
     eventRows.length ? ["Calendar events", String(eventRows.length)] : null,
     firstDate ? ["Length of record", weeksAndDays(dayOfGrow(firstDate, ymdOf(today)) ?? 0)] : null,
   ].filter(Boolean);
@@ -791,6 +819,13 @@ h1{font-size:34px;line-height:1.1;margin:0 0 10px;color:var(--gd);letter-spacing
 .jshots{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
 .jshot{width:74px;height:74px;object-fit:cover;border:1px solid #d8e0d4;
   border-radius:4px;background:#f2f0e8;}
+/* A video's poster frame, marked with a play symbol that survives printing:
+   a solid dark disc with a white triangle, not a translucent overlay that a
+   printer would drop. */
+.vwrap{position:relative;display:block;line-height:0;}
+.jshots .vwrap{display:inline-block;}
+.play{position:absolute;right:5px;bottom:5px;width:20px;height:20px;}
+.jshots .play{width:16px;height:16px;right:4px;bottom:4px;}
 .m-item{display:block;}
 .m-amt{font-family:'Courier New',monospace;margin-left:6px;}
 .m-det{color:#3f5a45;margin-left:6px;}

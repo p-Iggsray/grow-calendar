@@ -22,6 +22,15 @@
       "database_id": "f8a90390-8953-45ee-997d-bf5c17c62c1f"
     }
   ],
+  // Journal videos. Too big for a D1 row, so the file lives here and its row
+  // in journal_photos carries the key and a poster frame. Create the bucket
+  // once with: npx wrangler r2 bucket create grow-calendar-media
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "grow-calendar-media"
+    }
+  ],
   "observability": {
     "enabled": true
   },

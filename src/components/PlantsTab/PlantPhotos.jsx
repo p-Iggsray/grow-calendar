@@ -1,20 +1,21 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, Images } from "lucide-react";
+import { ImagePlus } from "lucide-react";
 import { api, ymd } from "../../lib/api.js";
 import { photoUrl } from "../../lib/photoUrl.js";
-import { batchResultMessage, fileToDataUrls, MAX_BATCH } from "../../lib/photos.js";
+import { batchResultMessage, MAX_BATCH } from "../../lib/photos.js";
+import { addMediaBatch, addingLabel, MEDIA_ACCEPT } from "../../lib/addMedia.js";
 import PhotoViewer from "../PhotoViewer.jsx";
+import VideoBadge from "../VideoBadge.jsx";
 import { fmtDateKey, MONO } from "./constants.js";
 import { tapHaptic } from "../../lib/haptics.js";
 
-// One plant's photo timeline: newest first, uploaded from the plant's page.
-// Each photo is dated today and shows up on that day's journal page too,
+// One plant's photo and video timeline: newest first, added from the plant's
+// page. Each item is dated today and shows up on that day's journal page too,
 // labeled with this plant.
 export default function PlantPhotos({ growId, plantId, unitWord = "plant" }) {
-  const cameraRef = useRef(null);
-  const libraryRef = useRef(null);
+  const pickerRef = useRef(null);
   const [photos, setPhotos] = useState([]);
-  const [progress, setProgress] = useState(null); // {done, total} while uploading
+  const [progress, setProgress] = useState(null); // {done, total, fraction, video} while uploading
   const [error, setError] = useState("");
   const [viewIndex, setViewIndex] = useState(null);
   const busy = progress !== null;
@@ -26,48 +27,32 @@ export default function PlantPhotos({ growId, plantId, unitWord = "plant" }) {
   };
   useEffect(load, [growId, plantId]);
 
-  // One at a time: each photo is most of a megabyte, and firing a batch at
-  // once would spike memory on the phone and hammer the worker.
-  async function uploadAll(files, fromCamera) {
-    const batch = files.slice(0, MAX_BATCH);
-    setProgress({ done: 0, total: batch.length });
+  async function uploadAll(files) {
     setError("");
-    const failures = [];
-    let added = 0;
-    for (const file of batch) {
-      try {
-        const { data, thumb } = await fileToDataUrls(file);
-        await api.createJournalPhoto(growId, { date: ymd(new Date()), data, thumb, plantId, fromCamera });
-        added++;
-      } catch (err) {
-        failures.push(err?.message || "Could not add that photo.");
-      }
-      setProgress({ done: added + failures.length, total: batch.length });
-    }
+    setProgress({ done: 0, total: Math.min(files.length, MAX_BATCH), fraction: null, video: false });
+    const { added, failures, truncated } = await addMediaBatch(files, {
+      growId, date: ymd(new Date()), plantId, onProgress: setProgress,
+    });
     if (added > 0) {
       tapHaptic();
       window.dispatchEvent(new CustomEvent("journal-mutated"));
       load();
     }
     setError(
-      files.length > batch.length
+      truncated
         ? `Only the first ${MAX_BATCH} were added. ${batchResultMessage(added, failures)}`.trim()
         : batchResultMessage(added, failures),
     );
     setProgress(null);
   }
 
-  function onPick(fromCamera) {
-    return (e) => {
-      const files = Array.from(e.target.files ?? []);
-      e.target.value = "";
-      if (files.length) uploadAll(files, fromCamera);
-    };
+  function onPick(e) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length) uploadAll(files);
   }
 
-  const addLabel = busy
-    ? (progress.total > 1 ? `${progress.done + 1}/${progress.total}…` : "Adding…")
-    : null;
+  const addLabel = addingLabel(progress, { compact: true });
 
   return (
     <div style={{ marginTop: 24 }}>
@@ -75,41 +60,25 @@ export default function PlantPhotos({ growId, plantId, unitWord = "plant" }) {
         <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>
           Photos
         </span>
-        <div style={{ display: "flex", gap: 7 }}>
-          <button
-            type="button"
-            onClick={() => { if (!busy) { tapHaptic(); cameraRef.current?.click(); } }}
-            disabled={busy}
-            style={{
-              display: "flex", alignItems: "center", gap: 5,
-              background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.35)",
-              borderRadius: 18, padding: "7px 13px", color: "#fbbf24",
-              fontFamily: MONO, fontSize: 11, fontWeight: 700, cursor: busy ? "default" : "pointer",
-              opacity: busy ? 0.6 : 1,
-            }}>
-            <Camera size={13} strokeWidth={2} />
-            {addLabel ?? "Take"}
-          </button>
-          <button
-            type="button"
-            onClick={() => { if (!busy) { tapHaptic(); libraryRef.current?.click(); } }}
-            disabled={busy}
-            style={{
-              display: "flex", alignItems: "center", gap: 5,
-              background: "var(--c-surface-1)", border: "1px solid var(--c-border)",
-              borderRadius: 18, padding: "7px 13px", color: "var(--c-text-dim)",
-              fontFamily: MONO, fontSize: 11, cursor: busy ? "default" : "pointer",
-              opacity: busy ? 0.6 : 1,
-            }}>
-            <Images size={13} strokeWidth={2} />
-            Choose
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => { if (!busy) { tapHaptic(); pickerRef.current?.click(); } }}
+          disabled={busy}
+          style={{
+            display: "flex", alignItems: "center", gap: 5,
+            background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.35)",
+            borderRadius: 18, padding: "7px 13px", color: "#fbbf24",
+            fontFamily: MONO, fontSize: 11, fontWeight: 700, cursor: busy ? "default" : "pointer",
+            opacity: busy ? 0.6 : 1,
+          }}>
+          <ImagePlus size={13} strokeWidth={2} />
+          {addLabel ?? "Add"}
+        </button>
       </div>
 
       {photos.length === 0 && !busy && (
         <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-ghost)", padding: "4px 0" }}>
-          No photos of this {unitWord} yet.
+          No photos or videos of this {unitWord} yet.
         </div>
       )}
 
@@ -120,7 +89,7 @@ export default function PlantPhotos({ growId, plantId, unitWord = "plant" }) {
               key={p.id}
               type="button"
               onClick={() => { tapHaptic(); setViewIndex(i); }}
-              aria-label={`Open photo from ${fmtDateKey(p.date)}`}
+              aria-label={`Open ${p.kind === "video" ? "video" : "photo"} from ${fmtDateKey(p.date)}`}
               style={{
                 padding: 0, border: "1px solid var(--c-border-faint)", borderRadius: 10,
                 overflow: "hidden", cursor: "pointer", background: "var(--c-surface-2)",
@@ -133,6 +102,7 @@ export default function PlantPhotos({ growId, plantId, unitWord = "plant" }) {
                 decoding="async"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               />
+              {p.kind === "video" && <VideoBadge durationMs={p.durationMs} />}
               <span style={{
                 position: "absolute", left: 0, right: 0, bottom: 0,
                 padding: "3px 5px", background: "rgba(0,0,0,0.55)",
@@ -152,21 +122,11 @@ export default function PlantPhotos({ growId, plantId, unitWord = "plant" }) {
       )}
 
       <input
-        ref={cameraRef}
+        ref={pickerRef}
         type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={onPick(true)}
-        style={{ display: "none" }}
-        aria-hidden="true"
-        tabIndex={-1}
-      />
-      <input
-        ref={libraryRef}
-        type="file"
-        accept="image/*"
+        accept={MEDIA_ACCEPT}
         multiple
-        onChange={onPick(false)}
+        onChange={onPick}
         style={{ display: "none" }}
         aria-hidden="true"
         tabIndex={-1}

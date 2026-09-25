@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, Download, MoreHorizontal, Trash2 } from "lucide-react";
+import { ChevronLeft, Download, MoreHorizontal, Play, Trash2 } from "lucide-react";
 import { api } from "../lib/api.js";
-import { photoUrl } from "../lib/photoUrl.js";
+import { photoUrl, videoUrl } from "../lib/photoUrl.js";
 import { nextIndex } from "../lib/photos.js";
 import { tapHaptic } from "../lib/haptics.js";
-import { photoFileFrom, savePhotoFile, saveOutcomeMessage } from "../lib/savePhoto.js";
+import { mediaFilename } from "../lib/videos.js";
+import {
+  canSharePhoto, downloadPhoto, photoFileFrom, savePhotoFile, saveOutcomeMessage,
+} from "../lib/savePhoto.js";
 import Portal from "./Portal.jsx";
 import HeaderMenu from "./HeaderMenu.jsx";
 
@@ -20,7 +23,9 @@ function fmtPhotoDate(key) {
 
 // The photo, full bleed on black, with everything else floating on top of it.
 // Swipe (or arrow-key) between every photo in the set, tap the picture to hide
-// the chrome and see the whole thing.
+// the chrome and see the whole thing. A video plays in place; only the one on
+// screen is ever a real <video>, so swiping away stops it and nothing off
+// screen downloads.
 //
 // `growId` names the space these photos came from. A set can also span several
 // spaces (a strain's photos do), in which case each photo carries its own and
@@ -39,9 +44,13 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
   // await and an await is exactly what stops the OS save sheet from opening.
   const [files, setFiles] = useState({});
   const dragged = useRef(false);
+  // A playing video owns horizontal drags: its scrubber is under the thumb,
+  // and a swipe there should seek, not change the page.
+  const [playing, setPlaying] = useState(false);
 
   const count = photos.length;
   const photo = photos[index] ?? null;
+  const isVideo = (p) => p?.kind === "video";
 
   useEffect(() => {
     const onResize = () => setWidth(window.innerWidth);
@@ -54,9 +63,12 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
     if (count > 0 && index > count - 1) setIndex(count - 1);
   }, [count, index]);
 
+  useEffect(() => { setPlaying(false); setSaveState(""); setSaveError(null); }, [index]);
+
   const fetchFull = useCallback((p) => {
     const gid = p?.growId ?? growId;
-    if (!p || !gid) return;
+    // A video's full picture is the video itself, streamed when it plays.
+    if (!p || !gid || p.kind === "video") return;
     setFulls((prev) => {
       if (prev[p.id] !== undefined) return prev;   // already loaded or loading
       api.getJournalPhoto(gid, p.id)
@@ -112,11 +124,30 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
   // precisely so there is nothing to wait for here.
   function saveToRoll() {
     const file = files[photo?.id];
+    if (isVideo(photo) && !file) { prepareVideo(photo); return; }
     if (!file || saveState === "saving") return;
     setSaveState("saving");
     setSaveError(null);
-    savePhotoFile(file, `grow-${photo.date || "photo"}.jpg`)
+    savePhotoFile(file, mediaFilename(photo.date, photo.mime))
       .then((outcome) => setSaveState(outcome === "cancelled" ? "" : outcome))
+      .catch((err) => { setSaveError(err); setSaveState("error"); });
+  }
+
+  // A video is not fetched ahead of time the way a photo is: it can be a
+  // hundred megabytes, and most videos opened here are only watched. So the
+  // first tap fetches it, and by the time it has arrived the tap's activation
+  // is long spent, which means the OS sheet needs a second one. A device that
+  // cannot share files needs no sheet, so it just downloads.
+  function prepareVideo(p) {
+    if (saveState === "preparing") return;
+    setSaveState("preparing");
+    setSaveError(null);
+    photoFileFrom(videoUrl(p.id), mediaFilename(p.date, p.mime))
+      .then((file) => {
+        setFiles((cur) => ({ ...cur, [p.id]: file }));
+        if (canSharePhoto(file)) { setSaveState("ready"); return; }
+        setSaveState(downloadPhoto(file));
+      })
       .catch((err) => { setSaveError(err); setSaveState("error"); });
   }
 
@@ -140,6 +171,12 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
   const status = saveOutcomeMessage(saveState, saveError);
   const subtitle = subtitleFor?.(photo) || "";
   const fileReady = Boolean(files[photo.id]);
+  const video = isVideo(photo);
+  const noun = video ? "video" : "photo";
+  // A photo's file is built as it loads; a video's is fetched on the first tap.
+  const saveLabel = saveState === "preparing"
+    ? "Preparing video…"
+    : fileReady || video ? "Save to Photos" : "Save to Photos (loading…)";
 
   return (
     <Portal>
@@ -157,7 +194,7 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
 
         {/* The strip of every photo in the set, slid one screen at a time. */}
         <motion.div
-          drag={count > 1 ? "x" : false}
+          drag={count > 1 && !playing ? "x" : false}
           dragElastic={0.14}
           dragConstraints={{ left: -(count - 1) * width, right: 0 }}
           dragMomentum={false}
@@ -178,17 +215,44 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
                 width, height: "100%", flexShrink: 0,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-              {/* The thumbnail holds the frame until the full image arrives. */}
-              <img
-                src={fulls[p.id] || p.thumb || photoUrl(p.id)}
-                alt=""
-                draggable={false}
-                style={{
-                  maxWidth: "100%", maxHeight: "100%",
-                  objectFit: "contain", display: "block",
-                  userSelect: "none", WebkitUserSelect: "none",
-                }}
-              />
+              {isVideo(p) && p.id === photo.id ? (
+                <video
+                  key={p.id}
+                  src={videoUrl(p.id)}
+                  poster={photoUrl(p.id)}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  onClick={(e) => e.stopPropagation()}
+                  onPlay={() => { setPlaying(true); setChrome(false); }}
+                  onPause={() => { setPlaying(false); setChrome(true); }}
+                  onEnded={() => { setPlaying(false); setChrome(true); }}
+                  style={{ maxWidth: "100%", maxHeight: "100%", display: "block", background: "#000" }}
+                />
+              ) : (
+                <div style={{ position: "relative", maxWidth: "100%", maxHeight: "100%", display: "flex" }}>
+                  {/* The thumbnail holds the frame until the full image arrives. */}
+                  <img
+                    src={fulls[p.id] || p.thumb || photoUrl(p.id)}
+                    alt=""
+                    draggable={false}
+                    style={{
+                      maxWidth: "100%", maxHeight: "100%",
+                      objectFit: "contain", display: "block",
+                      userSelect: "none", WebkitUserSelect: "none",
+                    }}
+                  />
+                  {isVideo(p) && (
+                    <span aria-hidden="true" style={{
+                      position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+                      width: 64, height: 64, borderRadius: "50%", background: "rgba(0,0,0,0.55)",
+                      display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
+                    }}>
+                      <Play size={28} strokeWidth={0} fill="currentColor" style={{ marginLeft: 4 }} />
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </motion.div>
@@ -236,8 +300,8 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
 
                 <div style={{ pointerEvents: "auto", flexShrink: 0 }}>
                   <HeaderMenu
-                    title="Photo"
-                    label="Photo actions"
+                    title={video ? "Video" : "Photo"}
+                    label={video ? "Video actions" : "Photo actions"}
                     icon={MoreHorizontal}
                     buttonStyle={{
                       background: "rgba(255,255,255,0.15)",
@@ -247,12 +311,12 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
                     items={[
                       {
                         icon: Download,
-                        label: fileReady ? "Save to Photos" : "Save to Photos (loading…)",
-                        detail: "Adds this shot to your camera roll",
+                        label: saveLabel,
+                        detail: `Adds this ${video ? "video" : "shot"} to your camera roll`,
                         onClick: saveToRoll,
-                        disabled: !fileReady || saveState === "saving",
+                        disabled: (!fileReady && !video) || saveState === "saving" || saveState === "preparing",
                       },
-                      { icon: Trash2, label: busy ? "Deleting…" : "Delete photo", tone: "destructive", onClick: remove, disabled: busy },
+                      { icon: Trash2, label: busy ? "Deleting…" : `Delete ${noun}`, tone: "destructive", onClick: remove, disabled: busy },
                     ]}
                   />
                 </div>

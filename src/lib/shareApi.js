@@ -24,5 +24,6 @@ export function shareApi(token) {
     photos:   (growId, offset)   => get(`${base}/grows/${growId}/photos${offset ? `?offset=${offset}` : ""}`),
     photoUrl: (photoId, size = "thumb") =>
       `${base}/photos/${encodeURIComponent(photoId)}/${size === "full" ? "full" : "thumb"}`,
+    videoUrl: (videoId) => `${base}/videos/${encodeURIComponent(videoId)}`,
   };
 }

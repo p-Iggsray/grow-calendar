@@ -109,6 +109,8 @@ export function savePhotoFile(file, filename) {
  */
 export function saveOutcomeMessage(outcome, error) {
   if (outcome === "saving")     return "Opening your phone's save sheet…";
+  if (outcome === "preparing")  return "Getting the video ready to save…";
+  if (outcome === "ready")      return "Video ready. Tap Save to Photos again.";
   if (outcome === "shared")     return "Sent to your photos.";
   if (outcome === "downloaded") return "Downloaded.";
   if (outcome === "cancelled")  return "";

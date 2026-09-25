@@ -136,7 +136,7 @@ export async function getBackup(env, user) {
       try {
         send(`{\n"format": "black-cat-botanicals-backup",\n"version": 1,\n`);
         send(`"exported_at": ${JSON.stringify(stamp)},\n`);
-        send(`"photos": "metadata only, the images themselves are in your camera roll",\n`);
+        send(`"photos": "metadata only, the images and videos themselves are in your camera roll",\n`);
         send(`"account": ${JSON.stringify(account)},\n`);
         send(`"restore": "every array under tables replays with INSERT OR REPLACE; see scripts/restore.mjs",\n`);
         send(`"tables": {\n`);

@@ -1,24 +1,26 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, Download, Images, X } from "lucide-react";
-import { api, ymd } from "../../lib/api.js";
+import { Camera, Download, ImagePlus, X } from "lucide-react";
+import { ymd } from "../../lib/api.js";
 import { photoUrl } from "../../lib/photoUrl.js";
 import { tapHaptic } from "../../lib/haptics.js";
-import { batchResultMessage, fileToDataUrls, MAX_BATCH } from "../../lib/photos.js";
+import { batchResultMessage, MAX_BATCH } from "../../lib/photos.js";
+import { addMediaBatch, addingLabel, progressFraction, MEDIA_ACCEPT } from "../../lib/addMedia.js";
+import { looksFreshFromCamera, mediaFilename, videoMimeOf } from "../../lib/videos.js";
 import {
   canSharePhoto, loadSaveToRoll, savePhotoFile, saveOutcomeMessage,
 } from "../../lib/savePhoto.js";
 import PhotoViewer from "../PhotoViewer.jsx";
+import VideoBadge from "../VideoBadge.jsx";
 
 const UI = "var(--font-ui)";
 
-// The day's photos: a tap-to-fill-the-screen grid plus the journal's add
-// actions. Picking from the library takes as many shots as you like at once.
-// Photos added from a plant's page ride along here too, labeled with the plant.
+// The day's photos and videos: a tap-to-fill-the-screen grid plus one add
+// button, behind which the OS offers the camera and the library together.
+// Media added from a plant's page rides along here too, labeled with the plant.
 export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
   const plantName = (id) => (plants.find((p) => p.id === id)?.name || "").trim();
-  const cameraRef = useRef(null);
-  const libraryRef = useRef(null);
-  const [progress, setProgress] = useState(null); // {done, total} while uploading
+  const pickerRef = useRef(null);
+  const [progress, setProgress] = useState(null); // {done, total, fraction, video} while uploading
   const [error, setError] = useState("");
   const [viewIndex, setViewIndex] = useState(null);
   // The shot the OS would not take on its own, waiting for a deliberate tap.
@@ -32,34 +34,21 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
 
   const busy = progress !== null;
 
-  // fromCamera is recorded with each photo: a shot taken here is not in the
-  // camera roll yet, so its viewer offers a one-tap Save to Photos.
-  //
-  // Uploaded one at a time on purpose. Each photo is most of a megabyte, and
-  // firing ten at once would spike memory on the phone doing the compressing
-  // and hit the worker with ten near-simultaneous writes.
-  async function uploadAll(files, fromCamera) {
-    const batch = files.slice(0, MAX_BATCH);
-    setProgress({ done: 0, total: batch.length });
+  // Each item records whether it looks freshly shot (see looksFreshFromCamera):
+  // a shot taken here is not in the camera roll yet, so its viewer offers a
+  // one-tap Save to Photos.
+  async function uploadAll(files) {
     setError("");
-    const failures = [];
-    let added = 0;
-    for (const file of batch) {
-      try {
-        const { data, thumb } = await fileToDataUrls(file);
-        await api.createJournalPhoto(growId, { date: ymd(date), data, thumb, fromCamera });
-        added++;
-      } catch (err) {
-        failures.push(err?.message || "Could not add that photo.");
-      }
-      setProgress({ done: added + failures.length, total: batch.length });
-    }
+    setProgress({ done: 0, total: Math.min(files.length, MAX_BATCH), fraction: null, video: false });
+    const { added, failures, truncated } = await addMediaBatch(files, {
+      growId, date: ymd(date), onProgress: setProgress,
+    });
     if (added > 0) {
       tapHaptic();
       window.dispatchEvent(new CustomEvent("journal-mutated"));
     }
     setError(
-      files.length > batch.length
+      truncated
         ? `Only the first ${MAX_BATCH} were added. ${batchResultMessage(added, failures)}`.trim()
         : batchResultMessage(added, failures),
     );
@@ -76,11 +65,13 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
   // to automatic as a web app is allowed to get: the sheet appears, and the
   // grower taps Save Image. When the browser refuses, `rollPrompt` puts a
   // one-tap button on the card instead, so there is always a way through.
+  const rollFilename = (file) => mediaFilename(ymd(date), videoMimeOf(file));
+
   function offerToRoll(file) {
     if (!canSharePhoto(file)) { setRollPrompt(file); return; }
     setRollState("saving");
     setRollError(null);
-    savePhotoFile(file, `grow-${ymd(date)}.jpg`)
+    savePhotoFile(file, rollFilename(file))
       .then((outcome) => {
         setRollState(outcome === "cancelled" ? "" : outcome);
         setRollPrompt(null);
@@ -93,15 +84,13 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
       });
   }
 
-  function onPick(fromCamera) {
-    return (e) => {
-      const files = Array.from(e.target.files ?? []);
-      e.target.value = "";
-      if (!files.length) return;
-      // Straight off the tap, before anything is awaited.
-      if (fromCamera && loadSaveToRoll()) offerToRoll(files[0]);
-      uploadAll(files, fromCamera);
-    };
+  function onPick(e) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!files.length) return;
+    // Straight off the tap, before anything is awaited.
+    if (loadSaveToRoll() && looksFreshFromCamera(files[0], files.length)) offerToRoll(files[0]);
+    uploadAll(files);
   }
 
   // The fallback: a fresh tap, which always carries its own activation.
@@ -111,7 +100,7 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
     tapHaptic();
     setRollState("saving");
     setRollError(null);
-    savePhotoFile(file, `grow-${ymd(date)}.jpg`)
+    savePhotoFile(file, rollFilename(file))
       .then((outcome) => {
         setRollState(outcome === "cancelled" ? "" : outcome);
         if (outcome !== "cancelled") setRollPrompt(null);
@@ -119,9 +108,8 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
       .catch((err) => { setRollError(err); setRollState("error"); });
   }
 
-  const addLabel = busy
-    ? (progress.total > 1 ? `Adding ${progress.done + 1} of ${progress.total}…` : "Adding…")
-    : null;
+  const addLabel = addingLabel(progress);
+  const showBar = busy && (progress.total > 1 || progress.video);
 
   return (
     <div>
@@ -133,7 +121,7 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
               fontFamily: UI, fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
               color: "var(--c-text-muted)", flex: 1,
             }}>
-              Photos
+              {photos.some((p) => p.kind === "video") ? "Photos & videos" : "Photos"}
             </span>
             <span style={{ fontFamily: UI, fontSize: 11, color: "var(--c-text-ghost)" }}>
               {photos.length}
@@ -145,7 +133,7 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
                 key={p.id}
                 type="button"
                 onClick={() => { tapHaptic(); setViewIndex(i); }}
-                aria-label={`Open photo ${i + 1} of ${photos.length}`}
+                aria-label={`Open ${p.kind === "video" ? "video" : "photo"} ${i + 1} of ${photos.length}`}
                 className="photo-tile"
                 style={{
                   padding: 0, border: "none", borderRadius: 10,
@@ -159,6 +147,7 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
                   decoding="async"
                   style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                 />
+                {p.kind === "video" && <VideoBadge durationMs={p.durationMs} />}
                 {p.plantId && plantName(p.plantId) && (
                   <span style={{
                     position: "absolute", left: 0, right: 0, bottom: 0,
@@ -177,48 +166,31 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
         </div>
       )}
 
-      {/* Shoot one now, or take a whole batch off the camera roll. Separate
-          buttons so the app knows which shots are not yet in the roll. */}
-      <div style={{ display: "flex", gap: 8 }}>
-        <button
-          type="button"
-          className="touch-target"
-          onClick={() => { if (!busy) { tapHaptic(); cameraRef.current?.click(); } }}
-          disabled={busy}
-          style={{
-            flex: 1, padding: "13px 12px", borderRadius: 12,
-            background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.4)",
-            color: "#fbbf24", fontFamily: UI, fontSize: 12.5, fontWeight: 700,
-            letterSpacing: 0.3, cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1,
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-          }}>
-          <Camera size={15} strokeWidth={2} />
-          {addLabel ?? "Take photo"}
-        </button>
-        <button
-          type="button"
-          className="touch-target"
-          onClick={() => { if (!busy) { tapHaptic(); libraryRef.current?.click(); } }}
-          disabled={busy}
-          style={{
-            flex: 1, padding: "13px 12px", borderRadius: 12,
-            background: "var(--c-surface-1)", border: "1px solid var(--c-border-strong)",
-            color: "var(--c-text-dim)", fontFamily: UI, fontSize: 12.5, fontWeight: 650,
-            letterSpacing: 0.3, cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1,
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-          }}>
-          <Images size={15} strokeWidth={2} />
-          Choose photos
-        </button>
-      </div>
+      {/* One button. The OS sheet behind it offers the camera (photo or
+          video) and the library, and a library pick can be a whole batch. */}
+      <button
+        type="button"
+        className="touch-target"
+        onClick={() => { if (!busy) { tapHaptic(); pickerRef.current?.click(); } }}
+        disabled={busy}
+        style={{
+          width: "100%", padding: "13px 12px", borderRadius: 12,
+          background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.4)",
+          color: "#fbbf24", fontFamily: UI, fontSize: 12.5, fontWeight: 700,
+          letterSpacing: 0.3, cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1,
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+        }}>
+        <ImagePlus size={15} strokeWidth={2} />
+        {addLabel ?? "Add photos or videos"}
+      </button>
 
-      {busy && progress.total > 1 && (
+      {showBar && (
         <div aria-hidden="true" style={{
           height: 3, borderRadius: 2, marginTop: 8, overflow: "hidden",
           background: "var(--c-border)",
         }}>
           <div style={{
-            width: `${Math.round((progress.done / progress.total) * 100)}%`,
+            width: `${Math.round(progressFraction(progress) * 100)}%`,
             height: "100%", background: "#fbbf24", transition: "width 0.25s",
           }} />
         </div>
@@ -233,7 +205,7 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
           background: "rgba(251,191,36,0.09)", border: "1px solid rgba(251,191,36,0.3)",
         }}>
           <span style={{ flex: 1, minWidth: 0, fontFamily: UI, fontSize: 11.5, color: "var(--c-text-dim)", lineHeight: 1.5 }}>
-            That shot is in your journal but not your camera roll yet.
+            That {videoMimeOf(rollPrompt) ? "video" : "shot"} is in your journal but not your camera roll yet.
           </span>
           <button
             type="button"
@@ -279,21 +251,11 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
       )}
 
       <input
-        ref={cameraRef}
+        ref={pickerRef}
         type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={onPick(true)}
-        style={{ display: "none" }}
-        aria-hidden="true"
-        tabIndex={-1}
-      />
-      <input
-        ref={libraryRef}
-        type="file"
-        accept="image/*"
+        accept={MEDIA_ACCEPT}
         multiple
-        onChange={onPick(false)}
+        onChange={onPick}
         style={{ display: "none" }}
         aria-hidden="true"
         tabIndex={-1}

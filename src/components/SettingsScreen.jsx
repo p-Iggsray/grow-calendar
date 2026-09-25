@@ -235,7 +235,7 @@ export default function SettingsScreen({
           matters if the database goes away. */}
       <Group
         title="Your copy"
-        footer="Every space, journal entry, log and rating in one file. Photos are listed but not included, since they are already in your camera roll.">
+        footer="Every space, journal entry, log and rating in one file. Photos and videos are listed but not included, since they are already in your camera roll.">
         <Row
           icon={DatabaseBackup}
           tint={age.stale ? "#f7d774" : "#2dd4bf"}
@@ -260,7 +260,7 @@ export default function SettingsScreen({
         <ToggleRow
           icon={Camera} tint="#f7d774"
           label="Save shots to Photos"
-          detail="A photo taken in the app is not in your camera roll until your phone puts it there, so it offers straight after the shot."
+          detail="A photo or video taken in the app is not in your camera roll until your phone puts it there, so it offers straight after the shot."
           on={saveToRoll}
           onToggle={(on) => { setSaveToRoll(on); rememberSaveToRoll(on); }}
           last
