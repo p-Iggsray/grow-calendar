@@ -5,11 +5,16 @@ import { MONO, Label, RadioGroup, NumStepper } from "./styleHelpers.jsx";
 import {
   MUSHROOM_SPECIES, cropOf, defaultVarietyType, varietyTypes, words,
 } from "../../lib/crops.js";
+import { BREEDER_WEEKS, breederWeeks, clampBreederWeeks } from "../../lib/plantClock.js";
+import BreederWeeksField from "../BreederWeeksField.jsx";
 
 function emptyStrain(crop) {
+  const mushrooms = cropOf(crop) === "mushrooms";
   return {
     name: "", type: defaultVarietyType(crop), photo: true,
-    flowerWeeks: words(crop).lengthDefault, count: 1,
+    flowerWeeks: mushrooms ? words(crop).lengthDefault : BREEDER_WEEKS.photo.defaultMin,
+    ...(mushrooms ? {} : { flowerWeeksMax: BREEDER_WEEKS.photo.defaultMax }),
+    count: 1,
   };
 }
 
@@ -94,7 +99,13 @@ function StrainRow({ index, strain, crop, catalog, canRemove, onChange, onRemove
     : [];
 
   function pick(c) {
-    onChange({ name: c.name, type: c.type, flowerWeeks: c.flowerWeeks, photo: c.photo });
+    // The catalogue knows one number; it becomes both ends of the range.
+    const auto = c.photo === false;
+    const weeks = c.flowerWeeks ? clampBreederWeeks({ min: c.flowerWeeks, max: c.flowerWeeks }, auto) : null;
+    onChange({
+      name: c.name, type: c.type, photo: c.photo,
+      ...(weeks ? (mushrooms ? { flowerWeeks: c.flowerWeeks } : { flowerWeeks: weeks.min, flowerWeeksMax: weeks.max }) : {}),
+    });
     setFocused(false);
   }
 
@@ -173,7 +184,11 @@ function StrainRow({ index, strain, crop, catalog, canRemove, onChange, onRemove
             <Label>Photoperiod or autoflower?</Label>
             <RadioGroup
               value={strain.photo ? "photo" : "auto"}
-              onChange={v => onChange({ photo: v === "photo" })}
+              onChange={v => {
+                const photo = v === "photo";
+                const r = clampBreederWeeks({ min: strain.flowerWeeks, max: strain.flowerWeeksMax ?? strain.flowerWeeks }, !photo);
+                onChange({ photo, flowerWeeks: r.min, flowerWeeksMax: r.max });
+              }}
               options={[
                 { value: "photo", label: "Photoperiod" },
                 { value: "auto", label: "Autoflower" },
@@ -181,10 +196,18 @@ function StrainRow({ index, strain, crop, catalog, canRemove, onChange, onRemove
             />
           </div>
         )}
-        <div>
-          <Label>{w.lengthLabel}</Label>
-          <NumStepper value={strain.flowerWeeks} onChange={v => onChange({ flowerWeeks: v })} min={w.lengthMin} max={w.lengthMax} label={w.lengthUnit} />
-        </div>
+        {mushrooms ? (
+          <div>
+            <Label>{w.lengthLabel}</Label>
+            <NumStepper value={strain.flowerWeeks} onChange={v => onChange({ flowerWeeks: v })} min={w.lengthMin} max={w.lengthMax} label={w.lengthUnit} />
+          </div>
+        ) : (
+          <BreederWeeksField
+            {...breederWeeks(strain)}
+            auto={strain.photo === false}
+            onChange={({ min, max }) => onChange({ flowerWeeks: min, flowerWeeksMax: max })}
+          />
+        )}
         <div>
           <Label>{w.countLabel}</Label>
           <NumStepper value={Number(strain.count) || 1} onChange={v => onChange({ count: v })} min={1} max={12} label={w.units} />

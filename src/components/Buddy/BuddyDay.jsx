@@ -2,10 +2,11 @@ import { MONTH_NAMES } from "../../lib/dates.js";
 import { noteToHtml } from "../../lib/richText.js";
 import { recordRows } from "../../lib/dayRecord.js";
 import { stageGroup, stageLabel, stageOnDate, dayOfGrow } from "../../lib/stageTimeline.js";
-import { cropOf } from "../../lib/crops.js";
+import { cropOf, words } from "../../lib/crops.js";
 import { kindLabel, summarizeEntry, HEALTH_MAP } from "../PlantsTab/constants.js";
 import { UI, BOOK, NUM, SectionLabel, Rule } from "./chrome.jsx";
 import { Photos } from "./BuddyPhotos.jsx";
+import DayPlants from "../Journal/DayPlants.jsx";
 
 // "3 photographs, 1 video", leaving out whichever there are none of.
 function mediaCount(items) {
@@ -162,6 +163,18 @@ export default function BuddyDay({ space, day, api, today }) {
         </div>
         <Rule style={{ marginTop: 11 }} />
       </header>
+
+      <div style={{ marginTop: 12 }}>
+        <DayPlants
+          plants={space.survey?.strains ?? []}
+          records={space.plantRecords ?? []}
+          dateKey={day.date}
+          todayKey={today}
+          crop={crop}
+          firstDate={space.firstDate}
+          unit={words(crop).unit}
+        />
+      </div>
 
       {rows.length > 0 && (
         <section

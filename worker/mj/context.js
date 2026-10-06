@@ -2,6 +2,9 @@
 // System-prompt context builders: grow log, weather, stats, grows list.
 import { displayUnit, formatWater, rowDisplay, unitLabel } from "../../src/lib/waterUnits.js";
 import { cropOf, words } from "../../src/lib/crops.js";
+import {
+  breederWeeks, clockRows, harvestLine, plantClocks, shortWeeks, weeksRangeLabel,
+} from "../../src/lib/plantClock.js";
 import { autoLogsWeather } from "../../src/lib/growEnvironment.js";
 import { logError } from "../log.js";
 import { weatherBlock } from "../../src/lib/mjWeather.js";
@@ -166,13 +169,39 @@ export async function buildEnvContext(env, userId, growId) {
   }
 }
 
-// Compact roster line with per-plant stages so MJ knows where each plant is.
-export function buildRosterContext(survey) {
+// The most plants (after folding identical ones) MJ is told about by name.
+const ROSTER_MAX = 12;
+
+/**
+ * Compact roster line so MJ knows where each plant is: its stage and how long
+ * it has been in it, its age, and the breeder's harvest window with where it
+ * stands today. Identical plants fold into one entry with a count. Without
+ * `records` and `todayKey` it falls back to name and stage alone.
+ */
+export function buildRosterContext(survey, { records = [], todayKey = null, firstDate = null } = {}) {
   const plants = Array.isArray(survey?.strains) ? survey.strains.filter(p => (p.status ?? "growing") === "growing") : [];
   if (plants.length === 0) return "";
-  const w = words(cropOf(survey));
-  const parts = plants.slice(0, 12).map(p => `${p.name || "Unnamed"}${p.stage ? ` [${p.stage}]` : ""}`);
-  return `${w.Units.toUpperCase()} IN THIS SPACE: ${parts.join(", ")}${plants.length > 12 ? ` and ${plants.length - 12} more` : ""}.`;
+  const crop = cropOf(survey);
+  const w = words(crop);
+  if (!todayKey) {
+    const parts = plants.slice(0, ROSTER_MAX).map(p => `${p.name || "Unnamed"}${p.stage ? ` [${p.stage}]` : ""}`);
+    return `${w.Units.toUpperCase()} IN THIS SPACE: ${parts.join(", ")}${plants.length > ROSTER_MAX ? ` and ${plants.length - ROSTER_MAX} more` : ""}.`;
+  }
+  const rows = clockRows(plantClocks(plants, records, { todayKey, crop, fallback: firstDate }));
+  const parts = rows.slice(0, ROSTER_MAX).map((r) => {
+    const p = r.plant;
+    const bits = [
+      r.current ? `${r.current.stage}${r.inStage != null ? ` for ${shortWeeks(r.inStage)}` : ""}` : p.stage,
+      r.age != null ? `day ${r.age} since started` : null,
+      crop === "mushrooms" ? null : (p.photo === false ? "autoflower" : "photoperiod"),
+      crop === "mushrooms" ? null
+        : `breeder ${weeksRangeLabel(breederWeeks(p))} ${p.photo === false ? "seed to harvest" : "of flower"}`,
+      r.window ? harvestLine(r.window, todayKey) : null,
+    ].filter(Boolean);
+    return `${p.name || "Unnamed"}${r.count > 1 ? ` x${r.count}` : ""} [${bits.join("; ")}]`;
+  });
+  const more = rows.length > ROSTER_MAX ? ` and ${rows.length - ROSTER_MAX} more` : "";
+  return `${w.Units.toUpperCase()} IN THIS SPACE: ${parts.join(", ")}${more}. Harvest windows are the breeder's weeks counted from the flip (photoperiod) or the start (autoflower); trichomes decide the actual day.`;
 }
 
 export function buildGrowsContext(grows, activeGrowId) {

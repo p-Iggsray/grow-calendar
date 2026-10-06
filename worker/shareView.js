@@ -69,7 +69,7 @@ function plantNames(survey) {
 // space: one pass over the grower's stage rows, then the pure builder per grow.
 async function timelinesForSpaces(env, ctx) {
   const out = new Map();
-  for (const g of ctx.grows) out.set(g.id, { events: [], firstDate: growAnchor(g.createdAt) });
+  for (const g of ctx.grows) out.set(g.id, { events: [], plantRecords: [], firstDate: growAnchor(g.createdAt) });
   if (!ctx.grows.length) return out;
 
   try {
@@ -91,6 +91,7 @@ async function timelinesForSpaces(env, ctx) {
     for (const [growId, records] of byGrow) {
       const entry = out.get(growId);
       entry.events = buildRunningTimeline(records, entry.firstDate);
+      entry.plantRecords = records.filter((r) => r.plantId);
     }
   } catch { /* no stage history yet: every space keeps its empty timeline */ }
 
@@ -145,6 +146,7 @@ export async function getShareSpaces(env, token) {
       survey: shareSurvey(g.survey),
       lifecycle: shareLifecycle(g.lifecycle),
       stageEvents: t.events,
+      plantRecords: t.plantRecords,
       firstDate: t.firstDate,
       lastDate: lastDays.get(g.id) ?? null,
     };

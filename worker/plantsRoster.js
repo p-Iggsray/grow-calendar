@@ -5,6 +5,7 @@
 import {
   cropOf, defaultStage, defaultVarietyType, isVarietyType, stagesFor, words,
 } from "../src/lib/crops.js";
+import { BREEDER_WEEKS, isDateKey } from "../src/lib/plantClock.js";
 
 // A roster entry is a cannabis plant or a mushroom tub, and which one decides
 // its stages and its type. The crop travels on the survey, so every function
@@ -18,6 +19,21 @@ export function stageSet(crop) {
 }
 
 const NAME_MAX = 60;
+// The widest breeder range either plant type can have: autoflowers quote seed
+// to harvest, which runs longer than a photoperiod's flowering time.
+const WEEKS_MIN = 1;
+const WEEKS_MAX = BREEDER_WEEKS.auto.max;
+// No grow in this app started before it existed.
+const EARLIEST_START = "2000-01-01";
+// A phone ahead of UTC can be a day ahead of the Worker's clock.
+const CLOCK_SLACK_DAYS = 1;
+
+/** Pure: is this a plausible start date, not in the future? */
+export function isPastDateKey(value, todayIso = todayKey()) {
+  if (!isDateKey(value) || value < EARLIEST_START) return false;
+  const limit = new Date(Date.parse(todayIso) + CLOCK_SLACK_DAYS * 86_400_000).toISOString().slice(0, 10);
+  return value <= limit;
+}
 
 export function newPlantId() {
   return "p_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -83,8 +99,27 @@ export function validatePlantFields(fields, partial = false, crop = undefined) {
   if (has("flowerWeeks") || !partial) {
     const w = words(kind);
     const fw = Number(fields.flowerWeeks ?? w.lengthDefault);
-    if (!Number.isFinite(fw) || fw < 1 || fw > 20) return { ok: false, error: "flowerWeeks out of range" };
+    if (!Number.isFinite(fw) || fw < WEEKS_MIN || fw > WEEKS_MAX) return { ok: false, error: "flowerWeeks out of range" };
     out.flowerWeeks = Math.round(fw);
+  }
+  // The top of the breeder's range. null removes it, leaving a one-number spec.
+  if (has("flowerWeeksMax")) {
+    if (fields.flowerWeeksMax === null || fields.flowerWeeksMax === "") {
+      out.flowerWeeksMax = null;
+    } else {
+      const max = Number(fields.flowerWeeksMax);
+      if (!Number.isFinite(max) || max < WEEKS_MIN || max > WEEKS_MAX) return { ok: false, error: "flowerWeeksMax out of range" };
+      out.flowerWeeksMax = Math.round(max);
+    }
+  }
+  if (out.flowerWeeks != null && out.flowerWeeksMax != null && out.flowerWeeksMax < out.flowerWeeks) {
+    return { ok: false, error: "the most weeks cannot be fewer than the least" };
+  }
+  // The day the plant really started, which may be before it joined the app.
+  if (has("startedOn")) {
+    if (fields.startedOn === null || fields.startedOn === "") out.startedOn = null;
+    else if (!isPastDateKey(fields.startedOn)) return { ok: false, error: "startedOn must be a past date" };
+    else out.startedOn = fields.startedOn;
   }
   if (has("potSize")) {
     if (fields.potSize === null || fields.potSize === "") {

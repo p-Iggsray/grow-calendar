@@ -1,23 +1,28 @@
 import { motion } from "framer-motion";
 import { MONO, SERIF, typeLabel, HEALTH_MAP, stageLabel, relDayLabel } from "./constants.js";
 import { cropOf, words } from "../../lib/crops.js";
-import { dayOfGrow } from "../../lib/stageTimeline.js";
 import { ymd } from "../../lib/api.js";
+import { breederWeeks, plantClock, shortWeeks, weeksRangeLabel } from "../../lib/plantClock.js";
 import StageTimeline from "./StageTimeline.jsx";
+import HarvestLine from "../HarvestLine.jsx";
 
-export default function PlantCard({ plant, metrics, crop, today, firstDate, onOpen }) {
-  // A plant counts from the day IT was added, not from the space's day 0.
-  // Older plants predate that stamp, so they fall back to the space.
+export default function PlantCard({ plant, metrics, crop, today, firstDate, records = [], onOpen }) {
+  // A plant counts from the day it really started (or, without that, the day
+  // it was added), not from the space's day 0.
   const w = words(crop);
   const mushrooms = cropOf(crop) === "mushrooms";
   const health = metrics?.health ? HEALTH_MAP[metrics.health] : null;
-  const age = today ? dayOfGrow(plant.createdAt ?? firstDate, ymd(today)) : null;
+  const todayKey = today ? ymd(today) : null;
+  const clock = plantClock(plant, records, { todayKey, crop, fallback: firstDate });
   const lastLog = metrics?.date ? relDayLabel(metrics.date, today) : null;
 
   const activityBits = [
-    age != null ? `Day ${age}` : null,
+    clock.age != null ? `Day ${clock.age} (${shortWeeks(clock.age)} old)` : null,
     lastLog ? `last log ${lastLog}` : null,
   ].filter(Boolean);
+  const stageText = clock.inStage != null
+    ? `${stageLabel(plant.stage)} · ${shortWeeks(clock.inStage)}`
+    : stageLabel(plant.stage);
 
   return (
     <motion.button
@@ -45,15 +50,22 @@ export default function PlantCard({ plant, metrics, crop, today, firstDate, onOp
         {/* Photoperiod is a light-cycle question, and a pot size is a pot: a tub
             has an answer to neither. */}
         {mushrooms ? "" : (plant.photo === false ? " · Auto" : " · Photo")}
-        {plant.flowerWeeks ? ` · ${plant.flowerWeeks}wk ${mushrooms ? "to flush" : "flower"}` : ""}
+        {mushrooms
+          ? (plant.flowerWeeks ? ` · ${plant.flowerWeeks}wk to flush` : "")
+          : ` · ${weeksRangeLabel(breederWeeks(plant))} ${plant.photo === false ? "seed to harvest" : "flower"}`}
         {!mushrooms && plant.potSize ? ` · ${plant.potSize} gal` : ""}
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase" }}>
-        <span>Stage: {stageLabel(plant.stage)}</span>
+        <span>Stage: {stageText}</span>
       </div>
       <div style={{ marginTop: 8 }}>
         <StageTimeline stage={plant.stage} crop={crop} height={5} />
       </div>
+      {plant.status === "growing" && clock.window && (
+        <div style={{ marginTop: 8 }}>
+          <HarvestLine window={clock.window} status={clock.status} todayKey={todayKey} size={11} />
+        </div>
+      )}
       {activityBits.length > 0 && (
         <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--c-text-ghost)", marginTop: 6 }}>
           {activityBits.join(" · ")}

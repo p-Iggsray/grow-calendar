@@ -3,28 +3,12 @@
 // are built from now that there are no predicted dates.
 import { json, error } from "./util.js";
 import { ownedGrowRow, ensurePlantLogSchema } from "./plants.js";
-import { buildRunningTimeline, growAnchor, STAGE_ORDER } from "../src/lib/stageTimeline.js";
+import { buildRunningTimeline, growAnchor } from "../src/lib/stageTimeline.js";
+import { stageFromLogRow as stageFromRow } from "../src/lib/plantClock.js";
 
-const LABEL_TO_STAGE = Object.fromEntries(
-  STAGE_ORDER.map((s) => [s.toLowerCase(), s]),
-);
-
-// Pure: read the stage out of a plant_log row. New rows carry it in detail;
-// older ones only have the display body ("Stage -> Flowering"), so fall back
-// to reading the label off the end.
-export function stageFromRow(row) {
-  if (row?.detail) {
-    try {
-      const parsed = typeof row.detail === "string" ? JSON.parse(row.detail) : row.detail;
-      const s = String(parsed?.stage ?? "").toLowerCase();
-      if (LABEL_TO_STAGE[s]) return LABEL_TO_STAGE[s];
-    } catch { /* fall through to the body */ }
-  }
-  const body = String(row?.body ?? "");
-  const tail = body.split(/[>→]/).pop();        // after "->" or an arrow
-  const key = String(tail ?? "").trim().toLowerCase();
-  return LABEL_TO_STAGE[key] ?? null;
-}
+// Reading a stage out of a plant_log row is shared with the app, which builds
+// one plant's history from its own log (src/lib/plantClock.js).
+export { stageFromLogRow as stageFromRow } from "../src/lib/plantClock.js";
 
 // GET /api/grows/:id/stages -> the running timeline plus the space's day 0.
 export async function getStageTimeline(env, user, growId) {
@@ -44,7 +28,9 @@ export async function getStageTimeline(env, user, growId) {
 
   const firstDate = growAnchor(row.created_at);
   const events = buildRunningTimeline(records, firstDate);
-  return json({ events, firstDate });
+  // Each plant's own switches too, which is what its age in each stage and its
+  // harvest window are read from (src/lib/plantClock.js).
+  return json({ events, firstDate, plantRecords: records.filter((r) => r.plantId) });
 }
 
 // Internal: the same timeline for server-side consumers (push, report, MJ).
@@ -55,16 +41,20 @@ export async function loadStageTimeline(env, userId, growId) {
       "SELECT created_at FROM grows WHERE id = ? AND user_id = ?"
     ).bind(growId, userId).first();
     const res = await env.DB.prepare(
-      `SELECT date, body, detail FROM plant_log
+      `SELECT date, body, detail, plant_id FROM plant_log
        WHERE user_id = ? AND grow_id = ? AND kind = 'stage'
        ORDER BY date ASC, id ASC`
     ).bind(userId, growId).all();
     const records = (res.results ?? [])
-      .map((r) => ({ date: r.date, stage: stageFromRow(r) }))
+      .map((r) => ({ date: r.date, stage: stageFromRow(r), plantId: r.plant_id }))
       .filter((r) => r.stage);
     const firstDate = growAnchor(grow?.created_at);
-    return { events: buildRunningTimeline(records, firstDate), firstDate };
+    return {
+      events: buildRunningTimeline(records, firstDate),
+      firstDate,
+      plantRecords: records.filter((r) => r.plantId),
+    };
   } catch {
-    return { events: [], firstDate: null };
+    return { events: [], firstDate: null, plantRecords: [] };
   }
 }

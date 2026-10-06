@@ -93,6 +93,15 @@ export function shareSurvey(survey) {
       id: typeof s?.id === "string" ? s.id : "",
       name: typeof s?.name === "string" ? s.name : "",
       type: typeof s?.type === "string" ? s.type : "",
+      // What a friend needs to see how old each plant is and when it should be
+      // ready. Dates and the breeder's numbers, nothing about where or how.
+      photo: s?.photo === false ? false : true,
+      stage: typeof s?.stage === "string" ? s.stage : null,
+      status: typeof s?.status === "string" ? s.status : "growing",
+      createdAt: typeof s?.createdAt === "string" ? s.createdAt : null,
+      startedOn: typeof s?.startedOn === "string" ? s.startedOn : null,
+      flowerWeeks: Number.isFinite(Number(s?.flowerWeeks)) ? Number(s.flowerWeeks) : null,
+      flowerWeeksMax: Number.isFinite(Number(s?.flowerWeeksMax)) && s?.flowerWeeksMax != null ? Number(s.flowerWeeksMax) : null,
     }))
     .filter((s) => s.name);
   return { crop: cropOf(survey), environment: survey.environment ?? null, strains };

@@ -19,6 +19,9 @@ import { noteToHtml } from "../src/lib/richText.js";
 import { weeksAndDays } from "../src/lib/dates-core.js";
 import { ensureJournalPhotosSchema } from "./photos.js";
 import { formatDuration } from "../src/lib/videos.js";
+import {
+  breederWeeks, harvestLine, plantClock, rangeLabel, shortDate, shortWeeks, spanDays, weeksRangeLabel,
+} from "../src/lib/plantClock.js";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -157,7 +160,7 @@ export async function getGrowReport(env, user, growId, unit = "gal") {
   const survey = parseField(row.survey) ?? {};
   // The grow's recorded history: what every stage label and day number below
   // is read from.
-  const { events: stageEvents, firstDate } = await loadStageTimeline(env, user.id, growId);
+  const { events: stageEvents, firstDate, plantRecords } = await loadStageTimeline(env, user.id, growId);
 
   const [logRes, noteRes] = await Promise.all([
     env.DB.prepare("SELECT * FROM grow_log WHERE user_id = ? AND grow_id = ? ORDER BY date").bind(user.id, growId).all(),
@@ -224,7 +227,7 @@ export async function getGrowReport(env, user, growId, unit = "gal") {
   const legacy = await loadLegacyDayRecords(env, user.id, growId);
 
   const html = renderReport({
-    row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows,
+    row, survey, stageEvents, firstDate, plantRecords, logRows, noteRows, plantLogRows,
     eventRows, photoRows, envDays, legacy, waterUnit,
   });
 
@@ -269,7 +272,7 @@ async function loadLegacyDayRecords(env, userId, growId) {
 
 function renderReport(ctx) {
   const {
-    row, survey, stageEvents, firstDate, logRows, noteRows, plantLogRows,
+    row, survey, stageEvents, firstDate, plantRecords = [], logRows, noteRows, plantLogRows,
     eventRows, photoRows = [], envDays = [], legacy = {}, waterUnit,
   } = ctx;
 
@@ -343,9 +346,12 @@ function renderReport(ctx) {
     }
     const cards = plants.map((p, i) => {
       const pname = (p?.name || "").trim() || `${w.Unit} ${i + 1}`;
+      const auto = p?.photo === false;
       const meta = [
         p?.type ? humanize(p.type) : null,
-        p?.flowerWeeks ? `${p.flowerWeeks} wk ${crop === "mushrooms" ? "to flush" : "flower"}` : null,
+        crop === "mushrooms"
+          ? (p?.flowerWeeks ? `${p.flowerWeeks} wk to flush` : null)
+          : `${weeksRangeLabel(breederWeeks(p))} ${auto ? "seed to harvest" : "flower"}`,
         crop === "mushrooms" ? null : (p?.photo === false ? "Autoflower" : (p?.photo === true ? "Photoperiod" : null)),
         p?.status ? humanize(p.status) : null,
       ].filter(Boolean).join(" · ");
@@ -367,8 +373,30 @@ function renderReport(ctx) {
       const yieldLine = yield_.flushes
         ? `<div class="plant-meta">${yield_.flushes} flush${yield_.flushes === 1 ? "" : "es"} · ${yield_.wetG} g wet · ${yield_.dryG} g dry</div>`
         : "";
+      // How old it is, how long it spent in each stage, and the breeder's
+      // window: the same clock every screen of the app reads.
+      const clock = plantClock(p, plantRecords, { todayKey, crop, fallback: firstDate });
+      const growing = (p?.status ?? "growing") === "growing";
+      const clockBits = [
+        clock.start ? `Started ${shortDate(clock.start)}` : null,
+        growing && clock.age != null ? `day ${clock.age} (${shortWeeks(clock.age)})` : null,
+      ].filter(Boolean).join(", ");
+      const stagesLine = clock.spans.length
+        ? clock.spans.map((sp) => {
+            const days = spanDays(sp, todayKey);
+            return `${stageLabel(sp.stage)} ${days != null ? shortWeeks(days) : ""}${sp.end == null && growing ? " (now)" : ""}`.trim();
+          }).join(" · ")
+        : "";
+      const win = clock.window;
+      const harvestText = !win ? ""
+        : growing ? harvestLine(win, todayKey)
+        : win.pending ? ""
+        : `Breeder window ${rangeLabel(win.start, win.end)}${win.harvestedOn ? `, harvested ${shortDate(win.harvestedOn)}` : ""}`;
+      const clockHtml = [clockBits, stagesLine, harvestText]
+        .filter(Boolean).map((t) => `<div class="plant-clock">${esc(t)}</div>`).join("");
       return `<div class="plant">
         <div class="plant-head"><span class="plant-name">${esc(pname)}</span>${meta ? `<span class="plant-meta">${esc(meta)}</span>` : ""}</div>
+        ${clockHtml}
         ${yieldLine}
         ${timeline}
       </div>`;
@@ -772,6 +800,7 @@ h1{font-size:34px;line-height:1.1;margin:0 0 10px;color:var(--gd);letter-spacing
 .plant{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 12px;break-inside:avoid;}
 .plant-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:6px;}
 .plant-name{font-size:17px;font-weight:700;color:var(--gd);}
+.plant-clock{font-size:12.5px;color:#3f5a45;margin:0 0 4px;}
 .plant-meta{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--mut);font-family:'Courier New',monospace;}
 .ptimeline{display:grid;gap:6px;}
 .prow{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:14px;border-bottom:1px dotted var(--line);padding:4px 0;}

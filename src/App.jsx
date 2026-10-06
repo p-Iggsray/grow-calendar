@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useToday } from "./lib/dates.js";
 import { useAuth } from "./lib/auth.jsx";
@@ -14,6 +14,7 @@ import { cropOf } from "./lib/crops.js";
 import { currentStageOf, dayOfGrow, stageLabel } from "./lib/stageTimeline.js";
 import { getLifecyclePhase, phaseMeta } from "./lib/lifecycle.js";
 import { spaceSubtitle } from "./lib/homeStatus.js";
+import { plantClocks, windowGroups } from "./lib/plantClock.js";
 
 import TopBar from "./components/TopBar.jsx";
 import HomeStatus from "./components/HomeStatus.jsx";
@@ -124,7 +125,14 @@ export default function App() {
   // drives the calendar's journaled-day dots).
   const journalMonthDays = useJournalMonth(monthKey, Boolean(user) && Boolean(activeGrowId), activeGrowId);
   // The grow's real timeline: every stage switch the grower recorded.
-  const { events: stageEvents, firstDate: growStart } = useStageTimeline(activeGrowId, Boolean(user));
+  const { events: stageEvents, firstDate: growStart, plantRecords } = useStageTimeline(activeGrowId, Boolean(user));
+  // Every growing plant's age, stage lengths and breeder harvest window, once,
+  // for the status card and the calendar's harvest bands.
+  const todayKeyForClocks = ymd(today);
+  const plantClockList = useMemo(() => plantClocks(survey?.strains ?? [], plantRecords, {
+    todayKey: todayKeyForClocks, crop: cropOf(survey), fallback: growStart,
+  }), [survey, plantRecords, todayKeyForClocks, growStart]);
+  const harvestWindows = useMemo(() => windowGroups(plantClockList), [plantClockList]);
   // The last fortnight of entries, for the status card's recorded facts.
   const { days: recentDays } = useRecentJournal(activeGrowId, Boolean(user) && Boolean(activeGrowId));
 
@@ -481,6 +489,7 @@ export default function App() {
                   stageEvents={stageEvents}
                   firstDate={growStart}
                   days={recentDays}
+                  clocks={plantClockList}
                 />
               )}
               {/* Drying entry point - offered once a plant actually reaches
@@ -506,6 +515,7 @@ export default function App() {
                   onChangeDate={(d) => { setJournalDate(d); setViewYM({ y: d.getFullYear(), m: d.getMonth() }); }}
                   stageEvents={stageEvents}
                   firstDate={growStart}
+                  plantRecords={plantRecords}
                   growId={activeGrowId}
                   onOpenPlant={openPlantFromJournal}
                   onExit={exitJournal}
@@ -522,6 +532,7 @@ export default function App() {
                   stageEvents={stageEvents}
                   firstDate={growStart}
                   journalDays={journalMonthDays}
+                  harvestWindows={harvestWindows}
                   onPickDay={pickDay}
                 />
               )}

@@ -6,6 +6,9 @@ import { api } from "../../lib/api.js";
 import { dayOfGrow } from "../../lib/stageTimeline.js";
 import { ymd } from "../../lib/api.js";
 import {
+  breederWeeks, plantClock, shortWeeks, stageRecordsFromLog, weeksRangeLabel,
+} from "../../lib/plantClock.js";
+import {
   MONO, SERIF, typeLabel, HEALTH_MAP, stageOrder, stageLabel, nextStage,
   logKinds, kindLabel, summarizeEntry, fmtDateKey, plantHistoryStats,
 } from "./constants.js";
@@ -13,6 +16,8 @@ import { cropOf, defaultStage, flushTotals, words } from "../../lib/crops.js";
 import LogEntryForm from "./LogEntryForm.jsx";
 import AddPlantSheet from "./AddPlantSheet.jsx";
 import StageTimeline from "./StageTimeline.jsx";
+import StageHistory from "./StageHistory.jsx";
+import HarvestWindowBar from "../HarvestWindowBar.jsx";
 import PlantPhotos from "./PlantPhotos.jsx";
 import ConfirmModal from "../ConfirmModal.jsx";
 import ScreenHeader from "../ScreenHeader.jsx";
@@ -37,7 +42,7 @@ function keyToDate(key) {
 }
 
 export default function PlantDetail({ growId, plant, environment, crop, today, firstDate, onOpenJournalDay, onClose, onArchive, onDelete, onLogChange, onChanged }) {
-  const { entries, loading: logLoading, addEntry, removeEntry } = usePlantLog(growId, plant.id, true);
+  const { entries, loading: logLoading, addEntry, removeEntry, reload: reloadLog } = usePlantLog(growId, plant.id, true);
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -74,11 +79,13 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
   // running total only means something where flushes are logged.
   const yields = flushTotals(combined);
 
-  // At-a-glance numbers derived from the history + grow timeline.
-  // Day 0 is the day this plant was added, whatever stage it joined at.
-  const plantStart = plant.createdAt ?? firstDate;
-  const age = today ? dayOfGrow(plantStart, ymd(today)) : null;
-  const { stageDays, lastHealth } = plantHistoryStats(combined, today);
+  // Age, every stage it has been through, and the breeder's window, all read
+  // from this plant's own switches. Day 0 is the day it really started.
+  const todayKey = ymd(today ?? new Date());
+  const clock = plantClock(plant, stageRecordsFromLog(entries, plant.id), { todayKey, crop, fallback: firstDate });
+  const plantStart = clock.start;
+  const age = clock.age;
+  const { lastHealth } = plantHistoryStats(combined, today);
   const healthInfo = lastHealth ? HEALTH_MAP[lastHealth] : null;
 
   async function handleSave(entry) {
@@ -98,8 +105,17 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
       await api.patchPlant(growId, plant.id, {
         name: fields.name, type: fields.type, photo: fields.photo,
         flowerWeeks: fields.flowerWeeks, potSize: fields.potSize,
+        ...(fields.flowerWeeksMax !== undefined ? { flowerWeeksMax: fields.flowerWeeksMax } : {}),
+        ...(fields.startedOn ? { startedOn: fields.startedOn } : {}),
+        ...(fields.stageSince ? { stageSince: fields.stageSince } : {}),
       });
       setEditing(false);
+      // A moved date rewrites history: this plant's log, and the timelines
+      // every other screen reads.
+      if (fields.stageSince || fields.startedOn) {
+        reloadLog();
+        window.dispatchEvent(new Event("growlog-mutated"));
+      }
       onChanged?.();
     } finally { setSavingEdit(false); }
   }
@@ -152,7 +168,9 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
       <div style={{ padding: 16 }}>
         <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--c-text-muted)" }}>
           {mushrooms ? typeLabel(plant.type, crop) : (plant.photo === false ? "Auto" : "Photo")}
-          {plant.flowerWeeks ? ` · ${plant.flowerWeeks}wk ${mushrooms ? "to flush" : "flower"}` : ""}
+          {mushrooms
+            ? (plant.flowerWeeks ? ` · ${plant.flowerWeeks}wk to flush` : "")
+            : ` · ${weeksRangeLabel(breederWeeks(plant))} ${plant.photo === false ? "seed to harvest" : "flower"}`}
           {!mushrooms && plant.potSize ? ` · ${plant.potSize} gal` : ""}
         </div>
 
@@ -160,7 +178,11 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
           <div style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 14, marginTop: 14 }}>
             <AddPlantSheet
               crop={crop}
-              initial={{ name: plant.name, type: plant.type, photo: plant.photo, flowerWeeks: plant.flowerWeeks, potSize: plant.potSize }}
+              initial={{
+                name: plant.name, type: plant.type, photo: plant.photo,
+                flowerWeeks: plant.flowerWeeks, flowerWeeksMax: plant.flowerWeeksMax, potSize: plant.potSize,
+                startedOn: clock.start, stageSince: clock.current?.start ?? clock.start,
+              }}
               onSave={handleEditSave}
               onCancel={() => setEditing(false)}
               saving={savingEdit}
@@ -201,8 +223,8 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
 
         {/* At a glance */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 18 }}>
-          {age != null && <Meta label="Age" value={`Day ${age}`} />}
-          <Meta label="In stage" value={stageDays != null ? `${stageDays}d` : "-"} />
+          {age != null && <Meta label="Age" value={`Day ${age} · ${shortWeeks(age)}`} />}
+          <Meta label="In stage" value={clock.inStage != null ? shortWeeks(clock.inStage) : "-"} />
           {healthInfo && <Meta label="Health" value={healthInfo.label} accent={healthInfo.color} />}
           {/* A tub keeps giving, so what it has given so far is a number worth
               having next to its age. */}
@@ -210,6 +232,22 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
             <Meta label={`${yields.flushes} flush${yields.flushes === 1 ? "" : "es"}`} value={`${yields.dryG || yields.wetG} g${yields.dryG ? " dry" : " wet"}`} />
           )}
         </div>
+
+        {/* When the breeder says it should be ready. */}
+        {clock.window && plant.status === "growing" && (
+          <div style={{ marginTop: 20 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 8 }}>Harvest</div>
+            <HarvestWindowBar window={clock.window} status={clock.status} todayKey={todayKey} />
+          </div>
+        )}
+
+        {/* How long it spent in each stage. */}
+        {clock.spans.length > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: "var(--c-text-ghost)", textTransform: "uppercase", marginBottom: 8 }}>Stages</div>
+            <StageHistory spans={clock.spans} todayKey={todayKey} />
+          </div>
+        )}
 
         {/* Photos of this plant or tub */}
         <PlantPhotos growId={growId} plantId={plant.id} unitWord={w.unit} />
@@ -334,7 +372,7 @@ export default function PlantDetail({ growId, plant, environment, crop, today, f
           <input
             type="date"
             value={stageDate}
-            min={plantStart ?? undefined}
+            min={clock.current?.start ?? plantStart ?? undefined}
             max={ymd(today ?? new Date())}
             onChange={(e) => setStageDate(e.target.value)}
             style={{

@@ -129,7 +129,24 @@ test("where the grow is never leaves the server", () => {
   assert.deepEqual(Object.keys(out).sort(), ["crop", "environment", "strains"]);
   // What is kept is what makes the journal readable.
   assert.equal(out.environment, "Tent");
-  assert.deepEqual(out.strains, [{ id: "p1", name: "Blue Dream", type: "hybrid" }]);
+  // Plus what dates a plant: its start, its stage and the breeder's weeks, so
+  // a friend sees how old it is and when it should be ready.
+  assert.deepEqual(out.strains, [{
+    id: "p1", name: "Blue Dream", type: "hybrid",
+    photo: true, stage: null, status: "growing", createdAt: null, startedOn: null,
+    flowerWeeks: null, flowerWeeksMax: null,
+  }]);
+});
+
+test("a plant's own fields carry nothing beyond its clock", () => {
+  const out = shareSurvey(survey({
+    strains: [{ id: "p1", name: "Blue Dream", type: "hybrid", notes: "private", potSize: 7, flowerWeeks: 8, flowerWeeksMax: 10, startedOn: "2026-08-01" }],
+  }));
+  const plant = out.strains[0];
+  assert.equal(plant.notes, undefined);
+  assert.equal(plant.potSize, undefined);
+  assert.equal(plant.flowerWeeksMax, 10);
+  assert.equal(plant.startedOn, "2026-08-01");
 });
 
 test("no location survives the spaces index either", async () => {

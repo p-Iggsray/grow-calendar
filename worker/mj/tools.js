@@ -64,7 +64,11 @@ async function writeSurvey(env, userId, growId, survey) {
 }
 
 function plantOut(p) {
-  return { id: p.id, name: p.name, type: p.type, photo: p.photo, flowerWeeks: p.flowerWeeks, status: p.status, createdAt: p.createdAt ?? null };
+  return {
+    id: p.id, name: p.name, type: p.type, photo: p.photo,
+    flowerWeeks: p.flowerWeeks, flowerWeeksMax: p.flowerWeeksMax ?? null,
+    status: p.status, createdAt: p.createdAt ?? null, startedOn: p.startedOn ?? null,
+  };
 }
 
 function dateToYmd(dt) {

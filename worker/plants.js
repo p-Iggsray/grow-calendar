@@ -4,7 +4,7 @@ import { logError } from "./log.js";
 import {
   ensurePlantIds, validatePlantFields, addPlantToSurvey,
   updatePlantInSurvey, removePlantFromSurvey, normalizeLogEntry,
-  stageSet, todayKey,
+  stageSet, todayKey, isPastDateKey,
 } from "./plantsRoster.js";
 
 import { ensureGrowLogSchema } from "./growLog.js";
@@ -116,14 +116,18 @@ export async function addPlant(request, env, user, growId) {
   const v = validatePlantFields(body ?? {}, false, crop);
   if (!v.ok) return error(400, v.error);
 
-  // A plant can join at ANY stage, but its clock always starts today: the app
-  // never backdates a stage it was not around to see.
+  // A plant can join at any stage. `createdAt` is always today, the day the
+  // app heard of it; the grower can say when it really started (`startedOn`)
+  // and since when it has been in the stage it joins at (`stageSince`), so a
+  // plant added at week three of flower counts from week three.
   const createdAt = todayKey();
+  const stage = v.value.stage ?? defaultStage(crop);
+  const since = joinStageDate(body ?? {}, v.value.startedOn, stage, crop, createdAt);
+  if (!since.ok) return error(400, since.error);
 
   const { survey: nextSurvey, plant } = addPlantToSurvey(survey, v.value, undefined, createdAt);
   await saveSurvey(env, user.id, growId, nextSurvey);
 
-  const stage = plant.stage ?? defaultStage(crop);
   if (stageSet(crop).has(stage)) {
     try {
       await ensurePlantLogSchema(env);
@@ -133,7 +137,7 @@ export async function addPlant(request, env, user, growId) {
            (user_id, grow_id, plant_id, date, kind, detail, body, height, height_unit, health, created_at, updated_at)
          VALUES (?, ?, ?, ?, 'stage', ?, ?, NULL, NULL, NULL, ?, ?)`
       ).bind(
-        user.id, growId, plant.id, createdAt,
+        user.id, growId, plant.id, since.date,
         JSON.stringify({ stage }),
         `Stage → ${STAGE_LABEL[stage]}`,
         now, now,
@@ -144,6 +148,58 @@ export async function addPlant(request, env, user, growId) {
   }
 
   return json({ ok: true, plant });
+}
+
+/**
+ * Pure: the day a new plant entered the stage it joins at. An explicit
+ * `stageSince` wins; a plant joining no later than the usual starting stage
+ * (a seedling) was in it from the day it started; otherwise it is today, as
+ * it always was. Never before the plant's start, never in the future.
+ */
+export function joinStageDate(body, startedOn, stage, crop, todayIso) {
+  const start = startedOn ?? todayIso;
+  const ladder = stagesFor(crop);
+  let date = todayIso;
+  if (body.stageSince !== undefined && body.stageSince !== null && body.stageSince !== "") {
+    if (!isPastDateKey(body.stageSince, todayIso)) return { ok: false, error: "stageSince must be a past date" };
+    date = body.stageSince;
+  } else if (startedOn && ladder.indexOf(stage) <= ladder.indexOf(defaultStage(crop))) {
+    date = startedOn;
+  }
+  if (date < start) return { ok: false, error: "a plant cannot enter a stage before it started" };
+  return { ok: true, date };
+}
+
+/**
+ * Move the date of a plant's latest stage switch, which is what "in this stage
+ * since" edits. It may not go before the switch ahead of it, or before the
+ * plant started. A plant from before switches were recorded has none, so one
+ * is written for the stage it is in. Returns an error message, or null.
+ */
+async function moveCurrentStageDate(env, userId, growId, plantId, date, startedOn, stage) {
+  if (!isPastDateKey(date)) return "stageSince must be a past date";
+  if (startedOn && date < startedOn) return "a plant cannot enter a stage before it started";
+  await ensurePlantLogSchema(env);
+  const res = await env.DB.prepare(
+    `SELECT id, date FROM plant_log
+     WHERE user_id = ? AND grow_id = ? AND plant_id = ? AND kind = 'stage'
+     ORDER BY date DESC, id DESC LIMIT 2`
+  ).bind(userId, growId, plantId).all();
+  const [latest, previous] = res.results ?? [];
+  const now = new Date().toISOString();
+  if (!latest) {
+    if (!stage || !STAGE_LABEL[stage]) return "this plant has no stage to date";
+    await env.DB.prepare(
+      `INSERT INTO plant_log
+         (user_id, grow_id, plant_id, date, kind, detail, body, height, height_unit, health, created_at, updated_at)
+       VALUES (?, ?, ?, ?, 'stage', ?, ?, NULL, NULL, NULL, ?, ?)`
+    ).bind(userId, growId, plantId, date, JSON.stringify({ stage }), `Stage → ${STAGE_LABEL[stage]}`, now, now).run();
+    return null;
+  }
+  if (previous && date < previous.date) return "that is before the stage it came from";
+  await env.DB.prepare("UPDATE plant_log SET date = ?, updated_at = ? WHERE id = ?")
+    .bind(date, now, latest.id).run();
+  return null;
 }
 
 // PATCH /api/grows/:id/plants/:plantId
@@ -160,7 +216,22 @@ export async function patchPlant(request, env, user, growId, plantId) {
 
   const v = validatePlantFields(body ?? {}, true, crop);
   if (!v.ok) return error(400, v.error);
-  if (Object.keys(v.value).length === 0) return error(400, "no valid fields");
+  const stageSince = body?.stageSince;
+  if (Object.keys(v.value).length === 0 && !stageSince) return error(400, "no valid fields");
+
+  const before = (ensured.survey.strains ?? []).find((s) => s.id === plantId);
+  if (!before) return error(404, "plant not found");
+  const merged = { ...before, ...v.value };
+  if (merged.flowerWeeksMax != null && merged.flowerWeeks != null && merged.flowerWeeksMax < merged.flowerWeeks) {
+    return error(400, "the most weeks cannot be fewer than the least");
+  }
+  if (stageSince) {
+    const problem = await moveCurrentStageDate(
+      env, user.id, growId, plantId, stageSince, merged.startedOn ?? null, merged.stage ?? defaultStage(crop),
+    );
+    if (problem) return error(400, problem);
+    if (Object.keys(v.value).length === 0) return json({ ok: true, plant: before });
+  }
 
   // Stage changes are one-way: a plant only ever moves forward through its
   // lifecycle. Same stage is a harmless no-op; backward is rejected.

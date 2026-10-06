@@ -631,6 +631,43 @@ Two places still handle base64 on purpose: the rundown in `worker/report.js`
 embeds thumbnails because the file has to be self-contained, and MJ's
 `get_photos` needs the bytes to hand to Gemini.
 
+## Plant ages, stage lengths and harvest windows
+
+Every screen that talks about a plant's age reads one pure module,
+`src/lib/plantClock.js`, so the home card, plant cards, the plant page, each
+journal day, the calendar, the share link, the rundown and MJ always agree.
+
+**Ages are history.** A plant counts from `startedOn` (the day it really
+started, which can be before it joined the app), else `createdAt`, else the
+space's day 0. Its stages are its own `plant_log` rows of kind `stage`, read
+forward only into `{ stage, start, end }` spans. `GET /api/grows/:id/stages`
+returns them as `plantRecords` beside the space-level `events`.
+
+**The harvest window is the one forecast, and it is the breeder's.** Each
+plant carries `flowerWeeks` (the least) and `flowerWeeksMax` (the most). A
+photoperiod counts from the day it was moved to Flowering, so before the flip
+it shows only "8 to 10 wk after flip" and puts nothing on the calendar. An
+autoflower counts from its start date, so its numbers are seed to harvest and
+the form labels them that way. Mushrooms get ages and stage lengths but no
+window.
+
+**Backdating is allowed.** Adding or editing a plant takes "Started on" and
+"In this stage since". The second moves the date of the plant's latest stage
+row (`moveCurrentStageDate` in `worker/plants.js`), never before the stage
+ahead of it or the plant's start, and writes one for a plant that predates
+stage rows. A plant joining as a seedling or earlier entered that stage the
+day it started (`joinStageDate`).
+
+**The calendar marks days ahead only for windows.** The stage tint still
+stops at today. Days inside any plant's window get an amber band and amber
+date, and identical windows collapse (`windowGroups`). A journal day after
+today shows ages and the window but never a stage, since nobody has moved
+anything there yet (`plantsOnDate`).
+
+The share link now carries each plant's photo/auto flag, stage, status,
+start dates and breeder weeks (`shareSurvey`), and still nothing about
+location. Tests: `test/plant-clock.test.js`, `test/plant-dates.test.js`.
+
 ## Videos: files in R2, rows beside the photos
 
 A video is a row in `journal_photos` with `kind = 'video'`. Its file is in the

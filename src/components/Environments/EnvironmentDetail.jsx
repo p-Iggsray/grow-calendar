@@ -92,7 +92,7 @@ export default function EnvironmentDetail({
   const survey = grow.survey ?? null;
   // Day counts come from the first thing ever recorded in this space, not from
   // any predicted season.
-  const { firstDate } = useStageTimeline(growId, true);
+  const { firstDate, plantRecords } = useStageTimeline(growId, true);
 
   const [editingSetup, setEditingSetup] = useState(false);
   const [savingSetup, setSavingSetup] = useState(false);
@@ -137,7 +137,13 @@ export default function EnvironmentDetail({
   }
   async function handleAddPlant(fields) {
     setSavingPlant(true);
-    try { await api.addPlant(growId, fields); setAdding(false); await onChanged?.(); }
+    try {
+      await api.addPlant(growId, fields);
+      setAdding(false);
+      // Its stage switch is new history: the timeline refetches on this.
+      window.dispatchEvent(new Event("growlog-mutated"));
+      await onChanged?.();
+    }
     finally { setSavingPlant(false); }
   }
   async function handleArchivePlant(plant) {
@@ -304,7 +310,7 @@ export default function EnvironmentDetail({
             </div>
           )}
           {active.map((p) => (
-            <PlantCard key={p.id} plant={p} metrics={summary[p.id]} crop={crop} today={today} firstDate={firstDate} onOpen={() => setSelectedId(p.id)} />
+            <PlantCard key={p.id} plant={p} metrics={summary[p.id]} crop={crop} today={today} firstDate={firstDate} records={plantRecords} onOpen={() => setSelectedId(p.id)} />
           ))}
 
           {archived.length > 0 && (
@@ -315,7 +321,7 @@ export default function EnvironmentDetail({
               {showArchived && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8, opacity: 0.7 }}>
                   {archived.map((p) => (
-                    <PlantCard key={p.id} plant={p} metrics={summary[p.id]} crop={crop} today={today} firstDate={firstDate} onOpen={() => setSelectedId(p.id)} />
+                    <PlantCard key={p.id} plant={p} metrics={summary[p.id]} crop={crop} today={today} firstDate={firstDate} records={plantRecords} onOpen={() => setSelectedId(p.id)} />
                   ))}
                 </div>
               )}

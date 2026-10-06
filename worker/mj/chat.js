@@ -155,7 +155,9 @@ export async function postMj(request, env, user) {
   // what changes, not up with the persona - it moves every time the grower
   // records anything, and up there it broke the cacheable prefix each time.
   const timelineText = buildTimelineText(timeline.events, timeline.firstDate, today);
-  const rosterContext = buildRosterContext(raw.survey);
+  const rosterContext = buildRosterContext(raw.survey, {
+    records: timeline.plantRecords ?? [], todayKey: today, firstDate: timeline.firstDate,
+  });
 
   const systemSegments = buildSystemSegments({
     survey: raw.survey,

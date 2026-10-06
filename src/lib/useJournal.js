@@ -152,19 +152,21 @@ export function useRecentJournal(growId, enabled, limit = 14) {
 // The environment's stage history: every recorded stage switch, plus the day
 // its clock starts. Refetches when journal content changes, because advancing
 // a stage writes a log entry.
+const EMPTY_TIMELINE = { events: [], firstDate: null, plantRecords: [] };
+
 export function useStageTimeline(growId, enabled) {
-  const [timeline, setTimeline] = useState({ events: [], firstDate: null });
+  const [timeline, setTimeline] = useState(EMPTY_TIMELINE);
   const tick = useMutationTick();
 
   useEffect(() => {
-    if (!growId || !enabled) { setTimeline({ events: [], firstDate: null }); return; }
+    if (!growId || !enabled) { setTimeline(EMPTY_TIMELINE); return; }
     let cancelled = false;
     api.getStageTimeline(growId)
       .then((d) => {
         if (cancelled) return;
-        setTimeline({ events: d.events ?? [], firstDate: d.firstDate ?? null });
+        setTimeline({ events: d.events ?? [], firstDate: d.firstDate ?? null, plantRecords: d.plantRecords ?? [] });
       })
-      .catch(() => { if (!cancelled) setTimeline({ events: [], firstDate: null }); });
+      .catch(() => { if (!cancelled) setTimeline(EMPTY_TIMELINE); });
     return () => { cancelled = true; };
   }, [growId, enabled, tick]);
 

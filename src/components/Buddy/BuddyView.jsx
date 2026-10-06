@@ -8,6 +8,9 @@ import { ymd } from "../../lib/api.js";
 import { shareApi } from "../../lib/shareApi.js";
 import { parseRoute, routeSearch, SHARE_TABS } from "../../lib/shareRoute.js";
 import { dayOfGrow, stageGroup, stageLabel, stageOnDate } from "../../lib/stageTimeline.js";
+import { plantClocks, windowGroups } from "../../lib/plantClock.js";
+import { cropOf, words } from "../../lib/crops.js";
+import PlantClockRows from "../PlantClockRows.jsx";
 import { UI, NUM, SpaceSwitcher, BuddyPhaseLegend, SectionLabel, Empty } from "./chrome.jsx";
 import BuddyCalendar, { useMonthFor } from "./BuddyCalendar.jsx";
 import BuddyDay from "./BuddyDay.jsx";
@@ -185,6 +188,11 @@ export default function BuddyView({ token }) {
   const stage = stageOnDate(space.stageEvents, asOf);
   const growDay = dayOfGrow(space.firstDate, asOf);
   const strainNames = (space.survey?.strains ?? []).map((s) => s.name).filter(Boolean);
+  const crop = cropOf(space.survey);
+  const clocks = plantClocks(space.survey?.strains ?? [], space.plantRecords ?? [], {
+    todayKey, crop, fallback: space.firstDate,
+  });
+  const harvestWindows = windowGroups(clocks);
 
   return (
     <div style={{
@@ -262,6 +270,7 @@ export default function BuddyView({ token }) {
               onMonth={setMonth}
               stageEvents={space.stageEvents}
               firstDate={space.firstDate}
+              harvestWindows={harvestWindows}
               days={monthData.key === monthKey ? monthData.days : {}}
               loading={monthData.loading}
               onOpenDay={(date) => go({ date })}
@@ -278,6 +287,15 @@ export default function BuddyView({ token }) {
             <div style={{ marginTop: 14 }}>
               <BuddyPhaseLegend survey={space.survey} />
             </div>
+            {clocks.length > 0 && (
+              <section style={{
+                marginTop: 16, background: "var(--c-surface-1)", borderRadius: 14,
+                border: "1px solid var(--c-border-soft)", padding: "12px 16px 6px",
+              }}>
+                <SectionLabel style={{ marginBottom: 0, letterSpacing: 2, fontSize: 11 }}>{words(crop).Units}</SectionLabel>
+                <PlantClockRows clocks={clocks} todayKey={todayKey} unit={words(crop).unit} label={words(crop).Units} max={0} />
+              </section>
+            )}
             <StageHistory space={space} todayKey={todayKey} />
           </>
         )}

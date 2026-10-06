@@ -4,6 +4,8 @@ import { MONTH_NAMES, DOW_SHORT, sameDay } from "../../lib/dates.js";
 import { stageGroup, stageOnDate, STAGE_GLYPH } from "../../lib/stageTimeline.js";
 import { openingMonth } from "../../lib/shareRoute.js";
 import { UI, NUM, keyOf } from "./chrome.jsx";
+import { windowsOn } from "../../lib/plantClock.js";
+import { HARVEST_COLOR } from "../HarvestLine.jsx";
 
 // The month a grow starts in, so the arrows cannot walk off the front of the
 // record into empty months nobody wrote in.
@@ -49,7 +51,7 @@ function DayMarks({ entry, color }) {
  * than a grid with quiet days in it.
  */
 export default function BuddyCalendar({
-  today, month, onMonth, stageEvents, firstDate, days, loading, onOpenDay,
+  today, month, onMonth, stageEvents, firstDate, days, loading, onOpenDay, harvestWindows = [],
 }) {
   const year = month.getFullYear();
   const m = month.getMonth();
@@ -125,6 +127,8 @@ export default function BuddyCalendar({
           const entry = days?.[key];
           const open = hasAnything(entry);
           const glyph = stage ? (STAGE_GLYPH[stage] ?? "") : "";
+          // Inside a plant's breeder harvest window, which can be days ahead.
+          const inHarvest = windowsOn(harvestWindows, key).length > 0;
 
           return (
             <button
@@ -135,10 +139,11 @@ export default function BuddyCalendar({
               onClick={() => onOpenDay(key)}
               aria-label={
                 `${MONTH_NAMES[m]} ${date.getDate()}` +
-                (open ? ", has entries" : ", nothing recorded")
+                (open ? ", has entries" : ", nothing recorded") +
+                (inHarvest ? ", harvest window" : "")
               }
               style={{
-                borderRadius: 8, minHeight: 44, padding: 0,
+                borderRadius: 8, minHeight: 44, padding: 0, position: "relative",
                 display: "flex", flexDirection: "column",
                 alignItems: "center", justifyContent: "center", gap: 2,
                 cursor: open ? "pointer" : "default",
@@ -162,6 +167,12 @@ export default function BuddyCalendar({
                 </span>
               )}
               <DayMarks entry={entry} color={color} />
+              {inHarvest && (
+                <span aria-hidden="true" style={{
+                  position: "absolute", left: 3, right: 3, bottom: 1, height: 3,
+                  borderRadius: 2, background: HARVEST_COLOR,
+                }} />
+              )}
             </button>
           );
         })}

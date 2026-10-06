@@ -8,14 +8,15 @@ import { summariseStatus, whenLabel } from "../lib/homeStatus.js";
 import { formatWater } from "../lib/waterUnits.js";
 import { words } from "../lib/crops.js";
 import { partitionPlants } from "./PlantsTab/constants.js";
+import PlantClockRows from "./PlantClockRows.jsx";
 
 // The three questions you open the app to ask, answered before you scroll:
 // where the grow is, what it is doing, and how much of it there is.
 //
-// Everything on this card is a day somebody wrote down. There is deliberately
-// no "day 4 of about 14" here, no projected finish, no averaged trend: the
-// calendar underneath it stops colouring at today for exactly the same reason,
-// and a card that guessed would undo that in larger type.
+// Everything on this card is a day somebody wrote down, with one exception
+// that is not the app's guess: each plant's harvest window, which is the
+// breeder's weeks counted from a recorded flip or start. There is no averaged
+// trend and no "day 4 of about 14" made up from nothing.
 //
 // A tile that has nothing to report says so plainly. "Not yet misted" is a
 // useful answer; a dash is not.
@@ -70,7 +71,7 @@ function climateValue(climate) {
   return [temp, rh].filter(Boolean).join(" · ");
 }
 
-export default function HomeStatus({ today, survey, crop, stageEvents, firstDate, days }) {
+export default function HomeStatus({ today, survey, crop, stageEvents, firstDate, days, clocks = [] }) {
   const todayKey = ymd(today ?? new Date());
   const { active } = partitionPlants(survey);
   // The stage the space is in now, and the day it was switched to, both read
@@ -143,6 +144,8 @@ export default function HomeStatus({ today, survey, crop, stageEvents, firstDate
           value={`${active.length} ${active.length === 1 ? w.unit : w.units}`}
         />
       </div>
+
+      <PlantClockRows clocks={clocks} todayKey={todayKey} unit={w.unit} label={`${w.Units} in this space`} />
     </section>
   );
 }

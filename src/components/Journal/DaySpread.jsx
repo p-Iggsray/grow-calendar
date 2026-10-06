@@ -10,6 +10,7 @@ import { kindLabel, summarizeEntry, HEALTH_MAP } from "../PlantsTab/constants.js
 import { Skeleton } from "../Skeleton.jsx";
 import { tapHaptic } from "../../lib/haptics.js";
 import JournalPage from "./JournalPage.jsx";
+import DayPlants from "./DayPlants.jsx";
 import ScreenHeader from "../ScreenHeader.jsx";
 import PhotosCard from "./PhotosCard.jsx";
 import RemindersCard from "./RemindersCard.jsx";
@@ -81,7 +82,7 @@ function Stat({ label, value, unit }) {
 // all-days timeline. This IS the day surface - tapping a calendar day lands
 // here.
 export default function DaySpread({
-  today, date, onChangeDate, stageEvents = [], firstDate = null, growId, onOpenPlant, onZoomOut, onExit,
+  today, date, onChangeDate, stageEvents = [], firstDate = null, plantRecords = [], growId, onOpenPlant, onZoomOut, onExit,
   plants = [], environment = "outdoor", crop, focusSignal = 0, active = true,
 }) {
   const w = words(crop);
@@ -271,6 +272,9 @@ export default function DaySpread({
             if (res?.found) window.dispatchEvent(new CustomEvent("growlog-mutated"));
           }}
         />
+
+        {/* Each plant as it was this day: age, stage day, harvest window. */}
+        <DayPlants plants={plants} records={plantRecords} dateKey={dateKey} todayKey={ymd(today)} crop={crop} firstDate={firstDate} unit={w.unit} />
 
         {/* The day's photos + the journal's add-a-photo action. */}
         <PhotosCard date={date} growId={growId} photos={day.photos} plants={plants} />

@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { MONTH_NAMES, DOW_SHORT, sameDay, daysBetween } from "../lib/dates.js";
 import { stageGroup, stageLabel, stageOnDate } from "../lib/stageTimeline.js";
 import { tapHaptic } from "../lib/haptics.js";
+import { windowsOn } from "../lib/plantClock.js";
+import { HARVEST_COLOR } from "./HarvestLine.jsx";
 
 // Tuned for one-thumb phone use. Threshold below ~40px catches incidental drag
 // during a tap; horizontal-vs-vertical ratio under ~1.5 catches diagonal
@@ -48,7 +50,23 @@ const LEGEND = [
     label: "Reminder",
     swatch: <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: 3, background: "#a855f7", flexShrink: 0 }} />,
   },
+  {
+    label: "Harvest window",
+    swatch: <span aria-hidden="true" style={{ width: 12, height: 3, borderRadius: 2, background: HARVEST_COLOR, flexShrink: 0 }} />,
+  },
 ];
+
+// The names in a window, for a screen reader: "Blue Dream x2, Gelato".
+function windowPlantNames(groups) {
+  const counts = new Map();
+  for (const g of groups) {
+    for (const p of g.plants) {
+      const name = (p.name || "Unnamed plant").trim();
+      counts.set(name, (counts.get(name) ?? 0) + 1);
+    }
+  }
+  return [...counts].map(([name, n]) => (n > 1 ? `${name} x${n}` : name)).join(", ");
+}
 
 function MonthArrow({ onClick, label, children }) {
   return (
@@ -77,15 +95,16 @@ function MonthArrow({ onClick, label, children }) {
 // you moved a plant into each stage onward, and the switch days themselves are
 // marked. Nothing here is predicted.
 //
-// That last sentence is load-bearing, so the fill stops at today. A day the
-// grow has not reached yet has no record to read, and filling it with today's
-// stage would read as a forecast the rest of the app is careful never to make.
-// Marking those days some other way is the same claim in a quieter voice - a
-// running grow makes every remaining day of every remaining month "ahead", so
-// October would come out fully marked too. Days ahead get nothing.
+// So the stage fill stops at today. A day the grow has not reached yet has no
+// record to read, and filling it with today's stage would be a guess.
+//
+// The one thing marked ahead is the harvest window, and it is not the app's
+// guess: it is the breeder's weeks counted from a day that really happened
+// (the flip, or an autoflower's start). An amber band under each day of it,
+// one per window, so the stage colours above it stay what was recorded.
 export default function Calendar({
   today, year, month, onChangeMonth, stageEvents = [], firstDate = null,
-  journalDays, onPickDay,
+  journalDays, onPickDay, harvestWindows = [],
 }) {
   const touchStart = useRef(null);
   const suppressTap = useRef(false);
@@ -233,6 +252,9 @@ export default function Calendar({
           // A day you asked to be reminded about gets its own mark, so a
           // reminder is visible from the month without opening the day.
           const hasReminder = Number(journalDays?.[key]?.events) > 0;
+          const harvest = windowsOn(harvestWindows, key);
+          const opensWindow = harvest.some((g) => g.start === key);
+          const closesWindow = harvest.some((g) => g.end === key);
 
           const ariaParts = [
             `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`,
@@ -241,6 +263,7 @@ export default function Calendar({
             isPast ? "day complete" : null,
             switchedTo ? `moved to ${stageLabel(switchedTo)}` : null,
             hasReminder ? "has a reminder" : null,
+            harvest.length ? `harvest window for ${windowPlantNames(harvest)}` : null,
             hasEntry ? "journal entry written" : null,
             "opens this day's journal",
           ].filter(Boolean);
@@ -286,6 +309,8 @@ export default function Calendar({
                   ? "var(--c-text)"
                   : isPast
                   ? "var(--c-text-muted)"
+                  : harvest.length
+                  ? HARVEST_COLOR
                   : pStyle
                   ? "var(--c-text-dim)"
                   : "var(--c-text-ghost)",
@@ -327,6 +352,20 @@ export default function Calendar({
                     position: "absolute", top: 3, left: 3,
                     width: 5, height: 5, borderRadius: 3,
                     background: "#a855f7",
+                  }}
+                />
+              )}
+              {/* Inside a breeder's harvest window. The band runs edge to edge
+                  so a run of days reads as one stretch, rounded where it opens
+                  and closes. */}
+              {harvest.length > 0 && (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute", bottom: 5, height: 3,
+                    left: opensWindow ? 4 : -3.5, right: closesWindow ? 4 : -3.5,
+                    borderRadius: 2, background: HARVEST_COLOR,
+                    opacity: harvest.length > 1 ? 1 : 0.85,
                   }}
                 />
               )}
