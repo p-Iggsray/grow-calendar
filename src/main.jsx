@@ -11,6 +11,7 @@ import { ToastProvider } from "./lib/useToast.jsx";
 import { PlanProvider } from "./lib/usePlan.jsx";
 import { holdMs, warmLaunch } from "./lib/launch.js";
 import { api } from "./lib/api.js";
+import { deferReloadWith, reloadWhenIdle } from "./lib/reloadGuard.js";
 
 // The friend view is its own chunk. It is a whole second app, and the grower
 // opening their own calendar should not download it to get there.
@@ -149,15 +150,27 @@ if ("serviceWorker" in navigator) {
       .catch(() => {});
   });
 
+  // A reload that waited for an upload runs once the app is out of sight.
+  deferReloadWith((run) => {
+    if (document.visibilityState === "hidden") { run(); return; }
+    const onHide = () => {
+      if (document.visibilityState !== "hidden") return;
+      document.removeEventListener("visibilitychange", onHide);
+      run();
+    };
+    document.addEventListener("visibilitychange", onHide);
+  });
+
   // When the new worker takes control, load the new build. Guarded so the
-  // very first install (no prior controller) never triggers a reload loop.
+  // very first install (no prior controller) never triggers a reload loop, and
+  // held while an upload is going (see lib/reloadGuard.js).
   let hadController = Boolean(navigator.serviceWorker.controller);
   let reloading = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (!hadController) { hadController = true; return; }
     if (reloading) return;
     reloading = true;
-    window.location.reload();
+    reloadWhenIdle(() => window.location.reload());
   });
 }
 

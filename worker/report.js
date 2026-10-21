@@ -17,8 +17,8 @@ import { rowToEntry } from "./growLog.js";
 import { recordRows } from "../src/lib/dayRecord.js";
 import { noteToHtml } from "../src/lib/richText.js";
 import { weeksAndDays } from "../src/lib/dates-core.js";
-import { ensureJournalPhotosSchema } from "./photos.js";
-import { formatDuration } from "../src/lib/videos.js";
+import { ensureJournalPhotosSchema, cleanStoredPicture } from "./photos.js";
+import { formatDuration, mediaCountLabel } from "../src/lib/videos.js";
 import {
   breederWeeks, harvestLine, plantClock, rangeLabel, shortDate, shortWeeks, spanDays, weeksRangeLabel,
 } from "../src/lib/plantClock.js";
@@ -36,13 +36,6 @@ function esc(s) {
 // like, and print-to-PDF is the one place a missing glyph cannot be fixed.
 function playMark() {
   return `<svg class="play" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="#1f2a22"/><path d="M8 6 L14.5 10 L8 14 Z" fill="#fff"/></svg>`;
-}
-/** Pure: "24 photographs, 3 videos", leaving out whichever is none. */
-export function mediaCountLabel(photos, videos) {
-  const parts = [];
-  if (photos) parts.push(`${photos} photograph${photos === 1 ? "" : "s"}`);
-  if (videos) parts.push(`${videos} video${videos === 1 ? "" : "s"}`);
-  return parts.join(", ") || "0 photographs";
 }
 function parseField(raw) {
   if (!raw) return null;
@@ -202,7 +195,7 @@ export async function getGrowReport(env, user, growId, unit = "gal") {
     const r = await env.DB.prepare(
       "SELECT id, date, plant_id, thumb, kind, duration_ms FROM journal_photos WHERE user_id = ? AND grow_id = ? ORDER BY date, created_at",
     ).bind(user.id, growId).all();
-    photoRows = r.results ?? [];
+    photoRows = (r.results ?? []).map((p) => ({ ...p, thumb: cleanStoredPicture(p.thumb) }));
   } catch { /* no photos table yet */ }
 
   // The imported sensor series, rolled up a day at a time. The raw series is

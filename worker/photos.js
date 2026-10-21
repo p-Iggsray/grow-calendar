@@ -184,6 +184,18 @@ export async function getJournalPhoto(env, user, growId, photoId) {
 // one picture that will never change.
 const DATA_URL_PREFIX = /^data:(image\/(?:jpeg|png|webp));base64,(.+)$/s;
 
+// The placeholder the app used to store when it could not make a thumbnail
+// was meant to be transparent and was a half-transparent blue pixel, which
+// shows as a bright blue square. Rows already holding it are served the
+// transparent one instead, so nothing stored has to change.
+const OLD_BLUE_PLACEHOLDER = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA";
+const TRANSPARENT_PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=";
+
+/** Pure: a stored picture, with the old blue placeholder swapped for a clear one. */
+export function cleanStoredPicture(url) {
+  return typeof url === "string" && url.includes(OLD_BLUE_PLACEHOLDER) ? TRANSPARENT_PNG : url;
+}
+
 /**
  * Pure: the column holding a picture at this size. A video's "full" picture is
  * its poster frame, the only still it has. Built from two fixed strings, never
@@ -200,7 +212,7 @@ export async function getPhotoImage(env, user, photoId, size) {
   ).bind(photoId, user.id).first();
   if (!row?.url) return error(404, "photo not found");
 
-  const m = DATA_URL_PREFIX.exec(row.url);
+  const m = DATA_URL_PREFIX.exec(cleanStoredPicture(row.url));
   if (!m) return error(500, "that photo is not stored as an image");
   let bytes;
   try { bytes = base64ToBytes(m[2]); }
@@ -297,6 +309,19 @@ export async function photoCountsForMonth(env, userId, growId, month) {
     "SELECT date, COUNT(*) AS n FROM journal_photos WHERE user_id = ? AND grow_id = ? AND date LIKE ? GROUP BY date"
   ).bind(userId, growId, month + "-%").all();
   return Object.fromEntries((res.results ?? []).map(r => [r.date, r.n]));
+}
+
+// date -> { total, videos } for a set of dates, in one pass, so a timeline
+// card can say "2 photos, 1 video" rather than calling a video a photo.
+export async function mediaCountsForDates(env, userId, growId, dates) {
+  if (!dates?.length) return {};
+  await ensureJournalPhotosSchema(env);
+  const placeholders = dates.map(() => "?").join(",");
+  const res = await env.DB.prepare(
+    `SELECT date, COUNT(*) AS n, SUM(CASE WHEN kind = 'video' THEN 1 ELSE 0 END) AS v
+     FROM journal_photos WHERE user_id = ? AND grow_id = ? AND date IN (${placeholders}) GROUP BY date`
+  ).bind(userId, growId, ...dates).all();
+  return Object.fromEntries((res.results ?? []).map(r => [r.date, { total: r.n, videos: r.v ?? 0 }]));
 }
 
 // date -> count for an arbitrary set of dates (timeline pages).

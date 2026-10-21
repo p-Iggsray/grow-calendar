@@ -8,7 +8,7 @@ import { words } from "../src/lib/crops.js";
 import { getWeatherForDay, coordsFromSurvey, locKey, fillAutoWeather } from "./weatherDays.js";
 import { resolveGrowCoords } from "./weather.js";
 import { eventsForDay, eventCountsForMonth } from "./events.js";
-import { photosForDay, photoCountsForMonth, photoCountsForDates } from "./photos.js";
+import { photosForDay, photoCountsForMonth, mediaCountsForDates, ensureJournalPhotosSchema } from "./photos.js";
 import { tracksOutdoorWeather, autoLogsWeather } from "../src/lib/growEnvironment.js";
 import { displayUnit } from "../src/lib/waterUnits.js";
 
@@ -145,7 +145,10 @@ export function makeExcerpt(body, max = 240) {
 // Pure: merge per-table query results into day summaries, newest first.
 // logRows are raw grow_log rows; noteRows carry {date, body}; plantRows carry
 // {date, n, kinds} (kinds = comma-joined distinct entry kinds for the day).
-export function buildTimelineDays(logRows, noteRows, plantRows) {
+//
+// `mediaDates` are days with photos or videos: a day you only photographed is
+// a day with a record, and used to be missing from the feed entirely.
+export function buildTimelineDays(logRows, noteRows, plantRows, mediaDates = []) {
   const byDate = new Map();
   const at = (d) => {
     if (!byDate.has(d)) byDate.set(d, { date: d, log: null, noteExcerpt: "", plants: 0, plantKinds: [] });
@@ -171,6 +174,7 @@ export function buildTimelineDays(logRows, noteRows, plantRows) {
     d.plants = r.n;
     d.plantKinds = String(r.kinds ?? "").split(",").filter(Boolean);
   }
+  for (const date of mediaDates ?? []) at(date);
   return [...byDate.values()].sort((a, b) => (a.date < b.date ? 1 : -1));
 }
 
@@ -216,8 +220,9 @@ export async function getJournalTimeline(env, user, growId, before, limitRaw) {
 
   await ensureGrowLogSchema(env);
   await ensurePlantLogSchema(env);
+  await ensureJournalPhotosSchema(env);
 
-  const [logs, notes, plants, total] = await Promise.all([
+  const [logs, notes, plants, media, total] = await Promise.all([
     env.DB.prepare(
       "SELECT * FROM grow_log WHERE user_id = ? AND grow_id = ? AND date < ? ORDER BY date DESC LIMIT ?"
     ).bind(user.id, growId, cursor, fetchN).all(),
@@ -230,21 +235,28 @@ export async function getJournalTimeline(env, user, growId, before, limitRaw) {
        GROUP BY date ORDER BY date DESC LIMIT ?`
     ).bind(user.id, growId, cursor, fetchN).all(),
     env.DB.prepare(
+      `SELECT DISTINCT date FROM journal_photos WHERE user_id = ? AND grow_id = ? AND date < ?
+       ORDER BY date DESC LIMIT ?`
+    ).bind(user.id, growId, cursor, fetchN).all().catch(() => ({ results: [] })),
+    env.DB.prepare(
       `SELECT COUNT(DISTINCT date) AS n FROM (
          SELECT date FROM grow_log WHERE user_id = ? AND grow_id = ?
          UNION SELECT date FROM day_notes WHERE user_id = ? AND grow_id = ?
          UNION SELECT date FROM plant_log WHERE user_id = ? AND grow_id = ?
+         UNION SELECT date FROM journal_photos WHERE user_id = ? AND grow_id = ?
        )`
-    ).bind(user.id, growId, user.id, growId, user.id, growId).first().catch(() => ({ n: 0 })),
+    ).bind(user.id, growId, user.id, growId, user.id, growId, user.id, growId).first().catch(() => ({ n: 0 })),
   ]);
 
-  const merged = buildTimelineDays(logs.results, notes.results, plants.results);
+  const merged = buildTimelineDays(logs.results, notes.results, plants.results, (media.results ?? []).map((r) => r.date));
   const days = merged.slice(0, limit);
 
   // Photo counts ride along so timeline cards can show a camera chip.
-  const photoCounts = await photoCountsForDates(env, user.id, growId, days.map(d => d.date)).catch(() => ({}));
+  const counts = await mediaCountsForDates(env, user.id, growId, days.map(d => d.date)).catch(() => ({}));
   for (const d of days) {
-    if (photoCounts[d.date]) d.photos = photoCounts[d.date];
+    const c = counts[d.date];
+    if (c?.total) d.photos = c.total;
+    if (c?.videos) d.videos = c.videos;
   }
 
   // Fold each day's weather onto its card. Reads the shared cache; touching

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  videoMimeOf, isVideoFile, formatDuration, durationFits, looksFreshFromCamera, mediaFilename,
+  videoMimeOf, isVideoFile, formatDuration, durationFits, looksFreshFromCamera, mediaFilename, mediaCountLabel,
   MAX_VIDEO_BYTES, MAX_VIDEO_MS, FRESH_CAPTURE_WINDOW_MS,
 } from "../src/lib/videos.js";
 import { addingLabel, progressFraction } from "../src/lib/addMedia.js";
@@ -11,7 +11,7 @@ import {
   uploadVideoFile, createJournalVideo, getVideo,
 } from "../worker/videos.js";
 import { mediaListItem, pictureColumnSql } from "../worker/photos.js";
-import { mediaCountLabel, getGrowReport } from "../worker/report.js";
+import { getGrowReport } from "../worker/report.js";
 
 const THUMB = "data:image/jpeg;base64,/9j/4AAQSkZJRg==";
 const NOW = Date.parse("2026-09-25T12:00:00Z");
@@ -127,10 +127,12 @@ test("a well formed video row passes", () => {
   assert.equal(validateVideoInput(good({ plantId: "p_1", fromCamera: true })).ok, true);
 });
 
-test("a video row without a poster, a length or a date is refused", () => {
+test("a video row without a poster or a date, or with a length past the cap, is refused", () => {
   assert.equal(validateVideoInput(good({ thumb: "junk" })).ok, false);
   assert.equal(validateVideoInput(good({ durationMs: 120_000 })).ok, false);
-  assert.equal(validateVideoInput(good({ durationMs: undefined })).ok, false);
+  assert.equal(validateVideoInput(good({ durationMs: undefined })).ok, true, "a length the phone would not report is allowed");
+  assert.equal(validateVideoInput(good({ durationMs: null })).ok, true);
+  assert.equal(validateVideoInput(good({ durationMs: "long" })).ok, false);
   assert.equal(validateVideoInput(good({ date: "09/25/2026" })).ok, false);
   assert.equal(validateVideoInput(good({ uploadKey: "" })).ok, false);
   assert.equal(validateVideoInput(good({ fromCamera: "yes" })).ok, false);
@@ -344,4 +346,26 @@ test("the rundown prints a video as its poster, marked with a play symbol and it
   assert.match(html, /Video 0:42/);
   // The poster itself is what is printed; no video element could print.
   assert.doesNotMatch(html, /<video/);
+});
+
+test("a clip whose length the phone would not report is stored with no length, not zero", async () => {
+  const env = fakeEnv();
+  const res = await createJournalVideo(commitRequest(good({ durationMs: null })), env, user, "g1");
+  assert.equal(res.status, 200);
+  const row = env.inserts[0];
+  assert.equal(row[row.length - 2], null, "duration_ms is null");
+  assert.equal((await res.json()).photo.durationMs, null);
+});
+
+test("a timeline chip can use the shorter noun", () => {
+  assert.equal(mediaCountLabel(2, 1, { short: true }), "2 photos, 1 video");
+  assert.equal(mediaCountLabel(0, 2, { short: true }), "2 videos");
+});
+
+test("the old blue placeholder is served as a clear one", async () => {
+  const { cleanStoredPicture } = await import("../worker/photos.js");
+  const old = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA3fxvsgAAAABJRU5ErkJggg==";
+  assert.notEqual(cleanStoredPicture(old), old);
+  assert.match(cleanStoredPicture(old), /^data:image\/png;base64,/);
+  assert.equal(cleanStoredPicture(THUMB), THUMB);
 });

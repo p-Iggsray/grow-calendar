@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { UI, NUM } from "./chrome.jsx";
 import VideoBadge from "../VideoBadge.jsx";
+import VideoUnplayable from "../VideoUnplayable.jsx";
+import { whyVideoFailed } from "../../lib/videoProbe.js";
 
 const isVideo = (p) => p?.kind === "video";
 const describe = (p) => {
@@ -55,6 +57,8 @@ export function PhotoLightbox({ photos, index, api, onClose, onIndex }) {
   const panel = useRef(null);
   const restoreTo = useRef(null);
   const touchX = useRef(null);
+  const [unplayable, setUnplayable] = useState({});
+  const [attempt, setAttempt] = useState(0);
   const photo = photos[index];
 
   const go = useCallback((delta) => {
@@ -127,15 +131,29 @@ export function PhotoLightbox({ photos, index, api, onClose, onIndex }) {
       </div>
 
       <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 8px" }}>
-        {isVideo(photo) ? (
+        {isVideo(photo) && unplayable[photo.id] ? (
+          <VideoUnplayable
+            shared
+            reason={unplayable[photo.id]}
+            onRetry={() => {
+              setUnplayable((cur) => { const next = { ...cur }; delete next[photo.id]; return next; });
+              setAttempt((n) => n + 1);
+            }}
+          />
+        ) : isVideo(photo) ? (
           <video
-            key={photo.id}
+            key={`${photo.id}-${attempt}`}
             src={api.videoUrl(photo.id)}
             poster={api.photoUrl(photo.id, "thumb")}
             controls
             playsInline
             preload="metadata"
             aria-label={describe(photo)}
+            onError={(e) => {
+              const id = photo.id;
+              whyVideoFailed(api.videoUrl(id), e.currentTarget.error?.code)
+                .then((reason) => setUnplayable((cur) => ({ ...cur, [id]: reason })));
+            }}
             style={{ maxWidth: "100%", maxHeight: "100%", display: "block", background: "#000" }}
           />
         ) : (

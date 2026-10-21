@@ -8,6 +8,7 @@ import {
 } from "./plantsRoster.js";
 
 import { ensureGrowLogSchema } from "./growLog.js";
+import { stageFromLogRow as stageFromRow } from "../src/lib/plantClock.js";
 import { isWaterUnit } from "../src/lib/waterUnits.js";
 import { STAGE_LABEL, cropOf, defaultStage, stagesFor, words } from "../src/lib/crops.js";
 
@@ -29,6 +30,16 @@ async function saveSurvey(env, userId, growId, survey) {
 }
 
 let _schemaReady = false;
+// The one way a stage switch is written, so setup, adding a plant, dating a
+// stage and MJ all write the same row.
+const INSERT_STAGE_SQL = `INSERT INTO plant_log
+   (user_id, grow_id, plant_id, date, kind, detail, body, height, height_unit, health, created_at, updated_at)
+ VALUES (?, ?, ?, ?, 'stage', ?, ?, NULL, NULL, NULL, ?, ?)`;
+
+function stageBody(stage) {
+  return `Stage → ${STAGE_LABEL[stage]}`;
+}
+
 export async function ensurePlantLogSchema(env) {
   if (_schemaReady) return;
   try {
@@ -83,19 +94,10 @@ export async function seedStageEntries(env, userId, growId, survey) {
     await env.DB.prepare(
       "DELETE FROM plant_log WHERE user_id = ? AND grow_id = ? AND kind = 'stage' AND date = ?"
     ).bind(userId, growId, date).run();
-    const stmt = env.DB.prepare(
-      `INSERT INTO plant_log
-         (user_id, grow_id, plant_id, date, kind, detail, body, height, height_unit, health, created_at, updated_at)
-       VALUES (?, ?, ?, ?, 'stage', ?, ?, NULL, NULL, NULL, ?, ?)`
-    );
+    const stmt = env.DB.prepare(INSERT_STAGE_SQL);
     await env.DB.batch(plants.map((p) => {
       const stage = p.stage ?? fallback;
-      return stmt.bind(
-        userId, growId, p.id, date,
-        JSON.stringify({ stage }),
-        `Stage → ${STAGE_LABEL[stage]}`,
-        now, now,
-      );
+      return stmt.bind(userId, growId, p.id, date, JSON.stringify({ stage }), stageBody(stage), now, now);
     }));
   } catch (err) {
     logError("grow-setup-stage-seed", { message: String(err?.message) });
@@ -124,24 +126,17 @@ export async function addPlant(request, env, user, growId) {
   const stage = v.value.stage ?? defaultStage(crop);
   const since = joinStageDate(body ?? {}, v.value.startedOn, stage, crop, createdAt);
   if (!since.ok) return error(400, since.error);
+  // A plant already in a stage before today was alive before today: without a
+  // start date of its own it started no later than that, or its clock would
+  // begin after its own stage did.
+  const fields = !v.value.startedOn && since.date < createdAt ? { ...v.value, startedOn: since.date } : v.value;
 
-  const { survey: nextSurvey, plant } = addPlantToSurvey(survey, v.value, undefined, createdAt);
+  const { survey: nextSurvey, plant } = addPlantToSurvey(survey, fields, undefined, createdAt);
   await saveSurvey(env, user.id, growId, nextSurvey);
 
   if (stageSet(crop).has(stage)) {
     try {
-      await ensurePlantLogSchema(env);
-      const now = new Date().toISOString();
-      await env.DB.prepare(
-        `INSERT INTO plant_log
-           (user_id, grow_id, plant_id, date, kind, detail, body, height, height_unit, health, created_at, updated_at)
-         VALUES (?, ?, ?, ?, 'stage', ?, ?, NULL, NULL, NULL, ?, ?)`
-      ).bind(
-        user.id, growId, plant.id, since.date,
-        JSON.stringify({ stage }),
-        `Stage → ${STAGE_LABEL[stage]}`,
-        now, now,
-      ).run();
+      await recordStageSwitch(env, user.id, growId, plant.id, stage, since.date);
     } catch (err) {
       logError("plant-add-stage-seed", { message: String(err?.message) });
     }
@@ -157,7 +152,6 @@ export async function addPlant(request, env, user, growId) {
  * it always was. Never before the plant's start, never in the future.
  */
 export function joinStageDate(body, startedOn, stage, crop, todayIso) {
-  const start = startedOn ?? todayIso;
   const ladder = stagesFor(crop);
   let date = todayIso;
   if (body.stageSince !== undefined && body.stageSince !== null && body.stageSince !== "") {
@@ -166,8 +160,18 @@ export function joinStageDate(body, startedOn, stage, crop, todayIso) {
   } else if (startedOn && ladder.indexOf(stage) <= ladder.indexOf(defaultStage(crop))) {
     date = startedOn;
   }
-  if (date < start) return { ok: false, error: "a plant cannot enter a stage before it started" };
+  // With no start date given, the stage date is the earliest thing known, and
+  // the plant is taken to have started then (see addPlant).
+  if (startedOn && date < startedOn) return { ok: false, error: "a plant cannot enter a stage before it started" };
   return { ok: true, date };
+}
+
+/** Write one stage switch: the record every age and harvest window reads. */
+export async function recordStageSwitch(env, userId, growId, plantId, stage, date) {
+  await ensurePlantLogSchema(env);
+  const now = new Date().toISOString();
+  await env.DB.prepare(INSERT_STAGE_SQL)
+    .bind(userId, growId, plantId, date, JSON.stringify({ stage }), stageBody(stage), now, now).run();
 }
 
 /**
@@ -179,26 +183,25 @@ export function joinStageDate(body, startedOn, stage, crop, todayIso) {
 async function moveCurrentStageDate(env, userId, growId, plantId, date, startedOn, stage) {
   if (!isPastDateKey(date)) return "stageSince must be a past date";
   if (startedOn && date < startedOn) return "a plant cannot enter a stage before it started";
+  if (!stage || !STAGE_LABEL[stage]) return "this plant has no stage to date";
   await ensurePlantLogSchema(env);
   const res = await env.DB.prepare(
-    `SELECT id, date FROM plant_log
+    `SELECT id, date, body, detail FROM plant_log
      WHERE user_id = ? AND grow_id = ? AND plant_id = ? AND kind = 'stage'
      ORDER BY date DESC, id DESC LIMIT 2`
   ).bind(userId, growId, plantId).all();
   const [latest, previous] = res.results ?? [];
-  const now = new Date().toISOString();
-  if (!latest) {
-    if (!stage || !STAGE_LABEL[stage]) return "this plant has no stage to date";
-    await env.DB.prepare(
-      `INSERT INTO plant_log
-         (user_id, grow_id, plant_id, date, kind, detail, body, height, height_unit, health, created_at, updated_at)
-       VALUES (?, ?, ?, ?, 'stage', ?, ?, NULL, NULL, NULL, ?, ?)`
-    ).bind(userId, growId, plantId, date, JSON.stringify({ stage }), `Stage → ${STAGE_LABEL[stage]}`, now, now).run();
+  // The latest record is not this stage when the plant got here without one
+  // being written (older plants, older MJ). Then the switch to this stage is
+  // the thing being dated, and it is written rather than moving the one before.
+  if (!latest || stageFromRow(latest) !== stage) {
+    if (latest && date < latest.date) return "that is before the stage it came from";
+    await recordStageSwitch(env, userId, growId, plantId, stage, date);
     return null;
   }
   if (previous && date < previous.date) return "that is before the stage it came from";
   await env.DB.prepare("UPDATE plant_log SET date = ?, updated_at = ? WHERE id = ?")
-    .bind(date, now, latest.id).run();
+    .bind(date, new Date().toISOString(), latest.id).run();
   return null;
 }
 
@@ -221,29 +224,34 @@ export async function patchPlant(request, env, user, growId, plantId) {
 
   const before = (ensured.survey.strains ?? []).find((s) => s.id === plantId);
   if (!before) return error(404, "plant not found");
+  // Dating a stage and changing it in one request is ambiguous (which switch
+  // is being dated?), so the two are separate requests.
+  if (stageSince && v.value.stage !== undefined) {
+    return error(400, "change the stage and its date in separate requests");
+  }
   const merged = { ...before, ...v.value };
   if (merged.flowerWeeksMax != null && merged.flowerWeeks != null && merged.flowerWeeksMax < merged.flowerWeeks) {
     return error(400, "the most weeks cannot be fewer than the least");
   }
+
+  // Stage changes are one-way: a plant only ever moves forward through its
+  // lifecycle. Same stage is a harmless no-op; backward is rejected.
+  if (v.value.stage !== undefined) {
+    const from = ladder.indexOf(before.stage ?? defaultStage(crop));
+    const to = ladder.indexOf(v.value.stage);
+    if (to < from) return error(400, `stage changes are one-way - a ${words(crop).unit} cannot move back to an earlier stage`);
+    if (to === from) delete v.value.stage;
+    if (Object.keys(v.value).length === 0) return json({ ok: true, plant: before });
+  }
+
+  // Everything else has been checked, so the date move is the last thing that
+  // can refuse: nothing is written before a request is known to be good.
   if (stageSince) {
     const problem = await moveCurrentStageDate(
       env, user.id, growId, plantId, stageSince, merged.startedOn ?? null, merged.stage ?? defaultStage(crop),
     );
     if (problem) return error(400, problem);
     if (Object.keys(v.value).length === 0) return json({ ok: true, plant: before });
-  }
-
-  // Stage changes are one-way: a plant only ever moves forward through its
-  // lifecycle. Same stage is a harmless no-op; backward is rejected.
-  if (v.value.stage !== undefined) {
-    const current = (ensured.survey.strains ?? []).find((s) => s.id === plantId);
-    if (current) {
-      const from = ladder.indexOf(current.stage ?? defaultStage(crop));
-      const to = ladder.indexOf(v.value.stage);
-      if (to < from) return error(400, `stage changes are one-way - a ${words(crop).unit} cannot move back to an earlier stage`);
-      if (to === from) delete v.value.stage;
-    }
-    if (Object.keys(v.value).length === 0) return json({ ok: true, plant: (ensured.survey.strains ?? []).find((s) => s.id === plantId) });
   }
 
   const res = updatePlantInSurvey(ensured.survey, plantId, v.value);

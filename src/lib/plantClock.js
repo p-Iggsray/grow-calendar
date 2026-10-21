@@ -7,7 +7,7 @@
 // makes, and it is the breeder's, not a calendar's: a photoperiod plant's clock
 // starts the day it is moved to Flowering, an autoflower's the day it was
 // started, and the window is the breeder's minimum to maximum weeks from there.
-import { ALL_STAGES, CROP_STAGES, cropOf, words } from "./crops.js";
+import { ALL_STAGES, CROP_STAGES, cropOf, cropOfStage, defaultStage, stagesFor, words } from "./crops.js";
 
 const DAY_MS = 86_400_000;
 const DAYS_PER_WEEK = 7;
@@ -160,12 +160,33 @@ export function plantStageSpans(plant, records, fallback = null) {
   if (!spans.length && start && ALL_STAGES.includes(plant?.stage)) {
     spans.push({ stage: plant.stage, start, end: null });
   }
+  // A seedling recorded the day it joined the app, on a plant that started a
+  // week earlier, was a seedling that week too: the first stage, when it is
+  // where a plant begins, reaches back to the plant's start.
+  const first = spans[0];
+  if (first && start && first.start > start && startsAtBeginning(first.stage)) first.start = start;
+  // The plant is further on than any switch says, because it got there without
+  // one being written. It is in that stage, since a day nobody recorded.
+  const furthest = ALL_STAGES.indexOf(plant?.stage);
+  if (spans.length && furthest > best && furthest >= 0 && best >= 0) {
+    spans[spans.length - 1].endUnknown = true;
+    spans.push({ stage: plant.stage, start: null, end: null });
+  }
   return spans;
+}
+
+// Is this stage where a plant (or tub) of its crop begins life in the app?
+function startsAtBeginning(stage) {
+  const crop = cropOfStage(stage);
+  if (!crop) return false;
+  const ladder = stagesFor(crop);
+  return ladder.indexOf(stage) <= ladder.indexOf(defaultStage(crop));
 }
 
 /** Pure: how many days a span lasted, or has lasted so far as of `todayKey`. */
 export function spanDays(span, todayKey) {
-  const days = daysBetweenKeys(span?.start, span?.end ?? todayKey);
+  if (!span?.start || span.endUnknown) return null;
+  const days = daysBetweenKeys(span.start, span.end ?? todayKey);
   return days == null || days < 0 ? null : days;
 }
 
@@ -173,10 +194,12 @@ export function spanDays(span, todayKey) {
 export function spanOn(spans, dateKey) {
   let found = null;
   for (const s of spans ?? []) {
-    if (s.start > dateKey) break;
+    if (!s.start || s.start > dateKey) break;
     found = s;
   }
-  return found;
+  // A stage that ended on a day nobody recorded cannot say which side of that
+  // day this date fell on.
+  return found?.endUnknown ? null : found;
 }
 
 // ── The breeder's window ────────────────────────────────────────────────────
@@ -212,7 +235,8 @@ export function weeksRangeLabel({ min, max }) {
  * Null for anything that is not a cannabis plant. Otherwise one of:
  *   { pending: true, ... }   a photoperiod not yet flipped: no dates exist yet
  *   { start, end, anchor, ... }   the window, counted from `anchor`
- * `harvestedOn` is set once the plant has reached Harvest. `start` is the
+ * `harvested` is true once the plant has reached Harvest, and `harvestedOn`
+ * is that day when it was recorded (null when it got there unrecorded). `start` is the
  * plant's start date, which is what an autoflower counts from.
  */
 export function harvestWindow(plant, spans, crop, start = null) {
@@ -221,11 +245,18 @@ export function harvestWindow(plant, spans, crop, start = null) {
   const auto = isAuto(plant);
   const reached = (index) => (spans ?? []).find((s) => CANNABIS.indexOf(s.stage) >= index) ?? null;
   const harvested = reached(HARVEST_INDEX);
+  const flowered = reached(FLOWER_INDEX);
   const anchor = auto
     ? (isDateKey(start) ? start : spans?.[0]?.start ?? null)
-    : reached(FLOWER_INDEX)?.start ?? null;
-  const base = { auto, minWeeks: weeks.min, maxWeeks: weeks.max, harvestedOn: harvested?.start ?? null };
-  if (!anchor) return { ...base, pending: true, anchor: null, start: null, end: null };
+    : flowered?.start ?? null;
+  const base = {
+    auto, minWeeks: weeks.min, maxWeeks: weeks.max,
+    harvested: Boolean(harvested), harvestedOn: harvested?.start ?? null,
+  };
+  // `undated`: it is flowering, but the day it was flipped was never set.
+  if (!anchor) {
+    return { ...base, pending: true, undated: Boolean(flowered) && !harvested, anchor: null, start: null, end: null };
+  }
   return {
     ...base,
     pending: false,
@@ -242,7 +273,7 @@ export function harvestWindow(plant, spans, crop, start = null) {
  */
 export function harvestStatus(window, todayKey) {
   if (!window) return null;
-  if (window.harvestedOn) return { phase: "harvested", on: window.harvestedOn };
+  if (window.harvested || window.harvestedOn) return { phase: "harvested", on: window.harvestedOn ?? null };
   if (window.pending) return { phase: "pending" };
   const toStart = daysBetweenKeys(todayKey, window.start);
   const toEnd = daysBetweenKeys(todayKey, window.end);
@@ -267,9 +298,11 @@ export function harvestLine(window, todayKey) {
   const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
   switch (status.phase) {
     case "harvested":
-      return `Harvested ${shortDate(status.on)}`;
+      return status.on ? `Harvested ${shortDate(status.on)}` : "Harvested";
     case "pending":
-      return `Harvest ${weeksRangeLabel({ min: window.minWeeks, max: window.maxWeeks })} after flip`;
+      return window.undated
+        ? `Harvest ${weeksRangeLabel({ min: window.minWeeks, max: window.maxWeeks })} after flip; flip date not set`
+        : `Harvest ${weeksRangeLabel({ min: window.minWeeks, max: window.maxWeeks })} after flip`;
     case "before":
       return status.daysToEnd > status.daysToStart
         ? `Harvest ${range}, in ${status.daysToStart} to ${plural(status.daysToEnd, "day")}`
@@ -322,7 +355,7 @@ export function windowGroups(clocks) {
   const groups = new Map();
   for (const c of clocks ?? []) {
     const w = c.window;
-    if (!w || w.pending || w.harvestedOn) continue;
+    if (!w || w.pending || w.harvested || w.harvestedOn) continue;
     const key = `${w.start}|${w.end}`;
     if (!groups.has(key)) groups.set(key, { start: w.start, end: w.end, plants: [] });
     groups.get(key).plants.push(c.plant);
@@ -337,7 +370,7 @@ export function windowsOn(groups, dateKey) {
 
 /** Pure: the plant whose harvest comes first, for a one-line summary. */
 export function soonestHarvest(clocks) {
-  const live = (clocks ?? []).filter((c) => c.window && !c.window.pending && !c.window.harvestedOn);
+  const live = (clocks ?? []).filter((c) => c.window && !c.window.pending && !c.window.harvested && !c.window.harvestedOn);
   live.sort((a, b) => (a.window.start < b.window.start ? -1 : a.window.start > b.window.start ? 1 : 0));
   return live[0] ?? null;
 }

@@ -106,3 +106,15 @@ export function mediaFilename(date, mime) {
   const ext = VIDEO_TYPES[mime] ?? "jpg";
   return `grow-${date || "photo"}.${ext}`;
 }
+
+/**
+ * Pure: "24 photographs, 3 videos", leaving out whichever is none. `short`
+ * says "photo" for the tighter spaces a chip has.
+ */
+export function mediaCountLabel(photos, videos, { short = false } = {}) {
+  const noun = short ? "photo" : "photograph";
+  const parts = [];
+  if (photos) parts.push(`${photos} ${noun}${photos === 1 ? "" : "s"}`);
+  if (videos) parts.push(`${videos} video${videos === 1 ? "" : "s"}`);
+  return parts.join(", ");
+}

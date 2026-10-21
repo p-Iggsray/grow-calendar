@@ -75,7 +75,9 @@ export function validateVideoInput(body) {
     return { ok: false, message: "thumb must be a base64 image data URL" };
   }
   if (body.thumb.length > MAX_THUMB_CHARS) return { ok: false, message: "poster frame is too large" };
-  if (!durationFits(body.durationMs)) {
+  // A phone that would not report the length sends null; the 100 MB cap on
+  // the upload still holds.
+  if (body.durationMs != null && !durationFits(body.durationMs)) {
     return { ok: false, message: "videos can be at most a minute long" };
   }
   if (body.plantId !== undefined && body.plantId !== null) {
@@ -161,7 +163,7 @@ export async function createJournalVideo(request, env, user, growId) {
   const id = newPhotoId();
   const mime = videoMimeOf({ type: head.httpMetadata?.contentType }) ?? "video/mp4";
   const fromCamera = p.data.fromCamera === true ? 1 : 0;
-  const duration = Math.round(durationMs);
+  const duration = durationMs == null ? null : Math.round(durationMs);
   try {
     await env.DB.prepare(
       `INSERT INTO journal_photos

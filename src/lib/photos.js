@@ -357,11 +357,11 @@ async function encodeToDataUrl(bitmap, type, startEdge, budgetBytes, budgetChars
 // untouched because the canvas would not re-encode it.
 const RAW_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-// A 1x1 transparent PNG. Stands in when a thumbnail cannot be made at all, so
-// a missing thumbnail costs you a grey tile in the grid rather than the photo.
-const BLANK_THUMB =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ" +
-  "AAAADUlEQVR42mNkYPhfDwAChwGA3fxvsgAAAABJRU5ErkJggg==";
+// A 1x1 fully transparent PNG. Stands in when a thumbnail cannot be made at
+// all, so a missing thumbnail costs you a plain tile in the grid rather than
+// the photo. (The one this replaced was a half-transparent blue pixel, which
+// put bright blue squares in the grid.)
+const BLANK_THUMB = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=";
 
 // The picture as it already is, when it is small enough to store as-is. A
 // browser that will not re-encode anything can still upload a modest JPEG.
@@ -422,9 +422,21 @@ export async function fileToDataUrls(file) {
 // clip is often black or mid-exposure.
 
 const POSTER_SEEK_SECONDS = 0.5;
-// How long to wait for a phone to hand over metadata or a frame before giving
-// up on the poster (never on the video itself).
-const VIDEO_READ_TIMEOUT_MS = 15_000;
+// Where to seek when the length is unknown. Seeking at all is what makes a
+// metadata-only element fetch a frame; waiting for loadeddata without one can
+// sit there until the timeout on iOS.
+const POSTER_SEEK_FALLBACK_SECONDS = 0.1;
+// How long to wait for the phone to read a clip's header, then for a frame.
+// Neither is ever a reason to refuse the video: without them it goes up with
+// a blank tile and no length, and the server's size cap still holds.
+const VIDEO_META_TIMEOUT_MS = 8_000;
+const VIDEO_FRAME_TIMEOUT_MS = 6_000;
+// The frame is drawn at this long edge, not the clip's own. A 4K frame at
+// native size is 33 MB of canvas, on a phone already holding the video and
+// the upload; a poster is shown at 480px at most.
+const POSTER_SOURCE_EDGE = 960;
+// readyState at which a frame can be drawn (HAVE_CURRENT_DATA).
+const HAVE_CURRENT_DATA = 2;
 
 function once(target, event, timeoutMs) {
   return new Promise((resolve, reject) => {
@@ -441,53 +453,89 @@ function once(target, event, timeoutMs) {
   });
 }
 
-/**
- * Read a picked video: its length, and a poster frame as a thumbnail data URL.
- * Throws only when the length cannot be read at all, since without it the cap
- * cannot be checked. A frame that will not draw falls back to a blank tile;
- * the play badge still says what it is.
- */
-export async function readVideoFile(file) {
-  const url = URL.createObjectURL(file);
+// A <video> the page can read but nobody sees. It has to be IN the document:
+// iOS Safari does not load media for an element that is not, so a detached
+// one never reports its length and every clip timed out.
+function hiddenVideo(url) {
   const video = document.createElement("video");
   video.muted = true;
   video.playsInline = true;
-  video.preload = "auto";
+  video.setAttribute("muted", "");
+  video.setAttribute("playsinline", "");
+  video.preload = "metadata";
+  Object.assign(video.style, {
+    position: "fixed", left: "-10000px", top: "0", width: "2px", height: "2px",
+    opacity: "0", pointerEvents: "none",
+  });
+  document.body.appendChild(video);
   video.src = url;
+  video.load();
+  return video;
+}
+
+/**
+ * Read a picked video: its length in ms (null when the phone will not say),
+ * and a poster frame as a thumbnail data URL (a blank tile when no frame can
+ * be drawn). Never throws: a clip this cannot read still uploads, because the
+ * file is what matters and the badge still says it is a video.
+ */
+export async function readVideoFile(file) {
+  const url = URL.createObjectURL(file);
+  const video = hiddenVideo(url);
   try {
-    await once(video, "loadedmetadata", VIDEO_READ_TIMEOUT_MS)
-      .catch(() => { throw new Error("Could not read that video. Try a different one."); });
-    const durationMs = Math.round(video.duration * 1000);
-    if (!Number.isFinite(durationMs) || durationMs <= 0) {
-      throw new Error("Could not tell how long that video is. Try a different one.");
-    }
+    const hasMeta = await once(video, "loadedmetadata", VIDEO_META_TIMEOUT_MS).then(() => true, () => false);
+    if (!hasMeta) return { durationMs: null, thumb: BLANK_THUMB };
+    // A recording still being finalised can report Infinity until played out.
+    const durationMs = Number.isFinite(video.duration) && video.duration > 0
+      ? Math.round(video.duration * 1000)
+      : null;
 
     let thumb = BLANK_THUMB;
     try {
-      video.currentTime = Math.min(POSTER_SEEK_SECONDS, video.duration / 2);
-      await once(video, "seeked", VIDEO_READ_TIMEOUT_MS);
+      const seekTo = durationMs ? Math.min(POSTER_SEEK_SECONDS, video.duration / 2) : POSTER_SEEK_FALLBACK_SECONDS;
+      video.currentTime = seekTo;
+      await once(video, "seeked", VIDEO_FRAME_TIMEOUT_MS);
+      if (video.readyState < HAVE_CURRENT_DATA) await once(video, "loadeddata", VIDEO_FRAME_TIMEOUT_MS);
       thumb = await posterFrom(video) ?? BLANK_THUMB;
     } catch { /* keep the blank tile */ }
     return { durationMs, thumb };
   } finally {
     video.removeAttribute("src");
     video.load();
+    video.remove();
     URL.revokeObjectURL(url);
   }
 }
 
-// Paint the current frame and run it through the same budgeted encoder a
-// photo's thumbnail uses, so a poster sits in the same tiles at the same cost.
+// Paint the current frame, already shrunk, and run it through the same
+// budgeted encoder a photo's thumbnail uses, so a poster sits in the same
+// tiles at the same cost.
 async function posterFrom(video) {
   const w = video.videoWidth;
   const h = video.videoHeight;
   if (!w || !h) return null;
-  const frame = paint(video, w, h);
-  if (!frame) return null;
+  const ratio = Math.min(1, POSTER_SOURCE_EDGE / Math.max(w, h));
+  const fw = Math.max(1, Math.round(w * ratio));
+  const fh = Math.max(1, Math.round(h * ratio));
+  // A plain canvas, not paint()'s OffscreenCanvas: drawing a <video> onto an
+  // OffscreenCanvas is newer than the rest of it, and older iOS refuses.
+  let frame = null;
+  try {
+    frame = document.createElement("canvas");
+    frame.width = fw;
+    frame.height = fh;
+    const ctx = frame.getContext("2d");
+    if (!ctx) return null;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(video, 0, 0, fw, fh);
+  } catch {
+    if (frame) release(frame);
+    return null;
+  }
   try {
     const type = await bestFormat();
     const state = { jpegOnly: type !== "image/webp" };
-    return await encodeToDataUrl(frame, type, Math.min(THUMB_EDGE, Math.max(w, h)), MAX_THUMB_BYTES, MAX_THUMB_CHARS, state);
+    return await encodeToDataUrl(frame, type, Math.min(THUMB_EDGE, Math.max(fw, fh)), MAX_THUMB_BYTES, MAX_THUMB_CHARS, state);
   } finally {
     release(frame);
   }

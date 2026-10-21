@@ -4,8 +4,39 @@
 // lives here once. Components keep their own state and pass callbacks in.
 
 import { api } from "./api.js";
+import { holdReload } from "./reloadGuard.js";
 import { fileToDataUrls, readVideoFile, MAX_BATCH } from "./photos.js";
 import { isVideoFile, videoMimeOf, durationFits, MAX_VIDEO_BYTES, looksFreshFromCamera } from "./videos.js";
+
+// How long after the page is back from the picker a hold is kept when no file
+// arrived: long enough for the change event to land, short enough that a
+// cancelled pick does not hold a waiting update for long.
+const PICKER_GRACE_MS = 5_000;
+
+/**
+ * Hold the reload while the OS picker or camera is open. Opening it hides the
+ * page, which is exactly when a waiting update would otherwise reload, taking
+ * the clip being chosen with it. Lets go when the caller says (a file arrived)
+ * or a few seconds after the page is back with nothing picked.
+ */
+export function holdForPicker() {
+  const release = holdReload();
+  let timer = null;
+  const onVisible = () => {
+    if (document.visibilityState !== "visible") return;
+    clearTimeout(timer);
+    timer = setTimeout(done, PICKER_GRACE_MS);
+  };
+  function done() {
+    clearTimeout(timer);
+    document.removeEventListener("visibilitychange", onVisible);
+    release();
+  }
+  document.addEventListener("visibilitychange", onVisible);
+  // Desktop pickers do not hide the page; the grace period still ends it.
+  timer = setTimeout(done, PICKER_GRACE_MS * 12);
+  return done;
+}
 
 // The one picker behind the one add button. No `capture`, so the OS sheet
 // offers the camera (photo or video) and the library side by side.
@@ -21,7 +52,9 @@ async function addVideo(growId, file, { date, plantId, fromCamera, onProgress })
   // Checked before anything is read or sent: this one needs no network at all.
   if (file.size > MAX_VIDEO_BYTES) throw new Error(TOO_BIG);
   const { durationMs, thumb } = await readVideoFile(file);
-  if (!durationFits(durationMs)) throw new Error(TOO_LONG);
+  // A clip whose length the phone would not report still goes up: the size
+  // cap above is the one the server cannot do without.
+  if (durationMs != null && !durationFits(durationMs)) throw new Error(TOO_LONG);
   const { uploadKey } = await api.uploadVideoFile(growId, date, file, mime, onProgress);
   return api.createJournalVideo(growId, {
     date, uploadKey, thumb, durationMs, fromCamera,
@@ -49,6 +82,16 @@ async function addPhoto(growId, file, { date, plantId, fromCamera }) {
  * photo. Resolves `{ added, failures, truncated }`.
  */
 export async function addMediaBatch(files, { growId, date, plantId = null, onProgress }) {
+  // A new deploy must not reload the page halfway through this.
+  const release = holdReload();
+  try {
+    return await addEach(files, { growId, date, plantId, onProgress });
+  } finally {
+    release();
+  }
+}
+
+async function addEach(files, { growId, date, plantId, onProgress }) {
   const batch = files.slice(0, MAX_BATCH);
   const failures = [];
   let added = 0;

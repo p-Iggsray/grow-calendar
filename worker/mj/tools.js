@@ -14,14 +14,14 @@ import {
 import { validateLifecycle } from "../grows.js";
 import { normalizeLifecycle } from "../../src/lib/lifecycle.js";
 import { todayInET } from "./usage.js";
-import { ensurePlantLogSchema } from "../plants.js";
+import { ensurePlantLogSchema, recordStageSwitch } from "../plants.js";
 import { geocode } from "../geocode.js";
 import { photosForRange, fullPhoto, toInlineData } from "../photos.js";
 import { searchJournalRows } from "../journal.js";
 import { logError } from "../log.js";
 import { DATE_RE } from "./constants.js";
 import { autoLogsWeather } from "../../src/lib/growEnvironment.js";
-import { cropOf, words } from "../../src/lib/crops.js";
+import { cropOf, defaultStage, stagesFor, words } from "../../src/lib/crops.js";
 import {
   isWaterUnit, toGallons, unitLabel, fanOutWater, mergeWaterRows, sumGallons,
   describeWater,
@@ -191,7 +191,7 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
           growDay: buildDayInfo(r.date, timeline).growDay,
           plant: plantName(r.plant_id),
           viewable: Boolean(inline),
-          ...(r.kind === "video" ? { video: true, seconds: Math.round((r.duration_ms ?? 0) / 1000) } : {}),
+          ...(r.kind === "video" ? { video: true, ...(r.duration_ms != null ? { seconds: Math.round(r.duration_ms / 1000) } : {}) } : {}),
         };
       });
       const viewable = listed.filter((p) => p.viewable).length;
@@ -228,7 +228,7 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
         growDay: buildDayInfo(row.date, timeline).growDay,
         plant: (survey?.strains ?? []).find((p) => p.id === row.plant_id)?.name ?? null,
         viewable: Boolean(inline),
-        ...(video ? { video: true, seconds: Math.round((row.duration_ms ?? 0) / 1000) } : {}),
+        ...(video ? { video: true, ...(row.duration_ms != null ? { seconds: Math.round(row.duration_ms / 1000) } : {}) } : {}),
         note: !inline
           ? "This photograph could not be attached, so say you cannot see it rather than describing it."
           : video
@@ -501,13 +501,24 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
 
     if (name === "add_plant") {
       if (!growId) return { error: "No active grow selected. Tap a grow in the Plan tab first." };
-      const v = validatePlantFields(input ?? {}, false);
-      if (!v.ok) return { error: v.error };
       const survey = await readSurvey(env, userId, growId);
       if (survey === null) return { error: "Grow not found." };
+      // The space's crop decides which stages and types are legal: a monotub
+      // is not checked against a cannabis ladder.
+      const crop = cropOf(survey);
+      const v = validatePlantFields(input ?? {}, false, crop);
+      if (!v.ok) return { error: v.error };
       const ensured = ensurePlantIds(survey);
-      const { survey: nextSurvey, plant } = addPlantToSurvey(ensured.survey, v.value);
+      const today = todayInET();
+      const { survey: nextSurvey, plant } = addPlantToSurvey(ensured.survey, v.value, undefined, today);
       await writeSurvey(env, userId, growId, nextSurvey);
+      // The stage it joins at gets its date, as the app's own add does, so its
+      // age in that stage and its harvest window have something to count from.
+      try {
+        await recordStageSwitch(env, userId, growId, plant.id, plant.stage ?? defaultStage(crop), today);
+      } catch (err) {
+        logError("mj-add-plant-stage", { message: String(err?.message) });
+      }
       actions.push({ type: "add_plant", summary: `Added plant: ${plant.name}` });
       return { ok: true, plant: plantOut(plant) };
     }
@@ -518,15 +529,37 @@ export async function executeTool(name, input, env, userId, timeline, actions, g
       if (typeof plantId !== "string" || !plantId) return { error: "plant_id is required - get it from get_grow_info." };
       const mapped = { ...(input ?? {}) };
       if (mapped.pot_size !== undefined) { mapped.potSize = mapped.pot_size; delete mapped.pot_size; }
-      const v = validatePlantFields(mapped, true);
-      if (!v.ok) return { error: v.error };
-      if (Object.keys(v.value).length === 0) return { error: "No valid fields to update." };
       const survey = await readSurvey(env, userId, growId);
       if (survey === null) return { error: "Grow not found." };
+      const crop = cropOf(survey);
+      const v = validatePlantFields(mapped, true, crop);
+      if (!v.ok) return { error: v.error };
+      if (Object.keys(v.value).length === 0) return { error: "No valid fields to update." };
       const ensured = ensurePlantIds(survey);
+      const before = (ensured.survey.strains ?? []).find((p) => p.id === plantId);
+      if (!before) return { error: `No plant with id ${plantId}. Call get_grow_info to see plant ids.` };
+      // Stages only move forward, here exactly as in the app, and a move is
+      // recorded with its date.
+      let movedTo = null;
+      if (v.value.stage !== undefined) {
+        const ladder = stagesFor(crop);
+        const from = ladder.indexOf(before.stage ?? defaultStage(crop));
+        const to = ladder.indexOf(v.value.stage);
+        if (to < from) return { error: "Stage changes are one-way; a plant cannot move back to an earlier stage." };
+        if (to === from) delete v.value.stage;
+        else movedTo = v.value.stage;
+        if (Object.keys(v.value).length === 0) return { ok: true, plant: plantOut(before) };
+      }
       const res = updatePlantInSurvey(ensured.survey, plantId, v.value);
       if (!res) return { error: `No plant with id ${plantId}. Call get_grow_info to see plant ids.` };
       await writeSurvey(env, userId, growId, res.survey);
+      if (movedTo) {
+        try {
+          await recordStageSwitch(env, userId, growId, plantId, movedTo, todayInET());
+        } catch (err) {
+          logError("mj-update-plant-stage", { message: String(err?.message) });
+        }
+      }
       actions.push({ type: "update_plant", summary: `Updated plant: ${res.plant.name}` });
       return { ok: true, plant: plantOut(res.plant) };
     }

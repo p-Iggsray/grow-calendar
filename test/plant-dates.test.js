@@ -48,8 +48,13 @@ test("a stage cannot begin before the plant, or in the future", () => {
   const today = "2026-10-06";
   assert.equal(joinStageDate({ stageSince: "2026-07-01" }, "2026-08-01", "flowering", "cannabis", today).ok, false);
   assert.equal(joinStageDate({ stageSince: "2026-12-01" }, "2026-08-01", "flowering", "cannabis", today).ok, false);
-  assert.equal(joinStageDate({ stageSince: "2026-09-01" }, undefined, "flowering", "cannabis", today).ok, false,
-    "with no start date the plant starts today, so a stage cannot predate it");
+});
+
+test("a stage date with no start date is accepted, and the plant is taken to have started then", () => {
+  // Refusing this used to reject a perfectly good request that simply did not
+  // say when the plant started; addPlant now uses the stage date as the start.
+  assert.deepEqual(joinStageDate({ stageSince: "2026-09-01" }, undefined, "flowering", "cannabis", "2026-10-06"),
+    { ok: true, date: "2026-09-01" });
 });
 
 // ── The rundown carries the same clock ──────────────────────────────────────

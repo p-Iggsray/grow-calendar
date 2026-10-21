@@ -220,3 +220,42 @@ test("a day ahead shows age and window but never a stage nobody has reached", as
   assert.equal(row.age, 103);
   assert.equal(row.inWindow, true);
 });
+
+test("a first stage that is where plants begin reaches back to the plant's start", () => {
+  const spans = plantStageSpans(
+    { id: "a", startedOn: "2026-10-01", stage: "seedling" },
+    [rec("a", "2026-10-10", "seedling")],
+  );
+  assert.equal(spans[0].start, "2026-10-01");
+  // A later stage does not: nobody knows what it was doing before.
+  const veg = plantStageSpans(
+    { id: "b", startedOn: "2026-10-01", stage: "vegetative" },
+    [rec("b", "2026-10-10", "vegetative")],
+  );
+  assert.equal(veg[0].start, "2026-10-10");
+});
+
+test("a plant further on than its switches is in that stage since a day not set", () => {
+  const plant = { id: "a", startedOn: "2026-08-01", stage: "flowering", flowerWeeks: 8, flowerWeeksMax: 10 };
+  const spans = plantStageSpans(plant, [rec("a", "2026-08-01", "seedling"), rec("a", "2026-08-20", "vegetative")]);
+  assert.deepEqual(spans.map((s) => s.stage), ["seedling", "vegetative", "flowering"]);
+  assert.equal(spans[2].start, null);
+  assert.equal(spanDays(spans[1], "2026-10-01"), null, "veg ended on a day nobody recorded");
+  assert.equal(spanDays(spans[2], "2026-10-01"), null);
+  assert.equal(spanOn(spans, "2026-09-10"), null);
+  assert.equal(spanOn(spans, "2026-08-05").stage, "seedling");
+  const w = harvestWindow(plant, spans, "cannabis");
+  assert.equal(w.pending, true);
+  assert.equal(w.undated, true);
+  assert.match(harvestLine(w, "2026-10-01"), /flip date not set/);
+});
+
+test("a plant harvested without its switches recorded reads as harvested, not as an unset flip", () => {
+  const plant = { id: "a", startedOn: "2026-08-01", stage: "harvest", flowerWeeks: 8 };
+  const spans = plantStageSpans(plant, [rec("a", "2026-08-20", "vegetative")]);
+  const w = harvestWindow(plant, spans, "cannabis");
+  assert.equal(w.harvested, true);
+  assert.equal(w.undated, false);
+  assert.equal(harvestStatus(w, "2026-11-01").phase, "harvested");
+  assert.equal(harvestLine(w, "2026-11-01"), "Harvested");
+});

@@ -14,7 +14,9 @@ export default function HarvestWindowBar({ window, status, todayKey }) {
       <div>
         <HarvestLine window={window} status={status} todayKey={todayKey} size={12.5} />
         <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", marginTop: 6, lineHeight: 1.5 }}>
-          Move it to Flowering to start the countdown. The breeder says {weeksRangeLabel({ min: window.minWeeks, max: window.maxWeeks })} from there.
+          {window.undated
+            ? "It is flowering, but the day it was flipped was never set. Edit it and set \"In its current stage since\" to start the countdown."
+            : `Move it to Flowering to start the countdown. The breeder says ${weeksRangeLabel({ min: window.minWeeks, max: window.maxWeeks })} from there.`}
         </div>
       </div>
     );

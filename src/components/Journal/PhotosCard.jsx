@@ -4,8 +4,8 @@ import { ymd } from "../../lib/api.js";
 import { photoUrl } from "../../lib/photoUrl.js";
 import { tapHaptic } from "../../lib/haptics.js";
 import { batchResultMessage, MAX_BATCH } from "../../lib/photos.js";
-import { addMediaBatch, addingLabel, progressFraction, MEDIA_ACCEPT } from "../../lib/addMedia.js";
-import { looksFreshFromCamera, mediaFilename, videoMimeOf } from "../../lib/videos.js";
+import { addMediaBatch, addingLabel, holdForPicker, progressFraction, MEDIA_ACCEPT } from "../../lib/addMedia.js";
+import { isVideoFile, looksFreshFromCamera, mediaFilename, videoMimeOf } from "../../lib/videos.js";
 import {
   canSharePhoto, loadSaveToRoll, savePhotoFile, saveOutcomeMessage,
 } from "../../lib/savePhoto.js";
@@ -20,11 +20,21 @@ const UI = "var(--font-ui)";
 export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
   const plantName = (id) => (plants.find((p) => p.id === id)?.name || "").trim();
   const pickerRef = useRef(null);
+  // Holds a waiting update off while the picker or camera is open.
+  const pickerHold = useRef(null);
+  function openPicker() {
+    pickerHold.current?.();
+    pickerHold.current = holdForPicker();
+    pickerRef.current?.click();
+  }
   const [progress, setProgress] = useState(null); // {done, total, fraction, video} while uploading
   const [error, setError] = useState("");
   const [viewIndex, setViewIndex] = useState(null);
   // The shot the OS would not take on its own, waiting for a deliberate tap.
   const [rollPrompt, setRollPrompt] = useState(null);
+  // Whether the prompted shot made it into the journal. A clip that did not
+  // is offered all the same, because then the save is the only copy.
+  const [rollUploaded, setRollUploaded] = useState(true);
   const [rollState, setRollState] = useState("");
   const [rollError, setRollError] = useState(null);
   useEffect(() => {
@@ -37,7 +47,7 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
   // Each item records whether it looks freshly shot (see looksFreshFromCamera):
   // a shot taken here is not in the camera roll yet, so its viewer offers a
   // one-tap Save to Photos.
-  async function uploadAll(files) {
+  async function uploadAll(files, freshVideo = null) {
     setError("");
     setProgress({ done: 0, total: Math.min(files.length, MAX_BATCH), fraction: null, video: false });
     const { added, failures, truncated } = await addMediaBatch(files, {
@@ -46,6 +56,13 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
     if (added > 0) {
       tapHaptic();
       window.dispatchEvent(new CustomEvent("journal-mutated"));
+    }
+    // Only now, with nothing else holding the clip, is it offered to the
+    // camera roll; and offered whether or not it uploaded, because a clip
+    // that failed exists nowhere else.
+    if (freshVideo) {
+      setRollUploaded(failures.length === 0);
+      setRollPrompt(freshVideo);
     }
     setError(
       truncated
@@ -68,6 +85,7 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
   const rollFilename = (file) => mediaFilename(ymd(date), videoMimeOf(file));
 
   function offerToRoll(file) {
+    setRollUploaded(true);
     if (!canSharePhoto(file)) { setRollPrompt(file); return; }
     setRollState("saving");
     setRollError(null);
@@ -87,10 +105,22 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
   function onPick(e) {
     const files = Array.from(e.target.files ?? []);
     e.target.value = "";
-    if (!files.length) return;
-    // Straight off the tap, before anything is awaited.
-    if (loadSaveToRoll() && looksFreshFromCamera(files[0], files.length)) offerToRoll(files[0]);
-    uploadAll(files);
+    // The upload takes its own hold below, before this one lets go.
+    const releasePicker = pickerHold.current;
+    pickerHold.current = null;
+    if (!files.length) { releasePicker?.(); return; }
+    let freshVideo = null;
+    if (loadSaveToRoll() && looksFreshFromCamera(files[0], files.length)) {
+      // A photo goes straight to the save sheet, off this very tap. A video
+      // waits until it has uploaded, then asks for a tap of its own: handing
+      // the OS a whole clip to share while the same clip is being read and
+      // uploaded is more than an older phone can hold, and the page dies to a
+      // blank screen.
+      if (isVideoFile(files[0])) freshVideo = files[0];
+      else offerToRoll(files[0]);
+    }
+    uploadAll(files, freshVideo);
+    releasePicker?.();
   }
 
   // The fallback: a fresh tap, which always carries its own activation.
@@ -171,7 +201,7 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
       <button
         type="button"
         className="touch-target"
-        onClick={() => { if (!busy) { tapHaptic(); pickerRef.current?.click(); } }}
+        onClick={() => { if (!busy) { tapHaptic(); openPicker(); } }}
         disabled={busy}
         style={{
           width: "100%", padding: "13px 12px", borderRadius: 12,
@@ -205,7 +235,9 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
           background: "rgba(251,191,36,0.09)", border: "1px solid rgba(251,191,36,0.3)",
         }}>
           <span style={{ flex: 1, minWidth: 0, fontFamily: UI, fontSize: 11.5, color: "var(--c-text-dim)", lineHeight: 1.5 }}>
-            That {videoMimeOf(rollPrompt) ? "video" : "shot"} is in your journal but not your camera roll yet.
+            {rollUploaded
+              ? `That ${videoMimeOf(rollPrompt) ? "video" : "shot"} is in your journal but not your camera roll yet.`
+              : "That video did not upload. Save it to Photos so it is not lost."}
           </span>
           <button
             type="button"

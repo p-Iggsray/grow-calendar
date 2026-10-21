@@ -202,6 +202,9 @@ async function request(path, opts = {}) {
   return data;
 }
 
+// How long an upload may go without moving a byte before it is given up on.
+const UPLOAD_STALL_MS = 60_000;
+
 /**
  * Send a video file as the raw request body, reporting progress.
  *
@@ -223,12 +226,30 @@ function uploadVideoFile(growId, date, file, mime, onProgress) {
     xhr.open("PUT", path);
     xhr.withCredentials = true;
     xhr.setRequestHeader("content-type", mime);
+    // A connection that dies mid-upload does not always say so: the request
+    // just stops moving. No progress for this long means it is not coming
+    // back, and saying so beats a bar stuck at 40% forever.
+    let stalled = false;
+    let watchdog = null;
+    const rearm = () => {
+      clearTimeout(watchdog);
+      watchdog = setTimeout(() => { stalled = true; xhr.abort(); }, UPLOAD_STALL_MS);
+    };
+    const settle = (fn) => (...args) => { clearTimeout(watchdog); fn(...args); };
+    rearm();
     xhr.upload.onprogress = (e) => {
+      rearm();
       if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total);
     };
-    xhr.onerror = () => reject(new Error("The upload was interrupted. Check your connection and try again."));
-    xhr.onabort = () => reject(new Error("The upload was cancelled."));
-    xhr.onload = () => {
+    // Every byte is sent: what is left is the server storing it, which moves
+    // no progress at all, so the watchdog stands down rather than abort a
+    // finished upload.
+    xhr.upload.onload = () => clearTimeout(watchdog);
+    xhr.onerror = settle(() => reject(new Error("The upload was interrupted. Check your connection and try again.")));
+    xhr.onabort = settle(() => reject(new Error(stalled
+      ? "The upload stopped moving. Check your connection and try again."
+      : "The upload was cancelled.")));
+    xhr.onload = settle(() => {
       noteStatus(path, xhr.status);
       let data = null;
       try { data = xhr.responseText ? JSON.parse(xhr.responseText) : null; } catch { data = null; }
@@ -238,7 +259,7 @@ function uploadVideoFile(growId, date, file, mime, onProgress) {
       );
       err.status = xhr.status;
       reject(err);
-    };
+    });
     xhr.send(file);
   });
 }

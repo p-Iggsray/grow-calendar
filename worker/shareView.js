@@ -15,7 +15,7 @@ import { isLogFilled, rowToEntry, ensureGrowLogSchema } from "./growLog.js";
 import { journalPlantEntry, buildMonthIndex, buildTimelineDays } from "./journal.js";
 import { readNote } from "./notes.js";
 import { ensurePlantLogSchema } from "./plants.js";
-import { photosForDay, photoCountsForMonth, photoCountsForDates, ensureJournalPhotosSchema, pictureColumnSql } from "./photos.js";
+import { photosForDay, photoCountsForMonth, photoCountsForDates, ensureJournalPhotosSchema, pictureColumnSql, cleanStoredPicture } from "./photos.js";
 import { streamMediaObject } from "./media.js";
 import { stageFromRow } from "./stages.js";
 import { buildRunningTimeline, growAnchor } from "../src/lib/stageTimeline.js";
@@ -239,6 +239,7 @@ export async function getShareTimeline(env, token, growId, before) {
 
   await ensureGrowLogSchema(env);
   await ensurePlantLogSchema(env);
+  await ensureJournalPhotosSchema(env);
 
   // Union the dated tables to find which days exist, then page over that list
   // and read only the page. A grow with 400 logged days still answers in one
@@ -248,6 +249,7 @@ export async function getShareTimeline(env, token, growId, before) {
        SELECT date FROM grow_log   WHERE user_id = ?1 AND grow_id = ?2
        UNION SELECT date FROM day_notes WHERE user_id = ?1 AND grow_id = ?2 AND TRIM(body) != ''
        UNION SELECT date FROM plant_log WHERE user_id = ?1 AND grow_id = ?2
+       UNION SELECT date FROM journal_photos WHERE user_id = ?1 AND grow_id = ?2
      ) WHERE date < ?3 ORDER BY date DESC LIMIT ?4`
   ).bind(ctx.userId, growId, cursor, SHARE_TIMELINE_PAGE + 1).all();
 
@@ -271,7 +273,7 @@ export async function getShareTimeline(env, token, growId, before) {
     photoCountsForDates(env, ctx.userId, growId, page).catch(() => ({})),
   ]);
 
-  const days = buildTimelineDays(logRes.results, noteRes.results, plantRes.results);
+  const days = buildTimelineDays(logRes.results, noteRes.results, plantRes.results, Object.keys(photoCounts));
   for (const d of days) d.photos = photoCounts[d.date] ?? 0;
 
   return json({
@@ -333,7 +335,7 @@ export async function getSharePhoto(env, token, photoId, size) {
   ).bind(photoId, ctx.userId).first();
   if (!row?.url || !ctx.growIds.has(row.grow_id)) return error(404, "photo not found");
 
-  const m = DATA_URL_PREFIX.exec(row.url);
+  const m = DATA_URL_PREFIX.exec(cleanStoredPicture(row.url));
   if (!m) return error(500, "that photo is not stored as an image");
   let bytes;
   try { bytes = base64ToBytes(m[2]); }

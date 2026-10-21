@@ -122,3 +122,8 @@ test("journalStreak: today not yet journaled keeps yesterday's streak alive", ()
   assert.equal(journalStreak([], today), 0);
 });
 
+
+test("a day with only photos or videos is a day in the timeline", () => {
+  const days = buildTimelineDays([], [], [], ["2026-10-21", "2026-10-06"]);
+  assert.deepEqual(days.map((d) => d.date), ["2026-10-21", "2026-10-06"]);
+});

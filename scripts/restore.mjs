@@ -32,9 +32,8 @@ import { readFileSync } from "node:fs";
 // the journal and the log down with it. A blank tile on the right day is the
 // honest result: the record says a photo was taken, and the picture is in the
 // camera roll where it always was.
-const BLANK_PNG =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk" +
-  "YPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+// 1x1 and fully transparent, so a restored photo is a plain tile.
+const BLANK_PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=";
 
 const FILL = {
   journal_photos: { data: BLANK_PNG, thumb: BLANK_PNG },

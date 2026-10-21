@@ -6,16 +6,13 @@ import { cropOf, words } from "../../lib/crops.js";
 import { kindLabel, summarizeEntry, HEALTH_MAP } from "../PlantsTab/constants.js";
 import { UI, BOOK, NUM, SectionLabel, Rule } from "./chrome.jsx";
 import { Photos } from "./BuddyPhotos.jsx";
+import { mediaCountLabel } from "../../lib/videos.js";
 import DayPlants from "../Journal/DayPlants.jsx";
 
 // "3 photographs, 1 video", leaving out whichever there are none of.
 function mediaCount(items) {
   const videos = items.filter((p) => p.kind === "video").length;
-  const stills = items.length - videos;
-  return [
-    stills ? `${stills} ${stills === 1 ? "photograph" : "photographs"}` : "",
-    videos ? `${videos} ${videos === 1 ? "video" : "videos"}` : "",
-  ].filter(Boolean).join(", ");
+  return mediaCountLabel(items.length - videos, videos);
 }
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];

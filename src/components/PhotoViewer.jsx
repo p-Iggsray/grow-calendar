@@ -6,11 +6,14 @@ import { photoUrl, videoUrl } from "../lib/photoUrl.js";
 import { nextIndex } from "../lib/photos.js";
 import { tapHaptic } from "../lib/haptics.js";
 import { mediaFilename } from "../lib/videos.js";
+import { holdReload } from "../lib/reloadGuard.js";
 import {
   canSharePhoto, downloadPhoto, photoFileFrom, savePhotoFile, saveOutcomeMessage,
 } from "../lib/savePhoto.js";
 import Portal from "./Portal.jsx";
 import HeaderMenu from "./HeaderMenu.jsx";
+import VideoUnplayable from "./VideoUnplayable.jsx";
+import { whyVideoFailed } from "../lib/videoProbe.js";
 
 const UI = "var(--font-ui)";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -47,6 +50,15 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
   // A playing video owns horizontal drags: its scrubber is under the thumb,
   // and a swipe there should seek, not change the page.
   const [playing, setPlaying] = useState(false);
+  // Clips that would not play, with why, so they say so instead of black.
+  const [unplayable, setUnplayable] = useState({});
+  // Bumped by Try again, so the <video> remounts and asks afresh.
+  const [attempt, setAttempt] = useState(0);
+  const videoFailed = (id, code) => {
+    setPlaying(false);
+    setChrome(true);
+    whyVideoFailed(videoUrl(id), code).then((reason) => setUnplayable((cur) => ({ ...cur, [id]: reason })));
+  };
 
   const count = photos.length;
   const photo = photos[index] ?? null;
@@ -142,7 +154,9 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
     if (saveState === "preparing") return;
     setSaveState("preparing");
     setSaveError(null);
+    const release = holdReload();
     photoFileFrom(videoUrl(p.id), mediaFilename(p.date, p.mime))
+      .finally(release)
       .then((file) => {
         setFiles((cur) => ({ ...cur, [p.id]: file }));
         if (canSharePhoto(file)) { setSaveState("ready"); return; }
@@ -215,9 +229,18 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
                 width, height: "100%", flexShrink: 0,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-              {isVideo(p) && p.id === photo.id ? (
+              {isVideo(p) && p.id === photo.id && unplayable[p.id] ? (
+                <VideoUnplayable
+                  reason={unplayable[p.id]}
+                  canSave
+                  onRetry={() => {
+                    setUnplayable((cur) => { const next = { ...cur }; delete next[p.id]; return next; });
+                    setAttempt((n) => n + 1);
+                  }}
+                />
+              ) : isVideo(p) && p.id === photo.id ? (
                 <video
-                  key={p.id}
+                  key={`${p.id}-${attempt}`}
                   src={videoUrl(p.id)}
                   poster={photoUrl(p.id)}
                   controls
@@ -227,6 +250,7 @@ export default function PhotoViewer({ growId, photos = [], startIndex = 0, onClo
                   onPlay={() => { setPlaying(true); setChrome(false); }}
                   onPause={() => { setPlaying(false); setChrome(true); }}
                   onEnded={() => { setPlaying(false); setChrome(true); }}
+                  onError={(e) => videoFailed(p.id, e.currentTarget.error?.code)}
                   style={{ maxWidth: "100%", maxHeight: "100%", display: "block", background: "#000" }}
                 />
               ) : (

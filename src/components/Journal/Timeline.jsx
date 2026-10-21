@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { mediaCountLabel } from "../../lib/videos.js";
 import { PenLine, Search, X, BookOpen, Droplets, Thermometer, Sprout, Flame, FlaskConical, CloudSun, Camera } from "lucide-react";
 import { api, ymd } from "../../lib/api.js";
 import { MONTH_NAMES } from "../../lib/dates.js";
@@ -84,7 +85,8 @@ function DayCard({ dayInfo, stageEvents, firstDate, onOpen }) {
           )}
           {dayInfo.photos > 0 && (
             <StatChip icon={<Camera size={10.5} strokeWidth={2} style={{ color: "#fbbf24" }} />}>
-              {dayInfo.photos} {dayInfo.photos === 1 ? "photo" : "photos"}
+              {/* `photos` counts both, so the photos are what is left. */}
+              {mediaCountLabel(dayInfo.photos - (dayInfo.videos ?? 0), dayInfo.videos ?? 0, { short: true })}
             </StatChip>
           )}
           {log?.water_gal != null && (

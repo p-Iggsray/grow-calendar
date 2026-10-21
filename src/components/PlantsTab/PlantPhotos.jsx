@@ -3,7 +3,7 @@ import { ImagePlus } from "lucide-react";
 import { api, ymd } from "../../lib/api.js";
 import { photoUrl } from "../../lib/photoUrl.js";
 import { batchResultMessage, MAX_BATCH } from "../../lib/photos.js";
-import { addMediaBatch, addingLabel, MEDIA_ACCEPT } from "../../lib/addMedia.js";
+import { addMediaBatch, addingLabel, holdForPicker, MEDIA_ACCEPT } from "../../lib/addMedia.js";
 import PhotoViewer from "../PhotoViewer.jsx";
 import VideoBadge from "../VideoBadge.jsx";
 import { fmtDateKey, MONO } from "./constants.js";
@@ -14,6 +14,13 @@ import { tapHaptic } from "../../lib/haptics.js";
 // labeled with this plant.
 export default function PlantPhotos({ growId, plantId, unitWord = "plant" }) {
   const pickerRef = useRef(null);
+  // Holds a waiting update off while the picker or camera is open.
+  const pickerHold = useRef(null);
+  function openPicker() {
+    pickerHold.current?.();
+    pickerHold.current = holdForPicker();
+    pickerRef.current?.click();
+  }
   const [photos, setPhotos] = useState([]);
   const [progress, setProgress] = useState(null); // {done, total, fraction, video} while uploading
   const [error, setError] = useState("");
@@ -49,7 +56,11 @@ export default function PlantPhotos({ growId, plantId, unitWord = "plant" }) {
   function onPick(e) {
     const files = Array.from(e.target.files ?? []);
     e.target.value = "";
+    const releasePicker = pickerHold.current;
+    pickerHold.current = null;
+    // The upload takes its own hold before this one lets go.
     if (files.length) uploadAll(files);
+    releasePicker?.();
   }
 
   const addLabel = addingLabel(progress, { compact: true });
@@ -62,7 +73,7 @@ export default function PlantPhotos({ growId, plantId, unitWord = "plant" }) {
         </span>
         <button
           type="button"
-          onClick={() => { if (!busy) { tapHaptic(); pickerRef.current?.click(); } }}
+          onClick={() => { if (!busy) { tapHaptic(); openPicker(); } }}
           disabled={busy}
           style={{
             display: "flex", alignItems: "center", gap: 5,

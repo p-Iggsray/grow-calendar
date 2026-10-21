@@ -12,8 +12,11 @@ export default function StageHistory({ spans, todayKey }) {
         const days = spanDays(s, todayKey);
         const color = stageGroup(s.stage)?.color ?? "var(--c-accent)";
         const current = s.end == null;
+        const when = !s.start
+          ? " · date not set"
+          : ` · ${shortDate(s.start)}${current ? " to now" : s.endUnknown ? "" : ` to ${shortDate(s.end)}`}`;
         return (
-          <li key={`${s.stage}-${s.start}`} style={{
+          <li key={`${s.stage}-${s.start ?? "undated"}`} style={{
             display: "flex", alignItems: "center", gap: 10,
             padding: "8px 11px", borderRadius: 10,
             background: current ? "var(--c-surface-2)" : "var(--c-surface-1)",
@@ -22,9 +25,7 @@ export default function StageHistory({ spans, todayKey }) {
             <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 4, background: color, flexShrink: 0 }} />
             <span style={{ flex: 1, minWidth: 0, fontFamily: MONO, fontSize: 12, color: "var(--c-text)" }}>
               {stageLabel(s.stage)}
-              <span style={{ color: "var(--c-text-ghost)" }}>
-                {" · "}{shortDate(s.start)}{current ? " to now" : ` to ${shortDate(s.end)}`}
-              </span>
+              <span style={{ color: "var(--c-text-ghost)" }}>{when}</span>
             </span>
             <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: current ? 700 : 500, color: current ? color : "var(--c-text-dim)" }}>
               {days != null ? shortWeeks(days) : "-"}
