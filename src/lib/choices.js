@@ -137,13 +137,13 @@ export function filterOptions(options, query) {
   return options.filter((o) => String(o).toLowerCase().includes(q));
 }
 
-// What a monotub grower does to a tub on a given day. Fresh air and surface
+// What a mushroom grower does to a tub on a given day. Fresh air and surface
 // moisture are the whole job once it is in fruiting conditions.
 export const TUB_CONDITIONS = [
   "Fanned and misted",
   "Fanned only",
   "Misted the walls",
-  "Dunked / rehydrated",
+  "Soaked / rehydrated",
   "Opened for a full air exchange",
   "Left alone",
 ];

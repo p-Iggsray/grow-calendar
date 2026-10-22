@@ -47,9 +47,9 @@ test("the crop is an environment field, and only a real crop", () => {
   assert.deepEqual(sanitizeEnvFields({ crop: 7 }), {});
 });
 
-test("a monotub's substrate and container survive the whitelist", () => {
+test("a tub space's substrate and container survive the whitelist", () => {
   assert.deepEqual(
-    sanitizeEnvFields({ crop: "mushrooms", medium: "cvg", containerType: "monotub", wateringMethod: "mist", containerGallons: 6 }),
-    { crop: "mushrooms", medium: "cvg", containerType: "monotub", wateringMethod: "mist", containerGallons: 6 },
+    sanitizeEnvFields({ crop: "mushrooms", medium: "masters", containerType: "bag", wateringMethod: "mist", containerGallons: 6 }),
+    { crop: "mushrooms", medium: "masters", containerType: "bag", wateringMethod: "mist", containerGallons: 6 },
   );
 });

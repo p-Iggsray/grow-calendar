@@ -68,6 +68,18 @@ test("ensurePlantIds backfills a default stage when missing", () => {
   assert.equal(out.strains[0].stage, "seedling");
 });
 
+test("ensurePlantIds moves a tub's retired type and the space's retired setup over", () => {
+  const survey = {
+    crop: "mushrooms", medium: "cvg", containerType: "monotub",
+    strains: [{ name: "A", id: "p_1", status: "growing", stage: "fruiting", type: "cube" }],
+  };
+  const { survey: out, changed } = ensurePlantIds(survey);
+  assert.equal(changed, true);
+  assert.equal(out.strains[0].type, "other");
+  assert.equal(out.medium, "coir");
+  assert.equal(out.containerType, "monotub");
+});
+
 test("validatePlantFields rejects bad input and normalizes good input", () => {
   assert.equal(validatePlantFields({ name: "" }).ok, false);
   assert.equal(validatePlantFields({ name: "X", type: "bogus" }).ok, false);

@@ -51,7 +51,7 @@ export function StepStrains({ survey, update }) {
       <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-text-ghost)", lineHeight: 1.6 }}>
         Add each {w.variety} in this space and how many {w.units} of it you have.
         {mushrooms
-          ? " Start typing to pick from the common monotub species."
+          ? " Start typing to pick from common gourmet and medicinal species."
           : " Start typing to autofill strains other growers have logged."}
       </div>
 

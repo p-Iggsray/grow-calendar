@@ -3,7 +3,7 @@
 // and for validating log-entry input. No DB access, so these are unit-testable
 // in isolation with node --test.
 import {
-  cropOf, defaultStage, defaultVarietyType, isVarietyType, stagesFor, words,
+  cropOf, defaultStage, defaultVarietyType, isVarietyType, retireOldMushroomValues, stagesFor, words,
 } from "../src/lib/crops.js";
 import { BREEDER_WEEKS, isDateKey } from "../src/lib/plantClock.js";
 
@@ -39,14 +39,17 @@ export function newPlantId() {
   return "p_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
 
-// Assigns a stable id + default status to any strain entry missing them.
+// Assigns a stable id + default status to any strain entry missing them, and
+// moves retired mushroom answers to their replacements.
 // Returns { survey, changed }. Never mutates the input.
-export function ensurePlantIds(survey) {
-  if (!survey || !Array.isArray(survey.strains)) return { survey, changed: false };
+export function ensurePlantIds(input) {
+  const retired = retireOldMushroomValues(input);
+  const survey = retired.survey;
+  if (!survey || !Array.isArray(survey.strains)) return retired;
   const crop = cropOf(survey);
   const allowed = stageSet(crop);
   const fallback = defaultStage(crop);
-  let changed = false;
+  let changed = retired.changed;
   const strains = survey.strains.map((s) => {
     const next = { ...s };
     if (!next.id) { next.id = newPlantId(); changed = true; }

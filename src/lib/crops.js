@@ -141,9 +141,9 @@ const WIZARD_STAGE_BLURBS = {
     { value: "harvest",     icon: "✂️", blurb: "Ready to cut" },
   ],
   mushrooms: [
-    { value: "inoculation",   icon: "💉", blurb: "Spore or liquid culture into grain" },
-    { value: "colonization",  icon: "🧫", blurb: "Grain running white" },
-    { value: "spawn_to_bulk", icon: "🪣", blurb: "Spawn mixed into the tub" },
+    { value: "inoculation",   icon: "💉", blurb: "Liquid culture or agar into grain" },
+    { value: "colonization",  icon: "🧫", blurb: "Grain or block running white" },
+    { value: "spawn_to_bulk", icon: "🪣", blurb: "Spawn mixed into the bulk substrate" },
     { value: "consolidation", icon: "🕸️", blurb: "Surface knitting over, before pins" },
     { value: "fruiting",      icon: "🍄", blurb: "Pins set, fruits growing" },
     { value: "flush_harvest", icon: "🧺", blurb: "Picking flushes" },
@@ -194,11 +194,11 @@ const WORDS = {
   mushrooms: {
     crop: "mushrooms",
     cropLabel: "Mushrooms",
-    cropBlurb: "Monotubs, species, colonize and fruit",
+    cropBlurb: "Bags and tubs, species, colonize and fruit",
     unit: "tub", units: "tubs", Unit: "Tub", Units: "Tubs",
     variety: "species", varieties: "species", Variety: "Species", Varieties: "Species",
-    varietyPlaceholder: "e.g. Golden Teacher",
-    varietyPlaceholderAlt: "e.g. Blue Oyster",
+    varietyPlaceholder: "e.g. Blue Oyster",
+    varietyPlaceholderAlt: "e.g. Lion's Mane",
     rosterEmpty: "No tubs yet",
     addUnit: "Add tub",
     waterSection: "Misting & Hydration",
@@ -254,15 +254,18 @@ const FIELD_OPTIONS = {
   },
   mushrooms: {
     medium: [
-      { value: "cvg",     label: "CVG (coco, verm, gypsum)" },
-      { value: "manure",  label: "Manure based" },
-      { value: "masters", label: "Master's mix" },
+      { value: "masters", label: "Master's mix (hardwood + soy hulls)" },
+      { value: "sawdust", label: "Hardwood sawdust" },
+      { value: "straw",   label: "Straw" },
+      { value: "coir",    label: "Coco coir" },
+      { value: "grain",   label: "Grain" },
       { value: "other",   label: "Other" },
     ],
     container: [
-      { value: "monotub", label: "Monotub" },
-      { value: "shoebox", label: "Shoebox / shotgun" },
       { value: "bag",     label: "Grow bag" },
+      { value: "monotub", label: "Monotub" },
+      { value: "bucket",  label: "Bucket" },
+      { value: "chamber", label: "Fruiting chamber" },
       { value: "other",   label: "Other" },
     ],
     watering: [
@@ -297,9 +300,9 @@ export const VARIETY_TYPES = {
     { value: "hybrid", label: "Hybrid" },
   ],
   mushrooms: [
-    { value: "cube",      label: "Cubensis" },
     { value: "gourmet",   label: "Gourmet" },
     { value: "medicinal", label: "Medicinal" },
+    { value: "other",     label: "Other" },
   ],
 };
 
@@ -317,22 +320,59 @@ export function isVarietyType(crop, value) {
 
 // Species worth offering by name. Cannabis strains come from the shared
 // catalog other growers have logged; mushrooms have no such catalog yet, so
-// these are the common monotub species typed straight in.
+// these are the common home-grown species typed straight in.
 export const MUSHROOM_SPECIES = [
-  { name: "Golden Teacher", type: "cube" },
-  { name: "B+", type: "cube" },
-  { name: "Penis Envy", type: "cube" },
-  { name: "Albino A+", type: "cube" },
-  { name: "Blue Meanie", type: "cube" },
-  { name: "Mazatapec", type: "cube" },
   { name: "Blue Oyster", type: "gourmet" },
+  { name: "Pearl Oyster", type: "gourmet" },
   { name: "Pink Oyster", type: "gourmet" },
+  { name: "Golden Oyster", type: "gourmet" },
   { name: "King Oyster", type: "gourmet" },
   { name: "Shiitake", type: "gourmet" },
+  { name: "Chestnut", type: "gourmet" },
+  { name: "Pioppino", type: "gourmet" },
+  { name: "Black Pearl", type: "gourmet" },
+  { name: "Wine Cap", type: "gourmet" },
+  { name: "Nameko", type: "gourmet" },
+  { name: "Enoki", type: "gourmet" },
   { name: "Lion's Mane", type: "medicinal" },
+  { name: "Maitake", type: "medicinal" },
   { name: "Reishi", type: "medicinal" },
   { name: "Turkey Tail", type: "medicinal" },
+  { name: "Cordyceps", type: "medicinal" },
 ];
+
+// Mushroom answers earlier versions offered and this one does not, each with
+// the closest answer it has now. Stored surveys are moved over when read.
+const RETIRED_MUSHROOM_VALUES = {
+  type:          { cube: "other" },
+  medium:        { cvg: "coir", manure: "other" },
+  containerType: { shoebox: "monotub" },
+};
+
+/**
+ * A mushroom survey with every retired answer moved to its replacement.
+ * Returns { survey, changed }. Never mutates the input.
+ */
+export function retireOldMushroomValues(survey) {
+  if (!survey || typeof survey !== "object" || cropOf(survey) !== "mushrooms") {
+    return { survey, changed: false };
+  }
+  let changed = false;
+  const next = { ...survey };
+  for (const key of ["medium", "containerType"]) {
+    const swap = RETIRED_MUSHROOM_VALUES[key][next[key]];
+    if (swap) { next[key] = swap; changed = true; }
+  }
+  if (Array.isArray(next.strains)) {
+    next.strains = next.strains.map((s) => {
+      const swap = RETIRED_MUSHROOM_VALUES.type[s?.type];
+      if (!swap) return s;
+      changed = true;
+      return { ...s, type: swap };
+    });
+  }
+  return changed ? { survey: next, changed: true } : { survey, changed: false };
+}
 
 // ── Flushes ──────────────────────────────────────────────────────────────────
 // A monotub fruits again and again, and each flush is its own harvest: a date,

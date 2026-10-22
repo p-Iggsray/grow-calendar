@@ -28,7 +28,7 @@ Add it to your home screen and it behaves like a native app. There is one accoun
 
 ## What this is
 
-I grow a few plants and a couple of monotubs, and I got tired of losing track of what I did on which day. Spreadsheets went stale, notes apps turned into a pile of undated text, and none of it knew what a monotub was.
+I grow a few plants and a few bags of gourmet mushrooms, and I got tired of losing track of what I did on which day. Spreadsheets went stale, notes apps turned into a pile of undated text, and none of it knew what a fruiting block was.
 
 So this is the thing I actually use. A calendar where every day holds what happened, a journal that reads my own writing and pulls the numbers out of it, and a label printer for the jars at the end. It covers cannabis and mushrooms on the same stage ladder, because I run both and did not want two apps.
 
@@ -50,7 +50,7 @@ It is a single tenant app. One login, my data, no multi user anything. The code 
 
 **Watering is per plant.** Type an amount once and apply it to every plant, or give each one its own. Gallons, liters or milliliters, stored canonically and read back in whatever unit you typed.
 
-**Spaces.** A tent and a monotub are different places with different stages and different vocabulary. The app knows a monotub gets misted and holds tubs, and a tent gets watered and holds plants. Seventeen stages across the two crops, one ordered ladder, and the stage history is built from what you actually recorded rather than from a plan you wrote in March.
+**Spaces.** A tent and a mushroom space are different places with different stages and different vocabulary. The app knows a mushroom space gets misted and holds tubs, and a tent gets watered and holds plants. Seventeen stages across the two crops, one ordered ladder, and the stage history is built from what you actually recorded rather than from a plan you wrote in March.
 
 **MJ** is the assistant. It runs on Gemini 2.5 Flash and it can see the whole space: every stage change and when, the journal, the daily log, the weather, what is growing. It answers questions and it can write to the log if you ask it to. The API key lives in the Worker and never reaches the browser.
 

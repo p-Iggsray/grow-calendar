@@ -12,8 +12,8 @@ export function defaultSurvey(crop = "cannabis") {
     growName: "",
     crop: w.crop,
     environment: mushrooms ? "indoor" : "outdoor",
-    medium: mushrooms ? "cvg" : "soil",
-    containerType: mushrooms ? "monotub" : "fabric",
+    medium: mushrooms ? "masters" : "soil",
+    containerType: mushrooms ? "bag" : "fabric",
     containerGallons: mushrooms ? 6 : 7,
     plantCount: 1,
     strains: [

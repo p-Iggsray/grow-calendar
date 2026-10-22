@@ -29,7 +29,7 @@ export function labelDate(key) {
 const VARIETY_WORD = {
   indica: "Indica", sativa: "Sativa", hybrid: "Hybrid",
   photo: "Photoperiod", auto: "Autoflower",
-  cube: "Cubensis", oyster: "Oyster", lions: "Lion's Mane", other: null,
+  gourmet: "Gourmet", medicinal: "Medicinal", oyster: "Oyster", lions: "Lion's Mane", other: null,
 };
 
 function clean(v, max = 60) {

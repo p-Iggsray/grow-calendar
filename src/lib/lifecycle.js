@@ -13,8 +13,8 @@ export const PHASE_ORDER = ["growing", "drying", "curing", "done"];
 export const LIFECYCLE_PHASES = new Set(PHASE_ORDER);
 
 // What happens after the harvest, per crop. Cannabis dries slowly and then
-// cures for weeks in jars; mushrooms dry fast, all the way to cracker dry, and
-// then they are simply stored. So a monotub has no curing phase at all - not a
+// cures for weeks in jars; mushrooms dry fast, until brittle all the way through,
+// and then they are simply stored. So a tub has no curing phase at all - not a
 // shorter one, none - and its drying is measured in a day or two rather than
 // a fortnight.
 export const CROP_PHASES = {
@@ -47,7 +47,7 @@ const DRY_GUIDE = {
     checklist: [
       { key: "capsShrunk",  label: "Caps shrunk and lightened" },
       { key: "stemsSnap",   label: "Stems snap, they do not bend" },
-      { key: "crackerDry",  label: "Cracker dry all the way through" },
+      { key: "crackerDry",  label: "Dry and brittle all the way through" },
     ],
     ready: "Snapping clean and past the minimum - jar them with desiccant.",
     overdue: "Past four days - they are as dry as they are going to get.",

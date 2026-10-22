@@ -92,11 +92,11 @@ test("no mushroom name appears anywhere in a link's payload", async () => {
   const env = db({
     grows: [
       growRow("tent", "cannabis"),
-      { ...growRow("tub", "mushrooms"), survey: JSON.stringify(survey("mushrooms", ["Golden Teacher"])) },
+      { ...growRow("tub", "mushrooms"), survey: JSON.stringify(survey("mushrooms", ["Blue Oyster"])) },
     ],
   });
   const text = JSON.stringify(await (await getShareSpaces(env, TOKEN)).json());
-  assert.ok(!/Golden Teacher/i.test(text), "a mushroom variety leaked into the index");
+  assert.ok(!/Blue Oyster/i.test(text), "a mushroom variety leaked into the index");
   assert.ok(!/Monotub/i.test(text), "a mushroom environment leaked into the index");
 });
 
@@ -112,7 +112,7 @@ test("the shareable crop is an allowlist of one, not a list of exclusions", () =
 
 test("a mushroom survey records no strain in the public catalog", async () => {
   const env = db();
-  await recordStrains(env, survey("mushrooms", ["Golden Teacher", "B+"]));
+  await recordStrains(env, survey("mushrooms", ["Blue Oyster", "Lion's Mane"]));
   assert.deepEqual(env._state.inserts, []);
 });
 
@@ -133,7 +133,7 @@ test("a survey with no crop is treated as cannabis, which is what it was", async
 test("the sweep removes every name a mushroom grow ever contributed", async () => {
   const env = db({
     grows: [
-      { ...growRow("tub", "mushrooms"), survey: JSON.stringify(survey("mushrooms", ["Golden Teacher", "B+"])) },
+      { ...growRow("tub", "mushrooms"), survey: JSON.stringify(survey("mushrooms", ["Blue Oyster", "Lion's Mane"])) },
       growRow("tent", "cannabis"),
     ],
   });
@@ -141,7 +141,7 @@ test("the sweep removes every name a mushroom grow ever contributed", async () =
   // The catalog row and the written profile cached against it, both.
   assert.equal(env._state.deletes.length, 2);
   for (const bound of env._state.deletes) {
-    assert.deepEqual([...bound].sort(), ["b+", "golden teacher"]);
+    assert.deepEqual([...bound].sort(), ["blue oyster", "lion's mane"]);
   }
 });
 
@@ -164,10 +164,10 @@ test("a strain name is no longer an address", async () => {
 
 test("a mushroom row is refused by the page even if one reaches the catalog", async () => {
   // The catalog gate is upstream; this is the second lock on the same door.
-  const env = db({ catalog: [{ name_key: "golden teacher", name: "Golden Teacher", crop: "mushrooms", page_code: "bbbbbbbbbbbbbbbb" }] });
+  const env = db({ catalog: [{ name_key: "blue oyster", name: "Blue Oyster", crop: "mushrooms", page_code: "bbbbbbbbbbbbbbbb" }] });
   const res = await getStrainPage(env, "bbbbbbbbbbbbbbbb");
   assert.equal(res.status, 404);
-  assert.ok(!(await res.text()).includes("Golden Teacher"));
+  assert.ok(!(await res.text()).includes("Blue Oyster"));
 });
 
 test("a row from before the crop column still serves, because it was cannabis", async () => {

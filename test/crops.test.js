@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import {
   ALL_STAGES, CROPS, CROP_STAGES, DEFAULT_CROP, STAGE_GROUP, STAGE_LABEL,
   cropOf, cropOfStage, defaultStage, defaultVarietyType, flushTotals, isCrop,
-  isVarietyType, nextFlushNumber, stagesFor, varietyTypes, wizardStages, words,
+  MUSHROOM_SPECIES, isVarietyType, nextFlushNumber, retireOldMushroomValues, stagesFor, varietyTypes,
+  wizardStages, words,
 } from "../src/lib/crops.js";
 import { buildRunningTimeline, stageIndex, stageOnDate } from "../src/lib/stageTimeline.js";
 import { phaseOrder, phaseAfterDrying, dryGuide, dryReadiness } from "../src/lib/lifecycle.js";
@@ -88,11 +89,11 @@ test("each crop starts a new entry where that crop actually starts", () => {
 
 test("a variety type from the wrong crop is not a variety type", () => {
   assert.equal(isVarietyType("cannabis", "hybrid"), true);
-  assert.equal(isVarietyType("cannabis", "cube"), false);
-  assert.equal(isVarietyType("mushrooms", "cube"), true);
+  assert.equal(isVarietyType("cannabis", "gourmet"), false);
+  assert.equal(isVarietyType("mushrooms", "gourmet"), true);
   assert.equal(isVarietyType("mushrooms", "sativa"), false);
   assert.equal(defaultVarietyType("cannabis"), "hybrid");
-  assert.equal(defaultVarietyType("mushrooms"), "cube");
+  assert.equal(defaultVarietyType("mushrooms"), "gourmet");
   for (const crop of CROPS) assert.ok(varietyTypes(crop).length >= 3);
 });
 
@@ -149,4 +150,30 @@ test("drying is judged against the right crop's window", () => {
   const g = dryGuide("mushrooms");
   const done = { ...started, dryChecklist: { [g.checklist[g.checklist.length - 1].key]: true } };
   assert.equal(dryReadiness(done, day3, "mushrooms").status, "ready");
+});
+
+test("retired mushroom answers move to their replacements", () => {
+  const old = {
+    crop: "mushrooms", medium: "cvg", containerType: "shoebox",
+    strains: [{ id: "a", type: "cube" }, { id: "b", type: "medicinal" }],
+  };
+  const { survey, changed } = retireOldMushroomValues(old);
+  assert.equal(changed, true);
+  assert.equal(survey.medium, "coir");
+  assert.equal(survey.containerType, "monotub");
+  assert.deepEqual(survey.strains.map((s) => s.type), ["other", "medicinal"]);
+  assert.equal(old.medium, "cvg", "the input is left alone");
+  assert.equal(retireOldMushroomValues({ crop: "mushrooms", medium: "manure" }).survey.medium, "other");
+});
+
+test("current mushroom answers and cannabis surveys are untouched", () => {
+  const current = { crop: "mushrooms", medium: "masters", containerType: "bag", strains: [{ type: "gourmet" }] };
+  assert.deepEqual(retireOldMushroomValues(current), { survey: current, changed: false });
+  const tent = { crop: "cannabis", medium: "other", strains: [{ type: "cube" }] };
+  assert.equal(retireOldMushroomValues(tent).changed, false);
+  assert.equal(retireOldMushroomValues(null).changed, false);
+});
+
+test("every mushroom species offered has a type the crop allows", () => {
+  for (const s of MUSHROOM_SPECIES) assert.ok(isVarietyType("mushrooms", s.type), s.name);
 });

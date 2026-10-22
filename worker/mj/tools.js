@@ -40,8 +40,8 @@ const PROFILE_ENUMS = {
   },
   mushrooms: {
     environment:    new Set(["outdoor", "indoor", "greenhouse"]),
-    medium:         new Set(["cvg", "manure", "masters", "other"]),
-    containerType:  new Set(["monotub", "shoebox", "bag", "other"]),
+    medium:         new Set(["masters", "sawdust", "straw", "coir", "grain", "other"]),
+    containerType:  new Set(["bag", "monotub", "bucket", "chamber", "other"]),
     experienceLevel:new Set(["beginner", "intermediate", "advanced"]),
     wateringMethod: new Set(["mist", "perlite", "humidifier"]),
   },

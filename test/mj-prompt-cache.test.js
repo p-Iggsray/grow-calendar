@@ -12,7 +12,7 @@ import { buildSystemSegments, MJ_PERSONA, MJ_TOOLS } from "../worker/mj-logic.js
 // broke the prefix for every grow on every stage change.
 
 const CANNABIS = { crop: "cannabis", strains: [{ id: "p1", name: "Blue Dream" }] };
-const MUSHROOMS = { crop: "mushrooms", strains: [{ id: "t1", name: "Golden Teacher" }] };
+const MUSHROOMS = { crop: "mushrooms", strains: [{ id: "t1", name: "Blue Oyster" }] };
 
 const stableOf = (survey, volatile) => buildSystemSegments({ survey, volatile })[0].text;
 

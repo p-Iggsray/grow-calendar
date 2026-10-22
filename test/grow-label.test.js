@@ -126,8 +126,8 @@ test("the label prints the four things the jar is for, and not the grow's busine
 test("the variety is the whole classification, without the crop or the photoperiod", () => {
   const cannabis = labelDraft({ name: "X", type: "indica", crop: "cannabis", photo: true }, null, "2026-09-09");
   assert.equal(cannabis.classification, "Indica");
-  const shrooms = labelDraft({ name: "Y", type: "cube", crop: "mushrooms" }, null, "2026-09-09");
-  assert.equal(shrooms.classification, "Cubensis");
+  const shrooms = labelDraft({ name: "Y", type: "gourmet", crop: "mushrooms" }, null, "2026-09-09");
+  assert.equal(shrooms.classification, "Gourmet");
 });
 
 test("a bare potency number is printed as a percentage", () => {

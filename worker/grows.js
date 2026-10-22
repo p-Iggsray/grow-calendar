@@ -1,5 +1,5 @@
 // @ts-check
-import { cropOf, isCrop, words } from "../src/lib/crops.js";
+import { cropOf, isCrop, retireOldMushroomValues, words } from "../src/lib/crops.js";
 import { json, error, safeJsonBounded } from "./util.js";
 import { logError } from "./log.js";
 import { geocode } from "./geocode.js";
@@ -149,6 +149,29 @@ function parseField(raw) {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
+function parseSurvey(raw) {
+  return retireOldMushroomValues(parseField(raw)).survey;
+}
+
+// Rewrites, once, any of the user's surveys still holding a retired mushroom
+// answer. Runs where the app first lists spaces, so every space is moved over
+// on the next visit, archived ones included. Best-effort: a reader that sees
+// an old row cleans it in memory anyway.
+async function retireOldSurveyValues(env, userId, rows) {
+  for (const r of rows) {
+    const { survey, changed } = retireOldMushroomValues(parseField(r.survey));
+    if (!changed) continue;
+    r.survey = JSON.stringify(survey);
+    try {
+      await env.DB.prepare(
+        "UPDATE grows SET survey = ? WHERE id = ? AND user_id = ?"
+      ).bind(r.survey, r.id, userId).run();
+    } catch (e) {
+      logError("grows-retire-values", { message: String(e?.message) });
+    }
+  }
+}
+
 // Returns raw grow data without a Response wrapper - for internal use by other handlers.
 export async function loadRawGrow(env, userId, growId) {
   const row = await env.DB.prepare(
@@ -157,7 +180,7 @@ export async function loadRawGrow(env, userId, growId) {
   if (!row) return null;
 
   return {
-    survey:        parseField(row.survey),
+    survey:        parseSurvey(row.survey),
     lifecycle:     parseField(row.lifecycle),
     needsSetup:    !row.survey,
     displayName:   row.display_name,
@@ -179,7 +202,7 @@ export async function loadRawGrows(env, userId) {
     displayName:   r.display_name,
     status:        r.status,
     archivedAt:    r.archived_at ?? null,
-    survey:        parseField(r.survey),
+    survey:        parseSurvey(r.survey),
     lifecycle:     parseField(r.lifecycle),
     createdAt:     r.created_at,
   }));
@@ -201,6 +224,7 @@ export async function listGrows(env, user) {
     logError("grows-list-query", { message: String(e?.message) });
     return json([]);
   }
+  await retireOldSurveyValues(env, user.id, res.results ?? []);
 
   return json((res.results ?? []).map(r => ({
     id:            r.id,
@@ -326,6 +350,8 @@ export async function patchGrow(request, env, user, growId) {
       }
       Object.assign(survey, envFields);
     }
+    // A stale client can still send an answer this version has retired.
+    survey = retireOldMushroomValues(survey).survey;
     fields.push("survey = ?");
     binds.push(JSON.stringify(survey));
   }

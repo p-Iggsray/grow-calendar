@@ -23,11 +23,11 @@ import { useToast } from "../../lib/useToast.jsx";
 export const ENV_KIND_LABEL = { indoor: "Indoor", outdoor: "Outdoor", greenhouse: "Greenhouse" };
 const MEDIUM_LABEL = {
   soil: "Soil", coco: "Coco", hydro: "Hydro", other: "Other medium",
-  cvg: "CVG", manure: "Manure sub", masters: "Master's mix",
+  masters: "Master's mix", sawdust: "Hardwood sawdust", straw: "Straw", coir: "Coco coir", grain: "Grain",
 };
 const CONTAINER_LABEL = {
   fabric: "Fabric pots", plastic: "Plastic pots", ground: "In-ground", other: "Other containers",
-  monotub: "Monotub", shoebox: "Shoebox", bag: "Grow bag",
+  bag: "Grow bag", monotub: "Monotub", bucket: "Bucket", chamber: "Fruiting chamber",
 };
 const WATERING_LABEL = {
   hand: "Hand watered", drip: "Drip / automated",

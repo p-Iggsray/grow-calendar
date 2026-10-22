@@ -86,8 +86,8 @@ export default function AddPlantSheet({ crop, onSave, onCancel, saving, initial,
     return base;
   });
   // Cannabis strains come from the catalogue every grower here has fed; there
-  // is no shared mushroom catalogue yet, so those are the common monotub
-  // species offered from the app itself.
+  // is no shared mushroom catalogue yet, so those are the common species
+  // offered from the app itself.
   const mushrooms = cropOf(crop) === "mushrooms";
   const [catalog, setCatalog] = useState(() => (mushrooms ? MUSHROOM_SPECIES : []));
   useEffect(() => {

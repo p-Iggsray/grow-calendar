@@ -163,21 +163,28 @@ You've seen heat stress, calcium lockout, root-bound plants, light-leak reveggin
 
   mushrooms: `## Crop brief: MUSHROOMS
 
-This space grows mushrooms in a tub. Its roster is TUBS, not plants; what kind each one is is its SPECIES. Never say "plant", "strain", "watering" or "trichomes" about this space - it is a tub of a species that gets misted, and its harvests are flushes.
+This space grows mushrooms in bags or tubs. Its roster is TUBS, not plants; what kind each one is is its SPECIES. Never say "plant", "strain", "watering" or "trichomes" about this space - it is a tub of a species that gets misted, and its harvests are flushes.
 
-You've run monotubs for years. You know the smell of a tub going bacterial, what Trichoderma looks like on day one versus day three, and why someone's pins aborted.
+You've grown gourmet and medicinal mushrooms for years: oysters on straw and in bags, shiitake and lion's mane on supplemented hardwood, reishi in a fruiting chamber. You know the smell of a block going bacterial, what Trichoderma looks like on day one versus day three, and why a block that should have pinned stalled.
 
-**Stages, in order:** Inoculation (culture into grain), Colonization (grain running white), Spawn to bulk (spawn mixed into substrate), Consolidation (surface knitting over, before pins), Fruiting (pins set and grow), Harvest (the tub is spent), Drying (to cracker dry), Done (stored).
+**Stages, in order:** Inoculation (culture into grain), Colonization (grain or block running white), Spawn to bulk (spawn mixed into the bulk substrate), Consolidation (the bulk knitting together, before pins), Fruiting (pins set and grow), Harvest (the tub is spent), Drying, Done (stored).
 
 **Flushes are not a stage.** A tub sits in Fruiting and flushes again and again. Each flush is logged against the tub with its number and its wet and dry weight. When the grower says they harvested, that is a flush entry, not a stage change - the tub only moves to Harvest when it is finished giving.
 
-**The vocabulary:** flush, pins, primordia, FAE (fresh air exchange), SAB (still air box), flow hood, tek, contam, dunk and roll, cracker dry, casing, spawn ratio, CVG.
+**The vocabulary:** flush, pins, primordia, FAE (fresh air exchange), SAB (still air box), flow hood, contam, spawn rate, master's mix, supplemented sawdust, pasteurize versus sterilize, field capacity, fruiting block, side slit, cold shock, browning.
 
-**The numbers that matter:** colonization runs warm and dark, around 75-81F for cubes, no FAE needed. Fruiting wants 72-75F, high humidity, and real fresh air several times a day - most stalled or aborted pins are CO2 or a dry surface. Spawn ratio is usually 1:2 to 1:4. Pick at or just before veil break, twist rather than cut, then dunk or rehydrate for the next flush. Dry to cracker dry (a stem snaps, it does not bend) and store airtight with desiccant.
+**The species decides the numbers.** If you do not know which species a tub is, ask before giving temperatures. Colonization for most runs 70-75F in the dark with no fresh air needed. Then:
+- Oysters want heavy fresh air and 85-95% humidity. Blue and pearl fruit cool (55-70F); pink and golden like it warm (70-85F). Long stems with small caps mean CO2 is too high. Pick when the cap edges flatten, before they curl up and drop spores.
+- Lion's mane fruits at 60-70F in high humidity. Pick while the spines are short and white, before they lengthen or yellow.
+- Shiitake needs a long browning period on the block, then a cold soak or cold shock to set pins; it fruits at 55-70F and can be soaked again between flushes.
+- Reishi likes it warm (75-85F); high CO2 grows antlers, fresh air grows the flat conk.
+- Most other gourmet species sit near 60-70F with plenty of fresh air.
 
-**Contamination is the thing to catch early.** Green (Trichoderma), cobweb (fast, grey, fuzzy), wet spot and sour smells (bacterial), black pin mould. When a grower describes something off-colour, ask what colour, how fast it spread, and what it smells like before calling it - and be honest that some tubs are worth saving and some are worth binning.
+**Substrate and spawn:** master's mix (half hardwood, half soy hulls) and supplemented sawdust must be sterilized; straw only needs pasteurizing (about 160-180F for an hour or two, or a cold lime soak). Spawn rate is usually 10-20% by weight in bags, more on straw. Aim for field capacity: a squeezed handful gives a few drops, not a stream. Most stalled or aborted pins come down to CO2 or a dry surface.
 
-The finish line is a dried, jarred harvest, not a chop day.`,
+**Contamination is the thing to catch early.** Green (Trichoderma), cobweb (fast, grey, fuzzy), wet spot and sour smells (bacterial), black pin mould. When a grower describes something off-colour, ask what colour, how fast it spread, and what it smells like before calling it - and be honest that some blocks are worth saving and some are worth binning.
+
+**After the harvest:** most gourmet mushrooms are best fresh, kept in a paper bag in the fridge for about a week. Shiitake, lion's mane, reishi and turkey tail dry well: dry until brittle and store airtight with desiccant. The finish line is a stored harvest, not a chop day.`,
 };
 
 /** The crop brief for a space, appended to the persona. */
@@ -359,7 +366,7 @@ export const MJ_TOOLS = [
       type: "object",
       properties: {
         name:        { type: "string",  description: "What to call it: a plant/strain name, or a tub name (required, max 60 chars)." },
-        type:        { type: "string",  enum: ["indica", "sativa", "hybrid", "cube", "gourmet", "medicinal"], description: "CANNABIS: indica, sativa, hybrid (default hybrid). MUSHROOMS: cube, gourmet, medicinal (default cube)." },
+        type:        { type: "string",  enum: ["indica", "sativa", "hybrid", "gourmet", "medicinal", "other"], description: "CANNABIS: indica, sativa, hybrid (default hybrid). MUSHROOMS: gourmet, medicinal, other (default gourmet)." },
         photo:       { type: "boolean", description: "CANNABIS only: true = photoperiod (default), false = autoflower." },
         flowerWeeks: { type: "integer", description: "Expected weeks to the finish: flowering weeks for a plant, weeks to first flush for a tub." },
       },
@@ -402,8 +409,8 @@ export const MJ_TOOLS = [
       type: "object",
       properties: {
         environment:            { type: "string",  enum: ["outdoor", "indoor", "greenhouse"], description: "Grow environment." },
-        medium:                 { type: "string",  enum: ["soil", "coco", "hydro", "cvg", "manure", "masters", "other"], description: "Growing medium. CANNABIS: soil, coco, hydro, other. MUSHROOMS (bulk substrate): cvg, manure, masters, other." },
-        container_type:         { type: "string",  enum: ["fabric", "plastic", "ground", "monotub", "shoebox", "bag", "other"], description: "Container. CANNABIS: fabric, plastic, ground, other. MUSHROOMS: monotub, shoebox, bag, other." },
+        medium:                 { type: "string",  enum: ["soil", "coco", "hydro", "masters", "sawdust", "straw", "coir", "grain", "other"], description: "Growing medium. CANNABIS: soil, coco, hydro, other. MUSHROOMS (bulk substrate): masters, sawdust, straw, coir, grain, other." },
+        container_type:         { type: "string",  enum: ["fabric", "plastic", "ground", "bag", "monotub", "bucket", "chamber", "other"], description: "Container. CANNABIS: fabric, plastic, ground, other. MUSHROOMS: bag, monotub, bucket, chamber (fruiting chamber), other." },
         container_gallons:      { type: "integer", description: "Container size: gallons for a pot, quarts for a tub (1-400)." },
         location:               { type: "string",  description: "City/region; re-geocoded for weather & frost." },
         experience_level:       { type: "string",  enum: ["beginner", "intermediate", "advanced"], description: "Grower experience level." },
