@@ -103,8 +103,8 @@ test("signing in lets the next expiry speak again", async () => {
 
 test("every network call in the client reports its status", () => {
   // A 401 anywhere is the same dead session, so every path that touches the
-  // network has to report back. Most go through send(), but four do not: the
-  // MJ stream and the three that want a blob or raw text.
+  // network has to report back. Most go through send(), but three do not: the
+  // ones that want a blob or raw text.
   //
   // The count: each fetch() site except the one inside send() itself, plus
   // each send() call site, plus each XHR (the video upload, which needs upload

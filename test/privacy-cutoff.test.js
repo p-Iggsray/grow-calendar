@@ -34,7 +34,6 @@ function db({ grows = [], catalog = [], photos = [] } = {}) {
               const p = photos.find((r) => r.id === this.a[0] && r.user_id === this.a[1]);
               return p ? { grow_id: p.grow_id, url: p.url } : null;
             }
-            if (/FROM strain_profile/.test(sql)) return null;
             return null;
           },
           async all() {
@@ -45,7 +44,7 @@ function db({ grows = [], catalog = [], photos = [] } = {}) {
           },
           async run() {
             if (/^\s*INSERT INTO strain_catalog/.test(sql)) state.inserts.push(this.a);
-            if (/^\s*DELETE FROM strain_(catalog|profile)/.test(sql)) state.deletes.push(this.a);
+            if (/^\s*DELETE FROM strain_catalog/.test(sql)) state.deletes.push(this.a);
             return {};
           },
         };
@@ -138,8 +137,7 @@ test("the sweep removes every name a mushroom grow ever contributed", async () =
     ],
   });
   await purgeNonPublicStrains(env, 7);
-  // The catalog row and the written profile cached against it, both.
-  assert.equal(env._state.deletes.length, 2);
+  assert.equal(env._state.deletes.length, 1);
   for (const bound of env._state.deletes) {
     assert.deepEqual([...bound].sort(), ["blue oyster", "lion's mane"]);
   }

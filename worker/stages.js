@@ -33,7 +33,7 @@ export async function getStageTimeline(env, user, growId) {
   return json({ events, firstDate, plantRecords: records.filter((r) => r.plantId) });
 }
 
-// Internal: the same timeline for server-side consumers (push, report, MJ).
+// Internal: the same timeline for server-side consumers (push, report).
 export async function loadStageTimeline(env, userId, growId) {
   try {
     await ensurePlantLogSchema(env);

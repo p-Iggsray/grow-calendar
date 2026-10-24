@@ -26,6 +26,5 @@ export function defaultSurvey(crop = "cannabis") {
     location: "",
     experienceLevel: "beginner",
     wateringMethod: mushrooms ? "mist" : "hand",
-    extraNotes: "",
   };
 }

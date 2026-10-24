@@ -292,9 +292,8 @@ export async function getJournalTimeline(env, user, growId, before, limitRaw) {
 /**
  * Days whose note, plant entries or feed mention some text, newest first.
  *
- * Returns rows rather than a Response so MJ's search_journal tool and the
- * journal's own search box answer from the same code. A search that disagreed
- * with the one in the app would be worse than no search at all.
+ * Returns rows rather than a Response, so the matching stays testable apart
+ * from the request that asked for it.
  *
  * `{ error }` back means the caller asked for something it cannot have.
  */

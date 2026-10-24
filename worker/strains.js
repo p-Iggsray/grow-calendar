@@ -44,18 +44,6 @@ async function ensureStrainSchema(env) {
   await env.DB.prepare(
     "CREATE UNIQUE INDEX IF NOT EXISTS idx_strain_catalog_code ON strain_catalog (page_code)"
   ).run();
-  // The written profiles cached against these names. Created here as well as in
-  // strainPage.js because the sweep deletes from it, and a database where
-  // nobody has ever opened a strain page does not have the table yet. That
-  // missing table is what made the sweep fail, and a sweep that never finishes
-  // is one that never stops being attempted.
-  await env.DB.prepare(`
-    CREATE TABLE IF NOT EXISTS strain_profile (
-      name_key   TEXT PRIMARY KEY,
-      body       TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    )
-  `).run();
   _strainSchemaReady = true;
 }
 
@@ -67,8 +55,7 @@ export function newPageCode() {
 }
 
 /**
- * Take every name of a crop that is not public out of the catalog, and out of
- * the profile cache with it.
+ * Take every name of a crop that is not public out of the catalog.
  *
  * The catalog predates the crop column, so rows written before it carry no
  * crop at all. Those cannot be judged by what is in the catalog: the answer is
@@ -93,10 +80,7 @@ export async function purgeNonPublicStrains(env, userId) {
   if (!banned.size) return 0;
 
   const marks = [...banned].map(() => "?").join(",");
-  await env.DB.batch([
-    env.DB.prepare(`DELETE FROM strain_catalog WHERE name_key IN (${marks})`).bind(...banned),
-    env.DB.prepare(`DELETE FROM strain_profile WHERE name_key IN (${marks})`).bind(...banned),
-  ]);
+  await env.DB.prepare(`DELETE FROM strain_catalog WHERE name_key IN (${marks})`).bind(...banned).run();
   return banned.size;
 }
 
@@ -168,9 +152,8 @@ export async function listStrains(env, _user) {
 //
 // It is one-time in earnest, and the first version of it was not. That one
 // memoized only on success, in a module variable, and sat in front of every
-// authenticated request. It deleted from a table that only existed once
-// somebody had opened a strain page, so on a database where nobody ever had,
-// it threw every time, was swallowed every time, and never recorded itself as
+// authenticated request. It deleted from a table that did not always exist, so
+// on a database without it, it threw every time, was swallowed every time, and never recorded itself as
 // done: every API call the app made then re-ran a scan of every grow and a
 // failing batch before getting to its own work.
 //

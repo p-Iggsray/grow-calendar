@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Pencil, Check, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Pencil, Check } from "lucide-react";
 import { MONTH_NAMES } from "../../lib/dates.js";
 import { noteToHtml } from "../../lib/richText.js";
 import { recordRows } from "../../lib/dayRecord.js";
@@ -37,16 +37,6 @@ function RecordRow({ row }) {
         display: "inline-flex", alignItems: "baseline", gap: 3,
       }}>
         {row.label}
-        {/* Read out of the writing rather than typed. Marked because a value
-            that filled itself in should never look like one you entered. */}
-        {row.read && (
-          <Sparkles
-            size={9}
-            strokeWidth={2.4}
-            aria-label="read from your entry"
-            style={{ color: "var(--c-accent)", flexShrink: 0, alignSelf: "center" }}
-          />
-        )}
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>
         {row.items
@@ -82,27 +72,14 @@ function RecordRow({ row }) {
 
 export default function JournalPage({
   date, isToday, stage, growDay, note, setNote, noteStatus,
-  log, weather, crop, focusSignal = 0, onEditRecord, onFinishWriting,
+  log, weather, crop, focusSignal = 0, onEditRecord,
 }) {
   const [editing, setEditing] = useState(false);
-  // What was last sent to be read. Finishing without having changed a word
-  // costs nothing: there is nothing new to read.
-  const lastRead = useRef(null);
-  const [reading, setReading] = useState(false);
-
-  async function finishWriting() {
-    setEditing(false);
-    const text = String(note ?? "");
-    if (!onFinishWriting || !text.trim() || text === lastRead.current) return;
-    lastRead.current = text;
-    setReading(true);
-    try { await onFinishWriting(); } finally { setReading(false); }
-  }
 
   // A page turn ends editing: the next day is a different page, and leaving an
   // editor open on it would put the caret somewhere nobody asked for.
   const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-  useEffect(() => { setEditing(false); lastRead.current = null; }, [dateKey]);
+  useEffect(() => { setEditing(false); }, [dateKey]);
   // A tap on the calendar's "write about today" arrives as a focus signal.
   useEffect(() => { if (focusSignal > 0) setEditing(true); }, [focusSignal]);
 
@@ -148,10 +125,8 @@ export default function JournalPage({
       {/* The day's record, set at the head of the page where it can be read
           without wading through the writing. */}
       {/* The record. It is here whether or not anything is in it yet, because
-          it is the only place the day's log lives: writing about the day fills
-          it, and this panel's Edit is the one door to the form for fixing what
-          the reading got wrong or adding what it never mentioned. An empty one
-          says which of those it is waiting for. */}
+          it is the only place the day's log lives, and this panel's Edit is the
+          one door to the form. */}
       <section
         aria-label="What was logged on this day"
         style={{
@@ -177,7 +152,7 @@ export default function JournalPage({
                 fontFamily: UI, fontSize: 10.5, fontWeight: 600, color: "var(--c-text-muted)",
               }}>
               <Pencil size={10} strokeWidth={2.2} aria-hidden="true" />
-              {rows.length > 0 ? "Edit" : "Add by hand"}
+              {rows.length > 0 ? "Edit" : "Add"}
             </button>
           )}
         </div>
@@ -185,9 +160,7 @@ export default function JournalPage({
           ? rows.map((row) => <RecordRow key={row.key} row={row} />)
           : (
             <div style={{ fontFamily: UI, fontSize: 11.5, color: "var(--c-text-muted)", lineHeight: 1.5, marginTop: 3 }}>
-              {reading
-                ? "Reading your entry…"
-                : "Nothing logged yet. Write about the day below and what you mention fills in here."}
+              Nothing logged yet. Tap Add to log watering, feeding and conditions.
             </div>
           )}
       </section>
@@ -211,7 +184,7 @@ export default function JournalPage({
               </span>
               <button
                 type="button"
-                onClick={() => { tapHaptic(); finishWriting(); }}
+                onClick={() => { tapHaptic(); setEditing(false); }}
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 4,
                   background: "none", border: "1px solid var(--c-border-strong)",

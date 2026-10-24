@@ -23,9 +23,7 @@ import { error } from "./util.js";
  *   sessions, password_reset_tokens  live credentials, useless in a backup and
  *                                    dangerous in a file you email yourself
  *   login_attempts, client_errors    logs, not record
- *   weather_cache, strain_profile    caches that rebuild themselves
- *   mj_model_usage, plan_gen_usage,
- *   mj_usage                         rate-limit counters, meaningless restored
+ *   weather_cache                    a cache that rebuilds itself
  *   push_subscriptions               device tokens, dead the moment they move
  *   users                            it is in the file, but as `account` and
  *                                    not as a table. Its password columns are
@@ -60,7 +58,6 @@ export const BACKUP_TABLES = [
   { table: "strain_library", scope: "user" },
   { table: "strain_catalog", scope: "global" },
 
-  { table: "mj_conversations", scope: "user" },
   { table: "media", scope: "user" },
   { table: "settings", scope: "global" },
 

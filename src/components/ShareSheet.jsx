@@ -106,8 +106,7 @@ export default function ShareSheet({ onClose }) {
           <div>
             <div style={{ color: "var(--c-text-dim)", marginBottom: 3 }}>Stays private</div>
             <div style={{ color: "var(--c-text-muted)" }}>
-              Where the grow is, your reminders, your chats with MJ, and every
-              archived space.
+              Where the grow is, your reminders, and every archived space.
             </div>
           </div>
         </div>

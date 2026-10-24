@@ -94,23 +94,3 @@ test("the rundown prints each plant's start, stage lengths and breeder window", 
   assert.match(html, /Seedling 2w 5d · Vegetative 3w 5d · Flowering/);
   assert.match(html, /Nov 10 to 24|In harvest window|past the harvest window|Harvest Nov 10 to 24/);
 });
-
-test("MJ is told each plant's stage length, age and breeder window", async () => {
-  const { buildRosterContext } = await import("../worker/mj/context.js");
-  const survey = {
-    crop: "cannabis",
-    strains: [
-      { id: "a", name: "Blue Dream", photo: true, flowerWeeks: 8, flowerWeeksMax: 10, startedOn: "2026-08-01", stage: "flowering" },
-      { id: "b", name: "Blue Dream", photo: true, flowerWeeks: 8, flowerWeeksMax: 10, startedOn: "2026-08-01", stage: "flowering" },
-    ],
-  };
-  const records = ["a", "b"].map((plantId) => ({ plantId, date: "2026-09-15", stage: "flowering" }));
-  const line = buildRosterContext(survey, { records, todayKey: "2026-10-23" });
-  assert.match(line, /Blue Dream x2/);
-  assert.match(line, /flowering for 5w 3d/);
-  assert.match(line, /day 83 since started/);
-  assert.match(line, /breeder 8 to 10 wk of flower/);
-  assert.match(line, /Harvest Nov 10 to 24, in 18 to 32 days/);
-  // Without a date it is the old one-liner, which the prompt cache test pins.
-  assert.equal(buildRosterContext(survey), "PLANTS IN THIS SPACE: Blue Dream [flowering], Blue Dream [flowering].");
-});

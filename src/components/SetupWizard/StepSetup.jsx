@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { api } from "../../lib/api.js";
-import { MONO, SERIF, Label, RadioGroup } from "./styleHelpers.jsx";
+import { MONO, Label, RadioGroup } from "./styleHelpers.jsx";
 import { cropOf, wateringOptions, words } from "../../lib/crops.js";
 import PlacePicker from "../PlacePicker.jsx";
 
@@ -99,24 +99,6 @@ export function StepSetup({ survey, update }) {
           value={survey.wateringMethod}
           onChange={v => update("wateringMethod", v)}
           options={wateringOptions(crop)}
-        />
-      </div>
-      <div>
-        <Label>Anything else the AI should know</Label>
-        <textarea
-          value={survey.extraNotes}
-          onChange={e => update("extraNotes", e.target.value)}
-          placeholder={mushrooms
-            ? "e.g. Two 54-qt tubs in a spare room, passive FAE, room sits at 72F. First time with this species."
-            : "e.g. Fully outdoor in containers, hot and dry summers. I'm away for a week in August, so I need low-maintenance stretches."}
-          rows={5}
-          style={{
-            width: "100%", boxSizing: "border-box", resize: "vertical",
-            background: "var(--c-surface-1)", color: "var(--c-text)",
-            border: "1px solid var(--c-border-strong)", borderRadius: 10,
-            padding: "12px 14px", fontSize: 16, fontFamily: SERIF,
-            lineHeight: 1.7,
-          }}
         />
       </div>
     </div>

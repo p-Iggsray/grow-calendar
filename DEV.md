@@ -7,7 +7,6 @@ Everything you need to run, modify, or self-host **Black Cat Botanicals**.
 - Vite + React 18 (frontend SPA)
 - Cloudflare Workers (backend `worker/` directory)
 - Cloudflare D1 (SQL database for users, sessions, check-offs, daily notes)
-- Google Gemini (`gemini-2.5-flash`, free tier) for the MJ assistant (all users)
 - Wrangler 4 (deploy tooling)
 - Pure CSS media queries for responsive layout (no UI framework)
 
@@ -52,266 +51,6 @@ curl.exe http://localhost:8787/api/auth/signup -X POST -H "content-type: applica
 
 Your real production login is different and lives in the remote database.
 
-## MJ (AI grow assistant)
-
-The floating "MJ" button opens a chat backed by Google Gemini 2.5. MJ answers
-questions about the grow AND acts on it: writing the journal, logging water and
-conditions, managing the plant roster, editing the grow profile and driving the
-post-harvest lifecycle. The Worker holds the API key as a secret and never
-exposes it to the browser.
-
-### Model
-
-Everyone hits `gemini-2.5-flash` via the free-tier Generative Language API,
-using the single shared `GEMINI_API_KEY` secret. Admins get `gemini-2.5-pro`
-first with Flash behind it (see **Failing safely** for when that fallback is
-allowed to run). If the key is missing, `/api/mj` returns a friendly "MJ is not
-configured yet" message.
-
-`CF_AI_GATEWAY_URL`, when set, routes calls through a Cloudflare AI Gateway
-instead of straight to Google.
-
-### The in-chat usage bar
-
-The MJ chat header shows today's counts. It is fed by:
-
-- `GET /api/mj/usage` when the chat opens
-- the `usage` field on the final SSE frame of each `POST /api/mj`
-
-Both return `{ date, proCount, proLimit, flashCount, flashLimit, userCount,
-userLimit }`. See **Quota, and what actually counts** below for what those
-numbers now mean, because the flash count went up when it started counting
-honestly.
-
-If Gemini's own quota is exhausted at Google's end, MJ says she has hit today's
-limit rather than reporting an error.
-
-### Local setup
-
-Create a gitignored `.dev.vars` file in the project root:
-
-```
-GEMINI_API_KEY=...
-```
-
-`wrangler dev` reads it automatically.
-
-### Production setup
-
-Set the secret once, then deploy:
-
-```bash
-npx wrangler secret put GEMINI_API_KEY
-```
-
-### How MJ works
-
-Streaming (SSE), via a tool-calling loop in `worker/mj/`. `chat.js` validates
-the request, enforces quota, assembles context and runs the loop;
-`providers/gemini.js` is the Gemini adapter; `mj-logic.js` holds the persona,
-the crop briefs and the tool schemas as pure data.
-
-Conversations are **persisted**, in `mj_conversations`, one thread per grow plus
-a general thread (`grow_id IS NULL`). The last 20 messages are replayed as
-context. `MJ_TOOLS` declares 19 tools: nine read (`get_day`, `get_week`, `get_grow_log`,
-`get_grow_info`, `get_environment`, `get_plant_log`, `search_journal`,
-`get_photos`, `get_photo`) and ten write (listed in `MJ_WRITE_TOOLS`).
-
-### Letting MJ look at photographs
-
-`get_photos` returns up to `MJ_PHOTO_BATCH` (6) thumbnails for a date range or
-one plant, and `get_photo` returns a single image at full resolution. Stored
-thumbnails are 480px, which carries colour, canopy and vigour but not
-trichomes, so the persona tells her to fetch a full image before judging
-detail.
-
-**The images cannot travel inside the tool result.** On Gemini 2.5 a
-`functionResponse` is JSON, and an image nested in it is invisible to the model
-(multimodal function responses are a Gemini 3 feature). They are sent as
-**sibling `inlineData` parts in the same turn** as the `functionResponse`, which
-is how a 2.5 model receives an image at all.
-
-The mechanism: `executeTool` takes a `shown` array, pushes `{mimeType, data}`
-into it, and `runGemini` appends those as sibling parts after the function
-responses. `test/mj-tool-images.test.js` asserts the shape of what actually
-goes on the wire, including that no base64 is smuggled into the JSON result,
-where 2.5 would read it as a meaningless string and bill for it anyway.
-
-Two deliberate properties:
-
-- **The metadata is the answer on its own.** Every result carries the date,
-  grow day, plant and a `viewable` flag whether or not the image attaches. If a
-  photo cannot be shown, the tool says so and the persona tells her to admit it
-  rather than describe a picture she was not given.
-- **Images live for one turn.** They are in `contents` while she reasons and
-  are never written to `mj_conversations`; her written observations are the
-  durable part. Replaying pictures into every later turn would inflate each one
-  to re-send something she has already described in words.
-
-`photosForRange` thins its results to one per day before filling the batch, so
-a range always reads as a spread of days rather than forty shots of harvest
-day, and returns them oldest first so position in the sequence means position
-in time.
-
-### Searching the journal
-
-`search_journal` wraps `searchJournalRows` in `worker/journal.js`, the same
-function behind the journal's own search box, so MJ and the app can never
-disagree about what the record says. It matters for quota as much as for
-quality: "when did I last see mites" used to mean walking days one at a time,
-and every one of those days was a whole request against a budget of 250.
-
-### Prompt order is load-bearing
-
-Gemini 2.5 caches **implicitly**: no API call, no flag, nothing to enable. It
-matches the prefix of a request against recent ones and discounts what repeats
-by 90%. So the whole optimisation is prompt order.
-
-`buildSystemSegments` returns two segments and the first must never vary by
-anything but the crop:
-
-| Segment | Contents | Approx tokens |
-|---|---|---|
-| stable | persona + crop brief | 2,580 |
-| (alongside) | `MJ_TOOLS` declarations | 3,660 |
-| volatile | stage timeline, roster, weather, log, stats, today's date | varies |
-
-That ~6,240 tokens repeats on every turn **and on every iteration of the tool
-loop**, so an eight-step answer used to re-send about 50,000 tokens of
-identical text.
-
-`test/mj-prompt-cache.test.js` asserts the stable segment is byte-identical
-across days, stage histories, growers and spaces, and fails the build if a date
-appears in it. That test exists because the stage timeline used to live in the
-stable block and quietly broke the prefix every time anything was recorded.
-
-### Quota, and what actually counts
-
-**Everything is counted in requests to Google, never in chat messages.** One
-message is a tool loop that can make up to `MAX_TOOL_ITERATIONS` (6) round
-trips, so the two are not the same unit. Treating them as one is how the old
-ceiling came to be wrong by a factor of six.
-
-This project's real free-tier quota for `gemini-2.5-flash`, read off the Cloud
-Console quotas page rather than from documentation (published figures disagree
-with each other):
-
-| Quota | Value |
-|---|---|
-| requests/day | 250 |
-| requests/minute | 10 |
-| tokens/minute | 250,000 |
-
-Requests bind first: at ten a minute the app uses roughly 89,000 tokens a
-minute, well inside the token allowance. So `worker/limits.js` divides up
-requests:
-
-| Constant | Value | Meaning |
-|---|---|---|
-| `GEMINI_DAILY_LIMIT` | 250 | the whole day, all users |
-| `GEMINI_PRO_DAILY_LIMIT` | 25 | global pro requests/day |
-| `PER_USER_DAILY_REQUESTS` | 60 | one grower's share |
-| `ADMIN_DAILY_REQUESTS` | 180 | the owner's share |
-| `RESERVED_FOR_OTHERS` | 40 | what an admin can never spend |
-
-Admins used to bypass every check. That was harmless against 1500 requests a
-day and is not against 250: one long afternoon would leave the app dead for
-everyone else until midnight ET. They now get a large budget rather than an
-unlimited one, and cannot touch the reserve.
-
-A turn reserves one request before the model call, so concurrent messages
-cannot all slip past the cap, then corrects the figure to what it actually
-cost: a six-step turn costs five more, and a turn that never reached Google
-gives the reservation back. `runGemini` reports the count through a
-caller-owned `usage` counter rather than a return value, so the figure survives
-a failure; requests made before something broke still reached Google. Each
-model is charged its own share, since Pro's ceiling is far tighter.
-
-The global check requires a whole turn's headroom (`+ MAX_TOOL_ITERATIONS`),
-because a turn cannot be stopped part way once it has started making requests.
-
-A 429 is retried once after `GEMINI_RETRY_AFTER_MS`, since mid-answer it is
-usually the per-minute window rather than the daily one.
-
-**Rough shape of a day:** a simple question is 1 request, a typical one about
-3, a deep one up to 6. So 250 requests is roughly 80 ordinary conversations or
-40 heavy ones, shared across everyone.
-
-### Failing safely
-
-- **Timeouts measure silence, not duration.** A total timeout would kill the
-  long thoughtful answer that is worth waiting for. Nothing before the response
-  opens is a dead connection (`GEMINI_CONNECT_TIMEOUT_MS`, 20s); a gap that long
-  mid-stream is one that died without saying so (`GEMINI_IDLE_TIMEOUT_MS`, 45s).
-- **The Pro-to-Flash fallback stops once anything has been written.** Retrying a
-  turn re-runs its tools, which is free for reads and wrong for writes. The turn
-  is flagged as having written *before* the tool runs, and such a turn is saved
-  to history with its actions so they can still be undone.
-- **Context blocks fail soft but never silently.** Losing one costs MJ knowledge
-  without costing the reply; each logs when it happens.
-
-### Measuring her: the eval suite
-
-MJ is ~3,000 tokens of persona plus nineteen tool schemas, and until this
-existed there was no way to tell whether editing a line made her better or
-worse. Two tiers, because they cost differently.
-
-**Free, and part of `npm test`.** `test/mj-persona.test.js` checks the things
-that are true of the prompt itself: every tool has a usable description and a
-well-formed schema, every required parameter exists, MJ is told about every
-tool she has, the persona never promises a tool that does not exist, and
-neither the persona nor any tool description contains an em dash when she is
-told never to use one. These catch the drift that is invisible until she is
-live. `test/mj-eval-harness.test.js` tests the harness's own judging, because a
-suite that reports green through a broken checker is worse than no suite.
-
-**Paid, and run deliberately.**
-
-```bash
-npm run eval                  # the hard checks
-npm run eval -- --grade       # also judge whether each answer is any good
-npm run eval -- --case day-zero --verbose
-```
-
-Twelve golden cases in `eval/cases.js`, run against the real model with the
-real persona, the real tool declarations and the real tool executor. Only the
-database is a stand-in: `eval/fixture.js` is a fixed grow with known answers
-(mites on 2026-08-02, watering logged in litres, day 0 at 2026-06-01), because
-a suite running against live data would change its verdicts whenever you logged
-something.
-
-Each case can claim four kinds of thing:
-
-| Claim | Catches |
-|---|---|
-| `expectTools` / `forbidTools` | a persona edit quietly changing how she works |
-| `mustMatch` / `mustNotMatch` | a rule the persona states outright being broken |
-| `maxRequests` | an edit that costs two more requests per answer |
-| `grade` | whether the answer is actually useful, judged by a model |
-
-The grader is separate on purpose. Its verdict is reported beside the hard
-checks rather than folded into them, because a case can pass every rule and
-still read badly, and because the grader is itself unverified judgement. An
-unparseable grader answer is `unknown`, never a silent pass.
-
-A full graded run is at most ~54 requests against a daily allowance of 250, and
-usually far fewer, since most answers take one or two. The runner prints the
-ceiling before it starts and the real spend at the end, and exits non-zero if
-any hard check failed.
-
-### What MJ is told about the weather
-
-Her context carries the grow's **own** weather, resolved from `survey.lat/lon`,
-read cache-only so no National Weather Service round trip sits in front of a
-reply. A space with no location gets no weather rather than somebody else's, a
-forecast older than six hours is dropped rather than read out as current, and
-anything over twenty minutes old says how old it is.
-
-What the space *is* decides how much she hears: outdoors the sky is the record
-so the full forecast applies, while an indoor or greenhouse space gets severe
-weather alerts only. A tent does not care about tomorrow's high; it does care
-about the ice storm that will take the power out.
-
 ## First-time Cloudflare setup
 
 You only do this once per environment. All commands run from the project root.
@@ -342,7 +81,7 @@ Open `wrangler.jsonc` and replace `REPLACE_WITH_DB_ID_FROM_WRANGLER_D1_CREATE` w
 npx wrangler d1 execute grow-calendar-db --remote --file=./schema.sql
 ```
 
-Creates all current tables on the production D1 database (`users`, `sessions`, `login_attempts`, `task_checkoffs`, `day_notes`, `plan_config`, `plan_day_overrides`, `mj_usage`).
+Creates all current tables on the production D1 database (`users`, `sessions`, `login_attempts`, `task_checkoffs`, `day_notes`, `plan_config`, `plan_day_overrides`, and the rest of `schema.sql`).
 
 ### 5. Create the media bucket
 
@@ -412,7 +151,12 @@ they existed, so applying the files by hand is optional.
 `duration_ms` to `journal_photos`. Every existing row defaults to
 `kind = 'photo'`. `worker/photos.js` self-heals these columns too.
 
-`0001_multi_tenant.sql` adds `role` and `status` to `users`, makes `plan_config` and `plan_day_overrides` per-user (keyed by `user_id`), adds the `mj_usage` table, and promotes the original owner (lowest `user_id`) to `role='admin'`, `status='approved'`.
+`013_drop_retired_tables.sql` drops the tables and the `grow_log.read_from`
+column the removed assistant, journal reading and strain profiles used.
+`worker/retiredTables.js` does the same once on the owner's next visit, marked
+done in `settings`, so applying the file by hand is optional.
+
+`0001_multi_tenant.sql` adds `role` and `status` to `users`, makes `plan_config` and `plan_day_overrides` per-user (keyed by `user_id`), adds a per-user usage table (dropped again by `013_drop_retired_tables.sql`), and promotes the original owner (lowest `user_id`) to `role='admin'`, `status='approved'`.
 
 **Note on `login_attempts`:** This table was originally added to existing databases via a one-off root-level SQL file (applied in production before the migrations/ system existed; the file has since been deleted). It is now included directly in `schema.sql` so fresh environments get it automatically. Existing databases already have it.
 
@@ -428,13 +172,13 @@ The **admin** (owner) is the user with `role='admin'` - the original/first user,
 - **Reject** a pending request (permanently deletes that user and all their data)
 - **Remove** an existing member (permanently deletes that user and all their data)
 
-Reject and Remove both cascade: the user row deletion cascades through sessions, task_checkoffs, day_notes, plan_config, plan_day_overrides, and mj_usage.
+Reject and Remove both cascade: the user row deletion cascades through sessions, task_checkoffs, day_notes, plan_config and plan_day_overrides.
 
-Each user has a fully isolated grow: their own plan config, per-day overrides, check-offs, notes, and MJ usage. When a new user is approved and first loads the app, the backend auto-seeds them a copy of the default plan.
+Each user has a fully isolated grow: their own plan config, per-day overrides, check-offs and notes. When a new user is approved and first loads the app, the backend auto-seeds them a copy of the default plan.
 
 **Wipe and reset:**
 ```bash
-npx wrangler d1 execute grow-calendar-db --remote --command="DELETE FROM users; DELETE FROM sessions; DELETE FROM login_attempts; DELETE FROM task_checkoffs; DELETE FROM day_notes; DELETE FROM plan_config; DELETE FROM plan_day_overrides; DELETE FROM mj_usage;"
+npx wrangler d1 execute grow-calendar-db --remote --command="DELETE FROM users; DELETE FROM sessions; DELETE FROM login_attempts; DELETE FROM task_checkoffs; DELETE FROM day_notes; DELETE FROM plan_config; DELETE FROM plan_day_overrides;"
 ```
 
 After wiping, re-seed the first admin manually:
@@ -450,7 +194,7 @@ npx wrangler d1 execute grow-calendar-db --remote --command="UPDATE users SET ro
 ```
 src/                              Frontend (React)
   main.jsx                        Entry. AuthProvider + Root, then LoginGate or App.
-  App.jsx                         Authenticated app shell. Lazy-loads heavy panels (chat, wizard, admin, stats, map).
+  App.jsx                         Authenticated app shell. Lazy-loads heavy panels (wizard, admin, stats, map).
   styles.css                      Responsive layout breakpoints + scrollbar styling.
   lib/
     dates-core.js / dates.js      Pure date helpers; dates.js adds the useToday hook.
@@ -460,11 +204,10 @@ src/                              Frontend (React)
     auth.jsx                      AuthProvider context + useAuth hook.
     use*.js                       Per-concern data hooks (checkoffs, notes, plan, stats, weather, theme, ...).
   components/
-    ChatPanel/                    MJ chat: panel shell, bubbles, thread strip, usage bar, helpers.
     DayView/                      Day overlay: task rows, state picker, edit sheets, log entries, weather card.
     SetupWizard/                  New-grow wizard: one file per step + shared controls.
     Header.jsx, Calendar.jsx, MilestoneStrip.jsx, TabBar.jsx, MoreScreen.jsx,
-    GrowsListTab.jsx, MjReviewPanel.jsx, AdminPanel.jsx, StatsScreen.jsx,
+    GrowsListTab.jsx, AdminPanel.jsx, StatsScreen.jsx,
     GardenMap.jsx, BuddyView.jsx, ShareSheet.jsx, LoginGate.jsx, ...
 
 worker/                           Backend (Cloudflare Worker)
@@ -476,19 +219,9 @@ worker/                           Backend (Cloudflare Worker)
   archive.js                      Archiving a grow space, the archive's caps, the
                                   rundown gate, and the deletes it lets through.
 
-eval/                             MJ's golden set. Run with npm run eval; costs
-                                  real requests, so it is not in npm test.
-  cases.js                        Twelve cases and what each one claims.
-  fixture.js                      A fixed grow with known answers.
-  judge.js                        Deciding whether a case passed (unit tested).
-  grade.js                        The model-graded half, and its rubric.
-  run.mjs                         The runner and its scorecard.
   report.js                       The rundown: a space's whole record as one
                                   printable, self-contained HTML document.
-  mj.js                           Barrel for worker/mj/: POST /api/mj, usage, history, undo.
-  mj/                             MJ modules: chat handler, context builders, tool executor, usage, history, undo.
-  mj-logic.js                     Pure MJ helpers (merge checkoffs, append note, day view) + tool schemas.
-  providers/gemini.js             Gemini API adapter (request shaping, SSE parsing).
+  retiredTables.js                Drops, once, the tables earlier versions kept and this one no longer reads.
   util.js                         JSON helpers, cookie helpers, bounded JSON body reader.
 
 public/
@@ -520,7 +253,7 @@ the space's rundown first, so what is lost is the app's copy and not the record.
 See **Deleting, and the rundown** below.
 
 Archived spaces drop off the environments list into a collapsed **Archived**
-section, and out of the calendar switcher, MJ's context and share links
+section, and out of the calendar switcher and share links
 entirely. `usePlan` exposes `liveGrows` and `archivedGrows` alongside the full
 `grows` list; only the environments list asks for the archived ones. Archiving
 the last space you have left is refused, because there would be no list to
@@ -627,15 +360,14 @@ asserts that no list response carries bytes and that the queries do not read the
 column. The strain library has always worked this way, which is where the
 pattern came from.
 
-Two places still handle base64 on purpose: the rundown in `worker/report.js`
-embeds thumbnails because the file has to be self-contained, and MJ's
-`get_photos` needs the bytes to hand to Gemini.
+One place still handles base64 on purpose: the rundown in `worker/report.js`
+embeds thumbnails because the file has to be self-contained.
 
 ## Plant ages, stage lengths and harvest windows
 
 Every screen that talks about a plant's age reads one pure module,
 `src/lib/plantClock.js`, so the home card, plant cards, the plant page, each
-journal day, the calendar, the share link, the rundown and MJ always agree.
+journal day, the calendar, the share link and the rundown always agree.
 
 **Ages are history.** A plant counts from `startedOn` (the day it really
 started, which can be before it joined the app), else `createdAt`, else the
@@ -673,7 +405,7 @@ location. Tests: `test/plant-clock.test.js`, `test/plant-dates.test.js`.
 A video is a row in `journal_photos` with `kind = 'video'`. Its file is in the
 `MEDIA` R2 bucket under `videos/:userId/:growId/:uuid`, its poster frame is in
 `thumb`, and `data` is empty. Sharing the table is what makes every surface that
-lists a day's pictures (the journal, a plant's timeline, the share link, MJ, the
+lists a day's pictures (the journal, a plant's timeline, the share link, the
 rundown, the archive sizing) list videos with them, in the order they were
 added, with no second query.
 
@@ -699,8 +431,7 @@ client builds the poster and reads the length in `readVideoFile`
 (`src/lib/photos.js`) using the same budgeted encoder as a photo thumbnail.
 
 Wherever a still is needed, a video gives its poster: `/api/photos/:id/full`
-returns it, the rundown prints it with a play mark and the length, and MJ's
-photo tools see it and are told it is only the opening frame. The backup lists
+returns it and the rundown prints it with a play mark and the length. The backup lists
 video rows like photo rows, metadata only. The strain library leaves videos out.
 
 ## Who can reach anything
@@ -798,7 +529,6 @@ Widen the surface there or nowhere.
 | Location, coordinates | `shareSurvey` |
 | Closing notes, dry/cure log notes | `shareLifecycle` |
 | Reminders and to-dos (`grow_events`) | never queried by `getShareDay` |
-| MJ conversations | no route reads them |
 
 `test/share-scope.test.js` asserts each of these, including that no location
 string survives anywhere in the spaces payload. The share sheet in the app
@@ -855,9 +585,8 @@ the spaces payload carries `lastDate`.
 The plan here was a memo pass on the Calendar. Measuring killed that idea and
 found a real problem somewhere else, which is the whole argument for measuring.
 
-**The Calendar was never slow.** It re-renders zero times when a day opens, when
-the day closes, when MJ opens, and while typing into MJ, because it is unmounted
-under the day view and no chat state sits above it. `React.memo` there would have
+**The Calendar was never slow.** It re-renders zero times when a day opens or
+closes, because it is unmounted under the day view. `React.memo` there would have
 been ceremony.
 
 **The strain library was slow, and only at size.** On a mid-range phone (6x CPU
@@ -1024,7 +753,7 @@ is gone, and only the incoming fade remains. Same switch:
 screens out of flow together, which would shove the layout around mid switch.
 With no `exit` prop to wait on it resolves immediately.
 
-The screens that slide in over the top, Stats and the chat panel, keep their
+The screens that slide in over the top, like Stats, keep their
 exits. Those genuinely go back out the way they came.
 
 `test/tab-switch.test.js` fails if an `exit` reappears in that block, because
@@ -1109,9 +838,7 @@ gone. Do not add them back: an inline style outranks any stylesheet selector, so
 one of them silently disables the global rule for that control and no amount of
 CSS wins it back without `!important`.
 
-The single exception is the MJ composer, where the pill and the textarea read as
-one control. The pill takes `:focus-within`, and only then may the textarea drop
-its own ring. `test/focus-ring.test.js` enforces the whole arrangement: no inline
+`test/focus-ring.test.js` enforces the whole arrangement: no inline
 suppression at all, and a stylesheet rule may drop a ring only when its own
 selector has a `:focus-within` replacement.
 
@@ -1215,9 +942,9 @@ ordinary cold start that `AuthProvider` already reads as "show the login".
 `test/session-ended.test.js` pins both, along with the rule that a 403, 429 or
 500 is not an expiry.
 
-Four calls bypass `request()` (the MJ stream, and the three that want a blob or
-raw text). They report their status too, and a test counts `noteStatus` calls
-against `fetch` calls so a fifth one cannot be added without one.
+Three calls bypass `request()` (the ones that want a blob or raw text). They
+report their status too, and a test counts `noteStatus` calls against `fetch`
+calls so a fourth one cannot be added without one.
 
 ### What this does not do
 
@@ -1229,8 +956,8 @@ the offline outbox, and belongs with it.
 ## Backup and restore
 
 Settings has a **Back up everything** row. It downloads `GET /api/backup.json`:
-every space, journal entry, daily log, check-off, plan override, strain rating
-and MJ conversation, as one JSON file. It says how long it has been since the
+every space, journal entry, daily log, check-off, plan override and strain
+rating, as one JSON file. It says how long it has been since the
 last one on that device, and turns amber past a month.
 
 What is deliberately not in it:
@@ -1289,7 +1016,6 @@ DELETE.
 - [x] PWA manifest + custom icon
 - [x] Daily notes / journal
 - [x] Full-screen day view (tasks, notes, threats)
-- [x] In-app AI grow assistant (Gemini 2.5 Flash free tier, shared key, usage bar in chat)
 - [ ] Structured grow log (pH, water, feed, temp, humidity)
 - [ ] Photo uploads via R2
 - [ ] In-app SVG icon replacements for all emojis

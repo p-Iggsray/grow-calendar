@@ -1,11 +1,10 @@
 import { motion } from "framer-motion";
-import { CalendarDays, Wind, Package, CheckCircle2, Tent, Sparkles, Settings } from "lucide-react";
+import { CalendarDays, Wind, Package, CheckCircle2, Tent, Settings } from "lucide-react";
 import { tapHaptic } from "../lib/haptics.js";
 
 // Native tab bars use short Title Case labels, not tracked-out uppercase.
 function tabCase(label) {
   if (!label) return "";
-  if (label.toUpperCase() === "MJ") return "MJ";
   return label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
 }
 
@@ -23,7 +22,6 @@ export default function TabBar({ activeTab, onTab, firstTab }) {
   const TABS = [
     { id: "calendar",     Icon: FirstIcon,      label: firstTab?.tabLabel ?? "CALENDAR" },
     { id: "environments", Icon: Tent,           label: "SPACES" },
-    { id: "mj",           Icon: Sparkles,       label: "MJ"     },
     { id: "more",         Icon: Settings,       label: "SETTINGS" },
   ];
   return (
@@ -44,7 +42,6 @@ export default function TabBar({ activeTab, onTab, firstTab }) {
     >
       {TABS.map(({ id, Icon, label }) => {
         const active = activeTab === id;
-        const isMj = id === "mj";
         return (
           <button
             key={id}
@@ -80,20 +77,7 @@ export default function TabBar({ activeTab, onTab, firstTab }) {
                 transition={{ type: "spring", damping: 26, stiffness: 300 }}
               />
             )}
-            {isMj ? (
-              <div style={{
-                width: 50, height: 28,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                background: active ? "rgba(var(--c-accent-rgb), 0.18)" : "rgba(var(--c-accent-rgb), 0.07)",
-                border: `1px solid ${active ? "rgba(var(--c-accent-rgb), 0.5)" : "rgba(var(--c-accent-rgb), 0.18)"}`,
-                borderRadius: 14,
-                transition: "all 0.18s",
-              }}>
-                <Icon size={16} strokeWidth={active ? 2.2 : 1.7} />
-              </div>
-            ) : (
-              <Icon size={22} strokeWidth={active ? 2.2 : 1.7} />
-            )}
+            <Icon size={22} strokeWidth={active ? 2.2 : 1.7} />
             <span style={{
               fontSize: 10.5,
               fontFamily: "var(--font-ui)",

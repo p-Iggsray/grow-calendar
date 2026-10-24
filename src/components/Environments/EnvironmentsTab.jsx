@@ -150,7 +150,7 @@ export default function EnvironmentsTab({ openPlantId, onOpenPlantConsumed, onOp
     return () => { cancelled = true; };
   }, [grows]);
 
-  // Cross-tab handoff: the journal (or MJ) asked us to open a specific plant.
+  // Cross-tab handoff: the journal asked us to open a specific plant.
   // It always belongs to the active environment.
   useEffect(() => {
     if (!openPlantId) return;

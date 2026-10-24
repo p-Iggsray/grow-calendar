@@ -149,10 +149,6 @@ function parseField(raw) {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
-function parseSurvey(raw) {
-  return retireOldMushroomValues(parseField(raw)).survey;
-}
-
 // Rewrites, once, any of the user's surveys still holding a retired mushroom
 // answer. Runs where the app first lists spaces, so every space is moved over
 // on the next visit, archived ones included. Best-effort: a reader that sees
@@ -172,25 +168,8 @@ async function retireOldSurveyValues(env, userId, rows) {
   }
 }
 
-// Returns raw grow data without a Response wrapper - for internal use by other handlers.
-export async function loadRawGrow(env, userId, growId) {
-  const row = await env.DB.prepare(
-    "SELECT * FROM grows WHERE id = ? AND user_id = ?"
-  ).bind(growId, userId).first();
-  if (!row) return null;
-
-  return {
-    survey:        parseSurvey(row.survey),
-    lifecycle:     parseField(row.lifecycle),
-    needsSetup:    !row.survey,
-    displayName:   row.display_name,
-    status:        row.status,
-    archivedAt:    row.archived_at ?? null,
-    id:            row.id,
-  };
-}
-
-// Returns the grows list as plain objects (for internal use by mj.js).
+// Returns the grows list as plain objects, for handlers that need every space
+// at once (the share switcher).
 export async function loadRawGrows(env, userId) {
   await ensureMigrated(env, userId);
   const res = await env.DB.prepare(
@@ -202,7 +181,7 @@ export async function loadRawGrows(env, userId) {
     displayName:   r.display_name,
     status:        r.status,
     archivedAt:    r.archived_at ?? null,
-    survey:        parseSurvey(r.survey),
+    survey:        retireOldMushroomValues(parseField(r.survey)).survey,
     lifecycle:     parseField(r.lifecycle),
     createdAt:     r.created_at,
   }));

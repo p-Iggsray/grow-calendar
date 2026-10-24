@@ -37,7 +37,7 @@ test("the incoming screen still fades rather than snapping", () => {
 });
 
 test("the screens that slide in are left alone", () => {
-  // Stats and the chat panel are a different interaction: they come in over
+  // Stats and the other panels are a different interaction: they come in over
   // the top and go back out the way they came, so their exits are real.
   assert.match(app, /initial=\{\{ x: "100%" \}\}/);
 });

@@ -375,7 +375,7 @@ export default function EnvironmentDetail({
       <ConfirmModal
         open={confirmDrying}
         title="Start drying?"
-        message="This hides the calendar and opens the drying tracker, starting the dry-day counter today. You can keep logging in Spaces and chatting with MJ."
+        message="This hides the calendar and opens the drying tracker, starting the dry-day counter today. You can keep logging in Spaces."
         confirmLabel="Start drying"
         cancelLabel="Not yet"
         onConfirm={() => { setConfirmDrying(false); saveLifecycle({ phase: "drying", dryStartedAt: lifecycleYmd(today) }); }}

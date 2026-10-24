@@ -145,7 +145,7 @@ export function validatePlantFields(fields, partial = false, crop = undefined) {
   return { ok: true, value: out };
 }
 
-// Seed a per-plant roster from an AI-generated plan's strain slots when the grow
+// Seed a per-plant roster from an old generated plan's strain slots when the grow
 // has none yet. This keeps the Plants section (which reads survey.strains) from
 // ever lagging behind the calendar/garden (which fall back to the plan's strains
 // when the survey is empty). Only fires when survey.strains is empty AND the plan

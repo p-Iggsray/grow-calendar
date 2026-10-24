@@ -13,7 +13,7 @@ test("the irreplaceable tables are all in the manifest", () => {
   for (const t of [
     "grows", "day_notes", "grow_log", "plant_log", "env_readings",
     "task_checkoffs", "task_notes", "plan_config", "plan_day_overrides",
-    "strain_library", "grow_events", "mj_conversations", "journal_photos",
+    "strain_library", "grow_events", "journal_photos",
   ]) {
     assert.ok(byName[t], `${t} is not in the backup`);
   }

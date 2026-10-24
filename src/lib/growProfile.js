@@ -1,6 +1,6 @@
 // Per-grow display helpers - derive the location label and strain summary from
-// a grow's stored survey / AI-generated plan, so the UI reflects the active
-// grow instead of the old hardcoded appConfig constants.
+// a grow's stored survey, so the UI reflects the active grow instead of the old
+// hardcoded appConfig constants.
 
 // The location text the grower entered in setup, or "" if none.
 export function growLocation(survey) {
@@ -19,8 +19,8 @@ export function hasGrowLocation(survey) {
 }
 
 // Per-plant strain names in entry order. The survey's strain roster is the
-// single source of truth: the backend seeds it from the AI plan on load (see
-// backfillStrainsFromPlan), so there is never a plant on the calendar that is
+// single source of truth: the backend seeds it from an old generated plan on
+// load (see backfillStrainsFromPlan), so there is never a plant on the calendar that is
 // not in this list.
 export function growStrains(survey) {
   return (survey?.strains ?? [])

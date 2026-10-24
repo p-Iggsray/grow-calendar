@@ -274,12 +274,6 @@ export const api = {
 
   getMonthGrowLog: (month, growId) => request(withGrow(`/api/grow-log/month?month=${month}`, growId)),
   getJournalDay: (date, growId) => request(withGrow(`/api/journal/${date}`, growId)),
-  // Read a day's written entry into that day's log. Never throws for the
-  // caller's sake: this rides on top of a log that still works by hand, so a
-  // reading that cannot happen must not interrupt the writing.
-  readJournalEntry: (date, growId) =>
-    request(withGrow(`/api/journal/${date}/read`, growId), { method: "POST" })
-      .catch(() => ({ read: {}, found: false, reason: "unavailable" })),
   getJournalMonth: (month, growId) => request(withGrow(`/api/journal/month?month=${month}`, growId)),
   getJournalWeather: (date, growId) => request(withGrow(`/api/journal/weather/${date}`, growId)),
   getJournalTimeline: (before, limit, growId) =>
@@ -289,61 +283,6 @@ export const api = {
   getNote: (date, growId) => request(withGrow(`/api/notes/${date}`, growId)),
   putNote: (date, body, growId) =>
     request(withGrow(`/api/notes/${date}`, growId), { method: "PUT", body: JSON.stringify({ body }) }),
-
-  // Streams MJ's reply via SSE.
-  // Options: { activeGrowId, threadGrowId, imageData, onChunk, onDone, onError }
-  mj: (message, contextDate, { activeGrowId, threadGrowId, imageData, onChunk, onDone, onError }) => {
-    fetch("/api/mj", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        message,
-        ...(contextDate  ? { contextDate }  : {}),
-        ...(activeGrowId ? { activeGrowId } : {}),
-        ...(threadGrowId ? { threadGrowId } : {}),
-        ...(imageData    ? { imageData }    : {}),
-      }),
-    }).then(async (res) => {
-      if (!res.ok) {
-        noteStatus("/api/mj", res.status);
-        const text = await res.text().catch(() => "");
-        let msg;
-        try { msg = JSON.parse(text).error; } catch { msg = `request failed ${res.status}`; }
-        const err = new Error(msg);
-        err.status = res.status;
-        onError(err);
-        return;
-      }
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split("\n");
-        buf = lines.pop() ?? "";
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const raw = line.slice(6).trim();
-          if (!raw) continue;
-          let evt;
-          try { evt = JSON.parse(raw); } catch { continue; }
-          if (evt.delta !== undefined) { onChunk(evt.delta); }
-          else if (evt.done) { onDone(evt); }
-          else if (evt.error) { const e = new Error(evt.error); onError(e); return; }
-        }
-      }
-    }).catch(onError);
-  },
-  mjUndo: (undoPayload, growId) =>
-    request(withGrow("/api/mj/undo", growId), { method: "POST", body: JSON.stringify(undoPayload) }),
-  getMjUsage: () => request("/api/mj/usage"),
-  getMjHistory: (growId) =>
-    request(`/api/mj/history${growId ? `?growId=${encodeURIComponent(growId)}` : ""}`),
-  clearMjHistory: (growId) =>
-    request(`/api/mj/history${growId ? `?growId=${encodeURIComponent(growId)}` : ""}`, { method: "DELETE" }),
 
   getGrowLog: (date, growId) => request(withGrow(`/api/grow-log/${date}`, growId)),
   putGrowLog: (date, entry, growId) =>

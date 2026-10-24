@@ -1,7 +1,7 @@
 // Rich-text support for journal entries. Entries are stored as a small,
 // whitelisted subset of HTML (bold/italic/underline, headers, lists, font
 // sizes). Everything here is pure string work so the same module serves the
-// browser editor and the worker (excerpts, MJ context) and is testable in node.
+// browser editor and the worker (excerpts, search) and is testable in node.
 
 // Tags the editor can produce. Anything else is stripped entirely, attributes
 // and all, so pasted or hand-crafted markup can never smuggle in scripts,
@@ -66,8 +66,8 @@ export function noteToHtml(raw) {
   return escapeHtml(text).replace(/\n/g, "<br>");
 }
 
-// Flatten entry HTML to readable plain text (for excerpts, search results,
-// and MJ's view of the day). Block-level closes become newlines.
+// Flatten entry HTML to readable plain text (for excerpts and search results).
+// Block-level closes become newlines.
 export function htmlToPlainText(html) {
   // Plain notes get the space fix too - they are the ones the bug bit.
   const text = normalizeSpaces(html);
@@ -96,13 +96,3 @@ export function htmlIsEmpty(html) {
     .trim() === "";
 }
 
-// Append plain text (e.g. from MJ) onto an existing entry without breaking
-// its formatting: HTML entries gain a paragraph, plain entries a newline.
-export function appendToNote(existing, addition) {
-  const base = String(existing ?? "").trimEnd();
-  const add = String(addition ?? "").trim();
-  if (!add) return base;
-  if (!base) return add;
-  if (looksLikeHtml(base)) return `${base}<p>${escapeHtml(add)}</p>`;
-  return `${base}\n${add}`;
-}

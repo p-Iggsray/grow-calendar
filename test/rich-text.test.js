@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   sanitizeHtml, escapeHtml, looksLikeHtml, noteToHtml,
-  htmlToPlainText, htmlIsEmpty, appendToNote,
+  htmlToPlainText, htmlIsEmpty,
   normalizeSpaces,
   trimTrailingSpace,
 } from "../src/lib/richText.js";
@@ -56,14 +56,6 @@ test("escapeHtml + looksLikeHtml basics", () => {
   assert.equal(escapeHtml('<b>&"'), "&lt;b&gt;&amp;&quot;");
   assert.equal(looksLikeHtml("<p>x</p>"), true);
   assert.equal(looksLikeHtml("2 < 3 and 4 > 1"), false);
-});
-
-// ── Appending (MJ's append_note) ─────────────────────────────────────────────
-test("appendToNote: plain entries gain a newline, rich entries a paragraph", () => {
-  assert.equal(appendToNote("day one", "day two"), "day one\nday two");
-  assert.equal(appendToNote("", "first"), "first");
-  assert.equal(appendToNote("<p>rich</p>", "MJ: check runoff <ph>"), "<p>rich</p><p>MJ: check runoff &lt;ph&gt;</p>");
-  assert.equal(appendToNote("plain", "  "), "plain");
 });
 
 // ── Non-breaking spaces ──────────────────────────────────────────────────────

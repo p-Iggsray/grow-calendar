@@ -39,6 +39,11 @@ const FILL = {
   journal_photos: { data: BLANK_PNG, thumb: BLANK_PNG },
 };
 
+// Tables and columns older backups carry that the app has since dropped. An
+// INSERT naming either fails, and one failed statement aborts the whole file.
+const DROPPED_TABLES = new Set(["mj_conversations"]);
+const DROPPED_COLUMNS = { grow_log: ["read_from"] };
+
 const path = process.argv[2];
 if (!path) {
   console.error("usage: node scripts/restore.mjs <backup.json> > restore.sql");
@@ -68,10 +73,11 @@ function lit(v) {
 const lines = [];
 let total = 0;
 for (const [table, rows] of Object.entries(backup.tables ?? {})) {
-  if (!Array.isArray(rows) || rows.length === 0) continue;
+  if (!Array.isArray(rows) || rows.length === 0 || DROPPED_TABLES.has(table)) continue;
   lines.push(`-- ${table}: ${rows.length} rows`);
   for (const row of rows) {
     const full = { ...(FILL[table] ?? {}), ...row };
+    for (const c of DROPPED_COLUMNS[table] ?? []) delete full[c];
     const cols = Object.keys(full);
     if (!cols.length) continue;
     lines.push(

@@ -50,16 +50,6 @@ export function StepReview({ survey }) {
           </div>
         ))}
       </div>
-      {survey.extraNotes?.trim() && (
-        <div style={{
-          background: "rgba(250,204,21,0.05)", borderRadius: 10,
-          border: "1px solid rgba(250,204,21,0.15)", padding: "12px 14px",
-          fontFamily: SERIF, fontSize: 13, color: "var(--c-amber-dim)", lineHeight: 1.7, marginBottom: 20,
-        }}>
-          <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--c-harvest)", letterSpacing: 1 }}>NOTES: </span>
-          {survey.extraNotes}
-        </div>
-      )}
     </div>
   );
 }

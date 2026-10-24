@@ -1,7 +1,7 @@
 {
   "name": "Black Cat Botanicals",
   "short_name": "Black Cat",
-  "description": "Your grow plan, anywhere you are. Day-by-day tasks, daily notes, threats, and an AI assistant for the full season.",
+  "description": "Your grow, day by day: a calendar, a journal with photos and videos, and every plant's stage history.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

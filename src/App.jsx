@@ -5,7 +5,6 @@ import { useAuth } from "./lib/auth.jsx";
 import { usePlan } from "./lib/usePlan.jsx";
 import { useJournalMonth, useRecentJournal, useStageTimeline } from "./lib/useJournal.js";
 import { api, ymd } from "./lib/api.js";
-import { buildSuggestions } from "./lib/mjSuggestions.js";
 import { useOutbox } from "./lib/useOutbox.js";
 import { useOnlineStatus } from "./lib/useOnlineStatus.js";
 import { hasGrowLocation } from "./lib/growProfile.js";
@@ -31,7 +30,6 @@ import { AppShellSkeleton, PanelSkeleton } from "./components/LoadingScreens.jsx
 // Heavy, rarely-on-screen panels load on demand so they stay out of the
 // initial bundle. The service worker runtime-caches each chunk on first use.
 const SetupWizard   = lazy(() => import("./components/SetupWizard/SetupWizard.jsx"));
-const ChatPanel     = lazy(() => import("./components/ChatPanel/ChatPanel.jsx"));
 const StatsScreen   = lazy(() => import("./components/StatsScreen.jsx"));
 const StrainLibrary = lazy(() => import("./components/StrainLibrary.jsx"));
 const GrowSettings  = lazy(() => import("./components/GrowSettings.jsx"));
@@ -98,16 +96,14 @@ export default function App() {
   const online   = useOnlineStatus();
   // Writes made with no signal, waiting for one. See src/lib/outbox.js.
   const pending  = useOutbox();
-  // Archived spaces are put away: the shell never routes to one, offers one to
-  // MJ, or resumes setup in one. The environments list is the only screen that
+  // Archived spaces are put away: the shell never routes to one or resumes
+  // setup in one. The environments list is the only screen that
   // sees them, and it asks usePlan for them by name.
   const { liveGrows: grows, activeGrowId, setActiveGrowId, survey, lifecycle, needsSetup, loading: planLoading, error: planError, reload: reloadPlan } = usePlan();
   const lifecyclePhase = getLifecyclePhase(lifecycle);
   // The month the calendar shows - real year + month, free to roam.
   const [viewYM, setViewYM] = useState(() => ({ y: today.getFullYear(), m: today.getMonth() }));
   const [activeTab,   setActiveTab]  = useState("calendar");
-  const [chatOpen,      setChatOpen]      = useState(false);
-  const [chatContext,   setChatContext]   = useState(null);
   const [showStats,     setShowStats]     = useState(false);
   const [showStrains,   setShowStrains]   = useState(false);
   const [showSettings,  setShowSettings]  = useState(false);
@@ -136,16 +132,13 @@ export default function App() {
   // The last fortnight of entries, for the status card's recorded facts.
   const { days: recentDays } = useRecentJournal(activeGrowId, Boolean(user) && Boolean(activeGrowId));
 
-  // From anywhere in the app (a calendar day, plant history, MJ, a shared
-  // link) straight to a day's journal page. push=false for browser-driven
+  // From anywhere in the app (a calendar day, plant history, a shared link) straight to a day's journal page. push=false for browser-driven
   // navigation (deep links, popstate) that must not add history entries.
   const openJournalAt = useCallback((date, { push = true } = {}) => {
     setJournalDate(date);
     setViewYM({ y: date.getFullYear(), m: date.getMonth() });
     setMainView("journal");
     setActiveTab("calendar");
-    setChatOpen(false);
-    setChatContext(null);
     if (push) window.history.pushState({ growDay: ymd(date) }, "", `?d=${ymd(date)}`);
   }, []);
 
@@ -214,23 +207,6 @@ export default function App() {
     window.history.replaceState(window.history.state, "", clean.pathname + clean.search);
   }, [survey, grows, activeGrowId, setActiveGrowId]);
 
-  // Lock body scroll while chat is open.
-  useEffect(() => {
-    if (!chatOpen) return;
-    const y = window.scrollY;
-    document.body.style.overflow = "hidden";
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${y}px`;
-    document.body.style.width = "100%";
-    return () => {
-      document.body.style.overflow = "";
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
-      window.scrollTo(0, y);
-    };
-  }, [chatOpen]);
-
   if (planError) {
     return (
       <div style={SHELL_STYLE}>
@@ -243,7 +219,7 @@ export default function App() {
   // Only blank to the skeleton on the FIRST load (nothing loaded yet). reload() and
   // grow switches also flip planLoading, but we keep the current UI on screen
   // while they refetch so the whole app doesn't flash to a skeleton every time
-  // MJ acts, a phase transitions, or a plant is edited.
+  // a phase transitions or a plant is edited.
   if (planLoading && !survey) {
     return (
       <div style={SHELL_STYLE}>
@@ -316,12 +292,6 @@ export default function App() {
     : [todayStyle?.label ?? "Off season", todayDayNum != null ? `Day ${todayDayNum}` : null]
         .filter(Boolean).join(" · ");
 
-  const suggestions = buildSuggestions({
-    contextDate: chatContext,
-    today,
-    phaseLabel: todayStyle?.label ?? null,
-  });
-
   function pickDay(date) { openJournalAt(date); }
 
   // "New space", from the grow switcher or the Spaces tab. A growId means
@@ -346,27 +316,8 @@ export default function App() {
     setActiveTab("environments");
   }
 
-  function openChat() {
-    // Attach the viewed journal day only when the user is actually LOOKING at
-    // it - mainView stays "journal" while other tabs are open.
-    const onJournal = activeTab === "calendar" && mainView === "journal" && journalDate;
-    setChatContext(onJournal ? ymd(journalDate) : null);
-    setChatOpen(true);
-  }
-  function closeChat() {
-    setChatOpen(false);
-    setChatContext(null);
-  }
-
   function handleTab(tabId) {
-    if (tabId === "mj") {
-      openChat();
-      return;
-    }
-    if (["environments", "calendar", "more"].includes(tabId)) {
-      setActiveTab(tabId);
-      if (chatOpen) closeChat();
-    }
+    if (["environments", "calendar", "more"].includes(tabId)) setActiveTab(tabId);
   }
 
   // Key for the tab content AnimatePresence - drives crossfade between screens.
@@ -541,22 +492,6 @@ export default function App() {
         </AnimatePresence>
       </div>
 
-      {/* Chat panel - slides up as a fixed full-screen overlay */}
-      <AnimatePresence>
-        {chatOpen && (
-          <Suspense key="chat" fallback={null}>
-            <ChatPanel
-              onClose={closeChat}
-              contextDate={chatContext}
-              activeGrowId={activeGrowId}
-              grows={grows}
-              suggestions={suggestions}
-              onDataChanged={reloadPlan}
-            />
-          </Suspense>
-        )}
-      </AnimatePresence>
-
       {/* Full-screen panels - slide in from the right */}
       <AnimatePresence>
         {showStats && (
@@ -609,14 +544,11 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Tab bar - hidden while chat is open */}
-      {!chatOpen && (
-        <TabBar
-          activeTab={activeTab}
-          onTab={handleTab}
-          firstTab={phaseMeta(lifecyclePhase)}
-        />
-      )}
+      <TabBar
+        activeTab={activeTab}
+        onTab={handleTab}
+        firstTab={phaseMeta(lifecyclePhase)}
+      />
     </div>
   );
 }

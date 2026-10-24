@@ -273,7 +273,7 @@ export default function SettingsScreen({
 
       <div style={{ marginTop: 26, paddingTop: 16, borderTop: "1px solid var(--c-surface-2)" }}>
         <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--c-text-faint)", margin: 0 }}>
-          For educational and personal record-keeping only - not medical, legal, or professional cultivation advice. You are responsible for complying with the cannabis laws in your area. Your data is stored privately and never sold; AI features send your grow details to Google&apos;s Gemini API.
+          For educational and personal record-keeping only - not medical, legal, or professional cultivation advice. You are responsible for complying with the cannabis laws in your area. Your data is stored privately and never sold.
         </p>
       </div>
 

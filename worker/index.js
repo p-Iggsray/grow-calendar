@@ -5,12 +5,10 @@ import { postResetPassword } from "./authReset.js";
 import { ensurePerDayGrowScope, resolveGrowId } from "./perDayScope.js";
 import { getNote, putNote } from "./notes.js";
 import { getJournalDay, getJournalMonth, getJournalTimeline, searchJournal, getJournalWeather } from "./journal.js";
-import { readEntryIntoLog } from "./readEntry.js";
 import { getStrainPage } from "./strainPage.js";
 import { autoLogWeather } from "./weatherDays.js";
 import { getGrowLog, putGrowLog, exportGrowLogCsv , getMonthGrowLog } from "./growLog.js";
 import { getBackup } from "./backup.js";
-import { postMj, getMjUsage, getMjHistory, deleteMjHistory, postMjUndo } from "./mj.js";
 import { getHealth, postClientError } from "./health.js";
 import { getWeather } from "./weather.js";
 import { listGrows, createGrow, getGrow, patchGrow, patchGrowLifecycle, setupGrow } from "./grows.js";
@@ -21,6 +19,7 @@ import { uploadVideoFile, createJournalVideo, getVideo } from "./videos.js";
 import { importEnvReadings, getEnvSummary, getEnvDay, clearEnv } from "./env.js";
 import { getReverseGeocode, getGeocodeSearch } from "./geocode.js";
 import { listStrains, getStrainPageCode, ensureStrainPrivacy } from "./strains.js";
+import { ensureRetiredTablesDropped } from "./retiredTables.js";
 import { listStrainEntries, putStrainEntry, deleteStrainEntry, renameStrain, removeStrain } from "./strainLibrary.js";
 import { getStrainPhotos } from "./strainPhotos.js";
 import { getStageTimeline } from "./stages.js";
@@ -176,13 +175,10 @@ async function authenticatedRoute(request, env, path, method, user) {
   await ensurePerDayGrowScope(env);
   // And that nothing with a public face is left over from before the crop gate.
   await ensureStrainPrivacy(env, user.id);
+  // And that tables this version no longer reads are gone.
+  await ensureRetiredTablesDropped(env);
 
   if (path === "/api/weather"          && method === "GET")    return getWeather(request, env, user);
-  if (path === "/api/mj"              && method === "POST")   return postMj(request, env, user);
-  if (path === "/api/mj/undo"         && method === "POST")   return postMjUndo(request, env, user);
-  if (path === "/api/mj/usage"        && method === "GET")    return getMjUsage(env, user);
-  if (path === "/api/mj/history"      && method === "GET")    return getMjHistory(request, env, user);
-  if (path === "/api/mj/history"      && method === "DELETE") return deleteMjHistory(request, env, user);
   if (path === "/api/errors"    && method === "POST") return postClientError(request, env, user);
 
   if (path === "/api/stats"         && method === "GET")  return getStats(env, user, await resolveGrowId(env, user, new URL(request.url)));
@@ -365,13 +361,6 @@ async function authenticatedRoute(request, env, path, method, user) {
   if (journalWeatherMatch && method === "GET") {
     const growId = await resolveGrowId(env, user, new URL(request.url));
     return getJournalWeather(env, user, growId, journalWeatherMatch[1]);
-  }
-
-  // Read a day's written entry into that day's log.
-  const journalReadMatch = path.match(/^\/api\/journal\/(\d{4}-\d{2}-\d{2})\/read$/);
-  if (journalReadMatch && method === "POST") {
-    const growId = await resolveGrowId(env, user, new URL(request.url));
-    return readEntryIntoLog(env, user, growId, journalReadMatch[1]);
   }
 
   const journalMatch = path.match(/^\/api\/journal\/(\d{4}-\d{2}-\d{2})$/);

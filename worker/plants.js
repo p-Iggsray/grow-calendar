@@ -30,8 +30,8 @@ async function saveSurvey(env, userId, growId, survey) {
 }
 
 let _schemaReady = false;
-// The one way a stage switch is written, so setup, adding a plant, dating a
-// stage and MJ all write the same row.
+// The one way a stage switch is written, so setup, adding a plant and dating a
+// stage all write the same row.
 const INSERT_STAGE_SQL = `INSERT INTO plant_log
    (user_id, grow_id, plant_id, date, kind, detail, body, height, height_unit, health, created_at, updated_at)
  VALUES (?, ?, ?, ?, 'stage', ?, ?, NULL, NULL, NULL, ?, ?)`;
@@ -167,7 +167,7 @@ export function joinStageDate(body, startedOn, stage, crop, todayIso) {
 }
 
 /** Write one stage switch: the record every age and harvest window reads. */
-export async function recordStageSwitch(env, userId, growId, plantId, stage, date) {
+async function recordStageSwitch(env, userId, growId, plantId, stage, date) {
   await ensurePlantLogSchema(env);
   const now = new Date().toISOString();
   await env.DB.prepare(INSERT_STAGE_SQL)
@@ -192,7 +192,7 @@ async function moveCurrentStageDate(env, userId, growId, plantId, date, startedO
   ).bind(userId, growId, plantId).all();
   const [latest, previous] = res.results ?? [];
   // The latest record is not this stage when the plant got here without one
-  // being written (older plants, older MJ). Then the switch to this stage is
+  // being written (older plants). Then the switch to this stage is
   // the thing being dated, and it is written rather than moving the one before.
   if (!latest || stageFromRow(latest) !== stage) {
     if (latest && date < latest.date) return "that is before the stage it came from";

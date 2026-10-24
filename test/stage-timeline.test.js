@@ -5,8 +5,6 @@ import {
   stageGroup, stageIndex, stageLabel, stageOnDate,
 } from "../src/lib/stageTimeline.js";
 import { stageFromRow } from "../worker/stages.js";
-import { buildDayInfo } from "../worker/mj-logic.js";
-import { buildTimelineText } from "../src/lib/timelineText.js";
 import { resolveSurveyForSetup } from "../src/lib/stageAnchor.js";
 import { addPlantToSurvey } from "../worker/plantsRoster.js";
 
@@ -122,47 +120,6 @@ test("stageFromRow reads detail first, then falls back to the display body", () 
   assert.equal(stageFromRow({ detail: "not json", body: "Stage → Seedling" }), "seedling");
   assert.equal(stageFromRow({ detail: null, body: "watered today" }), null);
   assert.equal(stageFromRow(null), null);
-});
-
-// ── buildDayInfo (MJ) ────────────────────────────────────────────────────────
-test("buildDayInfo reports the recorded stage, day number, and switch days", () => {
-  const timeline = { events: TIMELINE, firstDate: "2026-06-01" };
-  const mid = buildDayInfo("2026-06-20", timeline);
-  assert.equal(mid.stage, "vegetative");
-  assert.equal(mid.stageLabel, "Vegetative");
-  assert.equal(mid.growDay, 19);
-  assert.equal(mid.stageChangedTo, null);
-
-  // The anchor day itself is day 0, and must be reported as such.
-  assert.equal(buildDayInfo("2026-06-01", timeline).growDay, 0);
-
-  const flip = buildDayInfo("2026-07-20", timeline);
-  assert.equal(flip.stageChangedTo, "Flowering");
-
-  const before = buildDayInfo("2026-05-20", timeline);
-  assert.equal(before.stage, null);
-  assert.equal(before.beforeGrowStarted, true);
-});
-
-test("buildDayInfo on a grow with nothing recorded reports no stage", () => {
-  const info = buildDayInfo("2026-06-20", { events: [], firstDate: null });
-  assert.equal(info.stage, null);
-  assert.equal(info.growDay, null);
-  assert.equal(info.beforeGrowStarted, true);
-});
-
-// ── buildTimelineText (MJ context) ───────────────────────────────────────────
-test("buildTimelineText lists real switches and never invents a schedule", () => {
-  const text = buildTimelineText(TIMELINE, "2026-06-01", "2026-06-20");
-  assert.match(text, /2026-06-01 \(day 0\): moved to Seedling/);
-  assert.match(text, /2026-06-15 \(day 14\): moved to Vegetative/);
-  assert.match(text, /Today \(2026-06-20\) is day 19 and the grow is in Vegetative/);
-  assert.match(text, /no scheduled or estimated dates/);
-  assert.doesNotMatch(text, /harvest on|projected|expected harvest/i);
-});
-
-test("buildTimelineText on an empty grow tells MJ not to invent dates", () => {
-  assert.match(buildTimelineText([], null, "2026-06-20"), /nothing recorded yet/);
 });
 
 // ── resolveSurveyForSetup ────────────────────────────────────────────────────
