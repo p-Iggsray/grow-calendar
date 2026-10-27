@@ -842,6 +842,27 @@ CSS wins it back without `!important`.
 suppression at all, and a stylesheet rule may drop a ring only when its own
 selector has a `:focus-within` replacement.
 
+## Autocorrect and pasting in the journal
+
+The entry editor turns the keyboard's own spellcheck, autocorrect and
+auto-capitals on, and adds a small fixer for what keyboards miss in a grow
+journal (`src/lib/autocorrect.js`): misspelled grow terms, a lone "i", missing
+apostrophes, and a doubled small word. A word is only fixed once a space or
+punctuation ends it, and only when it is an exact known mistake. A backspace
+straight after a fix puts back what was typed and leaves that word alone for
+the rest of the session.
+
+Every paste is cleaned by `src/lib/pasteContent.js` rather than taken as given.
+A table from a web page, Sheets, Excel or Numbers is rebuilt from its cells:
+styles, comments and attributes gone, empty rows and columns dropped, a header
+row only when the source marked one or the first row is labels over numbers.
+Tab separated, comma separated and markdown text becomes a table the same way;
+ordinary sentences with commas do not, because comma separated text has to look
+like data. A pasted picture (a chart, a screenshot) is sent to that day's photos
+through `PASTED_MEDIA_EVENT` instead of into the writing. Tables are on the
+sanitizer's whitelist, so they render in the journal, the share link and the
+rundown, and read as `a | b` rows in search excerpts.
+
 ## Writing with no signal
 
 The offline strip has always said "changes will sync when reconnected".

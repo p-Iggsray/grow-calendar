@@ -20,7 +20,10 @@ test("sanitizeHtml: keeps the editor's whitelist, normalized", () => {
 test("sanitizeHtml: strips scripts, styles, attributes, and unknown tags", () => {
   assert.equal(sanitizeHtml('<script>alert(1)</script>hi'), "alert(1)hi");
   assert.equal(sanitizeHtml('<img src=x onerror=alert(1)>hi'), "hi");
-  assert.equal(sanitizeHtml('<b onclick="x()">hi</b>'), "hi</b>"); // attributed tag dropped
+  // A known tag keeps its name and loses every attribute, which is what lets a
+  // pasted <td class="xl65"> stay a cell.
+  assert.equal(sanitizeHtml('<b onclick="x()">hi</b>'), "<b>hi</b>");
+  assert.equal(sanitizeHtml('<td style="x" onmouseover="y()">1</td>'), "<td>1</td>");
   assert.equal(sanitizeHtml('<a href="https://evil">link</a>'), "link");
   assert.equal(sanitizeHtml('<span style="color:red">x</span>'), "x");
   assert.equal(sanitizeHtml('<font size="99">x</font>'), "x</font>");

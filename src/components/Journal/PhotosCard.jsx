@@ -4,7 +4,7 @@ import { ymd } from "../../lib/api.js";
 import { photoUrl } from "../../lib/photoUrl.js";
 import { tapHaptic } from "../../lib/haptics.js";
 import { batchResultMessage, MAX_BATCH } from "../../lib/photos.js";
-import { addMediaBatch, addingLabel, holdForPicker, progressFraction, MEDIA_ACCEPT } from "../../lib/addMedia.js";
+import { addMediaBatch, addingLabel, holdForPicker, progressFraction, MEDIA_ACCEPT, PASTED_MEDIA_EVENT } from "../../lib/addMedia.js";
 import { isVideoFile, looksFreshFromCamera, mediaFilename, videoMimeOf } from "../../lib/videos.js";
 import {
   canSharePhoto, loadSaveToRoll, savePhotoFile, saveOutcomeMessage,
@@ -71,6 +71,20 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
     );
     setProgress(null);
   }
+
+  // Pictures pasted into this day's writing are added here, so they get the
+  // same upload, progress and error handling as picked ones.
+  const uploadRef = useRef(uploadAll);
+  uploadRef.current = uploadAll;
+  useEffect(() => {
+    function onPasted(e) {
+      const { dateKey, growId: pastedGrow, files } = e.detail ?? {};
+      if (dateKey !== ymd(date) || pastedGrow !== growId || !files?.length) return;
+      uploadRef.current(files);
+    }
+    window.addEventListener(PASTED_MEDIA_EVENT, onPasted);
+    return () => window.removeEventListener(PASTED_MEDIA_EVENT, onPasted);
+  }, [date, growId]);
 
   // A shot taken through this app is NOT in your camera roll: the browser hands
   // the picture to the page and nowhere else. Only the OS can file it, and the

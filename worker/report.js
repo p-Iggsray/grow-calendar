@@ -858,6 +858,9 @@ h1{font-size:34px;line-height:1.1;margin:0 0 10px;color:var(--gd);letter-spacing
 .daynote h2{font-size:14px;margin:.5em 0 .15em;}
 .daynote ul,.daynote ol{margin:.3em 0;padding-left:22px;}
 .daynote p{margin:0 0 .4em;}
+.daynote table{border-collapse:collapse;margin:.4em 0;font-size:12px;white-space:normal;}
+.daynote th,.daynote td{border:1px solid #d9cfa8;padding:2px 7px;text-align:left;vertical-align:top;}
+.daynote th{background:#f6efd6;font-weight:700;}
 .toc{border:1px solid #d8e0d4;border-radius:10px;padding:16px 20px;margin:0 0 18px;
   background:#fbfaf5;}
 .toc h2{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin:0 0 8px;}

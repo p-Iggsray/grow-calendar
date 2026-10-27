@@ -42,6 +42,10 @@ export function holdForPicker() {
 // offers the camera (photo or video) and the library side by side.
 export const MEDIA_ACCEPT = "image/*,video/*";
 
+// Pictures pasted into a day's writing, sent to that day's photos card with
+// { dateKey, growId, files }.
+export const PASTED_MEDIA_EVENT = "journal-media-pasted";
+
 const WRONG_FORMAT = "That video format cannot be stored here. Use an mp4 or mov.";
 const TOO_BIG = "That video is over 100 MB. Trim it to under a minute and try again.";
 const TOO_LONG = "Videos can be at most a minute long. Trim it and try again.";

@@ -72,7 +72,7 @@ function RecordRow({ row }) {
 
 export default function JournalPage({
   date, isToday, stage, growDay, note, setNote, noteStatus,
-  log, weather, crop, focusSignal = 0, onEditRecord,
+  log, weather, crop, focusSignal = 0, onEditRecord, onPasteImages,
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -200,6 +200,7 @@ export default function JournalPage({
               onChange={setNote}
               placeholder={isToday ? "Write about today in the garden…" : "Write about this day…"}
               focusSignal={editing ? 1 : 0}
+              onPasteImages={onPasteImages}
               minHeight={120}
             />
           </>

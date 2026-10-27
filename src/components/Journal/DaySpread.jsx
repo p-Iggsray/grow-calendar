@@ -13,6 +13,7 @@ import JournalPage from "./JournalPage.jsx";
 import DayPlants from "./DayPlants.jsx";
 import ScreenHeader from "../ScreenHeader.jsx";
 import PhotosCard from "./PhotosCard.jsx";
+import { PASTED_MEDIA_EVENT } from "../../lib/addMedia.js";
 import RemindersCard from "./RemindersCard.jsx";
 import ConditionsCard from "./ConditionsCard.jsx";
 import DayLogEditor from "./DayLogEditor.jsx";
@@ -262,6 +263,10 @@ export default function DaySpread({
           crop={crop}
           focusSignal={focusSignal}
           onEditRecord={() => setEditingLog(true)}
+          // A picture pasted into the writing joins the day's photos below.
+          onPasteImages={(files) => window.dispatchEvent(new CustomEvent(PASTED_MEDIA_EVENT, {
+            detail: { dateKey, growId, files },
+          }))}
         />
 
         {/* Each plant as it was this day: age, stage day, harvest window. */}

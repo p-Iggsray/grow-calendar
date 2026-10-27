@@ -1,12 +1,15 @@
 // Rich-text support for journal entries. Entries are stored as a small,
 // whitelisted subset of HTML (bold/italic/underline, headers, lists, font
-// sizes). Everything here is pure string work so the same module serves the
+// sizes, plain tables). Everything here is pure string work so the same module serves the
 // browser editor and the worker (excerpts, search) and is testable in node.
 
 // Tags the editor can produce. Anything else is stripped entirely, attributes
 // and all, so pasted or hand-crafted markup can never smuggle in scripts,
-// styles, or event handlers.
-const SIMPLE_TAG = /^<(\/?)(b|strong|i|em|u|p|div|br|ul|ol|li|h1|h2|h3)(\s*\/)?>$/i;
+// styles, or event handlers. A tag that arrives WITH attributes (a pasted
+// <td class="xl65">) keeps the tag and loses the attributes.
+const SIMPLE_TAG = /^<(\/?)(b|strong|i|em|u|p|div|br|ul|ol|li|h1|h2|h3|table|thead|tbody|tr|th|td)(\s[^>]*)?(\s*\/)?>$/i;
+// Google Docs wraps a whole copied selection in a <b> that says it is not bold.
+const NOT_BOLD = /^<(b|strong)\b[^>]*font-weight:\s*(normal|[1-4]00)/i;
 const FONT_OPEN = /^<font\s+size="?([1-7])"?\s*>$/i;
 const FONT_CLOSE = /^<\/font\s*>$/i;
 
@@ -32,6 +35,7 @@ export function trimTrailingSpace(html) {
 
 export function sanitizeHtml(html) {
   return normalizeSpaces(html).replace(/<[^>]*>?/g, (tag) => {
+    if (NOT_BOLD.test(tag)) return "";
     const simple = tag.match(SIMPLE_TAG);
     if (simple) return `<${simple[1]}${simple[2].toLowerCase()}>`;
     const font = tag.match(FONT_OPEN);
@@ -50,7 +54,7 @@ export function escapeHtml(text) {
 }
 
 // Does a stored note body already carry editor markup?
-const HTML_MARKER = /<(b|strong|i|em|u|p|div|br|ul|ol|li|h1|h2|h3|font)[\s/>]/i;
+const HTML_MARKER = /<(b|strong|i|em|u|p|div|br|ul|ol|li|h1|h2|h3|font|table|tr|td|th)[\s/>]/i;
 export function looksLikeHtml(text) {
   return HTML_MARKER.test(String(text ?? ""));
 }
@@ -74,7 +78,9 @@ export function htmlToPlainText(html) {
   if (!looksLikeHtml(text)) return text;
   return text
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/(p|div|li|h1|h2|h3|ul|ol)>/gi, "\n")
+    .replace(/<\/t[dh]>/gi, " | ")
+    .replace(/ \| <\/tr>/gi, "\n")
+    .replace(/<\/(p|div|li|h1|h2|h3|ul|ol|table)>/gi, "\n")
     .replace(/<li>/gi, "- ")
     .replace(/<[^>]*>/g, "")
     .replace(/&nbsp;/gi, " ")

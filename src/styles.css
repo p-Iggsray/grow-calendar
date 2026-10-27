@@ -190,6 +190,29 @@ button:not(:disabled):active {
 }
 .rich-entry li { margin: 0.1em 0; }
 .rich-entry p, .rich-entry div { margin: 0; }
+/* Pasted tables. A wide one scrolls sideways inside the entry rather than
+   pushing the page wider than the phone. */
+.rich-entry table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  font-family: var(--font-ui);
+  font-size: 0.85em;
+  line-height: 1.45;
+}
+.rich-entry th, .rich-entry td {
+  border: 1px solid var(--c-border-strong);
+  padding: 4px 9px;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+.rich-entry th {
+  background: var(--c-surface-2);
+  font-weight: 700;
+}
 
 /* Bottom-sheet grab handle, centered above sheet content. */
 .sheet-handle {

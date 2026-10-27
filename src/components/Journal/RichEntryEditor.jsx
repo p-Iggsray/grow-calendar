@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bold, Italic, Underline, Heading1, Heading2, List, ListOrdered, Type } from "lucide-react";
 import { sanitizeHtml, noteToHtml, htmlIsEmpty, trimTrailingSpace } from "../../lib/richText.js";
+import { pasteToHtml, withLineAfterTable } from "../../lib/pasteContent.js";
+import { WORD_END, correctWord, wordBeforeBoundary } from "../../lib/autocorrect.js";
 
 const SIZES = [
   { label: "Small",  value: "2" },
@@ -52,14 +54,46 @@ function readActiveFormats() {
   };
 }
 
+function placeCaret(node, offset) {
+  const sel = window.getSelection();
+  if (!sel) return;
+  const range = document.createRange();
+  range.setStart(node, Math.min(offset, node.length));
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+// The text node the caret sits in, and where, when it is a plain caret inside
+// this editor. Anything else (a selection, an element boundary) is left alone.
+function caretInText(el) {
+  const sel = window.getSelection();
+  if (!el || !sel || sel.rangeCount === 0 || !sel.isCollapsed) return null;
+  const node = sel.anchorNode;
+  if (!node || node.nodeType !== Node.TEXT_NODE || !el.contains(node)) return null;
+  return { node, offset: sel.anchorOffset };
+}
+
+const hasWords = (html) => html.replace(/<[^>]*>/g, "").trim() !== "";
+
 // WYSIWYG editor for journal entries: bold/italic/underline, header +
 // subheader, bullet/numbered lists, and three font sizes. Emits a sanitized
 // HTML string (whitelisted tags only); blank content is emitted as "" so an
 // emptied entry never counts as a journaled day. Toolbar buttons highlight to
 // show the formatting active at the caret.
-export default function RichEntryEditor({ value, onChange, onBlur, placeholder = "", focusSignal = 0, minHeight = 96, style }) {
+//
+// On top of the keyboard's own autocorrect, a finished word that is a known
+// mistake (see lib/autocorrect.js) is fixed in place, and a backspace straight
+// after puts back what was typed and leaves that word alone from then on.
+// Pastes are cleaned rather than taken as given: tables come in tidy, and a
+// pasted picture (a chart, a screenshot) goes to the day's photos through
+// onPasteImages instead of into the writing.
+export default function RichEntryEditor({ value, onChange, onBlur, onPasteImages, placeholder = "", focusSignal = 0, minHeight = 96, style }) {
   const ref = useRef(null);
   const lastEmitted = useRef(null);
+  // The correction a backspace would undo, and the words undone this session.
+  const lastFix = useRef(null);
+  const declined = useRef(new Set());
   const [sizeMenu, setSizeMenu] = useState(false);
   const [fmt, setFmt] = useState(INACTIVE);
 
@@ -113,6 +147,74 @@ export default function RichEntryEditor({ value, onChange, onBlur, placeholder =
     lastEmitted.current = out;
     onChange(out);
     refreshFmt();
+  }
+
+  function autocorrectAtCaret() {
+    const at = caretInText(ref.current);
+    if (!at) return;
+    const { node, offset } = at;
+    const found = wordBeforeBoundary(node.data, offset);
+    if (!found || declined.current.has(found.word.toLowerCase())) return;
+    const fix = correctWord(found.word, found.previousWord);
+    if (!fix) return;
+    // A doubled word goes with the spaces before it; anything else is swapped
+    // for its correction. Either way the character that ended it stays put.
+    const from = fix.dropDouble ? found.previousEnd : found.start;
+    const removed = node.data.slice(from, found.end);
+    const inserted = fix.dropDouble ? "" : fix.replace;
+    node.replaceData(from, removed.length, inserted);
+    const caret = from + inserted.length + 1;
+    placeCaret(node, caret);
+    lastFix.current = { node, from, removed, inserted, caret, word: found.word.toLowerCase() };
+  }
+
+  // Backspace straight after a correction takes it back instead of deleting.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    function onBeforeInput(e) {
+      const fix = lastFix.current;
+      if (e.inputType !== "deleteContentBackward" || !fix) return;
+      const at = caretInText(el);
+      lastFix.current = null;
+      if (!at || at.node !== fix.node || at.offset !== fix.caret) return;
+      e.preventDefault();
+      fix.node.replaceData(fix.from, fix.inserted.length, fix.removed);
+      placeCaret(fix.node, fix.from + fix.removed.length + 1);
+      declined.current.add(fix.word);
+      emit();
+    }
+    el.addEventListener("beforeinput", onBeforeInput);
+    return () => el.removeEventListener("beforeinput", onBeforeInput);
+  // emit reads only refs and the latest onChange through closure; rebinding
+  // per render would drop a pending undo.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function onInput(e) {
+    const native = e.nativeEvent;
+    lastFix.current = null;
+    if (native?.inputType === "insertText" && !native.isComposing && WORD_END.test(native.data ?? "")) {
+      autocorrectAtCaret();
+    }
+    emit();
+  }
+
+  function onPaste(e) {
+    const clip = e.clipboardData;
+    if (!clip) return;
+    e.preventDefault();
+    lastFix.current = null;
+    const images = Array.from(clip.files ?? []).filter((f) => f.type.startsWith("image/"));
+    if (images.length && onPasteImages) onPasteImages(images);
+    const html = withLineAfterTable(pasteToHtml({
+      html: clip.getData("text/html") || "",
+      text: clip.getData("text/plain") || "",
+    }));
+    if (!hasWords(html)) return;
+    ref.current?.focus();
+    document.execCommand("insertHTML", false, html);
+    emit();
   }
 
   function exec(cmd, val) {
@@ -192,7 +294,11 @@ export default function RichEntryEditor({ value, onChange, onBlur, placeholder =
         aria-multiline="true"
         aria-label="Journal entry"
         data-placeholder={placeholder}
-        onInput={emit}
+        spellCheck
+        autoCorrect="on"
+        autoCapitalize="sentences"
+        onInput={onInput}
+        onPaste={onPaste}
         onFocus={refreshFmt}
         onKeyUp={refreshFmt}
         onMouseUp={refreshFmt}
