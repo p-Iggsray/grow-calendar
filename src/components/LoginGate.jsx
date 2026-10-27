@@ -211,6 +211,11 @@ function Field({ label, value, onChange, type = "text", autoComplete, autoFocus 
         onChange={e => onChange(e.target.value)}
         autoComplete={autoComplete}
         autoFocus={autoFocus}
+        // A username has to match exactly, and a phone keyboard capitalises
+        // the first letter of a text box by default.
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
         style={INPUT_STYLE}
         onFocus={e => { e.target.style.borderColor = "rgba(var(--c-accent-rgb), 0.5)"; }}
         onBlur={e => { e.target.style.borderColor = "var(--c-border)"; }}
