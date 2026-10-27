@@ -190,7 +190,7 @@ export default function Calendar({
             background: "none", border: "none", cursor: onCurrentMonth ? "default" : "pointer",
             textAlign: "center", padding: 0, minWidth: 0, color: "var(--c-text)",
           }}>
-          <div style={{ fontSize: 19, fontWeight: 800, letterSpacing: -0.5, lineHeight: 1.2, fontFamily: "var(--font-ui)" }}>
+          <div style={{ fontSize: 21, fontWeight: 700, lineHeight: 1.2, fontFamily: "var(--font-display)" }}>
             {MONTH_NAMES[month]}
             <span style={{ fontWeight: 500, color: "var(--c-text-muted)", marginLeft: 7, fontFamily: "var(--font-num)", fontSize: 15 }}>
               {year}

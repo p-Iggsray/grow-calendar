@@ -63,7 +63,7 @@ export function SpaceSwitcher({ spaces, spaceId, onPick }) {
 
   if (spaces.length < 2) {
     return (
-      <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5, color: "var(--c-text)" }}>
+      <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700, color: "var(--c-text)" }}>
         {current?.name}
       </div>
     );
@@ -79,8 +79,8 @@ export function SpaceSwitcher({ spaces, spaceId, onPick }) {
         style={{
           display: "flex", alignItems: "center", gap: 7, padding: 0,
           background: "none", border: "none", cursor: "pointer",
-          fontSize: 22, fontWeight: 900, letterSpacing: -0.5,
-          color: "var(--c-text)", textAlign: "left", fontFamily: UI,
+          fontSize: 24, fontWeight: 700,
+          color: "var(--c-text)", textAlign: "left", fontFamily: "var(--font-display)",
         }}>
         {current?.name}
         <ChevronDown

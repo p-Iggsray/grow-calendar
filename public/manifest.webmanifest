@@ -1,13 +1,13 @@
 {
-  "name": "Black Cat Botanicals",
-  "short_name": "Black Cat",
+  "name": "Black Cat Budz",
+  "short_name": "BC Budz",
   "description": "Your grow, day by day: a calendar, a journal with photos and videos, and every plant's stage history.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0c0b0a",
-  "theme_color": "#0c0b0a",
+  "background_color": "#100d0b",
+  "theme_color": "#100d0b",
   "icons": [
     {
       "src": "/icon-180.png",

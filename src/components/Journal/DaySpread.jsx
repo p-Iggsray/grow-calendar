@@ -48,7 +48,7 @@ function Card({ title, icon, action, children }) {
       <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 11 }}>
         {icon}
         <span style={{
-          fontFamily: UI, fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
+          fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 700, letterSpacing: 1.6, textTransform: "uppercase",
           color: "var(--c-text-muted)", flex: 1,
         }}>
           {title}

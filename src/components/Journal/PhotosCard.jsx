@@ -162,7 +162,7 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
           <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 11 }}>
             <Camera size={13} strokeWidth={2} style={{ color: "#fbbf24" }} />
             <span style={{
-              fontFamily: UI, fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
+              fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 700, letterSpacing: 1.6, textTransform: "uppercase",
               color: "var(--c-text-muted)", flex: 1,
             }}>
               {photos.some((p) => p.kind === "video") ? "Photos & videos" : "Photos"}
@@ -219,8 +219,8 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
         disabled={busy}
         style={{
           width: "100%", padding: "13px 12px", borderRadius: 12,
-          background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.4)",
-          color: "#fbbf24", fontFamily: UI, fontSize: 12.5, fontWeight: 700,
+          background: "rgba(var(--c-accent-rgb), 0.12)", border: "1px solid rgba(var(--c-accent-rgb), 0.4)",
+          color: "var(--c-accent)", fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700,
           letterSpacing: 0.3, cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1,
           display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
         }}>
@@ -235,7 +235,7 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
         }}>
           <div style={{
             width: `${Math.round(progressFraction(progress) * 100)}%`,
-            height: "100%", background: "#fbbf24", transition: "width 0.25s",
+            height: "100%", background: "var(--c-accent)", transition: "width 0.25s",
           }} />
         </div>
       )}
@@ -246,7 +246,7 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
         <div style={{
           display: "flex", alignItems: "center", gap: 9, marginTop: 8,
           padding: "9px 10px 9px 12px", borderRadius: 11,
-          background: "rgba(251,191,36,0.09)", border: "1px solid rgba(251,191,36,0.3)",
+          background: "rgba(var(--c-accent-rgb), 0.09)", border: "1px solid rgba(var(--c-accent-rgb), 0.3)",
         }}>
           <span style={{ flex: 1, minWidth: 0, fontFamily: UI, fontSize: 11.5, color: "var(--c-text-dim)", lineHeight: 1.5 }}>
             {rollUploaded
@@ -260,8 +260,8 @@ export default function PhotosCard({ date, growId, photos = [], plants = [] }) {
             disabled={rollState === "saving"}
             style={{
               flexShrink: 0, padding: "7px 12px", borderRadius: 9,
-              background: "rgba(251,191,36,0.16)", border: "1px solid rgba(251,191,36,0.45)",
-              color: "#fbbf24", fontFamily: UI, fontSize: 11.5, fontWeight: 700,
+              background: "rgba(var(--c-accent-rgb), 0.16)", border: "1px solid rgba(var(--c-accent-rgb), 0.45)",
+              color: "var(--c-accent)", fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 700,
               cursor: rollState === "saving" ? "default" : "pointer",
               display: "flex", alignItems: "center", gap: 5,
             }}>

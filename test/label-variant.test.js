@@ -44,10 +44,12 @@ function stubCanvas() {
     fillText: (t, x, y) => { drawn.text.push({ t: String(t), x, y }); },
     fillRect: () => { drawn.fills += 1; },
     strokeRect: () => {},
-    beginPath: () => {}, closePath: () => {}, moveTo: () => {}, arcTo: () => {},
+    beginPath: () => {}, closePath: () => {}, moveTo: () => {}, arcTo: () => {}, arc: () => {},
     ellipse: () => {}, fill: () => { drawn.fills += 1; }, stroke: () => {},
     save: () => {}, restore: () => {}, translate: () => {}, scale: () => {},
     createLinearGradient: () => { drawn.gradients += 1; return { addColorStop: () => {} }; },
+    createRadialGradient: () => { drawn.gradients += 1; return { addColorStop: () => {} }; },
+    globalAlpha: 1, shadowColor: "", shadowBlur: 0,
   };
   return { canvas: { width: LABEL_W, height: LABEL_H, getContext: () => ctx }, drawn };
 }

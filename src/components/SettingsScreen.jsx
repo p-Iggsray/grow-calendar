@@ -99,7 +99,7 @@ function Group({ title, footer, children }) {
     <div style={{ marginTop: 22 }}>
       {title && (
         <div style={{
-          fontSize: 12, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase",
+          fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase",
           color: "var(--c-text-faint)", margin: "0 4px 7px",
         }}>
           {title}
@@ -252,7 +252,7 @@ export default function SettingsScreen({
         title="Yours"
         footer="Every strain and species you name, in every space, gathers here by itself.">
         <Row
-          icon={Sprout} tint="#e0913f"
+          icon={Sprout} tint="#d39a3a"
           label="Strains"
           detail="Notes, ratings and favourites"
           onClick={onOpenStrains}

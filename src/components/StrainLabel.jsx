@@ -119,9 +119,10 @@ export default function StrainLabel({ strain, onClose }) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     // Canvas draws in the fallback face without a word of complaint if the
-    // bundled font has not arrived, so the colour label waits for it. Resolves
-    // either way: a font that never loads still gets a printable label.
-    if (variant !== "plain") await ensureLabelFont();
+    // bundled font has not arrived, so both labels wait for it: the brand
+    // wordmark is set in it on each. Resolves either way: a font that never
+    // loads still gets a printable label.
+    await ensureLabelFont();
     if (!canvasRef.current) return;              // sheet closed while waiting
 
     const spec = labelFields(draft);

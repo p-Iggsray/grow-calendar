@@ -29,18 +29,26 @@
 // already on screen, skips its own entrance rather than fading a visible mark
 // back out and in. See src/lib/launch.js.
 
-import { litCatMarkSvg } from "./catMark.js";
+import { catMarkSvg } from "./catMark.js";
 
 /** The element Splash looks for to know it is taking over rather than opening. */
 export const PREPAINT_ID = "bcb-prepaint";
 export const MARK_ID = "bcb-prepaint-mark";
 
 // Brand literals. Each one is pinned to its stylesheet token by a test.
-const BG = "#0c0b0a";
-const TEXT = "#f5f0e8";
-const TEXT_DIM = "#cdbfa9";
-const TEXT_FAINT = "#877969";
-const ACCENT_RGB = "224, 145, 63";
+const BG = "#100d0b";
+const TEXT = "#f1e7d6";
+const TEXT_DIM = "#d3c5ae";
+const TEXT_FAINT = "#8a7d6b";
+const ACCENT_RGB = "211, 154, 58";
+const SMOKE_RGB = "185, 160, 220";
+
+// The splash is set in the brand face, so the paint declares it too. With
+// font-display: swap the words are never hidden while it loads, and index.html
+// preloads the file so it is usually there before the first paint.
+const FONT_FACE = `@font-face { font-family: "Comic Neue"; font-weight: 700; ` +
+  `font-display: swap; src: url("/fonts/comic-neue-700.woff2") format("woff2"); }`;
+const FONT_BRAND = `"Comic Neue", "Comic Sans MS", ui-rounded, sans-serif`;
 
 const FONT_UI =
   `-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, ` +
@@ -49,6 +57,7 @@ const FONT_UI =
 /** The stylesheet for the paint. */
 export function prepaintCss() {
   return `
+${FONT_FACE}
 html { background: ${BG}; }
 body { margin: 0; }
 #root { min-height: 100vh; }
@@ -64,14 +73,14 @@ body { margin: 0; }
   padding-top: env(safe-area-inset-top, 0px);
 }
 #${PREPAINT_ID} .cat {
-  position: relative; width: 132px; height: 118px;
+  position: relative; width: 240px; height: 130px;
   display: flex; align-items: center; justify-content: center;
 }
 /* The glow and the dots sit at the first frame of the loops Splash runs on
    them, so when it takes over they carry on from where they are. */
 #${PREPAINT_ID} .glow {
-  position: absolute; width: 108px; height: 108px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(${ACCENT_RGB}, 0.4), rgba(${ACCENT_RGB}, 0) 70%);
+  position: absolute; width: 220px; height: 150px; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(${SMOKE_RGB}, 0.32), rgba(${SMOKE_RGB}, 0) 100%);
   filter: blur(2px);
   opacity: 0.3; transform: scale(0.85);
 }
@@ -82,7 +91,13 @@ body { margin: 0; }
   color: ${TEXT_FAINT}; margin-bottom: 8px;
 }
 #${PREPAINT_ID} .name {
-  font-size: 30px; font-weight: 900; letter-spacing: -1px; line-height: 1.05;
+  font-family: ${FONT_BRAND};
+  font-size: 40px; font-weight: 700; line-height: 1;
+}
+#${PREPAINT_ID} .budz {
+  font-family: ${FONT_BRAND};
+  font-size: 19px; font-weight: 700; letter-spacing: 5px; line-height: 1;
+  margin-top: 4px; padding-left: 5px;
 }
 #${PREPAINT_ID} .tag {
   font-size: 13.5px; color: ${TEXT_DIM}; margin-top: 8px; letter-spacing: 0.2px;
@@ -98,13 +113,14 @@ body { margin: 0; }
 export function prepaintHtml() {
   return (
     `<div id="${PREPAINT_ID}" role="status" aria-busy="true" ` +
-      `aria-label="Loading Black Cat Botanicals">` +
+      `aria-label="Loading Black Cat Budz">` +
       `<div class="cat"><div class="glow"></div>` +
-        `<div id="${MARK_ID}">${litCatMarkSvg({ width: 140 })}</div>` +
+        `<div id="${MARK_ID}">${catMarkSvg({ width: 230, glow: true, uid: "pp" })}</div>` +
       `</div>` +
       `<div class="word">` +
         `<div class="est">Est. 2026</div>` +
-        `<div class="name">Black Cat Botanicals</div>` +
+        `<div class="name">Black Cat</div>` +
+        `<div class="budz">BUDZ</div>` +
         `<div class="tag">Your grow, day by day.</div>` +
       `</div>` +
       `<div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>` +

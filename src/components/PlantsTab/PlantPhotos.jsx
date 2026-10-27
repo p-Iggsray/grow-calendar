@@ -77,9 +77,9 @@ export default function PlantPhotos({ growId, plantId, unitWord = "plant" }) {
           disabled={busy}
           style={{
             display: "flex", alignItems: "center", gap: 5,
-            background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.35)",
-            borderRadius: 18, padding: "7px 13px", color: "#fbbf24",
-            fontFamily: MONO, fontSize: 11, fontWeight: 700, cursor: busy ? "default" : "pointer",
+            background: "rgba(var(--c-accent-rgb), 0.1)", border: "1px solid rgba(var(--c-accent-rgb), 0.35)",
+            borderRadius: 18, padding: "7px 13px", color: "var(--c-accent)",
+            fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 700, cursor: busy ? "default" : "pointer",
             opacity: busy ? 0.6 : 1,
           }}>
           <ImagePlus size={13} strokeWidth={2} />

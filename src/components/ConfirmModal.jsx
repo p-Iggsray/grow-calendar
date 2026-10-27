@@ -101,7 +101,7 @@ export default function ConfirmModal({
               color: "var(--c-text)",
               boxShadow: "0 24px 60px rgba(0,0,0,0.6)",
             }}>
-            <div id={titleId} style={{ fontSize: 17, fontWeight: 800, letterSpacing: -0.3, marginBottom: message ? 8 : 18 }}>
+            <div id={titleId} style={{ fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 700, marginBottom: message ? 8 : 18 }}>
               {title}
             </div>
             {message && (

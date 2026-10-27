@@ -85,8 +85,8 @@ export default function BuddyCalendar({
           <ChevronLeft size={18} strokeWidth={2.2} aria-hidden="true" />
         </button>
         <div style={{
-          flex: 1, textAlign: "center", fontSize: 16, fontWeight: 800,
-          letterSpacing: -0.4, color: "var(--c-text)", fontFamily: UI,
+          flex: 1, textAlign: "center", fontSize: 18, fontWeight: 700,
+          color: "var(--c-text)", fontFamily: "var(--font-display)",
         }}>
           {MONTH_NAMES[m]} {year}
         </div>

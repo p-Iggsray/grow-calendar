@@ -1,16 +1,16 @@
 <div align="center">
 
-<img src="assets/banner.svg" width="100%" alt="Black Cat Botanicals" />
+<img src="assets/banner.svg" width="100%" alt="Black Cat Budz" />
 
 <br />
 
 **A grow journal for cannabis and mushrooms that runs on my phone and prints its own jar labels.**
 
-[![CI](https://img.shields.io/github/actions/workflow/status/p-Iggsray/grow-calendar/ci.yml?branch=main&style=flat-square&label=ci&labelColor=0c0b0a&color=e0913f)](https://github.com/p-Iggsray/grow-calendar/actions)
-![React](https://img.shields.io/badge/react_18-0c0b0a?style=flat-square&logo=react&logoColor=e0913f)
-![Cloudflare Workers](https://img.shields.io/badge/cloudflare_workers-0c0b0a?style=flat-square&logo=cloudflare&logoColor=e0913f)
-![D1](https://img.shields.io/badge/d1_sqlite-0c0b0a?style=flat-square&logo=sqlite&logoColor=e0913f)
-![PWA](https://img.shields.io/badge/installable_pwa-0c0b0a?style=flat-square&logoColor=e0913f)
+[![CI](https://img.shields.io/github/actions/workflow/status/p-Iggsray/grow-calendar/ci.yml?branch=main&style=flat-square&label=ci&labelColor=100d0b&color=d39a3a)](https://github.com/p-Iggsray/grow-calendar/actions)
+![React](https://img.shields.io/badge/react_18-100d0b?style=flat-square&logo=react&logoColor=d39a3a)
+![Cloudflare Workers](https://img.shields.io/badge/cloudflare_workers-100d0b?style=flat-square&logo=cloudflare&logoColor=d39a3a)
+![D1](https://img.shields.io/badge/d1_sqlite-100d0b?style=flat-square&logo=sqlite&logoColor=d39a3a)
+![PWA](https://img.shields.io/badge/installable_pwa-100d0b?style=flat-square&logoColor=d39a3a)
 
 </div>
 
@@ -68,7 +68,7 @@ The strain screen has a Save Print Label button. It draws a 6 by 4 inch label at
 Every field is editable before you print, because a label is a claim about a specific jar and only the person holding it knows the weight. Terpenes and percentages, potency, harvest and package dates, which space it was grown in.
 
 <div align="center">
-<img src="assets/shots/label.png" width="88%" alt="A printed label: strain name, dates, terpenes, QR code and the cat mark" />
+<img src="assets/shots/label.png" width="88%" alt="A printed label: strain name, dates, terpenes, QR code and the grin mark" />
 </div>
 
 The QR goes to a public page for that strain at `/s/<code>`, a random code minted for that strain's label, showing what was recorded about the variety: its type, growth habit and flowering time. It is about the variety and nothing else. Hand somebody a jar and they can read what the strain is; they cannot read your grow. The page never touches a user row.

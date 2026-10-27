@@ -194,7 +194,7 @@ export default function GrowSettings({ growId, onClose, onSaved, onArchived, onD
           way to losing it. */}
       <div style={{ marginTop: 26, paddingTop: 18, borderTop: "1px solid var(--c-border-faint)" }}>
         <div style={{
-          fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
+          fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 700, letterSpacing: 1.6, textTransform: "uppercase",
           color: "var(--c-text-ghost)", marginBottom: 12,
         }}>
           Its record
@@ -226,7 +226,7 @@ export default function GrowSettings({ growId, onClose, onSaved, onArchived, onD
           insists on the file above first. */}
       <div style={{ marginTop: 26, paddingTop: 18, borderTop: "1px solid var(--c-border-faint)" }}>
         <div style={{
-          fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
+          fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 700, letterSpacing: 1.6, textTransform: "uppercase",
           color: "var(--c-text-ghost)", marginBottom: 12,
         }}>
           {archivedAt ? "Archived" : "Finished with this space?"}

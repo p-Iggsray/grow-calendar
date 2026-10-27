@@ -425,7 +425,7 @@ function Broken({ message }) {
       alignItems: "center", justifyContent: "center",
       background: "var(--c-bg)", padding: 24, textAlign: "center",
     }}>
-      <div style={{ marginBottom: 16 }}><CatMark size={68} lit /></div>
+      <div style={{ marginBottom: 16 }}><CatMark size={120} glow /></div>
       <div style={{ fontSize: 15, color: "var(--c-text-dim)", fontFamily: UI, lineHeight: 1.7, maxWidth: 320 }}>
         {message}
       </div>

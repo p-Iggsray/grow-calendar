@@ -102,13 +102,16 @@ export default function LoginGate() {
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 22 }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
-            <CatMark size={86} lit />
+            <CatMark size={170} glow />
           </div>
           <div style={{ fontSize: 11, letterSpacing: 4, color: "var(--c-text-faint)", textTransform: "uppercase", marginBottom: 6, fontFamily: "var(--font-ui)" }}>
             Grow Log
           </div>
-          <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: -1, color: "var(--c-text)" }}>
-            Black Cat Botanicals
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 700, lineHeight: 1, color: "var(--c-text)" }}>
+            Black Cat
+          </div>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, letterSpacing: 4, lineHeight: 1, marginTop: 4, paddingLeft: 4, color: "var(--c-text)" }}>
+            BUDZ
           </div>
         </div>
 
@@ -156,7 +159,7 @@ export default function LoginGate() {
                 background: busy ? "rgba(var(--c-accent-rgb), 0.08)" : "rgba(var(--c-accent-rgb), 0.15)",
                 border: "1px solid rgba(var(--c-accent-rgb), 0.35)",
                 borderRadius: 10, color: "var(--c-accent)",
-                fontSize: 13, fontFamily: "var(--font-ui)",
+                fontSize: 15, fontFamily: "var(--font-display)",
                 cursor: submitDisabled ? "default" : "pointer",
                 letterSpacing: 1, opacity: submitDisabled ? 0.5 : 1,
               }}>

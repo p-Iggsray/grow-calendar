@@ -52,18 +52,21 @@ export function renderStrainPage(catalog) {
 <meta name="robots" content="noindex">
 <title>${esc(name)}</title>
 <style>
-:root{color-scheme:dark;--bg:#0c0b0a;--fg:#f5f0e8;--mut:#a0917c;--acc:#e0913f;
-  --line:rgba(255,244,228,0.12);--card:#171512;}
+@font-face{font-family:"Comic Neue";font-weight:700;font-display:swap;
+  src:url("/fonts/comic-neue-700.woff2") format("woff2");}
+:root{color-scheme:dark;--bg:#100d0b;--fg:#f1e7d6;--mut:#a69780;--acc:#d39a3a;
+  --line:rgba(241,231,214,0.12);--card:#18131a;
+  --brand:"Comic Neue","Comic Sans MS",ui-rounded,sans-serif;}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);
   font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
 main{max-width:640px;margin:0 auto;padding:28px 20px 60px;}
-.brand{display:flex;align-items:center;gap:9px;margin:0 0 20px;}
+.brand{display:flex;align-items:center;gap:12px;margin:0 0 20px;}
 .brand svg{display:block;flex:none;}
-.brand span{font-size:11px;letter-spacing:2.4px;text-transform:uppercase;
-  font-weight:700;color:var(--mut);}
+.brand span{font-family:var(--brand);font-size:14px;letter-spacing:2px;text-transform:uppercase;
+  font-weight:700;color:var(--fg);}
 .eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--acc);}
-h1{font-size:34px;line-height:1.1;letter-spacing:-0.5px;margin:6px 0 0;}
+h1{font-family:var(--brand);font-size:36px;line-height:1.1;margin:6px 0 0;}
 .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;
   background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:20px 0 0;}
 .facts div{background:var(--card);padding:11px 13px;}
@@ -73,7 +76,7 @@ footer{margin:36px 0 0;padding-top:16px;border-top:1px solid var(--line);
   font-size:11.5px;color:var(--mut);line-height:1.6;}
 </style>
 </head><body><main>
-  <div class="brand">${catMarkSvg({ width: 30 })}<span>Black Cat Botanicals</span></div>
+  <div class="brand">${catMarkSvg({ width: 76, smoke: false, uid: "sp" })}<span>Black Cat Budz</span></div>
   <div class="eyebrow">Strain profile</div>
   <h1>${esc(name)}</h1>
   ${body}

@@ -98,7 +98,7 @@ export default function JournalPage({
           {isToday ? "Today" : WEEKDAYS[date.getDay()]}
         </div>
         <h2 style={{
-          fontFamily: BOOK, fontSize: 24, fontWeight: 600, letterSpacing: -0.3,
+          fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700,
           color: "var(--c-text)", margin: "2px 0 0", lineHeight: 1.2,
         }}>
           {MONTH_NAMES[date.getMonth()]} {date.getDate()}, {date.getFullYear()}
@@ -136,7 +136,7 @@ export default function JournalPage({
         }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: rows.length > 0 ? 4 : 0 }}>
           <span style={{
-            flex: 1, fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: 1.6,
+            flex: 1, fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, letterSpacing: 1.6,
             textTransform: "uppercase", color: "var(--c-text-ghost)",
           }}>
             The record
@@ -171,7 +171,7 @@ export default function JournalPage({
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               <span style={{
-                flex: 1, fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: 1.6,
+                flex: 1, fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, letterSpacing: 1.6,
                 textTransform: "uppercase", color: "var(--c-text-ghost)",
               }}>
                 Writing

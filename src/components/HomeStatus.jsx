@@ -103,7 +103,7 @@ export default function HomeStatus({ today, survey, crop, stageEvents, firstDate
       }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
         <span style={{
-          fontFamily: UI, fontSize: 23, fontWeight: 800, letterSpacing: -0.7, color,
+          fontFamily: "var(--font-display)", fontSize: 25, fontWeight: 700, color,
           minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
         }}>
           {label ?? "Not started"}

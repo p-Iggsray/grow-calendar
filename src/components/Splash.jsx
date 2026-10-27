@@ -23,13 +23,13 @@ export default function Splash() {
     <div
       role="status"
       aria-busy="true"
-      aria-label="Loading Black Cat Botanicals"
+      aria-label="Loading Black Cat Budz"
       style={{
         position: "fixed", inset: 0,
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center", gap: 22,
         // Solid brand background (must be fully opaque so nothing bleeds
-        // through the overlay) with a hazel glow layered on for depth.
+        // through the overlay) with a gold glow layered on for depth.
         backgroundColor: "var(--c-bg)",
         backgroundImage: "radial-gradient(120% 80% at 50% 18%, rgba(var(--c-accent-rgb), 0.13), transparent 60%)",
         fontFamily: "var(--font-ui)",
@@ -50,8 +50,14 @@ export default function Splash() {
         }}>
           Est. 2026
         </div>
-        <div style={{ fontSize: 30, fontWeight: 900, letterSpacing: -1, lineHeight: 1.05 }}>
-          Black Cat Botanicals
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 40, fontWeight: 700, lineHeight: 1 }}>
+          Black Cat
+        </div>
+        <div style={{
+          fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 700,
+          letterSpacing: 5, lineHeight: 1, marginTop: 4, paddingLeft: 5,
+        }}>
+          BUDZ
         </div>
         <div style={{ fontSize: 13.5, color: "var(--c-text-dim)", marginTop: 8, letterSpacing: 0.2 }}>
           Your grow, day by day.
@@ -63,11 +69,11 @@ export default function Splash() {
   );
 }
 
-// The mark arrives, then sits there breathing in its own glow.
+// The mark arrives, then sits there breathing in the smoke's purple glow.
 function Cat({ reduce, settled }) {
   return (
     <div style={{
-      position: "relative", width: 132, height: 118,
+      position: "relative", width: 240, height: 130,
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
       <motion.div
@@ -76,8 +82,8 @@ function Cat({ reduce, settled }) {
         animate={reduce ? { opacity: 0.4 } : { opacity: [0.3, 0.58, 0.3], scale: [0.85, 1.05, 0.85] }}
         transition={reduce ? undefined : { duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
         style={{
-          position: "absolute", width: 108, height: 108, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(var(--c-accent-rgb), 0.4), rgba(var(--c-accent-rgb), 0) 70%)",
+          position: "absolute", width: 220, height: 150, borderRadius: "50%",
+          background: "radial-gradient(closest-side, rgba(var(--c-smoke-rgb), 0.32), rgba(var(--c-smoke-rgb), 0) 100%)",
           filter: "blur(2px)",
         }}
       />
@@ -86,7 +92,7 @@ function Cat({ reduce, settled }) {
         initial={settled ? false : { opacity: 0, scale: 0.82 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.55, ease: "backOut" }}>
-        <CatMark size={140} lit />
+        <CatMark size={230} glow />
       </motion.div>
     </div>
   );

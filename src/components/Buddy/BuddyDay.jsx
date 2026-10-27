@@ -141,7 +141,7 @@ export default function BuddyDay({ space, day, api, today }) {
           {isToday ? "Today" : WEEKDAYS[date.getDay()]}
         </div>
         <h2 style={{
-          fontFamily: BOOK, fontSize: 24, fontWeight: 600, letterSpacing: -0.3,
+          fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700,
           color: "var(--c-text)", margin: "2px 0 0", lineHeight: 1.2,
         }}>
           {MONTH_NAMES[date.getMonth()]} {date.getDate()}, {date.getFullYear()}

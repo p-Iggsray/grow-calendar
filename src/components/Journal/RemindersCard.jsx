@@ -81,7 +81,7 @@ export default function RemindersCard({ date, growId, events = [], today }) {
           <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 9 }}>
             <AlarmClock size={13} strokeWidth={2} style={{ color: "#a855f7", flexShrink: 0 }} />
             <span style={{
-              fontFamily: UI, fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
+              fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 700, letterSpacing: 1.6, textTransform: "uppercase",
               color: "var(--c-text-muted)",
             }}>
               Reminders

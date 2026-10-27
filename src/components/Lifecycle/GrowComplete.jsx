@@ -70,7 +70,7 @@ export default function GrowComplete({ onStartNewGrow }) {
       <Card style={{ borderColor: "rgba(var(--c-accent-rgb), 0.3)", textAlign: "center" }}>
         <div style={{ fontSize: 40, marginBottom: 6 }}>{cures ? "🌿🏆" : "🍄🏆"}</div>
         <Eyebrow color={DONE_ACCENT}>Grow complete</Eyebrow>
-        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.4 }}>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 700 }}>
           {cures ? "Harvested, dried & cured" : "Picked, dried & stored"}
         </div>
         {finished && (

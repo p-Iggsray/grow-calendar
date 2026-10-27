@@ -8,9 +8,8 @@
 // The fold from a strain to the label's rows is pure and tested. The drawing
 // takes a canvas and is judged by looking at it.
 
-import {
-  CAT_HEAD, CAT_EYE_L, CAT_EYE_R, CAT_PUPILS, CAT_NOSE, CAT_MOUTH, CAT_WHISKERS,
-} from "./catMark.js";
+import { drawCatMark, markAspect } from "./catMark.js";
+import { LABEL_FONT } from "./labelFont.js";
 
 // 6in x 4in at 300dpi. Fixed, so what is saved is what prints.
 export const LABEL_W = 1800;
@@ -153,50 +152,8 @@ function drawQr(ctx, matrix, x, y, box) {
   return { side, quiet };
 }
 
-/**
- * The brand mark in one ink.
- *
- * A thermal head has one dot and no greys, so every bit of the face has to be
- * cut out of the black rather than shaded onto it: the eyes, the pupils inside
- * them, the nose and the muzzle line are all white knockouts. The whiskers are
- * laid down first and the head painted over their roots, so each one leaves
- * the cheek instead of crossing it.
- *
- * `x`, `y` is the top-left of the drawn mark; it comes out `w * 0.99` wide and
- * `w * 0.85` tall. `invert` swaps the two inks, for the mark sitting in the
- * black brand bar.
- */
-function drawCatMark(ctx, x, y, w, invert = false) {
-  const coat = invert ? WHITE : BLACK;
-  const cut = invert ? BLACK : WHITE;
-  const s = w / 100;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(s, s);
-  ctx.translate(-0.5, -4);
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-
-  ctx.fillStyle = coat;
-  for (const d of CAT_WHISKERS) ctx.fill(new Path2D(d));
-  ctx.fill(new Path2D(CAT_HEAD));
-
-  ctx.fillStyle = cut;
-  ctx.fill(new Path2D(CAT_EYE_L));
-  ctx.fill(new Path2D(CAT_EYE_R));
-  ctx.fill(new Path2D(CAT_NOSE));
-  ctx.strokeStyle = cut;
-  ctx.lineWidth = 1.7;
-  for (const d of CAT_MOUTH) ctx.stroke(new Path2D(d));
-
-  ctx.fillStyle = coat;
-  for (const p of CAT_PUPILS) {
-    ctx.beginPath();
-    ctx.ellipse(p.cx, p.cy, p.rx, p.ry, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
-}
+// The face alone, in one ink: a thermal head has no wash to give the smoke.
+const MARK_TONE = { tone: "monoInverse", smoke: false };
 
 // Letterspaced small caps, drawn a glyph at a time because canvas has no
 // letter-spacing. Tracking is what keeps a 40px tag from reading as a blob at
@@ -265,15 +222,14 @@ export function drawLabel(canvas, spec, matrix) {
   ctx.fillStyle = BLACK;
   ctx.fillRect(PAD, barTop, right - PAD, BAR_H);
 
-  // The mark is centred in the bar rather than hung from its top: at this size
-  // it is taller than the bar used to be, and its chin and whiskers were
-  // spilling out below the black into white, where white ink is nothing.
-  const markW = 152;
-  const markH = markW * 0.85;
-  drawCatMark(ctx, PAD + 40, barTop + (BAR_H - markH) / 2, markW, true);
+  // The mark is centred in the bar, white knocked out of the black, and the
+  // wordmark is set in the brand face beside it.
+  const markW = 250;
+  const markH = markW * markAspect(MARK_TONE);
+  drawCatMark(ctx, PAD + 40, barTop + (BAR_H - markH) / 2, markW, MARK_TONE);
   ctx.fillStyle = WHITE;
-  ctx.font = `800 56px ${UI}`;
-  drawTracked(ctx, "BLACK CAT BOTANICALS", PAD + 40 + markW + 34, barTop + BAR_H / 2 + 20, 3.6);
+  ctx.font = `700 62px "${LABEL_FONT}", ${UI}`;
+  drawTracked(ctx, "BLACK CAT BUDZ", PAD + 40 + markW + 40, barTop + BAR_H / 2 + 22, 4);
   ctx.fillStyle = BLACK;
 
   const nameTop = barTop + BAR_H;

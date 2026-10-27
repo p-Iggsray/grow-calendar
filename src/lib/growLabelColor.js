@@ -15,7 +15,7 @@
 // It is a lot of toner either way. On a laser it comes out crisp; on an inkjet
 // give it a minute before it goes near a jar.
 //
-// The palette is the app's own and nothing else: near-black ground, hazel, and
+// The palette is the app's own and nothing else: near-black ground, gold, and
 // a warm off-white for type. Every jar on the shelf reads as one brand, which
 // is the entire job of a brand.
 //
@@ -23,22 +23,19 @@
 // document and is set like one; this one is a product label on a jar somebody
 // hands to a friend, so it is set in something with a bit of a grin.
 
-import {
-  CAT_HEAD, CAT_INNER_EARS, CAT_EYE_L, CAT_EYE_R, CAT_PUPILS, CAT_GLINTS,
-  CAT_NOSE, CAT_MOUTH, CAT_WHISKERS,
-} from "./catMark.js";
+import { drawCatMark, markAspect } from "./catMark.js";
 import { LABEL_W, LABEL_H } from "./growLabel.js";
 import { LABEL_FONT } from "./labelFont.js";
 
 export { LABEL_W, LABEL_H };
 
 // The app's palette, verbatim. See src/styles.css.
-const INK = "#0c0b0a";        // near-black ground, flat, corner to corner
-const HAZEL = "#e0913f";
-const HAZEL_LIT = "#f0ad5f";  // the lit edge of a hazel face
-const HAZEL_DEEP = "#b8712c"; // its shadowed edge
-const CREAM = "#f5f0e8";
-const MUTED = "#a0917c";
+const INK = "#100d0b";        // near-black ground, flat, corner to corner
+const GOLD = "#d39a3a";      // the eyes' gold
+const GOLD_LIT = "#e8b45c";  // the lit edge of a gold face
+const GOLD_DEEP = "#a8742a"; // its shadowed edge
+const CREAM = "#f1e7d6";
+const MUTED = "#a69780";
 const PAPER = "#ffffff";
 
 // Full bleed: the colour runs off all four edges. PAD is the only inset, and it
@@ -101,87 +98,22 @@ function fitText(ctx, text, maxWidth, startPx, family, weight, minPx = 24) {
 }
 
 /**
- * A hazel face with light falling across it.
+ * A gold face with light falling across it.
  *
- * Flat hazel on near-black reads as a sticker. A two-stop gradient down the
+ * Flat gold on near-black reads as a sticker. A two-stop gradient down the
  * shape, lit at the top and deepened at the bottom, is what makes the chips and
  * the potency badge read as something pressed into the label rather than
  * painted onto it. It is the cheapest imitation of foil there is and it costs
  * one gradient.
  */
-function hazelFace(ctx, y, h) {
+function goldFace(ctx, y, h) {
   const g = ctx.createLinearGradient(0, y, 0, y + h);
-  g.addColorStop(0, HAZEL_LIT);
-  g.addColorStop(0.55, HAZEL);
-  g.addColorStop(1, HAZEL_DEEP);
+  g.addColorStop(0, GOLD_LIT);
+  g.addColorStop(0.55, GOLD);
+  g.addColorStop(1, GOLD_DEEP);
   return g;
 }
 
-/**
- * The mark, as the app draws it, which is the whole point of having colour.
- *
- * The cat is BLACK. The brand is called Black Cat, and the mark in catMarkSvg()
- * is a black head carried by a hazel outline, with hazel eyes and a dark slit
- * in each. Filling the head with hazel instead makes a ginger cat, which is a
- * different animal and a different brand.
- *
- * The thermal label cannot do any of that: one ink means the cat has to be a
- * solid silhouette with its face knocked out white. Here it is the real mark,
- * and it gets the two details that only exist in colour and have never been
- * printed before: the inner ears, and a glint in each eye.
- */
-function drawCatMark(ctx, x, y, w) {
-  const s = w / 100;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(s, s);
-  ctx.translate(-0.5, -4);
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-
-  // Whiskers first, then the head over their roots, so each one grows out from
-  // behind the cheek instead of crossing it.
-  ctx.fillStyle = HAZEL;
-  for (const d of CAT_WHISKERS) ctx.fill(new Path2D(d));
-
-  // A hair lighter than the panel, so a black cat on a near-black ground still
-  // has a body rather than being a hazel outline around nothing.
-  const coat = ctx.createLinearGradient(0, 0, 0, 90);
-  coat.addColorStop(0, "#221c15");
-  coat.addColorStop(1, "#0f0d0b");
-  ctx.fillStyle = coat;
-  const head = new Path2D(CAT_HEAD);
-  ctx.fill(head);
-  ctx.strokeStyle = HAZEL;
-  ctx.lineWidth = 2.8;
-  ctx.stroke(head);
-
-  ctx.fillStyle = "rgba(224,145,63,0.32)";
-  for (const d of CAT_INNER_EARS) ctx.fill(new Path2D(d));
-
-  ctx.fillStyle = HAZEL;
-  ctx.fill(new Path2D(CAT_EYE_L));
-  ctx.fill(new Path2D(CAT_EYE_R));
-  ctx.fill(new Path2D(CAT_NOSE));
-  ctx.strokeStyle = HAZEL;
-  ctx.lineWidth = 1.7;
-  for (const d of CAT_MOUTH) ctx.stroke(new Path2D(d));
-
-  // The slit is the ground showing through the eye.
-  ctx.fillStyle = INK;
-  for (const p of CAT_PUPILS) {
-    ctx.beginPath();
-    ctx.ellipse(p.cx, p.cy, p.rx, p.ry, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.fillStyle = CREAM;
-  for (const g of CAT_GLINTS) {
-    ctx.beginPath();
-    ctx.ellipse(g.cx, g.cy, g.r, g.r, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
-}
 
 /**
  * The QR, on a white tile.
@@ -210,10 +142,10 @@ function drawQr(ctx, matrix, x, y, box) {
   }
 }
 
-/** A small caps tag in hazel, the label's one voice for naming a field. */
+/** A small caps tag in gold, the label's one voice for naming a field. */
 function tag(ctx, text, x, y, px = 30) {
   ctx.font = `700 ${px}px ${FACE}`;
-  ctx.fillStyle = HAZEL;
+  ctx.fillStyle = GOLD;
   drawTracked(ctx, text.toUpperCase(), x, y, 3.4);
 }
 
@@ -237,19 +169,21 @@ export function drawColorLabel(canvas, spec, matrix) {
   const bottom = LABEL_H - PAD;
 
   // ── Masthead ──────────────────────────────────────────────────────────────
-  const markW = 116;
+  // The mark in full colour, smoke and all, the way the brand artwork has it.
+  const markW = 220;
   const markTop = PAD - 6;
-  drawCatMark(ctx, left, markTop, markW);
+  const markH = markW * markAspect({ glow: true });
+  drawCatMark(ctx, left, markTop + (124 - markH) / 2, markW, { glow: true });
 
-  ctx.font = `700 40px ${FACE}`;
+  ctx.font = `700 44px ${FACE}`;
   ctx.fillStyle = CREAM;
-  drawTracked(ctx, "BLACK CAT BOTANICALS", left + markW + 30, markTop + 58, 5.2);
+  drawTracked(ctx, "BLACK CAT BUDZ", left + markW + 26, markTop + 58, 5.2);
   ctx.font = `400 23px ${FACE}`;
   ctx.fillStyle = MUTED;
-  drawTracked(ctx, "CULTIVATED AND PACKED BY HAND", left + markW + 32, markTop + 96, 3.4);
+  drawTracked(ctx, "CULTIVATED AND PACKED BY HAND", left + markW + 28, markTop + 96, 3.4);
 
   const headRule = markTop + 132;
-  ctx.fillStyle = "rgba(224,145,63,0.55)";
+  ctx.fillStyle = "rgba(211,154,58,0.55)";
   ctx.fillRect(left, headRule, right - left, 3);
 
   // ── The name, and what it is ──────────────────────────────────────────────
@@ -307,7 +241,7 @@ export function drawColorLabel(canvas, spec, matrix) {
     const chipW = trackedWidth(ctx, word, 4.6) + 46;
     const chipH = 60;
     const chipTop = chipBottom + gap;
-    ctx.fillStyle = hazelFace(ctx, chipTop, chipH);
+    ctx.fillStyle = goldFace(ctx, chipTop, chipH);
     roundRect(ctx, left, chipTop, chipW, chipH, 12);
     ctx.fill();
     ctx.fillStyle = INK;
@@ -330,7 +264,7 @@ export function drawColorLabel(canvas, spec, matrix) {
     const badgeH = 124;
     const label = potency.label.toUpperCase();
 
-    ctx.fillStyle = hazelFace(ctx, dataTop, badgeH);
+    ctx.fillStyle = goldFace(ctx, dataTop, badgeH);
     roundRect(ctx, left, dataTop, headW, badgeH, 16);
     ctx.fill();
 
@@ -368,11 +302,11 @@ export function drawColorLabel(canvas, spec, matrix) {
   if (gridLines) dataTop += (gridLines - 1) * ROW_PITCH + 96 + gap;
 
   // ── Terpenes, closing the stack ───────────────────────────────────────────
-  // Each one gets a hazel dot instead of a separator, which is the one place
+  // Each one gets a gold dot instead of a separator, which is the one place
   // colour buys something the black-and-white label genuinely cannot have.
   if (spec.terpenes.length) {
     const bandTop = dataTop + 62;
-    ctx.fillStyle = "rgba(224,145,63,0.3)";
+    ctx.fillStyle = "rgba(211,154,58,0.3)";
     ctx.fillRect(left, dataTop, right - left, 2);
 
     tag(ctx, "Terpenes", left, bandTop, 26);
@@ -386,7 +320,7 @@ export function drawColorLabel(canvas, spec, matrix) {
       // Drop the rest rather than running off the panel. The preview shows the
       // drop, so a list that is too long is visibly too long before it prints.
       if (tx + 24 + w > right) break;
-      ctx.fillStyle = HAZEL;
+      ctx.fillStyle = GOLD;
       ctx.beginPath();
       ctx.ellipse(tx + 7, bandTop - 10, 7, 7, 0, 0, Math.PI * 2);
       ctx.fill();

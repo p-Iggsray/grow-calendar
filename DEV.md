@@ -1,6 +1,6 @@
 # Developer Notes
 
-Everything you need to run, modify, or self-host **Black Cat Botanicals**.
+Everything you need to run, modify, or self-host **Black Cat Budz**.
 
 ## Stack
 
@@ -829,7 +829,7 @@ One rule in `src/styles.css` draws the ring for the whole app:
 
 `:focus-visible` is the important half. It fires for keyboard and switch
 navigation, and for text entry however it was focused, so a pointer user never
-sees a ring from a plain button press. Hazel is 7.8:1 against the page and
+sees a ring from a plain button press. Gold is 7.8:1 against the page and
 7.1:1 against a card, well past the 3:1 WCAG asks of a non-text indicator.
 
 The app used to set `outline: "none"` in 24 inline styles and replace it in

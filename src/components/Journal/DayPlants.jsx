@@ -23,7 +23,7 @@ export default function DayPlants({ plants, records, dateKey, todayKey, crop, fi
       }}>
       <div style={{
         display: "flex", alignItems: "center", gap: 6, marginBottom: 7,
-        fontFamily: UI, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "var(--c-text-muted)",
+        fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 700, letterSpacing: 1.6, textTransform: "uppercase", color: "var(--c-text-muted)",
       }}>
         <Sprout size={13} strokeWidth={2} aria-hidden="true" style={{ color: "#22c55e" }} />
         On this day

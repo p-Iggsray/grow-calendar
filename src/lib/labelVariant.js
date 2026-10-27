@@ -4,7 +4,7 @@
 // spec, so flipping between them never changes a word on the jar. What changes
 // is the treatment:
 //
-//   colour  a near-black panel in the app's palette, hazel accents, the potency
+//   colour  a near-black panel in the app's palette, gold accents, the potency
 //           set as a badge. For a home inkjet or laser, on a sheet of labels.
 //   plain   one ink, pure black on white, every size chosen so a thermal head
 //           can hold it. This is the original label, untouched.

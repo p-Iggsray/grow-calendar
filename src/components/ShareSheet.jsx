@@ -81,7 +81,7 @@ export default function ShareSheet({ onClose }) {
         <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: "var(--c-text-ghost)", textTransform: "uppercase", margin: "10px 0 4px" }}>
           Buddy access
         </div>
-        <div style={{ fontSize: 17, fontWeight: 800, color: "var(--c-text)", marginBottom: 4, letterSpacing: -0.3 }}>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 700, color: "var(--c-text)", marginBottom: 4 }}>
           Share your grow
         </div>
         <div style={{ fontSize: 12, color: "var(--c-text-faint)", fontFamily: MONO, marginBottom: 12, lineHeight: 1.7 }}>

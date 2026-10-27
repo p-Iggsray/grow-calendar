@@ -80,7 +80,7 @@ export default function TabBar({ activeTab, onTab, firstTab }) {
             <Icon size={22} strokeWidth={active ? 2.2 : 1.7} />
             <span style={{
               fontSize: 10.5,
-              fontFamily: "var(--font-ui)",
+              fontFamily: "var(--font-display)",
               letterSpacing: 0.1,
               fontWeight: active ? 700 : 500,
             }}>

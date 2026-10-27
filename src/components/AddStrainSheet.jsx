@@ -86,7 +86,7 @@ export default function AddStrainSheet({ onAdd, onClose, existingKeys = [] }) {
             background: "var(--c-border-strong)",
           }} />
 
-          <div style={{ fontFamily: UI, fontSize: 17, fontWeight: 800, color: "var(--c-text)", marginBottom: 5 }}>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 700, color: "var(--c-text)", marginBottom: 5 }}>
             Add a strain
           </div>
           <p style={{ fontFamily: UI, fontSize: 12.5, lineHeight: 1.65, color: "var(--c-text-muted)", margin: "0 0 16px" }}>

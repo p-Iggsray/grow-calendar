@@ -164,7 +164,7 @@ export default function EnvConditions({ growId, indoorish, mushrooms = false }) 
           </div>
 
           <div>
-            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "var(--c-text-faint)", margin: "6px 2px" }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 700, letterSpacing: 1.6, textTransform: "uppercase", color: "var(--c-text-faint)", margin: "6px 2px" }}>
               Daily log
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

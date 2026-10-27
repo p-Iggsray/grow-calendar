@@ -1,173 +1,233 @@
-// The Black Cat Botanicals mark: a cat's head, its whiskers, and its eyes.
+// The Black Cat Budz mark: the grin in the dark. Two eyes, a crescent of teeth,
+// a joint in the corner of the mouth and the smoke coming off it.
 //
-// The geometry lives here, on its own, because four renderers draw it: React
-// in the app, a string of SVG in the public strain page and the report, a
-// canvas in the printed label, and the app icon. They must be the same cat, so
-// they read the same numbers.
+// The geometry lives here, on its own, because every place the brand appears
+// draws it: React in the app, an SVG string in the splash paint, the public
+// strain page and the rundown, a canvas on both jar labels, and the app icon.
+// They must be the same cat, so they read the same numbers, and each one asks
+// for the mark as a list of drawing steps (markSteps) rather than redrawing it.
 //
-// The coordinate space is a 100-wide box. The head spans y 4 to 88; the
-// whiskers reach x 0.5 to 99.5.
-//
-// Two things are drawn once and used twice. The silhouette carries the fur:
-// the ears lean out, the cheeks break with a tuft rather than curving
-// smoothly, and the jaw narrows to a chin, so the outline reads as an animal
-// instead of a circle with triangles on it. The face is knocked out of it:
-// eyes, pupils, nose, mouth. On paper that knockout is white and there is no
-// other ink; on screen the same shapes take light.
+// Traced from the brand artwork, in its own pixel space: the face is 2400 wide
+// and its centre line is x = 1012. The right eye is the left eye mirrored
+// about that line; the glints are not, because the light comes from one side.
 
-// The head, as one closed path so the ears belong to the silhouette rather
-// than sitting on top of it. Symmetric about x = 50.
-export const CAT_HEAD =
-  "M17,34 L21,4 L43,19 C46,16.5 54,16.5 57,19 L79,4 L83,34 " +
-  "C87.5,44 89,54 84.5,63 C81,76 65,88.5 50,88.5 " +
-  "C35,88.5 19,76 15.5,63 C11,54 12.5,44 17,34 Z";
+const MIRROR_AXIS_X2 = 2024;
+const mirror = (d) => d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g,
+  (_, x, y) => `${MIRROR_AXIS_X2 - Number(x)},${y}`);
 
-// Inner ears, inset from the ear triangles. They only show where there is
-// colour to show them in; on paper they would fill with the same black.
-export const CAT_INNER_EARS = [
-  "M20,29.5 L22.8,8.5 L38.2,19 Z",
-  "M80,29.5 L77.2,8.5 L61.8,19 Z",
+export const BRAND = {
+  ground: "#100d0b",
+  gold: "#d39a3a",
+  lid: "#8a5a1e",
+  cream: "#f1e7d6",
+  ink: "#13100d",
+  pupil: "#060505",
+  ember: "#ff692a",
+  filter: "#b98a58",
+  twist: "#cbbba2",
+  ash: "#8c847c",
+  ashDot: "#5a524c",
+  smokeTop: "#7d62a8",
+  smokeMid: "#b9a0dc",
+  smokeLow: "#e6dbf3",
+  aura: "#6b4f8c",
+};
+
+export const EYE_LID_L = "M288,450 Q318,410 377,388 L412,368 Q578,379 845,446 L870,475 L930,562 Q865,620 795,648 L752,667 Q621,659 418,607 L387,579 Q330,525 288,450 Z";
+export const EYE_L = "M288,450 Q318,410 377,388 Q582,389 870,475 L930,562 Q865,620 795,648 Q615,637 387,579 Q330,525 288,450 Z";
+export const PUPIL_L = "M602,412 Q548,505 575,623 L602,627 Q668,515 649,421 Z";
+export const EYE_LID_R = mirror(EYE_LID_L);
+export const EYE_R = mirror(EYE_L);
+export const PUPIL_R = mirror(PUPIL_L);
+export const GLINTS = [{ cx: 692, cy: 490, r: 27 }, { cx: 1488, cy: 462, r: 27 }];
+
+// The grin is a crescent; the teeth are one zigzag line drawn across it.
+export const GRIN = "M210,856 C520,1035 1504,1035 1820,856 C1324,1313 700,1313 210,856 Z";
+export const TEETH = "M263,886 L370,971 L482,955 L582,1080 L688,1008 L795,1142 L901,1030 L1007,1167 L1113,1030 L1220,1142 L1326,1008 L1432,1080 L1534,955 L1646,971 L1753,886";
+
+export const JOINT = "M1676,872 L2134,1010 Q2162,1020 2158,1050 L2132,1146 Q2120,1172 2092,1166 L1648,946 Z";
+export const FILTER = "M1676,872 L1764,898 L1742,976 L1648,946 Z";
+export const FILTER_EDGE = "M1764,898 L1742,972";
+export const TWISTS = ["M1814,1006 L1900,945", "M1884,1040 L1977,964", "M1956,1072 L2052,988"];
+export const BAND = "M2094,984 L2039,1137";
+export const ASH = "M2101,1000 L2134,1010 Q2162,1020 2158,1050 L2132,1146 Q2120,1172 2092,1166 L2050,1145 Z";
+export const ASH_DOT = { cx: 2092, cy: 1089, r: 11 };
+export const EMBER = { cx: 2080, cy: 1075, r: 210 };
+
+export const SMOKE = [
+  { d: "M220,876 C170,780 150,700 100,650 C60,615 25,575 40,535 C55,500 110,480 160,494 L168,504 C145,500 125,515 118,540 C112,565 125,590 150,615 C190,665 200,760 220,860 Z", opacity: 0.8 },
+  { d: "M2096,980 C2080,930 2120,860 2160,780 C2210,690 2200,600 2140,480 C2060,380 1980,300 1990,200 C2000,110 2080,40 2160,30 C2240,24 2300,60 2300,110 C2300,135 2285,160 2270,172 C2280,140 2270,100 2240,100 C2200,104 2140,150 2120,210 C2100,280 2160,380 2220,480 C2260,560 2260,660 2220,760 C2180,860 2120,920 2110,980 Z", opacity: 1 },
+  { d: "M2170,1040 C2190,980 2200,880 2210,790 C2220,720 2280,680 2320,640 C2360,600 2370,540 2365,460 C2360,420 2350,400 2370,380 C2375,420 2380,460 2380,520 C2380,600 2330,660 2300,700 C2260,750 2250,800 2240,860 C2230,940 2210,1000 2185,1045 Z", opacity: 0.7 },
 ];
 
-// The eyes. Not a symmetric lens: the outer corner rides higher than the
-// inner one, which is most of the difference between a cat and a doll.
-export const CAT_EYE_L = "M27,51 C30,42 42,40 46,47.5 C44,56 32,58.5 27,51 Z";
-export const CAT_EYE_R = "M73,51 C70,42 58,40 54,47.5 C56,56 68,58.5 73,51 Z";
+// The whole mark with its smoke, and the face alone, tight around the eyes,
+// grin and joint. Small and one-ink marks use the face: smoke is a wash of
+// colour and a thermal printer has no wash to give.
+export const VIEWBOX_FULL = [0, 0, 2400, 1290];
+export const VIEWBOX_FACE = [190, 340, 1990, 860];
 
-// Slit pupils, vertical.
-export const CAT_PUPILS = [
-  { cx: 36.5, cy: 49.5, rx: 2.5, ry: 5.5 },
-  { cx: 63.5, cy: 49.5, rx: 2.5, ry: 5.5 },
-];
-
-// Where a highlight lands with the light up and to the left.
-export const CAT_GLINTS = [
-  { cx: 32.5, cy: 45.5, r: 1.9 },
-  { cx: 59.5, cy: 45.5, r: 1.9 },
-];
-
-export const CAT_NOSE =
-  "M45.6,61.2 Q50,59.8 54.4,61.2 Q53.1,65.4 50,67.6 Q46.9,65.4 45.6,61.2 Z";
-
-// The muzzle: the line down from the nose and the two curves off it.
-export const CAT_MOUTH = [
-  "M50,67.6 L50,70.4",
-  "M50,70.4 Q45.8,74.2 41.8,70.6",
-  "M50,70.4 Q54.2,74.2 58.2,70.6",
-];
-
-// Whiskers, as filled slivers rather than strokes so each one tapers from the
-// cheek to a point. They are drawn under the head, which covers their roots,
-// so a whisker grows out from behind the face the way it actually does.
-export const CAT_WHISKERS = [
-  "M21,57.5 Q12,54 1.5,49 Q12,57.5 21,59.5 Z",
-  "M20,65 Q10,63.9 0.5,64.5 Q10,66.5 20,67 Z",
-  "M21,71.5 Q12.5,74.8 3,80 Q13,76.6 21,73.5 Z",
-  "M79,57.5 Q88,54 98.5,49 Q88,57.5 79,59.5 Z",
-  "M80,65 Q90,63.9 99.5,64.5 Q90,66.5 80,67 Z",
-  "M79,71.5 Q87.5,74.8 97,80 Q87,76.6 79,73.5 Z",
-];
-
-// A tight box around all of it, with a hair of padding on every side.
-export const CAT_VIEWBOX = "-2 1 104 90";
-export const CAT_ASPECT = 90 / 104;
+const STROKE_TEETH = 32;
+const STROKE_OUTLINE = 16;
+const STROKE_TWIST = 13;
+const STROKE_BAND = 30;
 
 /**
- * The mark as a flat SVG string, for the places that build HTML rather than
- * render components.
+ * The mark as drawing steps, in paint order. Every renderer walks this list.
  *
- * `ink` is the silhouette. `eye` fills the eyes and `pupil` cuts the slit.
- * `face` is the nose and mouth, which on paper have to be knocked out of the
- * black or they are not there at all.
+ * `tone` is "color" (the artwork), "mono" (one black ink on white paper, the
+ * thermal label) or "monoInverse" (white on a black bar). One ink cannot show
+ * gold eyes on cream teeth, so mono fills the eyes and the grin solid and cuts
+ * the pupils and the teeth out of them. `smoke` and `glow` only apply in colour.
  */
-export function catMarkSvg({
-  width = 26, ink = "#e0913f", eye = "#e0913f", pupil = "#0c0b0a",
-  face = null, fill = "#000",
-} = {}) {
-  const detail = face ?? ink;
-  return `<svg viewBox="${CAT_VIEWBOX}" width="${width}" height="${
-    Math.round(width * CAT_ASPECT)
-  }" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">` +
-    CAT_WHISKERS.map((d) => `<path d="${d}" fill="${ink}"/>`).join("") +
-    `<path d="${CAT_HEAD}" fill="${fill}" stroke="${ink}" stroke-width="2.6" stroke-linejoin="round"/>` +
-    `<path d="${CAT_EYE_L}" fill="${eye}"/><path d="${CAT_EYE_R}" fill="${eye}"/>` +
-    CAT_PUPILS.map((p) =>
-      `<ellipse cx="${p.cx}" cy="${p.cy}" rx="${p.rx}" ry="${p.ry}" fill="${pupil}"/>`,
-    ).join("") +
-    `<path d="${CAT_NOSE}" fill="${detail}"/>` +
-    CAT_MOUTH.map((d) =>
-      `<path d="${d}" fill="none" stroke="${detail}" stroke-width="1.7" stroke-linecap="round"/>`,
-    ).join("") +
-    `</svg>`;
+export function markSteps({ tone = "color", smoke = true, glow = false } = {}) {
+  if (tone !== "color") {
+    const ink = tone === "mono" ? "#000" : "#fff";
+    const cut = tone === "mono" ? "#fff" : "#000";
+    return [
+      { d: EYE_LID_L, fill: ink }, { d: EYE_LID_R, fill: ink },
+      { d: PUPIL_L, fill: cut }, { d: PUPIL_R, fill: cut },
+      { d: GRIN, fill: ink },
+      { d: TEETH, stroke: cut, width: STROKE_TEETH },
+      { d: JOINT, fill: cut, stroke: ink, width: STROKE_OUTLINE },
+      { d: FILTER, fill: ink },
+      ...TWISTS.map((d) => ({ d, stroke: ink, width: STROKE_TWIST, cap: "round" })),
+      { d: BAND, stroke: ink, width: STROKE_BAND, cap: "round" },
+      { circle: ASH_DOT, fill: ink },
+    ];
+  }
+  const b = BRAND;
+  return [
+    ...(glow ? [{ glow: [EYE_L, EYE_R, GRIN], fill: b.aura }] : []),
+    ...(smoke ? SMOKE.map((s) => ({ d: s.d, fill: { gradient: "smoke" }, opacity: s.opacity })) : []),
+    { d: EYE_LID_L, fill: b.lid }, { d: EYE_L, fill: b.gold }, { d: PUPIL_L, fill: b.pupil },
+    { d: EYE_LID_R, fill: b.lid }, { d: EYE_R, fill: b.gold }, { d: PUPIL_R, fill: b.pupil },
+    ...GLINTS.map((g) => ({ circle: g, fill: b.cream })),
+    { d: GRIN, fill: b.cream },
+    { d: TEETH, stroke: b.ink, width: STROKE_TEETH },
+    { circle: EMBER, fill: { gradient: "ember" } },
+    { d: JOINT, fill: b.cream },
+    { d: FILTER, fill: b.filter },
+    { d: ASH, fill: b.ash },
+    ...TWISTS.map((d) => ({ d, stroke: b.twist, width: STROKE_TWIST, cap: "round" })),
+    { circle: ASH_DOT, fill: b.ashDot },
+    { d: FILTER_EDGE, stroke: b.ink, width: STROKE_OUTLINE },
+    { d: JOINT, stroke: b.ink, width: STROKE_OUTLINE, join: "round" },
+    { d: BAND, stroke: b.ember, width: STROKE_BAND, cap: "round" },
+  ];
+}
+
+/** Which box a mark is drawn in: the full artwork, or the face alone. */
+export function markBox({ tone = "color", smoke = true } = {}) {
+  return tone === "color" && smoke ? VIEWBOX_FULL : VIEWBOX_FACE;
+}
+
+/** Height over width for a mark drawn with these options. */
+export function markAspect(opts) {
+  const [, , w, h] = markBox(opts);
+  return h / w;
+}
+
+function svgPaint(fill, id) {
+  return typeof fill === "object" ? `url(#${id(fill.gradient)})` : fill;
 }
 
 /**
- * The mark lit, as an SVG string.
- *
- * Same treatment as `<CatMark lit>`: a coat with a gradient in it, a rim light
- * off the top left, warm inner ears, and eyes that carry their own glow. This
- * is that version for the one place that cannot run React at all, which is the
- * paint index.html puts on screen before the bundle has arrived.
- *
- * `uid` scopes every gradient id, so this can sit on a page beside a rendered
- * CatMark without the two stealing each other's paint.
+ * The mark as an SVG string. `uid` scopes the gradient and filter ids, so two
+ * marks on one page cannot take each other's paint.
  */
-export function litCatMarkSvg({ width = 140, uid = "bcb" } = {}) {
+export function catMarkSvg({ width = 120, tone = "color", smoke = true, glow = false, uid = "bcb", title = "" } = {}) {
+  const box = markBox({ tone, smoke });
   const id = (name) => `${uid}-${name}`;
-  const url = (name) => `url(#${id(name)})`;
-  const stops = (list) =>
-    list.map(([o, c, a]) =>
-      `<stop offset="${o}" stop-color="${c}"${a === undefined ? "" : ` stop-opacity="${a}"`}/>`,
-    ).join("");
+  const steps = markSteps({ tone, smoke, glow });
+  const body = steps.map((s) => {
+    if (s.glow) {
+      return `<g filter="url(#${id("aura")})" opacity="0.75">${
+        s.glow.map((d) => `<path d="${d}" fill="${s.fill}"/>`).join("")}</g>`;
+    }
+    const opacity = s.opacity !== undefined && s.opacity !== 1 ? ` opacity="${s.opacity}"` : "";
+    if (s.circle) {
+      return `<circle cx="${s.circle.cx}" cy="${s.circle.cy}" r="${s.circle.r}" fill="${svgPaint(s.fill, id)}"${opacity}/>`;
+    }
+    const fill = s.fill ? svgPaint(s.fill, id) : "none";
+    const stroke = s.stroke
+      ? ` stroke="${s.stroke}" stroke-width="${s.width}"${s.cap ? ` stroke-linecap="${s.cap}"` : ""}${s.join ? ` stroke-linejoin="${s.join}"` : ""}`
+      : "";
+    return `<path d="${s.d}" fill="${fill}"${stroke}${opacity}/>`;
+  }).join("");
+  const b = BRAND;
+  const defs = tone === "color"
+    ? `<defs>` +
+      `<linearGradient id="${id("smoke")}" x1="0" y1="0" x2="0" y2="1">` +
+        `<stop offset="0" stop-color="${b.smokeTop}"/><stop offset="0.6" stop-color="${b.smokeMid}"/>` +
+        `<stop offset="1" stop-color="${b.smokeLow}" stop-opacity="0.7"/></linearGradient>` +
+      `<radialGradient id="${id("ember")}"><stop offset="0" stop-color="${b.ember}" stop-opacity="0.6"/>` +
+        `<stop offset="1" stop-color="${b.ember}" stop-opacity="0"/></radialGradient>` +
+      `<filter id="${id("aura")}" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="38"/></filter>` +
+      `</defs>`
+    : "";
+  const height = Math.round(width * box[3] / box[2]);
+  const label = title
+    ? ` role="img" aria-label="${title.replace(/"/g, "&quot;")}"`
+    : ` aria-hidden="true" focusable="false"`;
+  return `<svg viewBox="${box.join(" ")}" width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"${label}>${defs}${body}</svg>`;
+}
 
-  return `<svg viewBox="${CAT_VIEWBOX}" width="${width}" height="${
-    Math.round(width * CAT_ASPECT)
-  }" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">` +
-    `<defs>` +
-      `<linearGradient id="${id("coat")}" x1="0.15" y1="0" x2="0.85" y2="1">${
-        stops([["0%", "#2a231d"], ["40%", "#0f0d0b"], ["100%", "#020202"]])
-      }</linearGradient>` +
-      `<linearGradient id="${id("rim")}" x1="0.05" y1="0.05" x2="0.8" y2="0.95">${
-        stops([["0%", "#ffc27a"], ["42%", "#e89a45"], ["88%", "#e0913f", "0.22"], ["100%", "#e0913f", "0"]])
-      }</linearGradient>` +
-      `<linearGradient id="${id("ear")}" x1="0.5" y1="0" x2="0.5" y2="1">${
-        stops([["0%", "#7a4520"], ["100%", "#2a160b"]])
-      }</linearGradient>` +
-      `<radialGradient id="${id("iris")}" cx="0.42" cy="0.3" r="0.85">${
-        stops([["0%", "#ffe3a6"], ["42%", "#eda049"], ["100%", "#8f4d12"]])
-      }</radialGradient>` +
-      `<linearGradient id="${id("whiskerL")}" x1="1" y1="0" x2="0" y2="0">${
-        stops([["0%", "#d8ccbc", "0.9"], ["100%", "#d8ccbc", "0.05"]])
-      }</linearGradient>` +
-      `<linearGradient id="${id("whiskerR")}" x1="0" y1="0" x2="1" y2="0">${
-        stops([["0%", "#d8ccbc", "0.9"], ["100%", "#d8ccbc", "0.05"]])
-      }</linearGradient>` +
-      `<linearGradient id="${id("snout")}" x1="0.5" y1="0" x2="0.5" y2="1">${
-        stops([["0%", "#d99a72"], ["100%", "#7c4326"]])
-      }</linearGradient>` +
-      `<filter id="${id("glow")}" x="-160%" y="-160%" width="420%" height="420%">` +
-        `<feGaussianBlur stdDeviation="2.6"/>` +
-      `</filter>` +
-    `</defs>` +
-    CAT_WHISKERS.map((d, i) =>
-      `<path d="${d}" fill="${url(i < 3 ? "whiskerL" : "whiskerR")}"/>`,
-    ).join("") +
-    `<path d="${CAT_HEAD}" fill="${url("coat")}" stroke="${url("rim")}"` +
-      ` stroke-width="2.7" stroke-linejoin="round"/>` +
-    CAT_INNER_EARS.map((d) => `<path d="${d}" fill="${url("ear")}" opacity="0.85"/>`).join("") +
-    `<g filter="${url("glow")}" opacity="0.85">` +
-      `<path d="${CAT_EYE_L}" fill="#e0913f"/><path d="${CAT_EYE_R}" fill="#e0913f"/>` +
-    `</g>` +
-    `<path d="${CAT_EYE_L}" fill="${url("iris")}"/><path d="${CAT_EYE_R}" fill="${url("iris")}"/>` +
-    CAT_PUPILS.map((p) =>
-      `<ellipse cx="${p.cx}" cy="${p.cy}" rx="${p.rx}" ry="${p.ry}" fill="#0a0806"/>`,
-    ).join("") +
-    CAT_GLINTS.map((g) =>
-      `<circle cx="${g.cx}" cy="${g.cy}" r="${g.r}" fill="#fffaf0" opacity="0.9"/>`,
-    ).join("") +
-    `<path d="${CAT_NOSE}" fill="${url("snout")}"/>` +
-    CAT_MOUTH.map((d) =>
-      `<path d="${d}" fill="none" stroke="#6f6053" stroke-width="1.7" stroke-linecap="round"/>`,
-    ).join("") +
-    `</svg>`;
+/**
+ * The mark on a canvas, with its top-left at `x`, `y` and `w` wide. Glow is
+ * drawn with a shadow rather than a filter, which older iOS canvases ignore.
+ */
+export function drawCatMark(ctx, x, y, w, { tone = "color", smoke = true, glow = false } = {}) {
+  const [bx, by, bw] = markBox({ tone, smoke });
+  const s = w / bw;
+  const b = BRAND;
+  const paint = (fill) => {
+    if (typeof fill !== "object") return fill;
+    if (fill.gradient === "smoke") {
+      const g = ctx.createLinearGradient(0, 0, 0, 1240);
+      g.addColorStop(0, b.smokeTop);
+      g.addColorStop(0.6, b.smokeMid);
+      g.addColorStop(1, "rgba(230,219,243,0.7)");
+      return g;
+    }
+    const g = ctx.createRadialGradient(EMBER.cx, EMBER.cy, 0, EMBER.cx, EMBER.cy, EMBER.r);
+    g.addColorStop(0, "rgba(255,105,42,0.6)");
+    g.addColorStop(1, "rgba(255,105,42,0)");
+    return g;
+  };
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  ctx.translate(-bx, -by);
+  for (const step of markSteps({ tone, smoke, glow })) {
+    ctx.save();
+    if (step.opacity !== undefined) ctx.globalAlpha = step.opacity;
+    if (step.glow) {
+      ctx.globalAlpha = 0.75;
+      ctx.shadowColor = step.fill;
+      ctx.shadowBlur = 90 * s;
+      ctx.fillStyle = step.fill;
+      for (const d of step.glow) ctx.fill(new Path2D(d));
+      ctx.restore();
+      continue;
+    }
+    if (step.circle) {
+      ctx.beginPath();
+      ctx.arc(step.circle.cx, step.circle.cy, step.circle.r, 0, Math.PI * 2);
+      ctx.fillStyle = paint(step.fill);
+      ctx.fill();
+      ctx.restore();
+      continue;
+    }
+    const path = new Path2D(step.d);
+    if (step.fill) { ctx.fillStyle = paint(step.fill); ctx.fill(path); }
+    if (step.stroke) {
+      ctx.strokeStyle = step.stroke;
+      ctx.lineWidth = step.width;
+      ctx.lineCap = step.cap ?? "butt";
+      ctx.lineJoin = step.join ?? "miter";
+      ctx.stroke(path);
+    }
+    ctx.restore();
+  }
+  ctx.restore();
 }

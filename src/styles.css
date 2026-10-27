@@ -1,16 +1,18 @@
 /* Comic Neue, bundled rather than borrowed from the device.
  *
- * It is used by exactly one thing: the colour jar label. Comic Sans is on
- * Windows and most Macs but not on iOS, Android or Linux, so a label that
- * leaned on the device would change face depending on who opened the app,
- * which is not what a brand label can do. 40KB for the two weights.
+ * It is the Black Cat Budz brand face: the wordmark, headings, card titles,
+ * buttons and tab labels, and the jar labels. Comic Sans is on Windows and
+ * most Macs but not on iOS, Android or Linux, so a brand that leaned on the
+ * device would change face depending on who opened the app. 40KB for the two
+ * weights.
  *
  * SIL Open Font License 1.1, and the licence travels with the files:
  * public/fonts/comic-neue-OFL.txt.
  *
- * `swap` because nothing in the app's chrome uses this face, so there is no
- * text waiting on it. The canvas does not respect font-display at all, which
- * is why the label draw waits on document.fonts; see src/lib/labelFont.js. */
+ * `swap` so headings show at once in the fallback and change face when the
+ * file lands; index.html preloads it, so on any launch after the first it is
+ * already there. The canvas does not respect font-display at all, which is why
+ * the label draw waits on document.fonts; see src/lib/labelFont.js. */
 @font-face {
   font-family: "Comic Neue";
   font-style: normal;
@@ -41,6 +43,11 @@
      entries read differently from UI chrome, like dedicated journal apps. */
   --font-journal: ui-serif, "New York", Georgia, "Iowan Old Style",
               "Times New Roman", serif;
+  /* The brand face, for the app name, headings, card titles, buttons and tab
+     labels. Body text, readings and journal writing stay in the faces above,
+     because dense data reads best in them. */
+  --font-display: "Comic Neue", "Comic Sans MS", ui-rounded, -apple-system,
+              BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* ── Shape + elevation tokens ───────────────────────────────── */
   --radius-sm: 10px;
@@ -51,44 +58,50 @@
   --shadow-sheet: 0 -8px 40px rgba(0,0,0,0.35);
 
   /* ── Color tokens ─────────────────────────────────────────────
-     Black Cat Botanicals: a warm near-black ground with one hazel accent,
-     the colour of the cat's eyes. There is one scheme and no switch. The
-     black is warm rather than blue so the hazel sits on it as a glow
-     instead of a clash, and every overlay is warm white for the same
-     reason.
+     Black Cat Budz, from the brand artwork: a warm near-black ground, the
+     gold of the cat's eyes as the one interactive accent, cream for text
+     (the colour of the grin and the wordmark), and the smoke's purple and
+     the ember's orange as secondary highlights. There is one scheme and no
+     switch. Every overlay is cream-tinted so it sits on the black as a glow
+     rather than a grey.
 
      Green is no longer a brand colour. It survives only where it means
      something - a growth stage, a healthy plant - and those live in
      crops.js and the report, not here. */
-  --c-bg:            #0c0b0a;   /* app background                 */
-  --c-text:          #f5f0e8;   /* primary text                   */
-  --c-text-dim:      #cdbfa9;   /* dimmed text                    */
-  --c-text-muted:    #a0917c;   /* labels / secondary             */
-  --c-text-faint:    #877969;   /* tertiary                       */
-  --c-text-ghost:    #6b5f51;   /* ghost / disabled               */
-  --c-accent:        #e0913f;   /* interactive hazel              */
+  --c-bg:            #100d0b;   /* app background                 */
+  --c-text:          #f1e7d6;   /* primary text: the grin's cream */
+  --c-text-dim:      #d3c5ae;   /* dimmed text                    */
+  --c-text-muted:    #a69780;   /* labels / secondary             */
+  --c-text-faint:    #8a7d6b;   /* tertiary                       */
+  --c-text-ghost:    #6c6052;   /* ghost / disabled               */
+  --c-accent:        #d39a3a;   /* interactive: the eyes' gold    */
   /* The accent's channels on their own, for the many tinted surfaces that want
      the accent at some alpha: rgba(var(--c-accent-rgb), 0.16). Repainting the
      brand is then two lines rather than sixty-five. */
-  --c-accent-rgb:    224, 145, 63;
+  --c-accent-rgb:    211, 154, 58;
+  --c-smoke:         #b9a0dc;   /* the smoke: secondary highlight */
+  --c-smoke-rgb:     185, 160, 220;
+  --c-ember:         #ff692a;   /* the ember: hot highlight       */
   --c-warn:          #f7d774;   /* warning / caution text         */
-  --c-harvest:       #d9822b;   /* harvest / ripe                 */
+  --c-harvest:       #f07a3c;   /* harvest / ripe: toward ember   */
   --c-amber-dim:     #b8a870;   /* low-key amber detail           */
   --c-danger:        #f87171;   /* error / destructive            */
   --c-danger-soft:   #fca5a5;   /* error (softer)                 */
   --c-info:          #5ab4e8;   /* info / cool highlight          */
-  --c-surface-1:     rgba(255,247,235,0.045);  /* card fill       */
-  --c-surface-2:     rgba(255,247,235,0.085);  /* hover / active  */
+  --c-surface-1:     rgba(241,231,214,0.045);  /* card fill       */
+  --c-surface-2:     rgba(241,231,214,0.085);  /* hover / active  */
   --c-input-bg:      rgba(0,0,0,0.35);         /* form field fill */
-  --c-border-faint:  rgba(255,244,228,0.07);   /* hairline        */
-  --c-border-soft:   rgba(255,244,228,0.08);   /* soft border     */
-  --c-border:        rgba(255,244,228,0.11);   /* standard border */
-  --c-border-strong: rgba(255,244,228,0.14);   /* strong border   */
+  --c-border-faint:  rgba(241,231,214,0.07);   /* hairline        */
+  --c-border-soft:   rgba(241,231,214,0.08);   /* soft border     */
+  --c-border:        rgba(241,231,214,0.11);   /* standard border */
+  --c-border-strong: rgba(241,231,214,0.14);   /* strong border   */
 
   /* ── Structural backgrounds ─────────────────────────────────── */
-  --c-header-bg:   linear-gradient(160deg, #14110d 0%, #2a2015 50%, #100e0b 100%);
-  --c-tab-bar-bg:  rgba(9,8,7,0.97);
-  --c-panel-bg:    #171512;     /* bottom sheets / state picker   */
+  /* A breath of the smoke's purple in the header, the way the artwork puts a
+     purple aura around the face on its black. */
+  --c-header-bg:   linear-gradient(160deg, #15101a 0%, #241a2c 50%, #100d0b 100%);
+  --c-tab-bar-bg:  rgba(13,10,9,0.97);
+  --c-panel-bg:    #18131a;     /* bottom sheets / state picker   */
 }
 
 *,
@@ -123,14 +136,14 @@ body {
 }
 
 button {
-  font-family: inherit;
+  font-family: var(--font-display);
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 
 /* One focus ring for the whole app. :focus-visible fires for keyboard and
    switch navigation, and for text entry however it was focused, so a pointer
-   user never sees a ring on a plain button press. Hazel on the page
+   user never sees a ring on a plain button press. Gold on the page
    background is 7.8:1 and on a card 7.1:1, well past the 3:1 WCAG asks of a
    non-text indicator. Nothing else in the app may suppress an outline;
    test/focus-ring.test.js enforces that. */
@@ -160,6 +173,10 @@ button:not(:disabled):active {
   border: 1px solid var(--c-border-faint);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
 }
 
 /* Rich journal-entry editor (contentEditable). The placeholder rides the
@@ -295,8 +312,8 @@ textarea {
 }
 
 @keyframes today-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 145, 63, 0.5); }
-  50%      { box-shadow: 0 0 0 6px rgba(224, 145, 63, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(211, 154, 58, 0.5); }
+  50%      { box-shadow: 0 0 0 6px rgba(211, 154, 58, 0); }
 }
 
 .cell-today {

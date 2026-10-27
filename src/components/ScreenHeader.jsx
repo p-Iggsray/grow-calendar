@@ -44,7 +44,7 @@ export default function ScreenHeader({ eyebrow, title, titleSlot, onBack, backLa
         )}
         {titleSlot ?? (
           <div style={{
-            fontSize: 19, fontWeight: 700, letterSpacing: -0.4, color: "var(--c-text)",
+            fontFamily: "var(--font-display)", fontSize: 21, fontWeight: 700, color: "var(--c-text)",
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
           }}>
             {title}

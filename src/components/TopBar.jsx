@@ -41,7 +41,7 @@ export default function TopBar({ today, eyebrow, view, onChangeView, onNewEnviro
                   background: active ? "var(--c-surface-2)" : "none",
                   border: active ? "1px solid var(--c-border)" : "1px solid transparent",
                   color: active ? "var(--c-text)" : "var(--c-text-muted)",
-                  fontFamily: "var(--font-ui)", fontSize: 11.5, fontWeight: active ? 700 : 500,
+                  fontFamily: "var(--font-display)", fontSize: 13, fontWeight: active ? 700 : 400,
                   display: "flex", alignItems: "center", gap: 6,
                   transition: "background 0.15s, color 0.15s",
                 }}>
