@@ -98,6 +98,14 @@ export function isLogFilled(row) {
   return false;
 }
 
+// A day the grower logged a watering on: a total, or any plant's own amount.
+// Weather-only rows the auto-logger made never count.
+export function loggedWater(row) {
+  if (!row || Number(row.auto_weather) === 1) return false;
+  if (Number(row.water_gal) > 0) return true;
+  return tryParseArray(row.water_plants).some((r) => Number(r?.gal) > 0);
+}
+
 // GET /api/grow-log/month?month=YYYY-MM -> { month, days: { "YYYY-MM-DD": true } }
 export async function getMonthGrowLog(env, user, growId, month) {
   if (!/^\d{4}-\d{2}$/.test(month || "")) return error(400, "month must be YYYY-MM");

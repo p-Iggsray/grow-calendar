@@ -44,8 +44,8 @@ const LEGEND = [
     ),
   },
   {
-    label: "Logged",
-    swatch: <DaySprout growth={2} size={13} />,
+    label: "Watered",
+    swatch: <DaySprout size={13} />,
   },
   {
     label: "Journaled",
@@ -257,11 +257,9 @@ export default function Calendar({
           // A day you asked to be reminded about gets its own mark, so a
           // reminder is visible from the month without opening the day.
           const hasReminder = Number(journalDays?.[key]?.events) > 0;
-          // How much the day holds, which is how far its sprout has grown.
-          const day = journalDays?.[key];
-          const growth = day
-            ? [day.log, day.note, Number(day.plants) > 0, Number(day.photos) > 0].filter(Boolean).length
-            : 0;
+          // A sprout marks the days a watering was logged, so the month shows
+          // the watering rhythm and nothing else competes with it.
+          const watered = Boolean(journalDays?.[key]?.water);
           const harvest = windowsOn(harvestWindows, key);
           const opensWindow = harvest.some((g) => g.start === key);
           const closesWindow = harvest.some((g) => g.end === key);
@@ -275,7 +273,7 @@ export default function Calendar({
             hasReminder ? "has a reminder" : null,
             harvest.length ? `harvest window for ${windowPlantNames(harvest)}` : null,
             hasEntry ? "journal entry written" : null,
-            growth > 0 ? "logged" : null,
+            watered ? "watered" : null,
             "opens this day's journal",
           ].filter(Boolean);
 
@@ -366,13 +364,13 @@ export default function Calendar({
                   }}
                 />
               )}
-              {/* A sprout for a day with a record, growing with what it holds. */}
-              {growth > 0 && (
+              {/* A sprout for a day a watering was logged. */}
+              {watered && (
                 <span aria-hidden="true" style={{
                   position: "absolute", left: "50%", transform: "translateX(-50%)",
                   bottom: harvest.length > 0 ? 9 : 3,
                 }}>
-                  <DaySprout growth={growth} size={21} dim={isPast} />
+                  <DaySprout size={21} dim={isPast} />
                 </span>
               )}
               {/* Inside a breeder's harvest window. The band runs edge to edge

@@ -1,6 +1,6 @@
 // @ts-check
 import { json, error } from "./util.js";
-import { ensureGrowLogSchema, isLogFilled, rowToEntry } from "./growLog.js";
+import { ensureGrowLogSchema, isLogFilled, rowToEntry, loggedWater } from "./growLog.js";
 import { readNote } from "./notes.js";
 import { ownedGrowRow, parseSurvey, ensurePlantLogSchema } from "./plants.js";
 import { htmlToPlainText } from "../src/lib/richText.js";
@@ -58,14 +58,20 @@ export function journalPlantEntry(row, names) {
 
 // Pure: build the month index from raw query results. A day appears when it
 // holds ANY journal content: a filled grow log, a day note, or plant entries.
+// `water` marks a day with a logged watering, from the day's log or from any
+// plant's own watering entry; it is only present when true.
 export function buildMonthIndex(logRows, noteRows, plantRows) {
   const days = {};
   const at = (d) => (days[d] ??= { log: false, note: false, plants: 0 });
   for (const r of logRows ?? []) {
     if (isLogFilled(r)) at(r.date).log = true;
+    if (loggedWater(r)) at(r.date).water = true;
   }
   for (const r of noteRows ?? []) at(r.date).note = true;
-  for (const r of plantRows ?? []) at(r.date).plants = r.n;
+  for (const r of plantRows ?? []) {
+    at(r.date).plants = r.n;
+    if (Number(r.watered) > 0) at(r.date).water = true;
+  }
   return days;
 }
 
@@ -366,7 +372,8 @@ export async function getJournalMonth(env, user, growId, month) {
       "SELECT date FROM day_notes WHERE user_id = ? AND grow_id = ? AND date LIKE ?"
     ).bind(user.id, growId, like).all().catch(() => ({ results: [] })),
     env.DB.prepare(
-      "SELECT date, COUNT(*) AS n FROM plant_log WHERE user_id = ? AND grow_id = ? AND date LIKE ? GROUP BY date"
+      `SELECT date, COUNT(*) AS n, SUM(CASE WHEN kind = 'watering' THEN 1 ELSE 0 END) AS watered
+       FROM plant_log WHERE user_id = ? AND grow_id = ? AND date LIKE ? GROUP BY date`
     ).bind(user.id, growId, like).all(),
   ]);
   const [eventCounts, photoCounts] = await Promise.all([

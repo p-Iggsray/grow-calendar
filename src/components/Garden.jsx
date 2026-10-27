@@ -1,10 +1,5 @@
-// Small garden pieces for the month grid: a sprout for a day that has a
-// record, and a bed of soil and grass along the foot of the calendar.
-//
-// The sprout grows with what the day holds. One thing written down (a log, an
-// entry, plant notes or a photo) is a pair of seed leaves; two puts a true
-// leaf between them; three or more is a small leafy plant. A month you kept
-// up with fills in like a bed coming up.
+// Small garden pieces for the month grid: a sprout for a day a watering was
+// logged, and a bed of soil and grass along the foot of the calendar.
 
 const LEAF_DARK = "#3f7d31";
 const LEAF = "#6fb64c";
@@ -12,8 +7,6 @@ const LEAF_LIGHT = "#a6dd7a";
 const SOIL_TOP = "#3a281a";
 const SOIL_DEEP = "#1d140d";
 const GRASS = "#6fb64c";
-
-const MAX_GROWTH = 3;
 
 function Leaf({ x, y, angle, len, fill }) {
   const w = len * 0.45;
@@ -26,23 +19,16 @@ function Leaf({ x, y, angle, len, fill }) {
   );
 }
 
-/** A sprout for a recorded day. `growth` is how many kinds of record it holds. */
-export function DaySprout({ growth = 1, size = 16, dim = false }) {
-  const g = Math.max(1, Math.min(MAX_GROWTH, growth));
-  const top = g === 1 ? 11 : g === 2 ? 8 : 5;
+/** A sprout: two seed leaves and a first true leaf, in a line of soil. */
+export function DaySprout({ size = 16, dim = false }) {
+  const top = 8;
   return (
     <svg viewBox="0 0 20 20" width={size} height={size} aria-hidden="true" focusable="false" style={{ display: "block", opacity: dim ? 0.7 : 1 }}>
       <path d="M4,19.2 Q10,17.4 16,19.2" stroke={SOIL_TOP} strokeWidth="1.6" fill="none" strokeLinecap="round" />
       <path d={`M10,18.5 C9.6,${(18.5 + top) / 2} 10.4,${(18.5 + top) / 2} 10,${top}`} stroke={LEAF_DARK} strokeWidth="1.3" fill="none" strokeLinecap="round" />
-      {g >= 3 && (
-        <>
-          <Leaf x={10} y={14} angle={-160} len={5.5} fill={LEAF_DARK} />
-          <Leaf x={10} y={14} angle={-20} len={5.5} fill={LEAF_DARK} />
-        </>
-      )}
-      <Leaf x={10} y={top + 1} angle={-150} len={g === 1 ? 6 : 7} fill={LEAF_LIGHT} />
-      <Leaf x={10} y={top + 1} angle={-30} len={g === 1 ? 6 : 7} fill={LEAF} />
-      {g >= 2 && <Leaf x={10} y={top + 0.5} angle={-90} len={g >= 3 ? 4.5 : 3.6} fill={LEAF_LIGHT} />}
+      <Leaf x={10} y={top + 1} angle={-150} len={7} fill={LEAF_LIGHT} />
+      <Leaf x={10} y={top + 1} angle={-30} len={7} fill={LEAF} />
+      <Leaf x={10} y={top + 0.5} angle={-90} len={3.6} fill={LEAF_LIGHT} />
     </svg>
   );
 }

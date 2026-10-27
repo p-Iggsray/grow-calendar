@@ -26,6 +26,25 @@ test("buildMonthIndex: merges notes and plant-entry counts onto the same day", (
   assert.deepEqual(days["2026-06-15"], { log: false, note: false, plants: 1 });
 });
 
+test("buildMonthIndex: marks watering days from the log and from plant entries", () => {
+  const days = buildMonthIndex(
+    [
+      { date: "2026-06-02", water_gal: 1.5 },
+      { date: "2026-06-03", water_plants: '[{"plantId":"p1","gal":0.5}]' },
+      { date: "2026-06-04", feed: "cal-mag", water_gal: 0 },
+      { date: "2026-06-05", water_gal: 2, auto_weather: 1 },
+    ],
+    [],
+    [{ date: "2026-06-06", n: 2, watered: 1 }, { date: "2026-06-07", n: 1, watered: 0 }],
+  );
+  assert.equal(days["2026-06-02"].water, true);
+  assert.equal(days["2026-06-03"].water, true);
+  assert.equal(days["2026-06-04"].water, undefined, "a feed with no water is not a watering");
+  assert.equal(days["2026-06-05"], undefined, "the weather logger never waters");
+  assert.equal(days["2026-06-06"].water, true);
+  assert.equal(days["2026-06-07"].water, undefined);
+});
+
 test("buildMonthIndex: empty inputs produce an empty index", () => {
   assert.deepEqual(buildMonthIndex([], [], []), {});
   assert.deepEqual(buildMonthIndex(undefined, undefined, undefined), {});
