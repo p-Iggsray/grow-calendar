@@ -23,7 +23,7 @@ export default function Splash() {
     <div
       role="status"
       aria-busy="true"
-      aria-label="Loading Black Cat Budz"
+      aria-label="Loading Black Cat Growz"
       style={{
         position: "fixed", inset: 0,
         display: "flex", flexDirection: "column",
@@ -57,7 +57,7 @@ export default function Splash() {
           fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 700,
           letterSpacing: 5, lineHeight: 1, marginTop: 4, paddingLeft: 5,
         }}>
-          BUDZ
+          GROWZ
         </div>
         <div style={{ fontSize: 13.5, color: "var(--c-text-dim)", marginTop: 8, letterSpacing: 0.2 }}>
           Your grow, day by day.

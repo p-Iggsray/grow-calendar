@@ -1,6 +1,6 @@
 /* Comic Neue, bundled rather than borrowed from the device.
  *
- * It is the Black Cat Budz brand face: the wordmark, headings, card titles,
+ * It is the Black Cat Growz brand face: the wordmark, headings, card titles,
  * buttons and tab labels, and the jar labels. Comic Sans is on Windows and
  * most Macs but not on iOS, Android or Linux, so a brand that leaned on the
  * device would change face depending on who opened the app. 40KB for the two
@@ -58,7 +58,7 @@
   --shadow-sheet: 0 -8px 40px rgba(0,0,0,0.35);
 
   /* ── Color tokens ─────────────────────────────────────────────
-     Black Cat Budz, from the brand artwork: a warm near-black ground, the
+     Black Cat Growz, from the brand artwork: a warm near-black ground, the
      gold of the cat's eyes as the one interactive accent, cream for text
      (the colour of the grin and the wordmark), and the smoke's purple and
      the ember's orange as secondary highlights. There is one scheme and no

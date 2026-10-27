@@ -111,7 +111,7 @@ export default function LoginGate() {
             Black Cat
           </div>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, letterSpacing: 4, lineHeight: 1, marginTop: 4, paddingLeft: 4, color: "var(--c-text)" }}>
-            BUDZ
+            GROWZ
           </div>
         </div>
 

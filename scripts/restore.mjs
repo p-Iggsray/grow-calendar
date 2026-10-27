@@ -91,6 +91,6 @@ for (const [table, rows] of Object.entries(backup.tables ?? {})) {
 
 const who = backup.account?.username ?? "unknown";
 console.error(`${total} rows from ${backup.exported_at} (account: ${who})`);
-console.log(`-- Black Cat Budz restore, from a backup taken ${backup.exported_at}`);
+console.log(`-- Black Cat Growz restore, from a backup taken ${backup.exported_at}`);
 console.log(`-- account: ${who}. Sign that account up first; this file does not create it.`);
 console.log(lines.join("\n"));

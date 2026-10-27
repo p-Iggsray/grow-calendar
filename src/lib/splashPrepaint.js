@@ -94,7 +94,7 @@ body { margin: 0; }
   font-family: ${FONT_BRAND};
   font-size: 40px; font-weight: 700; line-height: 1;
 }
-#${PREPAINT_ID} .budz {
+#${PREPAINT_ID} .growz {
   font-family: ${FONT_BRAND};
   font-size: 19px; font-weight: 700; letter-spacing: 5px; line-height: 1;
   margin-top: 4px; padding-left: 5px;
@@ -113,14 +113,14 @@ body { margin: 0; }
 export function prepaintHtml() {
   return (
     `<div id="${PREPAINT_ID}" role="status" aria-busy="true" ` +
-      `aria-label="Loading Black Cat Budz">` +
+      `aria-label="Loading Black Cat Growz">` +
       `<div class="cat"><div class="glow"></div>` +
         `<div id="${MARK_ID}">${catMarkSvg({ width: 230, glow: true, uid: "pp" })}</div>` +
       `</div>` +
       `<div class="word">` +
         `<div class="est">Est. 2026</div>` +
         `<div class="name">Black Cat</div>` +
-        `<div class="budz">BUDZ</div>` +
+        `<div class="growz">GROWZ</div>` +
         `<div class="tag">Your grow, day by day.</div>` +
       `</div>` +
       `<div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>` +

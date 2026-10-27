@@ -229,7 +229,7 @@ export function drawLabel(canvas, spec, matrix) {
   drawCatMark(ctx, PAD + 40, barTop + (BAR_H - markH) / 2, markW, MARK_TONE);
   ctx.fillStyle = WHITE;
   ctx.font = `700 62px "${LABEL_FONT}", ${UI}`;
-  drawTracked(ctx, "BLACK CAT BUDZ", PAD + 40 + markW + 40, barTop + BAR_H / 2 + 22, 4);
+  drawTracked(ctx, "BLACK CAT GROWZ", PAD + 40 + markW + 40, barTop + BAR_H / 2 + 22, 4);
   ctx.fillStyle = BLACK;
 
   const nameTop = barTop + BAR_H;

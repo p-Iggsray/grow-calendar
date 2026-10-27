@@ -24,7 +24,7 @@ function iconSvg({ width, smoke }) {
   const mark = catMarkSvg({ width: w, smoke, glow: true, uid: smoke ? "ic" : "fv" })
     .replace("<svg ", `<svg x="${(SIZE - w) / 2}" y="${(SIZE - h) / 2}" `);
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" width="${SIZE}" height="${SIZE}">` +
-    `<title>Black Cat Budz</title>` +
+    `<title>Black Cat Growz</title>` +
     `<defs><radialGradient id="aura" cx="0.5" cy="0.5" r="0.55">` +
       `<stop offset="0" stop-color="${BRAND.aura}" stop-opacity="0.35"/>` +
       `<stop offset="1" stop-color="${BRAND.aura}" stop-opacity="0"/></radialGradient></defs>` +

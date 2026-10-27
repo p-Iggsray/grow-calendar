@@ -177,7 +177,7 @@ export function drawColorLabel(canvas, spec, matrix) {
 
   ctx.font = `700 44px ${FACE}`;
   ctx.fillStyle = CREAM;
-  drawTracked(ctx, "BLACK CAT BUDZ", left + markW + 26, markTop + 58, 5.2);
+  drawTracked(ctx, "BLACK CAT GROWZ", left + markW + 26, markTop + 58, 5.2);
   ctx.font = `400 23px ${FACE}`;
   ctx.fillStyle = MUTED;
   drawTracked(ctx, "CULTIVATED AND PACKED BY HAND", left + markW + 28, markTop + 96, 3.4);

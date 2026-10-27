@@ -89,7 +89,7 @@ export default function GrowSwitcher({ today, onNewEnvironment }) {
           fontFamily: "var(--font-display)", fontSize: 21, fontWeight: 700, color: "var(--c-text)",
           whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
         }}>
-          {activeGrow?.displayName || "Black Cat Budz"}
+          {activeGrow?.displayName || "Black Cat Growz"}
         </span>
         {canSwitch && (
           <ChevronDown size={16} strokeWidth={2.6} aria-hidden="true" style={{ color: "var(--c-text-muted)", flexShrink: 0 }} />

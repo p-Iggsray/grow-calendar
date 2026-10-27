@@ -698,7 +698,7 @@ function renderReport(ctx) {
 </div>
 <main>
   <header class="cover">
-    <div class="brandline">${catMarkSvg({ width: 80, tone: "mono", uid: "rp" })}<span class="eyebrow">Black Cat Budz · Grow Report</span></div>
+    <div class="brandline">${catMarkSvg({ width: 80, tone: "mono", uid: "rp" })}<span class="eyebrow">Black Cat Growz · Grow Report</span></div>
     <h1>${esc(name)}</h1>
     <div class="sub">
       <span class="badge badge-${esc(status)}">${esc(status)}</span>
@@ -735,7 +735,7 @@ function renderReport(ctx) {
   ${legacySection}
   ${statsSection}
   <footer class="foot">
-    Generated ${esc(generated)} · Black Cat Budz. For educational and personal
+    Generated ${esc(generated)} · Black Cat Growz. For educational and personal
     record-keeping only - not medical, legal, or professional cultivation advice.
   </footer>
 </main>

@@ -1,4 +1,4 @@
-// The Black Cat Budz mark: the grin in the dark. Two eyes, a crescent of teeth,
+// The Black Cat Growz mark: the grin in the dark. Two eyes, a crescent of teeth,
 // a joint in the corner of the mouth and the smoke coming off it.
 //
 // The geometry lives here, on its own, because every place the brand appears

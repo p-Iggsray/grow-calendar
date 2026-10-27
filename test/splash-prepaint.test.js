@@ -76,9 +76,9 @@ test("the paint keeps the background rule it replaced", () => {
 test("it announces itself the same way the React splash does", () => {
   // A screen reader should not hear the loading state twice, or differently,
   // just because the bundle happened to arrive.
-  assert.ok(html.includes('aria-label="Loading Black Cat Budz"'));
+  assert.ok(html.includes('aria-label="Loading Black Cat Growz"'));
   assert.ok(html.includes('role="status"'));
-  assert.ok(read("../src/components/Splash.jsx").includes('aria-label="Loading Black Cat Budz"'));
+  assert.ok(read("../src/components/Splash.jsx").includes('aria-label="Loading Black Cat Growz"'));
 });
 
 test("it is small enough to belong in the document", () => {

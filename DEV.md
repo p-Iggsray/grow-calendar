@@ -1,6 +1,6 @@
 # Developer Notes
 
-Everything you need to run, modify, or self-host **Black Cat Budz**.
+Everything you need to run, modify, or self-host **Black Cat Growz**.
 
 ## Stack
 

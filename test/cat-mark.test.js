@@ -53,6 +53,6 @@ test("the face alone is a tighter box than the mark with its smoke", () => {
 });
 
 test("a title makes it an image for screen readers; without one it is hidden", () => {
-  assert.match(catMarkSvg({ title: "Black Cat Budz" }), /role="img" aria-label="Black Cat Budz"/);
+  assert.match(catMarkSvg({ title: "Black Cat Growz" }), /role="img" aria-label="Black Cat Growz"/);
   assert.match(catMarkSvg(), /aria-hidden="true"/);
 });
