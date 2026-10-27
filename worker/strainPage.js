@@ -76,7 +76,7 @@ footer{margin:36px 0 0;padding-top:16px;border-top:1px solid var(--line);
   font-size:11.5px;color:var(--mut);line-height:1.6;}
 </style>
 </head><body><main>
-  <div class="brand">${catMarkSvg({ width: 76, smoke: false, uid: "sp" })}<span>Black Cat Growz</span></div>
+  <div class="brand">${catMarkSvg({ width: 80, uid: "sp" })}<span>Black Cat Growz</span></div>
   <div class="eyebrow">Strain profile</div>
   <h1>${esc(name)}</h1>
   ${body}

@@ -152,8 +152,8 @@ function drawQr(ctx, matrix, x, y, box) {
   return { side, quiet };
 }
 
-// The face alone, in one ink: a thermal head has no wash to give the smoke.
-const MARK_TONE = { tone: "monoInverse", smoke: false };
+// One ink, white knocked out of the black masthead.
+const MARK_TONE = { tone: "monoInverse" };
 
 // Letterspaced small caps, drawn a glyph at a time because canvas has no
 // letter-spacing. Tracking is what keeps a 40px tag from reading as a blob at

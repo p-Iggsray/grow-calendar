@@ -5,23 +5,22 @@
 // SVG for a home screen. Run `node scripts/icons.mjs` after changing the mark,
 // and commit what it writes.
 //
-// The launcher icons keep the whole mark, smoke and all, inside the safe area
-// a circular mask leaves. The favicon is never masked and is 32px across, so
-// it gets the face alone, as large as it will go: at that size smoke is a
-// smudge.
+// The launcher icons keep the whole mark inside the safe area a circular mask
+// leaves. The favicon is never masked and is 32px across, so it fills the
+// square edge to edge.
 
 import sharp from "sharp";
 import { writeFileSync } from "node:fs";
 import { BRAND, catMarkSvg, markAspect } from "../src/lib/catMark.js";
 
 const SIZE = 1024;
-const SAFE_WIDTH = 0.78;
-const FAVICON_WIDTH = 0.96;
+const SAFE_WIDTH = 0.84;
+const FAVICON_WIDTH = 0.98;
 
-function iconSvg({ width, smoke }) {
+function iconSvg({ width, uid }) {
   const w = Math.round(SIZE * width);
-  const h = Math.round(w * markAspect({ smoke }));
-  const mark = catMarkSvg({ width: w, smoke, glow: true, uid: smoke ? "ic" : "fv" })
+  const h = Math.round(w * markAspect());
+  const mark = catMarkSvg({ width: w, glow: true, uid })
     .replace("<svg ", `<svg x="${(SIZE - w) / 2}" y="${(SIZE - h) / 2}" `);
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" width="${SIZE}" height="${SIZE}">` +
     `<title>Black Cat Growz</title>` +
@@ -33,8 +32,8 @@ function iconSvg({ width, smoke }) {
     mark + `</svg>`;
 }
 
-const icon = iconSvg({ width: SAFE_WIDTH, smoke: true });
-const favicon = iconSvg({ width: FAVICON_WIDTH, smoke: false });
+const icon = iconSvg({ width: SAFE_WIDTH, uid: "ic" });
+const favicon = iconSvg({ width: FAVICON_WIDTH, uid: "fv" });
 writeFileSync("public/icon.svg", icon + "\n");
 
 // High density first, then downsample: librsvg rasterises at the density and

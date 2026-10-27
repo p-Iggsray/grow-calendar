@@ -9,6 +9,7 @@ import { formatWater } from "../lib/waterUnits.js";
 import { words } from "../lib/crops.js";
 import { partitionPlants } from "./PlantsTab/constants.js";
 import PlantClockRows from "./PlantClockRows.jsx";
+import StagePlant from "./StagePlant.jsx";
 
 // The three questions you open the app to ask, answered before you scroll:
 // where the grow is, what it is doing, and how much of it there is.
@@ -71,6 +72,24 @@ function climateValue(climate) {
   return [temp, rh].filter(Boolean).join(" · ");
 }
 
+// Grass and sprouts along the foot of the card, faint, behind everything on it.
+const GRASS_BLADES = [4, 9, 13, 21, 26, 34, 38, 47, 52, 58, 66, 71, 79, 84, 92, 97];
+function Grass() {
+  return (
+    <svg
+      aria-hidden="true" viewBox="0 0 100 10" preserveAspectRatio="none"
+      style={{ position: "absolute", zIndex: -1, left: 0, right: 0, bottom: 0, width: "100%", height: 26, pointerEvents: "none" }}>
+      {GRASS_BLADES.map((x, i) => (
+        <path
+          key={x}
+          d={`M${x - 0.9},10 Q${x + (i % 2 ? 1.2 : -1.2)},${4 + (i % 3)} ${x + (i % 2 ? 1.6 : -1.6)},${1.5 + (i % 4)} Q${x + 0.2},${6 + (i % 2)} ${x + 0.9},10 Z`}
+          fill="#6fb64c" opacity={0.16 + (i % 3) * 0.04}
+        />
+      ))}
+    </svg>
+  );
+}
+
 export default function HomeStatus({ today, survey, crop, stageEvents, firstDate, days, clocks = [] }) {
   const todayKey = ymd(today ?? new Date());
   const { active } = partitionPlants(survey);
@@ -97,31 +116,31 @@ export default function HomeStatus({ today, survey, crop, stageEvents, firstDate
     <section
       aria-label="This space right now"
       style={{
+        position: "relative", overflow: "hidden", isolation: "isolate",
         width: "calc(100% - 20px)", margin: "8px 10px 0",
         padding: "11px 12px 12px", borderRadius: 14,
         background: "var(--c-surface-1)", border: "1px solid var(--c-border-faint)",
       }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
-        <span style={{
-          fontFamily: "var(--font-display)", fontSize: 25, fontWeight: 700, color,
-          minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-        }}>
-          {label ?? "Not started"}
-        </span>
-        {dayNum != null && (
-          <span style={{
-            fontFamily: UI, fontSize: 12.5, fontWeight: 700, color: "var(--c-text-muted)", flexShrink: 0,
+      <Grass />
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontFamily: "var(--font-display)", fontSize: 25, fontWeight: 700, color,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}>
-            Day {dayNum}
-          </span>
-        )}
-      </div>
-
-      {inStage != null && (
-        <div style={{ fontFamily: UI, fontSize: 11.5, color: "var(--c-text-faint)", marginTop: 1 }}>
-          {inStage === 0 ? "Switched today" : `${weeksAndDays(inStage)} in this stage`}
+            {label ?? "Not started"}
+          </div>
+          {(dayNum != null || inStage != null) && (
+            <div style={{ fontFamily: UI, fontSize: 11.5, color: "var(--c-text-faint)", marginTop: 1 }}>
+              {[
+                dayNum != null ? `Day ${dayNum}` : null,
+                inStage == null ? null : inStage === 0 ? "switched today" : `${weeksAndDays(inStage)} in this stage`,
+              ].filter(Boolean).join(" · ")}
+            </div>
+          )}
         </div>
-      )}
+        <StagePlant stage={shown} size={62} />
+      </div>
 
       <div style={{ display: "flex", gap: 7, marginTop: 10 }}>
         <Tile

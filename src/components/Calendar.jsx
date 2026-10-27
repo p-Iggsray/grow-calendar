@@ -6,6 +6,7 @@ import { stageGroup, stageLabel, stageOnDate } from "../lib/stageTimeline.js";
 import { tapHaptic } from "../lib/haptics.js";
 import { windowsOn } from "../lib/plantClock.js";
 import { HARVEST_COLOR } from "./HarvestLine.jsx";
+import { DaySprout, GardenBed } from "./Garden.jsx";
 
 // Tuned for one-thumb phone use. Threshold below ~40px catches incidental drag
 // during a tap; horizontal-vs-vertical ratio under ~1.5 catches diagonal
@@ -41,6 +42,10 @@ const LEGEND = [
         <Check size={7} strokeWidth={3.5} style={{ color: "var(--c-text-muted)" }} />
       </span>
     ),
+  },
+  {
+    label: "Logged",
+    swatch: <DaySprout growth={2} size={13} />,
   },
   {
     label: "Journaled",
@@ -252,6 +257,11 @@ export default function Calendar({
           // A day you asked to be reminded about gets its own mark, so a
           // reminder is visible from the month without opening the day.
           const hasReminder = Number(journalDays?.[key]?.events) > 0;
+          // How much the day holds, which is how far its sprout has grown.
+          const day = journalDays?.[key];
+          const growth = day
+            ? [day.log, day.note, Number(day.plants) > 0, Number(day.photos) > 0].filter(Boolean).length
+            : 0;
           const harvest = windowsOn(harvestWindows, key);
           const opensWindow = harvest.some((g) => g.start === key);
           const closesWindow = harvest.some((g) => g.end === key);
@@ -265,6 +275,7 @@ export default function Calendar({
             hasReminder ? "has a reminder" : null,
             harvest.length ? `harvest window for ${windowPlantNames(harvest)}` : null,
             hasEntry ? "journal entry written" : null,
+            growth > 0 ? "logged" : null,
             "opens this day's journal",
           ].filter(Boolean);
 
@@ -355,6 +366,15 @@ export default function Calendar({
                   }}
                 />
               )}
+              {/* A sprout for a day with a record, growing with what it holds. */}
+              {growth > 0 && (
+                <span aria-hidden="true" style={{
+                  position: "absolute", left: "50%", transform: "translateX(-50%)",
+                  bottom: harvest.length > 0 ? 9 : 3,
+                }}>
+                  <DaySprout growth={growth} size={21} dim={isPast} />
+                </span>
+              )}
               {/* Inside a breeder's harvest window. The band runs edge to edge
                   so a run of days reads as one stretch, rounded where it opens
                   and closes. */}
@@ -373,6 +393,9 @@ export default function Calendar({
           );
         })}
       </motion.div>
+
+      {/* The garden bed the month grows in. */}
+      <GardenBed />
 
       {/* The key, folded away. A legend on screen every day spends permanent
           space teaching the same five things to someone who learned them in

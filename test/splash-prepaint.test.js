@@ -5,14 +5,14 @@ import { readFileSync } from "node:fs";
 import {
   prepaintCss, prepaintHtml, MARK_ID, PREPAINT_ID,
 } from "../src/lib/splashPrepaint.js";
-import { EYE_L, EYE_R, GRIN, TEETH, JOINT } from "../src/lib/catMark.js";
+import { EYE_L, EYE_R, GRIN, TEETH, STEM } from "../src/lib/catMark.js";
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
 const css = prepaintCss();
 const html = prepaintHtml();
 
 test("the paint draws the same grin as the rest of the app", () => {
-  for (const d of [EYE_L, EYE_R, GRIN, TEETH, JOINT]) {
+  for (const d of [EYE_L, EYE_R, GRIN, TEETH, STEM]) {
     assert.ok(html.includes(d), `the prepaint is missing the path ${d.slice(0, 28)}...`);
   }
 });

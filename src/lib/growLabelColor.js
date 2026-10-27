@@ -169,7 +169,7 @@ export function drawColorLabel(canvas, spec, matrix) {
   const bottom = LABEL_H - PAD;
 
   // ── Masthead ──────────────────────────────────────────────────────────────
-  // The mark in full colour, smoke and all, the way the brand artwork has it.
+  // The mark in full colour, seedling and all.
   const markW = 220;
   const markTop = PAD - 6;
   const markH = markW * markAspect({ glow: true });
